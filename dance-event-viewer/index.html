@@ -1,22 +1,21 @@
 <!DOCTYPE html>
 <!--
   Dance Event Viewer — reads ../dance_events.json live on every load.
-  Browsers block fetch() from file:// pages, so run a tiny local server
-  FROM THE "Dance Website" FOLDER (one level up from this file):
-
-      python -m http.server 8000
-
-  then open:  http://localhost:8000/dance-event-viewer/
-  (Or double-click serve.cmd in this folder.)
+  Published copy (GitHub Pages). Local dev: serve the folder one level up
+  and open http://localhost:8000/dance-event-viewer/
+  NOTE: this published copy trails the local Dance Website copy, which is the
+  real source of truth for pushes — see it for the latest markup.
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex">
-  <title>Dance Event Viewer</title>
+  <meta name="description" content="Pensacola-area dance calendar — West Coast Swing and partner dance events, updated regularly.">
+  <title>Dance Event Viewer — Pensacola Area Dance Events</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/whispers.css">
+  <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
+  <script data-goatcounter="https://rse-dance.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
   <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
