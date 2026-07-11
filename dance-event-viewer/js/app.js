@@ -479,11 +479,9 @@ function render() {
   }
 
   let shown = 0;
-  if (state.view === "schedule") {
-    const grid = document.createElement("div");
-    grid.className = "cards";
-    for (const d of visible) { grid.appendChild(card(d, { showWhen: false })); shown++; }
-    main.appendChild(grid);
+  if (state.view === "calendar") {
+    renderCalendar(main, visible);
+    return;
   } else {
     const withNext = visible
       .map(d => ({ ...d, next: nextOccurrence(d.ev, today) }))
@@ -512,9 +510,7 @@ function render() {
   if (!shown) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = state.view === "schedule"
-      ? "No events match these filters. Try clearing a filter or two."
-      : "No upcoming events match these filters. Try clearing a filter, or switch to Schedule view to see everything on record.";
+    empty.textContent = "No upcoming events match these filters. Try clearing a filter, or open the Calendar to browse by month.";
     main.appendChild(empty);
     setStatus(`0 of ${state.events.length} events shown`, false);
   } else {
@@ -561,7 +557,7 @@ function savePrefs() {
 function loadPrefs() {
   try {
     const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    if (["timeline", "grid", "schedule"].includes(p.view)) state.view = p.view;
+    if (["timeline", "grid", "schedule", "calendar"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
     for (const k of Object.keys(state.filters))
       if (Array.isArray(p.filters?.[k])) state.filters[k] = new Set(p.filters[k]);
     for (const dim of ["country", "state", "town"])
@@ -604,3 +600,225 @@ function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
+/* ---------- Calendar view (added 2026-07-11; replaces the old Schedule view) ----------
+   Traditional month grid + 12-month year view. Events land on days derived STRICTLY
+   from explicit schedule fields (day_of_week / monthly_rule / start_date / end_date) —
+   never guessed. Auto-populates from dance_events.json like every other view. */
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const cal = { year: null, month: null, mode: "month" };
+
+function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+
+/* Day-of-month numbers an event occurs on in a given month. */
+function occurrencesInMonth(ev, y, m) {
+  const out = [];
+  const start = parseISO(ev.start_date), end = parseISO(ev.end_date);
+  if (ev.type === "weekly_recurring") {
+    const target = DAY_ORDER.indexOf(ev.day_of_week);
+    if (target < 0) return out;
+    for (let d = 1; d <= daysInMonth(y, m); d++) {
+      const dt = new Date(y, m, d);
+      if (dt.getDay() !== target) continue;
+      if (start && dt < start) continue;
+      if (end && dt > end) continue;
+      out.push(d);
+    }
+    return out;
+  }
+  if (ev.type === "monthly_recurring") {
+    const rule = monthlyRuleParts(ev.monthly_rule);
+    if (!rule) return out;
+    const first = new Date(y, m, 1);
+    const dt = new Date(y, m, 1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
+    if (dt.getMonth() === m && (!start || dt >= start) && (!end || dt <= end)) out.push(dt.getDate());
+    return out;
+  }
+  if (!start) return out;
+  const spanEnd = end || start;
+  for (let d = 1; d <= daysInMonth(y, m); d++) {
+    const dt = new Date(y, m, d);
+    if (dt >= start && dt <= spanEnd) out.push(d);
+  }
+  return out;
+}
+
+function hasDate(d) {
+  return DAY_ORDER.includes(d.ev.day_of_week) || !!monthlyRuleParts(d.ev.monthly_rule) || !!parseISO(d.ev.start_date);
+}
+
+function renderCalendar(main, visible) {
+  if (cal.year === null) { const now = new Date(); cal.year = now.getFullYear(); cal.month = now.getMonth(); }
+  const wrap = document.createElement("section");
+  wrap.className = "calendar";
+  wrap.setAttribute("aria-label", "Event calendar");
+  wrap.appendChild(calHeader());
+  const dated = visible.filter(hasDate);
+  if (cal.mode === "year") renderYear(wrap, dated); else renderMonth(wrap, dated);
+  const undated = visible.filter(d => !hasDate(d));
+  if (undated.length) {
+    const p = document.createElement("p");
+    p.className = "cal-undated";
+    p.textContent = "Date not yet announced: " + undated.map(d => d.ev.name).join(" · ");
+    wrap.appendChild(p);
+  }
+  main.appendChild(wrap);
+}
+
+function calBtn(label, onClick, aria) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "cal-btn"; b.textContent = label;
+  if (aria) b.setAttribute("aria-label", aria);
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function calHeader() {
+  const h = document.createElement("div");
+  h.className = "cal-header";
+  const nav = document.createElement("div");
+  nav.className = "cal-nav";
+  const title = document.createElement("span");
+  title.className = "cal-title";
+  if (cal.mode === "month") {
+    nav.appendChild(calBtn("«", () => { cal.year--; render(); }, "Previous year"));
+    nav.appendChild(calBtn("‹", () => { cal.month--; if (cal.month < 0) { cal.month = 11; cal.year--; } render(); }, "Previous month"));
+    title.textContent = `${MONTH_NAMES[cal.month]} ${cal.year}`;
+    nav.appendChild(title);
+    nav.appendChild(calBtn("›", () => { cal.month++; if (cal.month > 11) { cal.month = 0; cal.year++; } render(); }, "Next month"));
+    nav.appendChild(calBtn("»", () => { cal.year++; render(); }, "Next year"));
+  } else {
+    nav.appendChild(calBtn("‹", () => { cal.year--; render(); }, "Previous year"));
+    title.textContent = String(cal.year);
+    nav.appendChild(title);
+    nav.appendChild(calBtn("›", () => { cal.year++; render(); }, "Next year"));
+  }
+  const right = document.createElement("div");
+  right.className = "cal-nav";
+  right.appendChild(calBtn("Today", () => { const now = new Date(); cal.year = now.getFullYear(); cal.month = now.getMonth(); render(); }));
+  const mBtn = calBtn("Month", () => { cal.mode = "month"; render(); });
+  const yBtn = calBtn("Year", () => { cal.mode = "year"; render(); });
+  mBtn.setAttribute("aria-pressed", String(cal.mode === "month"));
+  yBtn.setAttribute("aria-pressed", String(cal.mode === "year"));
+  right.appendChild(mBtn); right.appendChild(yBtn);
+  h.appendChild(nav); h.appendChild(right);
+  return h;
+}
+
+function monthEventMap(dated, y, m) {
+  const byDay = new Map();
+  for (const d of dated) {
+    for (const day of occurrencesInMonth(d.ev, y, m)) {
+      if (!byDay.has(day)) byDay.set(day, []);
+      byDay.get(day).push(d);
+    }
+  }
+  return byDay;
+}
+
+function renderMonth(wrap, dated) {
+  const y = cal.year, m = cal.month;
+  const byDay = monthEventMap(dated, y, m);
+  const grid = document.createElement("div");
+  grid.className = "cal-grid";
+  for (const dow of DAY_ORDER) {
+    const c = document.createElement("div");
+    c.className = "cal-dow"; c.textContent = dow.slice(0, 3);
+    grid.appendChild(c);
+  }
+  const lead = new Date(y, m, 1).getDay();
+  for (let i = 0; i < lead; i++) {
+    const c = document.createElement("div");
+    c.className = "cal-cell empty";
+    grid.appendChild(c);
+  }
+  const now = new Date();
+  for (let d = 1; d <= daysInMonth(y, m); d++) {
+    const cell = document.createElement("div");
+    cell.className = "cal-cell";
+    if (d === now.getDate() && m === now.getMonth() && y === now.getFullYear()) cell.classList.add("today");
+    const num = document.createElement("span");
+    num.className = "day-num"; num.textContent = d;
+    cell.appendChild(num);
+    for (const item of (byDay.get(d) || [])) {
+      const chip = document.createElement("button");
+      chip.type = "button"; chip.className = "cal-chip";
+      chip.dataset.cat = item.category || OTHER;
+      if (item.ev.type === "tentative") chip.classList.add("tentative");
+      chip.textContent = item.ev.name;
+      chip.title = item.ev.name;
+      const dt = new Date(y, m, d);
+      chip.addEventListener("click", () => openEventPopup(item, dt));
+      cell.appendChild(chip);
+    }
+    grid.appendChild(cell);
+  }
+  wrap.appendChild(grid);
+  const count = new Set([...byDay.values()].flat().map(i => i.ev.key || i.ev.name)).size;
+  setStatus(count
+    ? `${count} event${count === 1 ? "" : "s"} in ${MONTH_NAMES[m]} ${y}`
+    : `No events in ${MONTH_NAMES[m]} ${y} match the current filters`, false);
+}
+
+function renderYear(wrap, dated) {
+  const y = cal.year;
+  const yearGrid = document.createElement("div");
+  yearGrid.className = "cal-year";
+  const yearKeys = new Set();
+  const now = new Date();
+  for (let m = 0; m < 12; m++) {
+    const byDay = monthEventMap(dated, y, m);
+    for (const items of byDay.values()) for (const i of items) yearKeys.add(i.ev.key || i.ev.name);
+    const mini = document.createElement("button");
+    mini.type = "button"; mini.className = "cal-mini";
+    mini.setAttribute("aria-label", `Open ${MONTH_NAMES[m]} ${y}`);
+    const h4 = document.createElement("h4"); h4.textContent = MONTH_NAMES[m];
+    mini.appendChild(h4);
+    const t = document.createElement("table");
+    const thr = document.createElement("tr");
+    for (const dow of DAY_ORDER) { const th = document.createElement("th"); th.textContent = dow[0]; thr.appendChild(th); }
+    t.appendChild(thr);
+    let tr = document.createElement("tr");
+    const lead = new Date(y, m, 1).getDay();
+    for (let i = 0; i < lead; i++) tr.appendChild(document.createElement("td"));
+    for (let d = 1; d <= daysInMonth(y, m); d++) {
+      if ((lead + d - 1) % 7 === 0 && d !== 1) { t.appendChild(tr); tr = document.createElement("tr"); }
+      const td = document.createElement("td"); td.textContent = d;
+      if (byDay.has(d)) td.className = "has-events";
+      if (d === now.getDate() && m === now.getMonth() && y === now.getFullYear()) td.classList.add("today");
+      tr.appendChild(td);
+    }
+    t.appendChild(tr);
+    mini.appendChild(t);
+    mini.addEventListener("click", () => { cal.mode = "month"; cal.month = m; render(); });
+    yearGrid.appendChild(mini);
+  }
+  wrap.appendChild(yearGrid);
+  setStatus(yearKeys.size
+    ? `${yearKeys.size} event${yearKeys.size === 1 ? "" : "s"} on the ${y} calendar`
+    : `No events in ${y} match the current filters`, false);
+}
+
+function openEventPopup(item, dt) {
+  const backdrop = document.createElement("div");
+  backdrop.className = "cal-pop-backdrop";
+  const pop = document.createElement("div");
+  pop.className = "cal-pop";
+  pop.setAttribute("role", "dialog"); pop.setAttribute("aria-modal", "true");
+  const close = document.createElement("button");
+  close.type = "button"; close.className = "pop-close"; close.textContent = "×";
+  close.setAttribute("aria-label", "Close");
+  const when = document.createElement("p");
+  when.className = "pop-date";
+  when.textContent = dt.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  pop.appendChild(close); pop.appendChild(when);
+  pop.appendChild(card(item, { showWhen: false }));
+  backdrop.appendChild(pop);
+  const done = () => { backdrop.remove(); document.removeEventListener("keydown", esc); };
+  const esc = (e) => { if (e.key === "Escape") done(); };
+  close.addEventListener("click", done);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) done(); });
+  document.addEventListener("keydown", esc);
+  document.body.appendChild(backdrop);
+  close.focus();
+}
