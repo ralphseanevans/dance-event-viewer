@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <!--
   Dance Event Viewer — reads ../dance_events.json live on every load.
-  Published copy (GitHub Pages). Local dev: serve the folder one level up
-  and open http://localhost:8000/dance-event-viewer/
+  Browsers block fetch() from file:// pages, so run a tiny local server
+  FROM THE "Dance Website" FOLDER (one level up from this file):
+
+      python -m http.server 8000
+
+  then open:  http://localhost:8000/dance-event-viewer/
+  (Or double-click serve.cmd in this folder.)
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Pensacola-area dance calendar — West Coast Swing and partner dance events, updated regularly.">
-  <title>Dance Event Viewer — Pensacola Area Dance Events</title>
+  <meta name="robots" content="noindex">
+  <title>Dance Event Viewer</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/whispers.css">
-  <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
-  <script data-goatcounter="https://rse-dance.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
-  <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer
-       project, Spark/free tier). Leave apiKey blank and the widget shows a
-       "coming soon" placeholder instead of erroring. -->
+  <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
     window.WHISPER_FIREBASE_CONFIG = {
       apiKey: "AIzaSyBwhVMohQcX06b5I50z1Uaa1r2q-4sYes8",
@@ -41,11 +42,14 @@
   </header>
 
   <aside class="beta-note" role="note">
-    <strong>Beta</strong> — this page is a community effort that gathers listings automatically from many
-    sources, so errors in the retrieval process are possible. Spot something wrong or missing? Click
-    <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> on any listing and send one concise message with
-    whatever verifies the correct details (a link, a flyer, a photo). Provided as-is with no
-    responsibility assumed for errors — always confirm details with the venue or organizer.
+    <button class="beta-toggle" type="button" aria-expanded="true" aria-controls="beta-details">
+      <strong>Beta information</strong><span aria-hidden="true">&minus;</span>
+    </button>
+    <div id="beta-details" class="beta-details">
+      Listings are gathered automatically and manually, so errors are possible. Spot something wrong or
+      missing? Use <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> and include a link, flyer, or photo.
+      Always confirm details with the venue or organizer.
+    </div>
   </aside>
 
   <nav id="source-tabs" class="source-tabs" aria-label="Event lists" hidden></nav>
@@ -119,4 +123,25 @@
     </div>
   </div>
 
-  <script src="j
+  <script>
+    (() => {
+      const note = document.querySelector('.beta-note');
+      const toggle = note?.querySelector('.beta-toggle');
+      if (!note || !toggle) return;
+
+      const setOpen = (open) => {
+        note.classList.toggle('is-collapsed', !open);
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.querySelector('span').textContent = open ? '−' : '+';
+      };
+
+      toggle.addEventListener('click', () => {
+        setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+      });
+      window.setTimeout(() => setOpen(false), 2000);
+    })();
+  </script>
+  <script src="js/app.js"></script>
+  <script src="js/whispers.js"></script>
+</body>
+</html>
