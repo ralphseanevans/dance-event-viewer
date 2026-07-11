@@ -1,13 +1,8 @@
 <!DOCTYPE html>
 <!--
   Dance Event Viewer — reads ../dance_events.json live on every load.
-  Browsers block fetch() from file:// pages, so run a tiny local server
-  FROM THE "Dance Website" FOLDER (one level up from this file):
-
-      python -m http.server 8000
-
-  then open:  http://localhost:8000/dance-event-viewer/
-  (Or double-click serve.cmd in this folder.)
+  Published copy (GitHub Pages). Local dev: serve the folder one level up
+  and open http://localhost:8000/dance-event-viewer/
 -->
 <html lang="en">
 <head>
@@ -50,4 +45,43 @@
       <button type="button" id="reset-filters" class="reset-btn">Reset filters</button>
     </div>
 
-    <fieldset class="filter
+    <fieldset class="filter-group" id="fg-category">
+      <legend>Style</legend>
+      <div class="chips" data-group="cats"></div>
+    </fieldset>
+    <fieldset class="filter-group" id="fg-day">
+      <legend>Day</legend>
+      <div class="chips" data-group="days"></div>
+    </fieldset>
+    <fieldset class="filter-group" id="fg-area">
+      <legend>Location</legend>
+      <div class="chips" data-group="areas"></div>
+      <div class="loc-selects">
+        <label>Country <select id="sel-country"></select></label>
+        <label>State <select id="sel-state"></select></label>
+        <label>Town <select id="sel-town"></select></label>
+      </div>
+    </fieldset>
+    <fieldset class="filter-group" id="fg-kind">
+      <legend>Type</legend>
+      <div class="chips" data-group="kinds"></div>
+    </fieldset>
+  </section>
+
+  <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+
+  <main id="results" aria-label="Events"></main>
+
+  <footer class="site-footer">
+    <p>Listings come from various places and data sources. Details can change &mdash; confirm with the venue or organizer when it matters.</p>
+    <!-- Support block: Square donation payment link (created 2026-07-11 in Sean's Square account). -->
+    <div class="support-block">
+      <p>This calendar is a free community project, run on volunteered time. If it's helped you find a dance,
+        you're welcome to chip in toward keeping it going &mdash; totally optional, never expected.</p>
+      <a class="support-btn" href="https://square.link/u/dG0nDt76" target="_blank" rel="noopener noreferrer">&#9829; Support this project</a>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

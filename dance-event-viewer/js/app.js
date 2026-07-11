@@ -389,4 +389,218 @@ function feedbackWidget(ev) {
 
   const desc = document.createElement("textarea");
   desc.rows = 3; desc.placeholder = "What's wrong, or what should be added?";
- 
+  desc.setAttribute("aria-label", "What is wrong or missing");
+  const link = document.createElement("input");
+  link.type = "url"; link.placeholder = "Link to the correct info (flyer, post, website)";
+  link.setAttribute("aria-label", "Link to the correct info");
+  const who = document.createElement("input");
+  who.type = "text"; who.placeholder = "Your name";
+  who.setAttribute("aria-label", "Your name");
+
+  const actions = document.createElement("div");
+  actions.className = "fb-actions";
+  const send = document.createElement("button");
+  send.type = "button"; send.className = "fb-send"; send.textContent = "Send";
+  const cancel = document.createElement("button");
+  cancel.type = "button"; cancel.className = "fb-alt"; cancel.textContent = "Cancel";
+  actions.append(send, cancel);
+
+  const status = document.createElement("p");
+  status.className = "fb-status"; status.setAttribute("role", "status");
+
+  form.append(desc, link, who, actions, status);
+  wrap.appendChild(form);
+
+  const SUBJECT = "Dance Event Viewer Listing Update Request";
+  const body = () => [
+    `Event: ${ev.name}`,
+    `Listing: ${scheduleText(ev) || "(no schedule on card)"}${typeof ev.key === "string" ? `  [id: ${ev.key}]` : ""}`,
+    "",
+    "What needs fixing/adding:",
+    desc.value.trim(),
+    "",
+    `Link to correct info: ${link.value.trim() || "(none given)"}`,
+    `From: ${who.value.trim() || "(no name given)"}`,
+    "",
+    "Sent from the Dance Event Viewer (beta).",
+  ].join("\n");
+
+  toggle.addEventListener("click", () => {
+    form.hidden = !form.hidden;
+    toggle.setAttribute("aria-expanded", String(!form.hidden));
+    if (!form.hidden) desc.focus();
+  });
+  cancel.addEventListener("click", () => {
+    form.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+  });
+  send.addEventListener("click", async () => {
+    if (!desc.value.trim()) { status.textContent = "Please describe what's wrong or missing first."; return; }
+    if (SEND_ENDPOINT) {
+      // Silent send via Sean's Apps Script web app (fire-and-forget; no-cors responses are opaque).
+      send.disabled = true;
+      status.textContent = "Sending…";
+      try {
+        await fetch(SEND_ENDPOINT, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ subject: SUBJECT, message: body() }),
+        });
+        status.textContent = "Sent — thanks for helping keep the calendar accurate!";
+        desc.value = ""; link.value = ""; who.value = "";
+        setTimeout(() => { form.hidden = true; toggle.setAttribute("aria-expanded", "false"); status.textContent = ""; send.disabled = false; }, 2500);
+      } catch (e) {
+        send.disabled = false;
+        status.textContent = "Couldn't send — please email ralphseanevans@gmail.com instead.";
+      }
+    } else {
+      status.textContent = "Opening Gmail with your message ready to send… if it doesn't open, email ralphseanevans@gmail.com directly.";
+      window.open(
+        `https://mail.google.com/mail/?view=cm&fs=1&to=ralphseanevans%40gmail.com&su=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(body())}`,
+        "_blank", "noopener"
+      );
+    }
+  });
+  return wrap;
+}
+
+function render() {
+  const main = document.getElementById("results");
+  main.textContent = "";
+  const today = new Date();
+  const visible = state.events.filter(matchesFilters);
+
+  if (!state.events.length) {
+    // Status line already explains why (error) — or the file genuinely has no events.
+    if (!document.getElementById("status-line").classList.contains("error"))
+      setStatus("No events yet — check back soon.", false);
+    return;
+  }
+
+  let shown = 0;
+  if (state.view === "schedule") {
+    const grid = document.createElement("div");
+    grid.className = "cards";
+    for (const d of visible) { grid.appendChild(card(d, { showWhen: false })); shown++; }
+    main.appendChild(grid);
+  } else {
+    const withNext = visible
+      .map(d => ({ ...d, next: nextOccurrence(d.ev, today) }))
+      .filter(d => d.next)
+      .sort((a, b) => a.next - b.next);
+    if (state.view === "grid") {
+      const grid = document.createElement("div");
+      grid.className = "cards";
+      for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
+      main.appendChild(grid);
+    } else {
+      const buckets = bucketize(withNext, today);
+      for (const [label, items] of buckets) {
+        if (!items.length) continue;
+        const h = document.createElement("h2");
+        h.className = "bucket-heading"; h.textContent = label;
+        main.appendChild(h);
+        const grid = document.createElement("div");
+        grid.className = "cards";
+        for (const d of items) { grid.appendChild(card(d, { showWhen: true })); shown++; }
+        main.appendChild(grid);
+      }
+    }
+  }
+
+  if (!shown) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = state.view === "schedule"
+      ? "No events match these filters. Try clearing a filter or two."
+      : "No upcoming events match these filters. Try clearing a filter, or switch to Schedule view to see everything on record.";
+    main.appendChild(empty);
+    setStatus(`0 of ${state.events.length} events shown`, false);
+  } else {
+    setStatus(`${shown} of ${state.events.length} event${state.events.length === 1 ? "" : "s"} shown`, false);
+  }
+}
+
+function bucketize(items, today) {
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const endOfWeek = new Date(t0); endOfWeek.setDate(t0.getDate() + (6 - t0.getDay()));           // Saturday
+  const endOfNextWeek = new Date(endOfWeek); endOfNextWeek.setDate(endOfWeek.getDate() + 7);
+  const buckets = [["Today", []], ["This Week", []], ["Next Week", []], ["Later", []]];
+  for (const d of items) {
+    if (d.next.getTime() === t0.getTime()) buckets[0][1].push(d);
+    else if (d.next <= endOfWeek) buckets[1][1].push(d);
+    else if (d.next <= endOfNextWeek) buckets[2][1].push(d);
+    else buckets[3][1].push(d);
+  }
+  return buckets;
+}
+
+/* ---------- UI wiring ---------- */
+function setStatus(msg, isError) {
+  const el = document.getElementById("status-line");
+  el.textContent = msg;
+  el.classList.toggle("error", !!isError);
+}
+function setView(view) {
+  state.view = view;
+  for (const b of document.querySelectorAll(".view-btn"))
+    b.setAttribute("aria-pressed", String(b.dataset.view === view));
+  savePrefs();
+  render();
+}
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      view: state.view,
+      filters: Object.fromEntries(Object.entries(state.filters).map(([k, v]) => [k, [...v]])),
+      sel: state.sel,
+    }));
+  } catch (e) { /* private mode etc. — prefs just won't persist */ }
+}
+function loadPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
+    if (["timeline", "grid", "schedule"].includes(p.view)) state.view = p.view;
+    for (const k of Object.keys(state.filters))
+      if (Array.isArray(p.filters?.[k])) state.filters[k] = new Set(p.filters[k]);
+    for (const dim of ["country", "state", "town"])
+      if (typeof p.sel?.[dim] === "string") state.sel[dim] = p.sel[dim];
+  } catch (e) { /* ignore bad prefs */ }
+}
+
+function init() {
+  loadPrefs();
+  for (const b of document.querySelectorAll(".view-btn"))
+    b.addEventListener("click", () => setView(b.dataset.view));
+  setView(state.view);
+  document.getElementById("reset-filters").addEventListener("click", () => {
+    for (const set of Object.values(state.filters)) set.clear();
+    state.filters.areas = new Set(DEFAULT_AREAS);                 // reset = back to defaults
+    state.sel = { country: "", state: "", town: "" };
+    for (const id of ["sel-country", "sel-state", "sel-town"]) {
+      const s = document.getElementById(id);
+      if (s) s.value = "";
+    }
+    syncChips(); render();
+  });
+  // Tabs render only when there's more than one source (future WCS tab).
+  const tabs = document.getElementById("source-tabs");
+  if (SOURCES.length > 1) {
+    tabs.hidden = false;
+    for (const s of SOURCES) {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = s.label;
+      b.setAttribute("aria-selected", String(s.id === state.sourceId));
+      b.addEventListener("click", () => {
+        state.sourceId = s.id;
+        for (const x of tabs.children) x.setAttribute("aria-selected", String(x === b));
+        loadData();
+      });
+      tabs.appendChild(b);
+    }
+  }
+  loadData();
+}
+
+document.addEventListener("DOMContentLoaded", init);
