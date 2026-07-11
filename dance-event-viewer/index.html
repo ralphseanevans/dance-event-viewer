@@ -11,8 +11,23 @@
   <meta name="description" content="Pensacola-area dance calendar — West Coast Swing and partner dance events, updated regularly.">
   <title>Dance Event Viewer — Pensacola Area Dance Events</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/whispers.css">
   <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
   <script data-goatcounter="https://rse-dance.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+  <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer
+       project, Spark/free tier). Leave apiKey blank and the widget shows a
+       "coming soon" placeholder instead of erroring. -->
+  <script>
+    window.WHISPER_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBwhVMohQcX06b5I50z1Uaa1r2q-4sYes8",
+      authDomain: "dance-event-viewer.firebaseapp.com",
+      databaseURL: "https://dance-event-viewer-default-rtdb.firebaseio.com",
+      projectId: "dance-event-viewer"
+    };
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -82,6 +97,26 @@
     </div>
   </footer>
 
-  <script src="js/app.js"></script>
-</body>
-</html>
+  <!-- Dance Whispers — anonymous chat bubbles floating along the side, synced live for every visitor. -->
+  <div id="whisper-float" class="whisper-float" aria-label="Dance whispers">
+    <div class="whisper-float-head">
+      <span class="whisper-float-title">💬 Dance Whispers</span>
+      <button type="button" id="whisper-minimize" class="whisper-minimize" aria-label="Minimize whispers" aria-expanded="true">&#8211;</button>
+    </div>
+    <div class="whisper-body">
+      <p class="whisper-sub">Keep &lsquo;em classy &amp; fun &mdash; everyone here can see them.</p>
+      <div id="whisper-list" class="whisper-list" aria-live="polite">
+        <p class="whisper-empty">Loading whispers&hellip;</p>
+      </div>
+      <form id="whisper-form" class="whisper-form">
+        <textarea id="whisper-input" maxlength="200" rows="2" placeholder="Say something classy &amp; fun..." required></textarea>
+        <div class="whisper-form-row">
+          <span id="whisper-count" class="whisper-count">200</span>
+          <button type="submit">Whisper it</button>
+        </div>
+        <p id="whisper-msg" class="whisper-msg" role="status"></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="j
