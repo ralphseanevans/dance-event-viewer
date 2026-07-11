@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--
+  Dance Event Viewer — reads ../dance_events.json live on every load.
+  Browsers block fetch() from file:// pages, so run a tiny local server
+  FROM THE "Dance Website" FOLDER (one level up from this file):
+
+      python -m http.server 8000
+
+  then open:  http://localhost:8000/dance-event-viewer/
+  (Or double-click serve.cmd in this folder.)
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Pensacola-area dance calendar — West Coast Swing and partner dance events, updated regularly.">
+  <title>Dance Event Viewer — Pensacola Area Dance Events</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
+  <script data-goatcounter="https://pensacola-dance.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div id="brand-slot">
+      <img src="assets/dance-event-viewer-banner.png" alt="Dance Event Viewer — a dancing couple under blue and pink club lights">
+    </div>
+    <div class="title-block">
+      <h1 class="visually-hidden">Dance Event Viewer</h1>
+      <p class="tagline">Currently Pensacola-area dances &middot; good music &middot; great people</p>
+    </div>
+  </header>
+
+  <aside class="beta-note" role="note">
+    <strong>Beta</strong> — this page is a community effort that gathers listings automatically from many
+    sources, so errors in the retrieval process are possible. Spot something wrong or missing? Click
+    <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> on any listing and send one concise message with
+    whatever verifies the correct details (a link, a flyer, a photo). Provided as-is with no
+    responsibility assumed for errors — always confirm details with the venue or organizer.
+  </aside>
+
+  <nav id="source-tabs" class="source-tabs" aria-label="Event lists" hidden></nav>
+
+  <section class="controls" aria-label="View and filters">
+    <div class="control-row">
+      <div class="view-switch" role="group" aria-label="View mode">
+        <button type="button" class="view-btn" data-view="timeline" aria-pressed="true">Timeline</button>
+        <button type="button" class="view-btn" data-view="grid" aria-pressed="false">Grid</button>
+        <button type="button" class="view-btn" data-view="schedule" aria-pressed="false">Schedule</button>
+      </div>
+      <button type="button" id="reset-filters" class="reset-btn">Reset filters</button>
+    </div>
+
+    <fieldset class="filter
