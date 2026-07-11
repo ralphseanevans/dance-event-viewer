@@ -16,7 +16,7 @@ const CATEGORY_WHITELIST = ["West Coast Swing", "Mixed", "Latin", "Argentine Tan
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PREFS_KEY = "dance-event-viewer-prefs-v2";   // UI prefs only — never event data. (v2: location model changed 2026-07-11)
-const DEFAULT_AREAS = ["Pensacola area", "Mobile area"];   // first-visit default per Sean
+const DEFAULT_AREAS = [];   // default to All locations per Sean (2026-07-11: was Pensacola+Mobile only)
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
 // Silent-send endpoint for the correction form: Sean's Google Apps Script web app /exec URL.
 // While empty, the form falls back to opening Gmail compose. No credentials live in this page.
