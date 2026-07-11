@@ -190,7 +190,7 @@ async function loadData() {
   let data;
   try {
     // Tolerate a torn-write tail (trailing NULs/garbage after the JSON document).
-    data = JSON.parse(raw.replace(/\u0000+\s*$/g, "").trim());
+    data = JSON.parse(raw.replace(/ +\s*$/g, "").trim());
   } catch (err) {
     state.events = [];
     render();
@@ -374,6 +374,49 @@ function card(d, { showWhen }) {
   return el;
 }
 
+/* List view row: title only, expands in place to the same details as a card.
+   Built for small screens — nothing but the name shows until it's tapped. */
+function listRow(d) {
+  const { ev } = d;
+  const li = document.createElement("li");
+  li.className = "list-row";
+
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "list-row-toggle";
+  btn.setAttribute("aria-expanded", "false");
+
+  const title = document.createElement("span");
+  title.className = "list-row-title";
+  title.textContent = ev.name.trim();
+  btn.appendChild(title);
+
+  const chevron = document.createElement("span");
+  chevron.className = "list-row-chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  chevron.textContent = "›";
+  btn.appendChild(chevron);
+
+  li.appendChild(btn);
+
+  const details = document.createElement("div");
+  details.className = "list-row-details";
+  details.hidden = true;
+  li.appendChild(details);
+
+  let built = false;
+  btn.addEventListener("click", () => {
+    const open = btn.getAttribute("aria-expanded") === "true";
+    if (!open && !built) {
+      details.appendChild(card(d, { showWhen: true }));
+      built = true;
+    }
+    btn.setAttribute("aria-expanded", String(!open));
+    details.hidden = open;
+  });
+
+  return li;
+}
+
 /* "Wrong info?" widget: opens the visitor's own email app via mailto (no data is sent
    anywhere by this page itself), or copies the message for pasting into Messenger. */
 function feedbackWidget(ev) {
@@ -492,6 +535,18 @@ function render() {
       grid.className = "cards";
       for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
       main.appendChild(grid);
+    } else if (state.view === "list") {
+      const buckets = bucketize(withNext, today);
+      for (const [label, items] of buckets) {
+        if (!items.length) continue;
+        const h = document.createElement("h2");
+        h.className = "bucket-heading"; h.textContent = label;
+        main.appendChild(h);
+        const ul = document.createElement("ul");
+        ul.className = "list-rows";
+        for (const d of items) { ul.appendChild(listRow(d)); shown++; }
+        main.appendChild(ul);
+      }
     } else {
       const buckets = bucketize(withNext, today);
       for (const [label, items] of buckets) {
@@ -557,7 +612,7 @@ function savePrefs() {
 function loadPrefs() {
   try {
     const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    if (["timeline", "grid", "schedule", "calendar"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
+    if (["timeline", "grid", "list", "schedule", "calendar"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
     for (const k of Object.keys(state.filters))
       if (Array.isArray(p.filters?.[k])) state.filters[k] = new Set(p.filters[k]);
     for (const dim of ["country", "state", "town"])
