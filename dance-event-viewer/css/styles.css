@@ -75,17 +75,41 @@ body {
 
 .beta-note {
   max-width: var(--maxw);
-  margin: 10px auto 0;
+  margin: 8px auto 0;
   background: var(--badge-warn-bg);
   color: var(--badge-warn-fg);
   border: 1px solid #6b511f;
   border-radius: var(--radius);
-  padding: 10px 16px;
-  font-size: .9rem;
-  line-height: 1.5;
+  padding: 7px 12px;
+  font-size: .78rem;
+  line-height: 1.35;
 }
 .beta-note a { color: var(--badge-warn-fg); text-decoration: underline; }
 .beta-note strong { text-transform: uppercase; letter-spacing: .08em; }
+.beta-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.beta-toggle span { font-size: 1rem; line-height: 1; }
+.beta-toggle:focus-visible { outline: 2px solid var(--badge-warn-fg); outline-offset: 3px; }
+.beta-details { margin-top: 4px; }
+.beta-note.is-collapsed .beta-details { display: none; }
+.beta-note.is-collapsed {
+  width: fit-content;
+  padding: 6px 16px;
+  border-radius: 999px;
+}
+.beta-note.is-collapsed .beta-toggle { width: auto; }
 
 .source-tabs {
   max-width: var(--maxw);
