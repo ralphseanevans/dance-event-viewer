@@ -77,6 +77,10 @@
           title="Past events are hidden by default to keep this list current. Turn this on to see recently-ended events too (shown greyed out).">
           Show Past Events
         </button>
+        <button type="button" id="wsdc-toggle" class="past-toggle" aria-pressed="false"
+          title="WSDC (World Swing Dance Council) events are national/international WCS conventions and competitions, mostly outside this area. Turn this on to include them alongside local dances.">
+          Show WSDC Events
+        </button>
       </div>
     </div>
 
@@ -153,7 +157,7 @@
       const setOpen = (open) => {
         note.classList.toggle('is-collapsed', !open);
         toggle.setAttribute('aria-expanded', String(open));
-        toggle.querySelector('span').textContent = open ? '\u2212' : '+';
+        toggle.querySelector('span').textContent = open ? '−' : '+';
       };
 
       toggle.addEventListener('click', () => {

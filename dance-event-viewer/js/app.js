@@ -43,6 +43,9 @@ const state = {
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
   showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline/Grid/List
                           // listings only count/show current events unless this is turned on.
+  showWSDC: false,        // hidden by default (2026-07-12, Sean) — WSDC (World Swing Dance Council)
+                          // national/international convention listings are excluded from every view
+                          // and the "of N" count unless this is turned on. See isWSDC() / matchesFilters().
 };
 
 /* ---------- helpers: normalization (formatting-only, never invents data) ---------- */
@@ -261,7 +264,7 @@ async function loadData() {
   let data;
   try {
     // Tolerate a torn-write tail (trailing NULs/garbage after the JSON document).
-    data = JSON.parse(raw.replace(/\u0000+\s*$/g, "").trim());
+    data = JSON.parse(raw.replace(/ +\s*$/g, "").trim());
   } catch (err) {
     state.events = [];
     render();
@@ -360,8 +363,15 @@ function buildLocSelects() {
     sel.onchange = () => { state.sel[dim] = sel.value; savePrefs(); render(); };
   }
 }
+/* WSDC (World Swing Dance Council) registry events — national/international conventions,
+   sourced from worldsdc.com/events, identified by source_detail rather than a dedicated
+   schema field. Excluded from every view by default (see state.showWSDC / #wsdc-toggle). */
+function isWSDC(ev) {
+  return typeof ev.source_detail === "string" && /wsdc/i.test(ev.source_detail);
+}
 function matchesFilters(d) {
   const f = state.filters;
+  if (isWSDC(d.ev) && !state.showWSDC) return false;
   if (f.cats.size && !f.cats.has(d.category)) return false;
   if (f.days.size && !f.days.has(d.day)) return false;
   if (f.areas.size && !f.areas.has(d.loc.area)) return false;
@@ -426,7 +436,21 @@ function card(d, { showWhen, isPast }) {
     const when = document.createElement("p");
     when.className = "when";
     const tr = timeRange(ev);
-    when.textContent = tr ? `${fmtDate(d.next)} · ${tr}` : fmtDate(d.next);
+    const link = typeof ev.source_url === "string" && /^https?:\/\//i.test(ev.source_url.trim())
+      ? ev.source_url.trim() : null;
+    if (tr) {
+      when.textContent = `${fmtDate(d.next)} · ${tr}`;
+    } else if (link) {
+      // No start/end time on record (e.g. multi-day WSDC conventions) — show the date,
+      // then a link to the event's own page in place of the time (Sean, 2026-07-12).
+      when.append(`${fmtDate(d.next)} · `);
+      const a = document.createElement("a");
+      a.href = link; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = "View event ↗";
+      when.appendChild(a);
+    } else {
+      when.textContent = fmtDate(d.next);
+    }
     el.appendChild(when);
   }
   const sched = scheduleText(ev);
@@ -688,9 +712,11 @@ function render() {
 
   // The "of N" total excludes past events by default (Sean, 2026-07-12) — otherwise
   // it balloons with stale one-time events over time and stops meaning anything.
+  // Also excludes WSDC events by default, same reasoning as the past-event exclusion.
+  const countable = state.showWSDC ? state.events : state.events.filter(d => !isWSDC(d.ev));
   const totalForCount = state.showPast
-    ? state.events.length
-    : state.events.filter(d => !isPastEvent(d, today)).length;
+    ? countable.length
+    : countable.filter(d => !isPastEvent(d, today)).length;
 
   if (!shown) {
     const empty = document.createElement("div");
@@ -740,6 +766,7 @@ function savePrefs() {
       sel: state.sel,
       filtersOpen: state.filtersOpen,
       showPast: state.showPast,
+      showWSDC: state.showWSDC,
     }));
   } catch (e) { /* private mode etc. — prefs just won't persist */ }
 }
@@ -753,6 +780,7 @@ function loadPrefs() {
       if (typeof p.sel?.[dim] === "string") state.sel[dim] = p.sel[dim];
     if (typeof p.filtersOpen === "boolean") state.filtersOpen = p.filtersOpen;
     if (typeof p.showPast === "boolean") state.showPast = p.showPast;
+    if (typeof p.showWSDC === "boolean") state.showWSDC = p.showWSDC;
   } catch (e) { /* ignore bad prefs */ }
 }
 function setFiltersOpen(open) {
@@ -801,6 +829,14 @@ function init() {
   pastToggle.addEventListener("click", () => {
     state.showPast = !state.showPast;
     pastToggle.setAttribute("aria-pressed", String(state.showPast));
+    savePrefs();
+    render();
+  });
+  const wsdcToggle = document.getElementById("wsdc-toggle");
+  wsdcToggle.setAttribute("aria-pressed", String(state.showWSDC));
+  wsdcToggle.addEventListener("click", () => {
+    state.showWSDC = !state.showWSDC;
+    wsdcToggle.setAttribute("aria-pressed", String(state.showWSDC));
     savePrefs();
     render();
   });
