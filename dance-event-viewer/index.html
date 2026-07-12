@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <!--
   Dance Event Viewer — reads ../dance_events.json live on every load.
-  Published copy (GitHub Pages). Local dev: serve the folder one level up
-  and open http://localhost:8000/dance-event-viewer/
-  NOTE: this published copy trails the local Dance Website copy, which is the
-  real source of truth for pushes — see it for the latest markup.
+  Browsers block fetch() from file:// pages, so run a tiny local server
+  FROM THE "Dance Website" FOLDER (one level up from this file):
+
+      python -m http.server 8000
+
+  then open:  http://localhost:8000/dance-event-viewer/
+  (Or double-click serve.cmd in this folder.)
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Dance events across the Southern United States — West Coast Swing and partner dance events, updated regularly.">
-  <title>Dance Event Viewer — Southern U.S. Dance Events</title>
+  <meta name="robots" content="noindex">
+  <title>Dance Event Viewer</title>
   <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. Loaded BEFORE
        styles.css so our dark-theme overrides (in styles.css) win over Leaflet's own defaults. -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -19,8 +22,6 @@
 
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/whispers.css">
-  <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
-  <script data-goatcounter="https://rse-dance.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
   <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
@@ -71,6 +72,10 @@
         <a href="submit-event.html" class="submit-event-btn">Submit an Event</a>
         <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
           <span class="filters-toggle-label">Filters</span><span class="filters-toggle-icon" aria-hidden="true">›</span>
+        </button>
+        <button type="button" id="past-toggle" class="past-toggle" aria-pressed="false"
+          title="Past events are hidden by default to keep this list current. Turn this on to see recently-ended events too (shown greyed out).">
+          Show Past Events
         </button>
       </div>
     </div>
@@ -148,7 +153,7 @@
       const setOpen = (open) => {
         note.classList.toggle('is-collapsed', !open);
         toggle.setAttribute('aria-expanded', String(open));
-        toggle.querySelector('span').textContent = open ? '−' : '+';
+        toggle.querySelector('span').textContent = open ? '\u2212' : '+';
       };
 
       toggle.addEventListener('click', () => {

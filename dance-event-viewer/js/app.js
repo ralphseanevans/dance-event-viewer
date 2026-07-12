@@ -41,6 +41,8 @@ const state = {
   filters: { cats: new Set(), days: new Set(), areas: new Set(DEFAULT_AREAS), kinds: new Set() },
   sel: { country: "", state: "", town: "" },   // "" = Any; derived from venue text only
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
+  showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline/Grid/List
+                          // listings only count/show current events unless this is turned on.
 };
 
 /* ---------- helpers: normalization (formatting-only, never invents data) ---------- */
@@ -159,6 +161,25 @@ function scheduleText(ev) {
     return tr ? `${ds} · ${tr}` : ds;
   }
   return tr; // may be null — caller omits the line entirely
+}
+
+/* An event with a determinable date whose last occurrence is before today. Recurring
+   series with no end_date are never "past" (they're ongoing indefinitely); events with
+   no date info at all aren't "past" either — they're undetermined (existing behavior:
+   hidden from Timeline/Grid/List, shown under Calendar's "Date not yet announced"). */
+function isPastEvent(d, today) {
+  if (nextOccurrence(d.ev, today)) return false;
+  return hasDate(d);
+}
+/* The date to display on a past event's card — its last known occurrence. */
+function pastOccurrenceDate(ev) {
+  if (ev.type === "one_time" || ev.type === "tentative") {
+    return parseISO(ev.end_date) || parseISO(ev.start_date);
+  }
+  if (ev.type === "weekly_recurring" || ev.type === "monthly_recurring") {
+    return parseISO(ev.end_date);   // only reached when isPastEvent found an elapsed end_date
+  }
+  return null;
 }
 
 /* ---------- data loading ---------- */
@@ -351,10 +372,11 @@ function matchesFilters(d) {
 }
 
 /* ---------- rendering (whitelist only, textContent only) ---------- */
-function card(d, { showWhen }) {
+function card(d, { showWhen, isPast }) {
   const { ev } = d;
   const el = document.createElement("article");
   el.className = "card";
+  if (isPast) el.classList.add("is-past");
 
   const art = document.createElement("div");
   art.className = "card-art";
@@ -387,6 +409,11 @@ function card(d, { showWhen }) {
   if (ev.type === "tentative") {
     const b = document.createElement("span");
     b.className = "badge warn"; b.textContent = "Unconfirmed";
+    badges.appendChild(b);
+  }
+  if (isPast) {
+    const b = document.createElement("span");
+    b.className = "badge past"; b.textContent = "Past";
     badges.appendChild(b);
   }
   if (badges.children.length) el.appendChild(badges);
@@ -444,10 +471,11 @@ function card(d, { showWhen }) {
 
 /* List view row: title only, expands in place to the same details as a card.
    Built for small screens — nothing but the name shows until it's tapped. */
-function listRow(d) {
+function listRow(d, isPast) {
   const { ev } = d;
   const li = document.createElement("li");
   li.className = "list-row";
+  if (isPast) li.classList.add("is-past");
 
   const btn = document.createElement("button");
   btn.type = "button"; btn.className = "list-row-toggle";
@@ -475,7 +503,7 @@ function listRow(d) {
   btn.addEventListener("click", () => {
     const open = btn.getAttribute("aria-expanded") === "true";
     if (!open && !built) {
-      details.appendChild(card(d, { showWhen: true }));
+      details.appendChild(card(d, { showWhen: true, isPast }));
       built = true;
     }
     btn.setAttribute("aria-expanded", String(!open));
@@ -601,46 +629,79 @@ function render() {
       .map(d => ({ ...d, next: nextOccurrence(d.ev, today) }))
       .filter(d => d.next)
       .sort((a, b) => a.next - b.next);
+
+    // Past events (elapsed one-time events, ended recurring series) are hidden by
+    // default — see state.showPast. When shown, they render greyed-out (.is-past)
+    // in their own trailing bucket/section, sorted most-recently-past first.
+    const pastList = state.showPast
+      ? visible
+          .filter(d => isPastEvent(d, today))
+          .map(d => ({ ...d, next: pastOccurrenceDate(d.ev) }))
+          .filter(d => d.next)
+          .sort((a, b) => b.next - a.next)
+      : [];
+
     if (state.view === "grid") {
       const grid = document.createElement("div");
       grid.className = "cards";
       for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
       main.appendChild(grid);
+      if (pastList.length) {
+        const h = document.createElement("h2");
+        h.className = "bucket-heading"; h.textContent = "Past";
+        main.appendChild(h);
+        const pastGrid = document.createElement("div");
+        pastGrid.className = "cards";
+        for (const d of pastList) { pastGrid.appendChild(card(d, { showWhen: true, isPast: true })); shown++; }
+        main.appendChild(pastGrid);
+      }
     } else if (state.view === "list") {
       const buckets = bucketize(withNext, today);
+      if (pastList.length) buckets.push(["Past", pastList]);
       for (const [label, items] of buckets) {
         if (!items.length) continue;
+        const isPast = label === "Past";
         const h = document.createElement("h2");
         h.className = "bucket-heading"; h.textContent = label;
         main.appendChild(h);
         const ul = document.createElement("ul");
         ul.className = "list-rows";
-        for (const d of items) { ul.appendChild(listRow(d)); shown++; }
+        for (const d of items) { ul.appendChild(listRow(d, isPast)); shown++; }
         main.appendChild(ul);
       }
     } else {
       const buckets = bucketize(withNext, today);
+      if (pastList.length) buckets.push(["Past", pastList]);
       for (const [label, items] of buckets) {
         if (!items.length) continue;
+        const isPast = label === "Past";
         const h = document.createElement("h2");
         h.className = "bucket-heading"; h.textContent = label;
         main.appendChild(h);
         const grid = document.createElement("div");
         grid.className = "cards";
-        for (const d of items) { grid.appendChild(card(d, { showWhen: true })); shown++; }
+        for (const d of items) { grid.appendChild(card(d, { showWhen: true, isPast })); shown++; }
         main.appendChild(grid);
       }
     }
   }
 
+  // The "of N" total excludes past events by default (Sean, 2026-07-12) — otherwise
+  // it balloons with stale one-time events over time and stops meaning anything.
+  const totalForCount = state.showPast
+    ? state.events.length
+    : state.events.filter(d => !isPastEvent(d, today)).length;
+
   if (!shown) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = "No upcoming events match these filters. Try clearing a filter, or open the Calendar to browse by month.";
+    empty.textContent = state.showPast
+      ? "No events match these filters."
+      : "No upcoming events match these filters. Try clearing a filter, turning on “Show Past Events,” or open the Calendar to browse by month.";
     main.appendChild(empty);
-    setStatus(`0 of ${state.events.length} events shown`, false);
+    setStatus(`0 of ${totalForCount} events shown`, false);
   } else {
-    setStatus(`${shown} of ${state.events.length} event${state.events.length === 1 ? "" : "s"} shown`, false);
+    setStatus(`${shown} of ${totalForCount} event${totalForCount === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}`, false);
   }
 }
 
@@ -678,6 +739,7 @@ function savePrefs() {
       filters: Object.fromEntries(Object.entries(state.filters).map(([k, v]) => [k, [...v]])),
       sel: state.sel,
       filtersOpen: state.filtersOpen,
+      showPast: state.showPast,
     }));
   } catch (e) { /* private mode etc. — prefs just won't persist */ }
 }
@@ -690,6 +752,7 @@ function loadPrefs() {
     for (const dim of ["country", "state", "town"])
       if (typeof p.sel?.[dim] === "string") state.sel[dim] = p.sel[dim];
     if (typeof p.filtersOpen === "boolean") state.filtersOpen = p.filtersOpen;
+    if (typeof p.showPast === "boolean") state.showPast = p.showPast;
   } catch (e) { /* ignore bad prefs */ }
 }
 function setFiltersOpen(open) {
@@ -733,6 +796,14 @@ function init() {
     stopFiltersAttention();
   });
   setFiltersOpen(state.filtersOpen);
+  const pastToggle = document.getElementById("past-toggle");
+  pastToggle.setAttribute("aria-pressed", String(state.showPast));
+  pastToggle.addEventListener("click", () => {
+    state.showPast = !state.showPast;
+    pastToggle.setAttribute("aria-pressed", String(state.showPast));
+    savePrefs();
+    render();
+  });
   startSubmitAttention();
   if (!state.filtersOpen) setTimeout(startFiltersAttention, 1000);   // starts right as the Submit flash finishes
   document.getElementById("reset-filters").addEventListener("click", () => {
