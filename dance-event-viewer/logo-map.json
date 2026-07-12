@@ -1,7 +1,7 @@
 {
   "_notes": "Maps event keys (from dance_events.json) to logo/flyer images, paths relative to index.html. Exact 'logos' matches win; otherwise the first 'patterns' entry whose 'contains' substring appears in the event key is used — this is what keeps logos attached when a series rolls over to a new key after a crawl (e.g. west-coast-wednesdays-in-august-2026). To link a new logo: drop the image in graphics/logos/ (WITH a file extension) and add an exact line, plus a pattern line if the event recurs under changing keys. Unmapped events show no image. Rebuilt 2026-07-11 (v2: patterns added per Sean; IMG_9893/9897 updated to their .png replacements; extensionless uploads renamed with detected extensions).",
   "logos": {
-    "monday-night-west-coast-swing-dance-party-ragon-hall": "../graphics/logos/IMG_9897.png",
+    "monday-night-west-coast-swing-dance-party-ragon-hall": "../graphics/logos/IMG_9897.JPG",
     "kick-it-old-school-2026-08-28": "../graphics/logos/4D5EB788-2F55-43B3-B7D6-72CF7036D239.png",
     "first-friday-live-band-dance-night-seaside-swing-outs": "../graphics/logos/IMG_9895.JPG",
     "west-coast-wednesdays-in-july-2026": "../graphics/logos/IMG_9894.JPG",
@@ -22,7 +22,7 @@
     { "contains": "first-friday", "logo": "../graphics/logos/IMG_9895.JPG" },
     { "contains": "first-saturday", "logo": "../graphics/logos/IMG_9893.png" },
     { "contains": "3rd-saturday", "logo": "../graphics/logos/IMG_9893.png" },
-    { "contains": "monday-night", "logo": "../graphics/logos/IMG_9897.png" },
+    { "contains": "monday-night", "logo": "../graphics/logos/IMG_9897.JPG" },
     { "contains": "southern-national", "logo": "../graphics/logos/IMG_0017.PNG" }
   ]
 }
