@@ -1,0 +1,120 @@
+/* Submit an Event — reuses styles.css's custom properties for a consistent dark theme. */
+
+.submit-wrap {
+  max-width: 640px;
+  margin: 20px auto 60px;
+  padding: 0 4px;
+}
+.submit-back {
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: .92rem;
+  margin-bottom: 18px;
+}
+.submit-back:hover { text-decoration: underline; }
+.submit-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.submit-intro {
+  color: var(--text-dim);
+  font-size: .95rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.submit-section {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  display: grid;
+  gap: 10px;
+}
+.submit-section legend {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0 4px;
+}
+.req { color: var(--accent); font-weight: 500; font-size: .82rem; }
+
+.field-label {
+  color: var(--text-dim);
+  font-size: .88rem;
+  margin-top: 4px;
+}
+.field-hint {
+  color: var(--text-dim);
+  font-size: .82rem;
+  line-height: 1.4;
+  margin: 2px 0 0;
+}
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="url"],
+input[type="date"], input[type="time"], input[type="file"], select, textarea {
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 12px; font: inherit; font-size: .95rem; width: 100%;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+textarea { resize: vertical; }
+
+.method-tabs {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.method-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-card); color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 8px 16px; cursor: pointer; font-size: .92rem;
+}
+.method-tab input { position: absolute; opacity: 0; width: 0; height: 0; }
+.method-tab:has(input:checked) {
+  background: var(--accent-soft); color: var(--accent); border-color: var(--chip-on-border); font-weight: 600;
+}
+.method-tab:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#flyer-preview {
+  max-width: 100%; max-height: 260px; border-radius: 8px;
+  border: 1px solid var(--border); object-fit: contain;
+}
+
+.schedule-toggle, .schedule-sub-toggle {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  color: var(--text); font-size: .92rem;
+}
+.schedule-toggle label, .schedule-sub-toggle label {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+}
+
+.monthly-rule-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  color: var(--text-dim); font-size: .9rem;
+}
+.monthly-rule-row select { width: auto; }
+
+.time-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.time-row input { width: auto; flex: 1; min-width: 120px; }
+
+.submit-actions {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  margin-top: 4px;
+}
+#submit-btn {
+  font-size: 1rem; padding: 10px 28px;
+}
+#submit-btn[disabled] { opacity: .6; cursor: not-allowed; }
+.submit-status {
+  color: var(--text-dim); font-size: .9rem; min-height: 1.2em; margin: 0;
+}
+.submit-status.error { color: var(--danger); }
+.submit-status.success { color: var(--accent); }
+
+@media (max-width: 640px) {
+  .submit-wrap { margin-top: 10px; }
+}
