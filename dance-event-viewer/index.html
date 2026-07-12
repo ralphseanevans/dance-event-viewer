@@ -73,14 +73,6 @@
         <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
           <span class="filters-toggle-label">Filters</span><span class="filters-toggle-icon" aria-hidden="true">›</span>
         </button>
-        <button type="button" id="past-toggle" class="past-toggle" aria-pressed="false"
-          title="Past events are hidden by default to keep this list current. Turn this on to see recently-ended events too (shown greyed out).">
-          Show Past Events
-        </button>
-        <button type="button" id="wsdc-toggle" class="past-toggle" aria-pressed="false"
-          title="WSDC (World Swing Dance Council) events are national/international WCS conventions and competitions, mostly outside this area. Turn this on to include them alongside local dances.">
-          Show WSDC Events
-        </button>
       </div>
     </div>
 
@@ -88,6 +80,24 @@
       <fieldset class="filter-group" id="fg-category">
         <legend>Style</legend>
         <div class="chips" data-group="cats"></div>
+        <div class="source-toggles">
+          <button type="button" id="wsdc-toggle" class="past-toggle" aria-pressed="false"
+            title="WSDC (World Swing Dance Council) events are national/international WCS conventions and competitions, mostly outside this area. Turn this on to include them alongside local dances.">
+            WSDC
+          </button>
+          <button type="button" id="usadance-toggle" class="past-toggle" aria-pressed="false"
+            title="USA Dance nationwide chapter and social dance events, mostly outside this area. Turn this on to include them alongside local dances.">
+            USA Dance
+          </button>
+          <button type="button" id="arthur-murray-toggle" class="past-toggle" aria-pressed="false"
+            title="Arthur Murray national Dance-O-Rama events, mostly outside this area. Turn this on to include them alongside local dances.">
+            Arthur Murray
+          </button>
+          <button type="button" id="fred-astaire-toggle" class="past-toggle" aria-pressed="false"
+            title="Fred Astaire national dance competitions, mostly outside this area. Turn this on to include them alongside local dances.">
+            Fred Astaire
+          </button>
+        </div>
       </fieldset>
       <fieldset class="filter-group" id="fg-day">
         <legend>Day</legend>
@@ -105,6 +115,10 @@
       <fieldset class="filter-group" id="fg-kind">
         <legend>Type</legend>
         <div class="chips" data-group="kinds"></div>
+        <button type="button" id="past-toggle" class="past-toggle" aria-pressed="false"
+          title="Past events are hidden by default to keep this list current. Turn this on to see recently-ended events too (shown greyed out).">
+          Show Past Events
+        </button>
       </fieldset>
       <div class="filter-panel-actions">
         <button type="button" id="reset-filters" class="reset-btn">Reset filters</button>

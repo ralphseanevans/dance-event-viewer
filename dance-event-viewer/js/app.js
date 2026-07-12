@@ -46,6 +46,12 @@ const state = {
   showWSDC: false,        // hidden by default (2026-07-12, Sean) — WSDC (World Swing Dance Council)
                           // national/international convention listings are excluded from every view
                           // and the "of N" count unless this is turned on. See isWSDC() / matchesFilters().
+  showUSADance: false,     // hidden by default (2026-07-12, Sean) — USA Dance nationwide chapter/social
+                          // events (source: usadance.org). Same treatment as WSDC. See isUSADance().
+  showArthurMurray: false, // hidden by default (2026-07-12, Sean) — Arthur Murray national "Dance-O-Rama"
+                          // events (source: arthurmurray.com/events). Same treatment as WSDC. See isArthurMurray().
+  showFredAstaire: false,  // hidden by default (2026-07-12, Sean) — Fred Astaire national competitions
+                          // (source: fredastaire.com/events). Same treatment as WSDC. See isFredAstaire().
 };
 
 /* ---------- helpers: normalization (formatting-only, never invents data) ---------- */
@@ -264,7 +270,7 @@ async function loadData() {
   let data;
   try {
     // Tolerate a torn-write tail (trailing NULs/garbage after the JSON document).
-    data = JSON.parse(raw.replace(/ +\s*$/g, "").trim());
+    data = JSON.parse(raw.replace(/ +\s*$/g, "").trim());
   } catch (err) {
     state.events = [];
     render();
@@ -369,9 +375,28 @@ function buildLocSelects() {
 function isWSDC(ev) {
   return typeof ev.source_detail === "string" && /wsdc/i.test(ev.source_detail);
 }
+/* USA Dance nationwide chapter/social events — sourced from usadance.org/events,
+   identified by source_detail. Excluded from every view by default (see
+   state.showUSADance / #usadance-toggle), same treatment as isWSDC(). */
+function isUSADance(ev) {
+  return typeof ev.source_detail === "string" && /usa dance/i.test(ev.source_detail);
+}
+/* Arthur Murray national "Dance-O-Rama" events — sourced from arthurmurray.com/events,
+   identified by source_detail. Same default-hidden treatment as isWSDC(). */
+function isArthurMurray(ev) {
+  return typeof ev.source_detail === "string" && /arthur murray/i.test(ev.source_detail);
+}
+/* Fred Astaire national competitions — sourced from fredastaire.com/events,
+   identified by source_detail. Same default-hidden treatment as isWSDC(). */
+function isFredAstaire(ev) {
+  return typeof ev.source_detail === "string" && /fred astaire/i.test(ev.source_detail);
+}
 function matchesFilters(d) {
   const f = state.filters;
   if (isWSDC(d.ev) && !state.showWSDC) return false;
+  if (isUSADance(d.ev) && !state.showUSADance) return false;
+  if (isArthurMurray(d.ev) && !state.showArthurMurray) return false;
+  if (isFredAstaire(d.ev) && !state.showFredAstaire) return false;
   if (f.cats.size && !f.cats.has(d.category)) return false;
   if (f.days.size && !f.days.has(d.day)) return false;
   if (f.areas.size && !f.areas.has(d.loc.area)) return false;
@@ -712,8 +737,14 @@ function render() {
 
   // The "of N" total excludes past events by default (Sean, 2026-07-12) — otherwise
   // it balloons with stale one-time events over time and stops meaning anything.
-  // Also excludes WSDC events by default, same reasoning as the past-event exclusion.
-  const countable = state.showWSDC ? state.events : state.events.filter(d => !isWSDC(d.ev));
+  // Also excludes WSDC/USA Dance/Arthur Murray/Fred Astaire events by default, same
+  // reasoning as the past-event exclusion (each gated independently by its own toggle).
+  const countable = state.events.filter(d =>
+    (state.showWSDC || !isWSDC(d.ev)) &&
+    (state.showUSADance || !isUSADance(d.ev)) &&
+    (state.showArthurMurray || !isArthurMurray(d.ev)) &&
+    (state.showFredAstaire || !isFredAstaire(d.ev))
+  );
   const totalForCount = state.showPast
     ? countable.length
     : countable.filter(d => !isPastEvent(d, today)).length;
@@ -767,6 +798,9 @@ function savePrefs() {
       filtersOpen: state.filtersOpen,
       showPast: state.showPast,
       showWSDC: state.showWSDC,
+      showUSADance: state.showUSADance,
+      showArthurMurray: state.showArthurMurray,
+      showFredAstaire: state.showFredAstaire,
     }));
   } catch (e) { /* private mode etc. — prefs just won't persist */ }
 }
@@ -778,9 +812,14 @@ function loadPrefs() {
       if (Array.isArray(p.filters?.[k])) state.filters[k] = new Set(p.filters[k]);
     for (const dim of ["country", "state", "town"])
       if (typeof p.sel?.[dim] === "string") state.sel[dim] = p.sel[dim];
-    if (typeof p.filtersOpen === "boolean") state.filtersOpen = p.filtersOpen;
+    // filtersOpen is intentionally NOT restored from prefs (Sean, 2026-07-12) — the filter panel
+    // always starts collapsed on page load, even if a visitor left it open last time. Still saved
+    // in savePrefs() (harmless / no longer read back) rather than ripping out the field entirely.
     if (typeof p.showPast === "boolean") state.showPast = p.showPast;
     if (typeof p.showWSDC === "boolean") state.showWSDC = p.showWSDC;
+    if (typeof p.showUSADance === "boolean") state.showUSADance = p.showUSADance;
+    if (typeof p.showArthurMurray === "boolean") state.showArthurMurray = p.showArthurMurray;
+    if (typeof p.showFredAstaire === "boolean") state.showFredAstaire = p.showFredAstaire;
   } catch (e) { /* ignore bad prefs */ }
 }
 function setFiltersOpen(open) {
@@ -837,6 +876,30 @@ function init() {
   wsdcToggle.addEventListener("click", () => {
     state.showWSDC = !state.showWSDC;
     wsdcToggle.setAttribute("aria-pressed", String(state.showWSDC));
+    savePrefs();
+    render();
+  });
+  const usadanceToggle = document.getElementById("usadance-toggle");
+  usadanceToggle.setAttribute("aria-pressed", String(state.showUSADance));
+  usadanceToggle.addEventListener("click", () => {
+    state.showUSADance = !state.showUSADance;
+    usadanceToggle.setAttribute("aria-pressed", String(state.showUSADance));
+    savePrefs();
+    render();
+  });
+  const arthurMurrayToggle = document.getElementById("arthur-murray-toggle");
+  arthurMurrayToggle.setAttribute("aria-pressed", String(state.showArthurMurray));
+  arthurMurrayToggle.addEventListener("click", () => {
+    state.showArthurMurray = !state.showArthurMurray;
+    arthurMurrayToggle.setAttribute("aria-pressed", String(state.showArthurMurray));
+    savePrefs();
+    render();
+  });
+  const fredAstaireToggle = document.getElementById("fred-astaire-toggle");
+  fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
+  fredAstaireToggle.addEventListener("click", () => {
+    state.showFredAstaire = !state.showFredAstaire;
+    fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
     savePrefs();
     render();
   });

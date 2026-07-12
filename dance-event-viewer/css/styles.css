@@ -217,6 +217,10 @@ body {
 .filter-group { border: none; padding: 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .filter-group legend { float: left; color: var(--text-dim); font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; min-width: 52px; padding-top: 6px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+/* National-source toggles (WSDC / USA Dance / Arthur Murray / Fred Astaire), relocated into the
+   Style filter group 2026-07-12 (Sean) — same .past-toggle pill styling, just grouped separately
+   from the style chips themselves so the two don't visually blend into one control. */
+.source-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   background: var(--bg-card); color: var(--text);
   border: 1px solid var(--border); border-radius: 999px;
