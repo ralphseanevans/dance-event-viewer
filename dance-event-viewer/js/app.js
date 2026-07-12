@@ -705,6 +705,16 @@ function stopFiltersAttention() {
   document.getElementById("filters-toggle")?.classList.remove("attention-blink");
 }
 
+/* Brief blue/pink flash on the Submit button right on page load, then the
+   Filters button picks up its own blue/yellow attention blink — a one-two
+   sequence instead of both competing for attention at once. */
+function startSubmitAttention() {
+  const btn = document.querySelector(".submit-event-btn");
+  if (!btn) return;
+  btn.classList.add("attention-blink");
+  setTimeout(() => btn.classList.remove("attention-blink"), 1000);   // ~1s, then settle back to normal
+}
+
 function init() {
   loadPrefs();
   for (const b of document.querySelectorAll(".view-btn"))
@@ -715,7 +725,8 @@ function init() {
     stopFiltersAttention();
   });
   setFiltersOpen(state.filtersOpen);
-  if (!state.filtersOpen) startFiltersAttention();   // draw the eye to the toggle since filters start hidden
+  startSubmitAttention();
+  if (!state.filtersOpen) setTimeout(startFiltersAttention, 1000);   // starts right as the Submit flash finishes
   document.getElementById("reset-filters").addEventListener("click", () => {
     for (const set of Object.values(state.filters)) set.clear();
     state.filters.areas = new Set(DEFAULT_AREAS);                 // reset = back to defaults
