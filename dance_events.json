@@ -58,7 +58,7 @@
       "end_time": "23:00",
       "venue": "David Miner Ballroom/Dancesport Academy, 262 Azalea Rd, Mobile, AL 36609",
       "cost": "$20 / night, $10 social only",
-      "source_url": null
+      "source_url": "https://facebook.com/events/s/mobtown-workshop-and-social/1699810097882680/"
     },
     {
       "key": "3rd-saturday-west-coast-swing-old-sacred-heart-2026-07-18",
@@ -164,6 +164,66 @@
       "venue": "Panama City Beach, FL (host hotel -- see website)",
       "cost": "Weekend pass $110 adult / $55 junior by Sep 13 ($125/$65 after); day passes from $30; workshops included with weekend pass; ProAm registration closes Oct 1",
       "source_url": "https://www.southernnationaldance.com/registration"
+    },
+    {
+      "key": "tango-lab-fridays-july-2026",
+      "name": "Tango Lab at The Chapel",
+      "style": "Argentine Tango",
+      "type": "weekly_recurring",
+      "day_of_week": "Friday",
+      "monthly_rule": null,
+      "start_date": "2026-07-03",
+      "end_date": "2026-07-31",
+      "start_time": "17:00",
+      "end_time": "19:00",
+      "venue": "The Chapel, Historic Sacred Heart Building, Suite 211, 1010 N 12th Ave, Pensacola, FL 32501",
+      "cost": "$10 admission, first class free",
+      "source_url": null
+    },
+    {
+      "key": "wcs-lynn-warwick-house-2026-07-22",
+      "name": "West Coast Swing at Lynn Warwick's House (with Justin Grubbs)",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "start_date": "2026-07-22",
+      "end_date": null,
+      "start_time": "18:00",
+      "end_time": null,
+      "venue": "Lynn Warwick's House, 8470 Junior Rd, Mobile, AL 36695",
+      "cost": null,
+      "source_url": null
+    },
+    {
+      "key": "ballroom-lynn-warwick-house-2026-07-29",
+      "name": "Ballroom Dance at Lynn Warwick's House (with Bill Thrall)",
+      "style": "Ballroom",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "start_date": "2026-07-29",
+      "end_date": null,
+      "start_time": "18:00",
+      "end_time": null,
+      "venue": "Lynn Warwick's House, 8470 Junior Rd, Mobile, AL 36695",
+      "cost": null,
+      "source_url": null
+    },
+    {
+      "key": "sensual-sundays-bachata-pensacola-coastals",
+      "name": "Sensual Sundays -- Bachata Class & Social with Ariel Back",
+      "style": "Bachata",
+      "type": "weekly_recurring",
+      "day_of_week": "Sunday",
+      "monthly_rule": null,
+      "start_date": null,
+      "end_date": null,
+      "start_time": "17:30",
+      "end_time": "21:30",
+      "venue": "The Pensacola Coastals Dance Studio, 433 S Hwy 29, Cantonment, FL",
+      "cost": "$5 for a class or social, $10 for the whole night",
+      "source_url": null
     }
   ]
 }
