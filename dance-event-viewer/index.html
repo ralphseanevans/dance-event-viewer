@@ -10,12 +10,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Pensacola-area dance calendar — West Coast Swing and partner dance events, updated regularly.">
-  <title>Dance Event Viewer — Pensacola Area Dance Events</title>
+  <meta name="description" content="Dance events across the Southern United States — West Coast Swing and partner dance events, updated regularly.">
+  <title>Dance Event Viewer — Southern U.S. Dance Events</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/whispers.css">
   <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
   <script data-goatcounter="https://rse-dance.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+  <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
   <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
@@ -36,7 +40,7 @@
     </div>
     <div class="title-block">
       <h1 class="visually-hidden">Dance Event Viewer</h1>
-      <p class="tagline">Currently Pensacola-area dances &middot; good music &middot; great people</p>
+      <p class="tagline">Promoting Dance in the Southern United States &middot; good music &middot; great people</p>
     </div>
   </header>
 
@@ -60,31 +64,42 @@
         <button type="button" class="view-btn" data-view="grid" aria-pressed="false">Grid</button>
         <button type="button" class="view-btn" data-view="list" aria-pressed="false">List</button>
         <button type="button" class="view-btn" data-view="calendar" aria-pressed="false">Calendar</button>
+        <button type="button" class="view-btn" data-view="map" aria-pressed="false">Map</button>
       </div>
-      <button type="button" id="reset-filters" class="reset-btn">Reset filters</button>
+      <div class="control-row-right">
+        <a href="submit-event.html" class="submit-event-btn">🎉 Submit your Event</a>
+        <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
+          <span class="filters-toggle-label">Filters</span><span class="filters-toggle-icon" aria-hidden="true">›</span>
+        </button>
+      </div>
     </div>
 
-    <fieldset class="filter-group" id="fg-category">
-      <legend>Style</legend>
-      <div class="chips" data-group="cats"></div>
-    </fieldset>
-    <fieldset class="filter-group" id="fg-day">
-      <legend>Day</legend>
-      <div class="chips" data-group="days"></div>
-    </fieldset>
-    <fieldset class="filter-group" id="fg-area">
-      <legend>Location</legend>
-      <div class="chips" data-group="areas"></div>
-      <div class="loc-selects">
-        <label>Country <select id="sel-country"></select></label>
-        <label>State <select id="sel-state"></select></label>
-        <label>Town <select id="sel-town"></select></label>
+    <div id="filter-panel" class="filter-panel" hidden>
+      <fieldset class="filter-group" id="fg-category">
+        <legend>Style</legend>
+        <div class="chips" data-group="cats"></div>
+      </fieldset>
+      <fieldset class="filter-group" id="fg-day">
+        <legend>Day</legend>
+        <div class="chips" data-group="days"></div>
+      </fieldset>
+      <fieldset class="filter-group" id="fg-area">
+        <legend>Location</legend>
+        <div class="chips" data-group="areas"></div>
+        <div class="loc-selects">
+          <label>Country <select id="sel-country"></select></label>
+          <label>State <select id="sel-state"></select></label>
+          <label>Town <select id="sel-town"></select></label>
+        </div>
+      </fieldset>
+      <fieldset class="filter-group" id="fg-kind">
+        <legend>Type</legend>
+        <div class="chips" data-group="kinds"></div>
+      </fieldset>
+      <div class="filter-panel-actions">
+        <button type="button" id="reset-filters" class="reset-btn">Reset filters</button>
       </div>
-    </fieldset>
-    <fieldset class="filter-group" id="fg-kind">
-      <legend>Type</legend>
-      <div class="chips" data-group="kinds"></div>
-    </fieldset>
+    </div>
   </section>
 
   <p id="status-line" class="status-line" role="status" aria-live="polite"></p>

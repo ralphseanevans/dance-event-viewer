@@ -18,6 +18,13 @@ const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 const PREFS_KEY = "dance-event-viewer-prefs-v2";   // UI prefs only — never event data. (v2: location model changed 2026-07-11)
 const DEFAULT_AREAS = [];   // default to All locations per Sean (2026-07-11: was Pensacola+Mobile only)
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
+const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map view (optional; page works without it)
+const MAP_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";  // free, no API key
+const MAP_TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const MAP_MARKER_COLORS = {
+  "West Coast Swing": "#4cc2ff", "Mixed": "#7fe0a7", "Latin": "#ffc27d",
+  "Argentine Tango": "#ff5fa2", "Other": "#9fadc4",
+};
 // Silent-send endpoint for the correction form: Sean's Google Apps Script web app /exec URL.
 // While empty, the form falls back to opening Gmail compose. No credentials live in this page.
 const SEND_ENDPOINT = "https://script.google.com/macros/s/AKfycbyTcNCMl42HCDosDST23_E2m_9vYLa6tKiCSIH8Y23G4KYrA5iL-efcbMyZVuGwFD3S/exec";
@@ -29,8 +36,11 @@ const state = {
   view: "timeline",
   logos: {},             // from logo-map.json — purely decorative, optional
   logoPatterns: [],      // fallback substring rules so rolled-over series keep their logo
+  venueCoords: {},       // from venue-coords.json — exact-match venue -> {lat, lon}, decorative/optional
+  cityFallbacks: {},     // from venue-coords.json — city name -> {lat, lon}, used when no exact match exists
   filters: { cats: new Set(), days: new Set(), areas: new Set(DEFAULT_AREAS), kinds: new Set() },
   sel: { country: "", state: "", town: "" },   // "" = Any; derived from venue text only
+  filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
 };
 
 /* ---------- helpers: normalization (formatting-only, never invents data) ---------- */
@@ -172,10 +182,50 @@ function logoFor(key) {
   return null;
 }
 
+/* ---------- Map view helpers (added 2026-07-12) ---------- */
+async function loadVenueCoords() {
+  // Optional decoration: failure or absence never affects event data or other views.
+  try {
+    const res = await fetch(`${VENUE_COORDS_FILE}?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return;
+    const j = JSON.parse(await res.text());
+    if (j && typeof j.venues === "object" && j.venues !== null) state.venueCoords = j.venues;
+    if (j && typeof j.city_fallbacks === "object" && j.city_fallbacks !== null) state.cityFallbacks = j.city_fallbacks;
+  } catch (err) { state.venueCoords = {}; state.cityFallbacks = {}; }
+}
+/* Tiny deterministic offset so events that share one fallback pin (e.g. several
+   "Pensacola, FL" venues) fan out instead of stacking exactly on top of each other.
+   Never applied to precise, cache-file coordinates — only to shared fallback pins. */
+function jitterFor(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  const a = (h % 1000) / 1000 - 0.5;
+  const b = ((h >> 10) % 1000) / 1000 - 0.5;
+  return { dLat: a * 0.02, dLon: b * 0.02 };
+}
+/* Resolve map coordinates for an event: exact venue-string match first (from
+   venue-coords.json), then a city-level fallback derived the same way the
+   Location filter already derives area/town — never guessed beyond that. */
+function coordsFor(d) {
+  const venue = typeof d.ev.venue === "string" ? d.ev.venue : "";
+  const exact = state.venueCoords[venue];
+  if (exact && typeof exact.lat === "number" && typeof exact.lon === "number") {
+    return { lat: exact.lat, lon: exact.lon, precision: exact.precision || "exact" };
+  }
+  const town = d.loc.town && d.loc.town !== "Unlisted" ? d.loc.town : null;
+  const fallback = town && state.cityFallbacks[town];
+  if (fallback) {
+    const j = jitterFor(d.ev.key || d.ev.name || venue);
+    return { lat: fallback.lat + j.dLat, lon: fallback.lon + j.dLon, precision: "city" };
+  }
+  return null; // genuinely unlisted/elsewhere — never invented
+}
+
 async function loadData() {
   const src = SOURCES.find(s => s.id === state.sourceId);
   setStatus("Loading events…", false);
   await loadLogoMap();
+  await loadVenueCoords();
   let raw;
   try {
     const res = await fetch(`${src.file}?t=${Date.now()}`, { cache: "no-store" });
@@ -351,9 +401,19 @@ function card(d, { showWhen }) {
     el.appendChild(p);
   }
   if (typeof ev.venue === "string" && ev.venue.trim()) {
-    const p = document.createElement("p");
-    p.className = "venue"; p.textContent = ev.venue.trim();
-    el.appendChild(p);
+    const coords = coordsFor(d);
+    if (coords) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "venue venue-clickable";
+      b.textContent = ev.venue.trim();
+      b.title = "Show this location on a map";
+      b.addEventListener("click", () => openAddressPopup(ev.venue.trim(), coords));
+      el.appendChild(b);
+    } else {
+      const p = document.createElement("p");
+      p.className = "venue"; p.textContent = ev.venue.trim();
+      el.appendChild(p);
+    }
   }
   if (typeof ev.cost === "string" && ev.cost.trim()) {
     const p = document.createElement("p");
@@ -525,6 +585,9 @@ function render() {
   if (state.view === "calendar") {
     renderCalendar(main, visible);
     return;
+  } else if (state.view === "map") {
+    renderMap(main, visible);
+    return;
   } else {
     const withNext = visible
       .map(d => ({ ...d, next: nextOccurrence(d.ev, today) }))
@@ -606,18 +669,40 @@ function savePrefs() {
       view: state.view,
       filters: Object.fromEntries(Object.entries(state.filters).map(([k, v]) => [k, [...v]])),
       sel: state.sel,
+      filtersOpen: state.filtersOpen,
     }));
   } catch (e) { /* private mode etc. — prefs just won't persist */ }
 }
 function loadPrefs() {
   try {
     const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    if (["timeline", "grid", "list", "schedule", "calendar"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
+    if (["timeline", "grid", "list", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
     for (const k of Object.keys(state.filters))
       if (Array.isArray(p.filters?.[k])) state.filters[k] = new Set(p.filters[k]);
     for (const dim of ["country", "state", "town"])
       if (typeof p.sel?.[dim] === "string") state.sel[dim] = p.sel[dim];
+    if (typeof p.filtersOpen === "boolean") state.filtersOpen = p.filtersOpen;
   } catch (e) { /* ignore bad prefs */ }
+}
+function setFiltersOpen(open) {
+  state.filtersOpen = open;
+  const panel = document.getElementById("filter-panel");
+  const toggle = document.getElementById("filters-toggle");
+  panel.hidden = !open;
+  toggle.setAttribute("aria-expanded", String(open));
+  savePrefs();
+}
+let filtersAttentionTimer = null;
+function startFiltersAttention() {
+  const toggle = document.getElementById("filters-toggle");
+  if (!toggle) return;
+  toggle.classList.add("attention-blink");
+  clearTimeout(filtersAttentionTimer);
+  filtersAttentionTimer = setTimeout(stopFiltersAttention, 6000);   // ~6s, then settle back to normal
+}
+function stopFiltersAttention() {
+  clearTimeout(filtersAttentionTimer);
+  document.getElementById("filters-toggle")?.classList.remove("attention-blink");
 }
 
 function init() {
@@ -625,6 +710,12 @@ function init() {
   for (const b of document.querySelectorAll(".view-btn"))
     b.addEventListener("click", () => setView(b.dataset.view));
   setView(state.view);
+  document.getElementById("filters-toggle").addEventListener("click", () => {
+    setFiltersOpen(!state.filtersOpen);
+    stopFiltersAttention();
+  });
+  setFiltersOpen(state.filtersOpen);
+  if (!state.filtersOpen) startFiltersAttention();   // draw the eye to the toggle since filters start hidden
   document.getElementById("reset-filters").addEventListener("click", () => {
     for (const set of Object.values(state.filters)) set.clear();
     state.filters.areas = new Set(DEFAULT_AREAS);                 // reset = back to defaults
@@ -852,6 +943,122 @@ function renderYear(wrap, dated) {
   setStatus(yearKeys.size
     ? `${yearKeys.size} event${yearKeys.size === 1 ? "" : "s"} on the ${y} calendar`
     : `No events in ${y} match the current filters`, false);
+}
+
+/* ---------- Map view (added 2026-07-12) ----------
+   Leaflet + free OpenStreetMap/CARTO tiles, no API key. Coordinates come from
+   coordsFor() (cached exact matches, or an honest city-level fallback) — an
+   event with no resolvable location at all is listed below the map, never
+   given a fake pin. */
+let mapInstance = null;
+function renderMap(main, visible) {
+  const wrap = document.createElement("section");
+  wrap.setAttribute("aria-label", "Event map");
+  if (typeof L === "undefined") {
+    const p = document.createElement("p");
+    p.className = "empty-state";
+    p.textContent = "The map library didn't load (offline, or a network block). Try another view, or reload the page.";
+    wrap.appendChild(p);
+    main.appendChild(wrap);
+    return;
+  }
+  const canvas = document.createElement("div");
+  canvas.className = "map-canvas";
+  canvas.id = "map-canvas";
+  wrap.appendChild(canvas);
+  const unlocated = document.createElement("p");
+  unlocated.className = "cal-undated";
+  main.appendChild(wrap);
+  main.appendChild(unlocated);
+
+  if (mapInstance) { mapInstance.remove(); mapInstance = null; }
+  mapInstance = L.map(canvas, { scrollWheelZoom: false });
+  L.tileLayer(MAP_TILE_URL, { attribution: MAP_TILE_ATTRIB, maxZoom: 19 }).addTo(mapInstance);
+
+  const pins = [];
+  const missing = [];
+  for (const d of visible) {
+    const coords = coordsFor(d);
+    if (!coords) { missing.push(d.ev.name); continue; }
+    pins.push({ d, coords });
+  }
+
+  if (!pins.length) {
+    mapInstance.setView([30.5, -87.5], 8);   // Pensacola/Mobile region, no pins to fit
+  } else {
+    const bounds = [];
+    for (const { d, coords } of pins) {
+      const color = MAP_MARKER_COLORS[d.category] || MAP_MARKER_COLORS.Other;
+      const marker = L.circleMarker([coords.lat, coords.lon], {
+        radius: 9, color, weight: 2, fillColor: color, fillOpacity: 0.55,
+      }).addTo(mapInstance);
+      const popupEl = document.createElement("div");
+      popupEl.className = "map-pin-popup";
+      popupEl.appendChild(card(d, { showWhen: true }));
+      marker.bindPopup(popupEl, { maxWidth: 280 });
+      if (coords.precision === "city") marker.bindTooltip("Approximate location — exact address not available", { direction: "top" });
+      bounds.push([coords.lat, coords.lon]);
+    }
+    if (bounds.length === 1) mapInstance.setView(bounds[0], 13);
+    else mapInstance.fitBounds(bounds, { padding: [30, 30] });
+  }
+
+  if (missing.length) {
+    unlocated.textContent = `No location to plot: ${missing.join(" · ")}`;
+  }
+  setStatus(`${pins.length} of ${visible.length} filtered event${visible.length === 1 ? "" : "s"} shown on the map`, false);
+  setTimeout(() => mapInstance && mapInstance.invalidateSize(), 50);
+}
+
+/* Single-address popup opened by clicking a venue on any card (any view). */
+let addressMapInstance = null;
+function openAddressPopup(address, coords) {
+  const backdrop = document.createElement("div");
+  backdrop.className = "cal-pop-backdrop";
+  const pop = document.createElement("div");
+  pop.className = "cal-pop map-address-pop";
+  pop.setAttribute("role", "dialog"); pop.setAttribute("aria-modal", "true");
+  const close = document.createElement("button");
+  close.type = "button"; close.className = "pop-close"; close.textContent = "×";
+  close.setAttribute("aria-label", "Close");
+  const title = document.createElement("p");
+  title.className = "pop-date"; title.textContent = address;
+  pop.appendChild(close); pop.appendChild(title);
+
+  if (coords.precision === "city") {
+    const note = document.createElement("p");
+    note.className = "cal-undated";
+    note.style.marginTop = "0";
+    note.textContent = "Approximate location — the exact address isn't in our map data yet.";
+    pop.appendChild(note);
+  }
+
+  const canvas = document.createElement("div");
+  canvas.className = "map-canvas mini-map";
+  pop.appendChild(canvas);
+  backdrop.appendChild(pop);
+  document.body.appendChild(backdrop);
+
+  if (typeof L !== "undefined") {
+    if (addressMapInstance) { addressMapInstance.remove(); addressMapInstance = null; }
+    addressMapInstance = L.map(canvas, { scrollWheelZoom: false }).setView([coords.lat, coords.lon], 15);
+    L.tileLayer(MAP_TILE_URL, { attribution: MAP_TILE_ATTRIB, maxZoom: 19 }).addTo(addressMapInstance);
+    L.circleMarker([coords.lat, coords.lon], { radius: 9, color: "#4cc2ff", weight: 2, fillColor: "#4cc2ff", fillOpacity: 0.6 }).addTo(addressMapInstance);
+    setTimeout(() => addressMapInstance && addressMapInstance.invalidateSize(), 50);
+  } else {
+    canvas.textContent = "Map unavailable right now.";
+  }
+
+  const done = () => {
+    backdrop.remove();
+    document.removeEventListener("keydown", esc);
+    if (addressMapInstance) { addressMapInstance.remove(); addressMapInstance = null; }
+  };
+  const esc = (e) => { if (e.key === "Escape") done(); };
+  close.addEventListener("click", done);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) done(); });
+  document.addEventListener("keydown", esc);
+  close.focus();
 }
 
 function openEventPopup(item, dt) {
