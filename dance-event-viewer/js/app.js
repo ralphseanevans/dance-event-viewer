@@ -240,7 +240,7 @@ async function loadData() {
   let data;
   try {
     // Tolerate a torn-write tail (trailing NULs/garbage after the JSON document).
-    data = JSON.parse(raw.replace(/ +\s*$/g, "").trim());
+    data = JSON.parse(raw.replace(/\u0000+\s*$/g, "").trim());
   } catch (err) {
     state.events = [];
     render();
@@ -360,12 +360,20 @@ function card(d, { showWhen }) {
   art.className = "card-art";
   const logoPath = logoFor(ev.key);
   if (typeof logoPath === "string" && logoPath) {
+    // Wrapped in a real <button> (not a click handler on the <img>) so it's keyboard-
+    // operable and has correct semantics for free, matching the venue-button pattern above.
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "card-art-trigger";
+    trigger.setAttribute("aria-label", `Enlarge flyer for ${ev.name.trim()}`);
     const img = document.createElement("img");
     img.src = encodeURI(logoPath);
     img.alt = "";                                  // decorative — the name is in the heading
     img.loading = "lazy";
     img.addEventListener("error", () => art.remove());
-    art.appendChild(img);
+    trigger.appendChild(img);
+    trigger.addEventListener("click", () => openImageLightbox(logoPath, ev.name.trim()));
+    art.appendChild(trigger);
   }
   el.appendChild(art);
 
@@ -1069,6 +1077,34 @@ function openAddressPopup(address, coords) {
   close.addEventListener("click", done);
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) done(); });
   document.addEventListener("keydown", esc);
+  close.focus();
+}
+
+// Click-to-enlarge for card flyer/logo images (added 2026-07-12, Sean's request).
+// Reuses the same backdrop/dialog/Escape pattern as the other popups above so it
+// behaves consistently across every view that renders a card (Timeline, Grid, List,
+// Calendar chip popup, Map venue card).
+function openImageLightbox(src, label) {
+  const backdrop = document.createElement("div");
+  backdrop.className = "cal-pop-backdrop";
+  const pop = document.createElement("div");
+  pop.className = "lightbox-pop";
+  pop.setAttribute("role", "dialog"); pop.setAttribute("aria-modal", "true");
+  pop.setAttribute("aria-label", label ? `Enlarged flyer for ${label}` : "Enlarged flyer");
+  const close = document.createElement("button");
+  close.type = "button"; close.className = "pop-close"; close.textContent = "×";
+  close.setAttribute("aria-label", "Close");
+  const img = document.createElement("img");
+  img.src = encodeURI(src);
+  img.alt = label || "";
+  pop.appendChild(close); pop.appendChild(img);
+  backdrop.appendChild(pop);
+  const done = () => { backdrop.remove(); document.removeEventListener("keydown", esc); };
+  const esc = (e) => { if (e.key === "Escape") done(); };
+  close.addEventListener("click", done);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) done(); });
+  document.addEventListener("keydown", esc);
+  document.body.appendChild(backdrop);
   close.focus();
 }
 
