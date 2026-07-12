@@ -12,8 +12,7 @@
       "start_time": "18:00",
       "end_time": "22:30",
       "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL",
-      "cost": "$10 class / $10 dance / $20 whole night",
-      "source_url": null
+      "cost": "$10 class / $10 dance / $20 whole night"
     },
     {
       "key": "west-coast-wednesdays-in-july-2026",
@@ -27,8 +26,7 @@
       "start_time": "19:00",
       "end_time": "22:00",
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL",
-      "cost": "$10 entry / $5 members",
-      "source_url": null
+      "cost": "$10 entry / $5 members"
     },
     {
       "key": "first-friday-live-band-dance-night-seaside-swing-outs",
@@ -42,8 +40,7 @@
       "start_time": "18:30",
       "end_time": null,
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32501",
-      "cost": "$10 cover, 18+, no sign-up required",
-      "source_url": null
+      "cost": "$10 cover, 18+, no sign-up required"
     },
     {
       "key": "mobtown-workshop-and-social-2026-07-11",
@@ -87,8 +84,7 @@
       "start_time": null,
       "end_time": null,
       "venue": "Pensacola, FL (Ragon Hall per flyer branding)",
-      "cost": "Register through the mail or email early for the better rate; registering at the desk avoids online processing fees",
-      "source_url": null
+      "cost": "Register through the mail or email early for the better rate; registering at the desk avoids online processing fees"
     },
     {
       "key": "ragon-hall-first-saturday-monthly-dance",
@@ -102,8 +98,7 @@
       "start_time": "17:45",
       "end_time": "23:30",
       "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL",
-      "cost": "$15 per lesson / $15 for the dance / $35 for it all (pay at the door; half price for college students w/ valid ID)",
-      "source_url": null
+      "cost": "$15 per lesson / $15 for the dance / $35 for it all (pay at the door; half price for college students w/ valid ID)"
     },
     {
       "key": "good-ole-social-dance-2026-07-17",
@@ -117,8 +112,7 @@
       "start_time": "19:00",
       "end_time": null,
       "venue": "Sanders Beach-Corinne Jones Resource Center, Pensacola, FL",
-      "cost": null,
-      "source_url": null
+      "cost": null
     },
     {
       "key": "sanders-beach-ballroom-weekly-classes",
@@ -147,8 +141,7 @@
       "start_time": "20:00",
       "end_time": null,
       "venue": "Pensacola, FL (exact venue not listed on the event page)",
-      "cost": null,
-      "source_url": null
+      "cost": null
     },
     {
       "key": "southern-national-2026-10-15",
@@ -213,7 +206,7 @@
     {
       "key": "sensual-sundays-bachata-pensacola-coastals",
       "name": "Sensual Sundays -- Bachata Class & Social with Ariel Back",
-      "style": "Bachata",
+      "style": "Latin",
       "type": "weekly_recurring",
       "day_of_week": "Sunday",
       "monthly_rule": null,
