@@ -12,14 +12,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Dance events across the Southern United States — West Coast Swing and partner dance events, updated regularly.">
   <title>Dance Event Viewer — Southern U.S. Dance Events</title>
+  <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. Loaded BEFORE
+       styles.css so our dark-theme overrides (in styles.css) win over Leaflet's own defaults. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/whispers.css">
   <!-- GoatCounter analytics (privacy-friendly, no cookies) -->
   <script data-goatcounter="https://rse-dance.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-
-  <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
   <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
@@ -154,9 +155,4 @@
         setOpen(toggle.getAttribute('aria-expanded') !== 'true');
       });
       window.setTimeout(() => setOpen(false), 2000);
-    })();
-  </script>
-  <script src="js/app.js"></script>
-  <script src="js/whispers.js"></script>
-</body>
-</html>
+    })
