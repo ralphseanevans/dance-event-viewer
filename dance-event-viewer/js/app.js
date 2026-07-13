@@ -340,9 +340,13 @@ function buildFilterChips() {
         wasSelected ? set.delete(v) : set.add(v);
         syncChips(); render();
         // Activity Pulse signal (Sean, 2026-07-13) — only on selecting a specific value,
-        // not on deselecting or on the generic "All" chip.
+        // not on deselecting or on the generic "All" chip. For category selections, also
+        // pass the currently-selected area (if any) so the message can say "A dancer from
+        // Pensacola area is interested in West Coast Swing." per Sean's follow-up notes.
         if (!wasSelected) {
-          window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "filter", group, value: v } }));
+          const detail = { type: "filter", group, value: v };
+          if (group === "cats") detail.area = [...state.filters.areas][0] || null;
+          window.dispatchEvent(new CustomEvent("activity-signal", { detail }));
         }
       });
       chip.dataset.value = v;
@@ -369,7 +373,9 @@ function buildSoloStyleChips() {
       wasSelected ? set.delete(v) : set.add(v);
       syncChips(); render();
       if (!wasSelected) {
-        window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "filter", group: "cats", value: v } }));
+        window.dispatchEvent(new CustomEvent("activity-signal", {
+          detail: { type: "filter", group: "cats", value: v, area: [...state.filters.areas][0] || null }
+        }));
       }
     });
     chip.dataset.value = v;

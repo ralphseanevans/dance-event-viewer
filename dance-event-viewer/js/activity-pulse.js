@@ -30,12 +30,19 @@
 
   /* ---------- config ---------- */
   var MAX_VISIBLE = 4;                 // concurrent messages on screen at once
+  var MAX_QUEUE = 8;                   // hard cap on the waiting queue — never let new activity get stuck
+                                        // behind an unbounded backlog (see bug note below)
   var LIFETIME_MS = 30000;             // hard cap: every message is gone by 30s (Sean's spec)
   var MIN_EMIT_INTERVAL_MS = 4000;     // per-session throttle across ALL signal types (batches rapid clicks)
   var EVENT_DEBOUNCE_MS = 3 * 60 * 1000;   // don't re-signal the same event from the same session for 3 min
-  var MERGE_WINDOW_MS = 2500;          // buffer window for merging identical messages into "Two people are..."
-  var READ_WINDOW_MS = 5 * 60 * 1000;  // only listen for signals from the last 5 minutes
+  var MERGE_WINDOW_MS = 2500;          // buffer window for merging identical messages into "Two dancers are..."
   var PRUNE_AGE_MS = 10 * 60 * 1000;   // client-side trim: remove Firebase nodes older than this on load
+  // Bug fix (2026-07-13): originally listened from (now - 5 minutes) so a newly-loaded page could show
+  // a bit of recent history. Under real test volume this backfired badly — a burst of historical
+  // child_added events on page load could fill the render queue faster than it drains (each visible
+  // slot only frees every ~7.5s), pushing brand-new live signals up to 24s behind a stale backlog.
+  // Only listening from "now" removes the backlog entirely; MAX_QUEUE above is a second line of
+  // defense in case a genuine traffic burst ever produces more concurrent signals than can display at once.
 
   var FRIENDLY_VIEW = {
     timeline: "Timeline", grid: "Grid", list: "List", calendar: "Calendar", map: "Map"
@@ -57,41 +64,46 @@
   var validCategories = null;                 // derived from dance_events.json's actual style values
 
   /* ---------- message templates ----------
-     Every template renders to a sentence starting "Someone is " so the merge/pluralize
-     step below can uniformly upgrade it to "Two people are ..." / "N people are ...". */
+     Every template renders to a sentence starting "A dancer is " so the merge/pluralize
+     step below can uniformly upgrade it to "Two dancers are ..." / "N dancers are ...".
+     (Sean, 2026-07-13: "say 'A dancer' instead of 'someone'".) */
   function templateFor(sig) {
     switch (sig.type) {
       case "filter":
         if (sig.group === "cats") {
           if (!validCategories || !validCategories.has(sig.value)) return null;
-          return "Someone is exploring " + sig.value + ".";
+          // Sean, 2026-07-13: attribute the currently-selected area if there is one
+          // ("A dancer from Pensacola area is interested in West Coast Swing."), falling
+          // back to the generic form when no area filter is active.
+          var hasArea = typeof sig.area === "string" && VALID_AREAS.indexOf(sig.area) !== -1;
+          return (hasArea ? "A dancer from " + sig.area + " is" : "A dancer is") + " interested in " + sig.value + ".";
         }
         if (sig.group === "days") {
           if (VALID_DAYS.indexOf(sig.value) === -1) return null;
-          return "Someone is checking " + sig.value + " events.";
+          return "A dancer is checking " + sig.value + " events.";
         }
         if (sig.group === "areas") {
           if (VALID_AREAS.indexOf(sig.value) === -1) return null;
-          return "Someone is browsing the " + sig.value + ".";
+          return "A dancer is browsing the " + sig.value + ".";
         }
         if (sig.group === "kinds") {
           if (VALID_KINDS.indexOf(sig.value) === -1) return null;
-          return "Someone is looking at " + sig.value + " events.";
+          return "A dancer is looking at " + sig.value + " events.";
         }
         return null;
       case "view": {
         var label = FRIENDLY_VIEW[sig.view];
         if (!label) return null;
-        return "Someone is browsing in " + label + " view.";
+        return "A dancer is browsing in " + label + " view.";
       }
       case "event_viewed": {
         if (!eventNameByKey || !sig.eventId) return null;
         var name = eventNameByKey[sig.eventId];
         if (!name) return null;   // unresolvable eventId — drop, never render unverified text
-        return "Someone is checking out " + name + ".";
+        return "A dancer is checking out " + name + ".";
       }
       case "open_invite":
-        return "Someone is suggesting a listing update.";
+        return "A dancer is suggesting a listing update.";
       default:
         return null;   // unknown/forged type — drop
     }
@@ -99,8 +111,10 @@
 
   function pluralize(text, count) {
     if (count <= 1) return text;
-    var subject = count === 2 ? "Two people are " : count + " people are ";
-    return text.replace(/^Someone is /, subject);
+    var subject = count === 2 ? "Two dancers" : count + " dancers";
+    // Handles both "A dancer is ..." and "A dancer from X is ..." forms generically —
+    // capture whatever sits between "A dancer" and the first " is ".
+    return text.replace(/^A dancer(.*?) is /, function (_, middle) { return subject + middle + " are "; });
   }
 
   /* ---------- rail rendering ---------- */
@@ -109,18 +123,36 @@
   var renderQueue = [];        // [{text, count}], waiting for a free slot
   var pendingBuffer = null;    // Map<text, count> — merge buffer, flushed on a timer
   var reducedMotion = false;
+  // Sean, 2026-07-13: "3x the size font then space after the block before another one" —
+  // each concurrently-visible message gets its own starting height ("slot") so they don't
+  // stack on top of each other at the larger font size; they still drift upward together
+  // from wherever they started. SLOT_HEIGHT is a generous single-line-at-3x-size estimate;
+  // occasional wrapped-to-2-lines messages may touch a neighbor slightly, which is fine.
+  var SLOT_HEIGHT_PX = 130;
+  var slotFree = [];
+  for (var __i = 0; __i < MAX_VISIBLE; __i++) slotFree.push(true);
+
+  function claimSlot() {
+    for (var i = 0; i < slotFree.length; i++) {
+      if (slotFree[i]) { slotFree[i] = false; return i; }
+    }
+    return 0;   // shouldn't happen (tryShowNext already checks visibleCount < MAX_VISIBLE)
+  }
 
   function tryShowNext() {
     if (visibleCount >= MAX_VISIBLE) return;
     var next = renderQueue.shift();
     if (!next) return;
     visibleCount++;
+    var slot = claimSlot();
     var el = document.createElement("div");
     el.className = "activity-msg" + (reducedMotion ? " reduced" : "");
     el.textContent = pluralize(next.text, next.count);
+    el.style.bottom = (slot * SLOT_HEIGHT_PX) + "px";
     railEl.appendChild(el);
     setTimeout(function () {
       el.remove();
+      slotFree[slot] = true;
       visibleCount--;
       tryShowNext();
     }, LIFETIME_MS);
@@ -130,6 +162,7 @@
   }
 
   function enqueue(text, count) {
+    if (renderQueue.length >= MAX_QUEUE) renderQueue.shift();   // drop oldest waiting item, never grow unbounded
     renderQueue.push({ text: text, count: count });
     tryShowNext();
   }
@@ -176,7 +209,10 @@
 
     lastEmitAt = now;
     var payload = { sessionId: sessionId, type: detail.type, ts: firebase.database.ServerValue.TIMESTAMP };
-    if (detail.type === "filter") { payload.group = detail.group; payload.value = detail.value; }
+    if (detail.type === "filter") {
+      payload.group = detail.group; payload.value = detail.value;
+      if (detail.group === "cats" && typeof detail.area === "string") payload.area = detail.area;
+    }
     if (detail.type === "view") { payload.view = detail.view; }
     if (detail.type === "event_viewed") { payload.eventId = detail.eventId; }
     try {
@@ -226,8 +262,9 @@
       });
     } catch (e) { /* non-critical */ }
 
-    activityRef.orderByChild("ts").startAt(Date.now() - READ_WINDOW_MS).limitToLast(50)
-      .on("child_added", handleIncoming);
+    // Only truly new signals from this moment forward — see the bug note above for why this
+    // isn't `startAt(Date.now() - 5min)` anymore.
+    activityRef.orderByChild("ts").startAt(Date.now()).on("child_added", handleIncoming);
 
     // Listen for the semantic signals app.js dispatches at the moment of an actual
     // filter click / view switch / event open / correction-form open — app.js already
