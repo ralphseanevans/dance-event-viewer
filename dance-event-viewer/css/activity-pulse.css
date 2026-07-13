@@ -39,8 +39,8 @@
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: .02em;
-  color: #39ff14;   /* classic phosphor/terminal green */
-  text-shadow: 0 0 6px rgba(57, 255, 20, .55), 0 0 1px rgba(57, 255, 20, .9);   /* faint CRT glow */
+  color: #8fd6ff;   /* light blue, "theatrical terminal" per Sean's 2026-07-13 follow-up (was terminal green) */
+  text-shadow: 0 0 6px rgba(143, 214, 255, .55), 0 0 1px rgba(143, 214, 255, .9);   /* faint CRT glow */
   opacity: 0;
   animation:
     activity-crawl 15s linear forwards,

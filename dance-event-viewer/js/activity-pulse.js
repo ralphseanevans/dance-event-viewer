@@ -47,8 +47,11 @@
   // Only listening from "now" removes the backlog entirely; MAX_QUEUE above is a second line of
   // defense in case a genuine traffic burst ever produces more concurrent signals than can display at once.
 
+  // Sean, 2026-07-13: "use less techy language... this is suppose to be a fun warm
+  // environment." e.g. "a dancer is browsing in calendar view" -> "a dancer is looking
+  // at the calendar." Plain, warm nouns instead of the app's own UI/filter jargon.
   var FRIENDLY_VIEW = {
-    timeline: "Timeline", grid: "Grid", list: "List", calendar: "Calendar", map: "Map"
+    timeline: "the schedule", grid: "the grid", list: "the list", calendar: "the calendar", map: "the map"
   };
   var VALID_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   var VALID_AREAS = ["Pensacola area", "Mobile area", "Elsewhere / unlisted"];
@@ -66,38 +69,49 @@
   var eventNameByKey = null;                  // populated from dance_events.json — trusted lookup only
   var validCategories = null;                 // derived from dance_events.json's actual style values
 
+  // Sean, 2026-07-13: "instead of using the word Mixed use mixed dances. same with
+  // latin dances." Plain lowercase category name + "dances", unless the category
+  // already reads naturally on its own (e.g. "Dance Fit" already says "dance").
+  function friendlyCategory(value) {
+    var v = String(value).toLowerCase();
+    if (v.indexOf("dance") !== -1) return v;
+    return v + " dances";
+  }
+
   /* ---------- message templates ----------
      Every template renders to a sentence starting "A dancer is " so the merge/pluralize
      step below can uniformly upgrade it to "Two dancers are ..." / "N dancers are ...".
-     (Sean, 2026-07-13: "say 'A dancer' instead of 'someone'".) */
+     (Sean, 2026-07-13: "say 'A dancer' instead of 'someone'".) Wording kept plain and
+     warm throughout — "use less techy language... this is suppose to be a fun warm
+     environment" — no UI/filter jargon (view names, "listing," etc.). */
   function templateFor(sig) {
     switch (sig.type) {
       case "filter":
         if (sig.group === "cats") {
           if (!validCategories || !validCategories.has(sig.value)) return null;
           // Sean, 2026-07-13: attribute the currently-selected area if there is one
-          // ("A dancer from Pensacola area is interested in West Coast Swing."), falling
+          // ("A dancer from Pensacola area is interested in latin dances."), falling
           // back to the generic form when no area filter is active.
           var hasArea = typeof sig.area === "string" && VALID_AREAS.indexOf(sig.area) !== -1;
-          return (hasArea ? "A dancer from " + sig.area + " is" : "A dancer is") + " interested in " + sig.value + ".";
+          return (hasArea ? "A dancer from " + sig.area + " is" : "A dancer is") + " interested in " + friendlyCategory(sig.value) + ".";
         }
         if (sig.group === "days") {
           if (VALID_DAYS.indexOf(sig.value) === -1) return null;
-          return "A dancer is checking " + sig.value + " events.";
+          return "A dancer is looking at " + sig.value + " dances.";
         }
         if (sig.group === "areas") {
           if (VALID_AREAS.indexOf(sig.value) === -1) return null;
-          return "A dancer is browsing the " + sig.value + ".";
+          return "A dancer is looking at dances in the " + sig.value + ".";
         }
         if (sig.group === "kinds") {
           if (VALID_KINDS.indexOf(sig.value) === -1) return null;
-          return "A dancer is looking at " + sig.value + " events.";
+          return "A dancer is looking at " + sig.value.toLowerCase() + " dances.";
         }
         return null;
       case "view": {
         var label = FRIENDLY_VIEW[sig.view];
         if (!label) return null;
-        return "A dancer is browsing in " + label + " view.";
+        return "A dancer is looking at " + label + ".";
       }
       case "event_viewed": {
         if (!eventNameByKey || !sig.eventId) return null;
@@ -106,7 +120,7 @@
         return "A dancer is checking out " + name + ".";
       }
       case "open_invite":
-        return "A dancer is suggesting a listing update.";
+        return "A dancer is helping fix a dance listing.";
       default:
         return null;   // unknown/forged type — drop
     }
