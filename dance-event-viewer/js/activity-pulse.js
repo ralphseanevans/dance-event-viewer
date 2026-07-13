@@ -32,7 +32,9 @@
   "use strict";
 
   /* ---------- config ---------- */
-  var MAX_VISIBLE = 4;                 // concurrent messages on screen at once
+  var MAX_VISIBLE = 2;                 // concurrent messages on screen at once — halved from 4
+                                        // (2026-07-13, Sean: shrink the gap above the controls bar;
+                                        // #activity-rail's CSS height was cut to match, see activity-pulse.css)
   var MAX_QUEUE = 8;                   // hard cap on the waiting queue — never let new activity get stuck
                                         // behind an unbounded backlog (see bug note below)
   var LIFETIME_MS = 15000;             // must match the CSS crawl duration (activity-ticker 15s in activity-pulse.css)
@@ -158,7 +160,7 @@
   // so each concurrently-visible one gets its own starting ROW ("slot", reused terminology
   // from the earlier vertical design) instead of a vertical offset — up to MAX_VISIBLE
   // messages run on separate ticker lines so they don't overlap mid-crawl. Must roughly
-  // match the row height baked into #activity-rail's CSS height (4 * ROW_HEIGHT_PX-ish).
+  // match the row height baked into #activity-rail's CSS height (MAX_VISIBLE * ROW_HEIGHT_PX-ish).
   var ROW_HEIGHT_PX = 22;
   var slotFree = [];
   for (var __i = 0; __i < MAX_VISIBLE; __i++) slotFree.push(true);

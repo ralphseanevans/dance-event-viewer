@@ -16,15 +16,19 @@
 #activity-rail {
   position: relative;
   width: 100%;
-  height: calc(4 * 22px);   /* up to 4 concurrent ticker lines — see ROW_HEIGHT_PX in activity-pulse.js */
+  height: calc(2 * 22px);   /* up to 2 concurrent ticker lines — see ROW_HEIGHT_PX/MAX_VISIBLE in
+                               activity-pulse.js. Halved from 4 rows (2026-07-13, Sean: "the filters
+                               bar could be brought up... half the distance of space between the
+                               two") — this empty-most-of-the-time rail was the single biggest
+                               contributor to the gap above the controls bar. */
   overflow: hidden;         /* the "disapear at the end of the frame" clip — no fade-out needed */
-  margin: 2px 0 10px;
+  margin: 2px 0 4px;
   pointer-events: none;     /* purely ambient — never intercepts clicks on the page underneath */
 }
 
 /* Each message is an independent absolutely-positioned line crawling right-to-left across
    the full width of the rail. JS assigns each one a starting "row" (via inline `top`) so up
-   to 4 concurrently-visible messages run on separate lines instead of overlapping.
+   to 2 concurrently-visible messages run on separate lines instead of overlapping.
 
    Two separate animations run in parallel on different properties so they don't fight each
    other: activity-crawl moves it (transform only), activity-flicker handles visibility
@@ -93,6 +97,6 @@
 }
 
 @media (max-width: 640px) {
-  #activity-rail { height: calc(4 * 18px); }
+  #activity-rail { height: calc(2 * 18px); }
   .activity-msg { font-size: 0.7rem; }
 }

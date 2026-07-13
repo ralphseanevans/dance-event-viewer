@@ -37,7 +37,7 @@ body {
 .site-header {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 28px 0 10px;
+  padding: 28px 0 4px;
   display: grid;
   gap: 12px;
   position: relative;
@@ -88,7 +88,7 @@ body {
   letter-spacing: .14em;
 }
 
-/* Header note toggles ("Messages from Sean" / "About These Listings") — small pills
+/* Header note toggles ("What's Next?" / "About These Listings") — small pills
    flanking the tagline, both sharing the dark-blue look at rest (2026-07-13, Sean:
    "put the collapsed buttons higher to each side of ... to conserve vertical space
    ... make the collapsed button dark blue ... have the buttons open up downwards and
@@ -193,7 +193,7 @@ body {
 
 .controls {
   max-width: var(--maxw);
-  margin: 14px auto 0;
+  margin: 8px auto 0;
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius);
