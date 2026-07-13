@@ -21,6 +21,15 @@ const CORE_CATEGORIES = ["West Coast Swing", "Mixed", "Latin", "Argentine Tango"
 // entry already categorized "Latin" (sensual-sundays-bachata-pensacola-coastals) — leave it alone.
 const SOLO_STYLES = ["Ballet", "Jazz", "Hip Hop", "Contemporary", "Heels", "Pom", "Musical Theatre", "Dance Fit"];
 const CATEGORY_WHITELIST = [...CORE_CATEGORIES, ...SOLO_STYLES];
+// National-org toggle buttons (2026-07-13 fix) — static HTML buttons (not built via makeChip)
+// that behave as state.filters.cats tag members, same exclusive-narrowing behavior as any
+// style chip. See isWSDC()/isUSADance()/isArthurMurray()/isFredAstaire() and matchesCat().
+const NATIONAL_TAGS = [
+  ["wsdc-toggle", "WSDC"],
+  ["usadance-toggle", "USA Dance"],
+  ["arthur-murray-toggle", "Arthur Murray"],
+  ["fred-astaire-toggle", "Fred Astaire"],
+];
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PREFS_KEY = "dance-event-viewer-prefs-v2";   // UI prefs only — never event data. (v2: location model changed 2026-07-11)
@@ -39,6 +48,12 @@ const MAP_MARKER_COLORS = {
 // Silent-send endpoint for the correction form: Sean's Google Apps Script web app /exec URL.
 // While empty, the form falls back to opening Gmail compose. No credentials live in this page.
 const SEND_ENDPOINT = "https://script.google.com/macros/s/AKfycbyTcNCMl42HCDosDST23_E2m_9vYLa6tKiCSIH8Y23G4KYrA5iL-efcbMyZVuGwFD3S/exec";
+// Same submission-intake Apps Script the "Submit an Event" form posts to (see submit-event.js).
+// Used ONLY when a correction includes an uploaded flyer photo — those go through the real
+// Submissions pipeline (tagged submission_kind:"correction") instead of the plain-text
+// SEND_ENDPOINT above, since Apps Script doorGet/doPost mail relay isn't built for attachments.
+const SUBMIT_ENDPOINT = "https://script.google.com/macros/s/AKfycbwtL7anIfkIv7XBkR7AwDKKc13DBPrEghmcEEZiURWR_NLZI3s8CdayU6VQzelK9VMn6w/exec";
+const MAX_CORRECTION_PHOTO_BYTES = 8 * 1024 * 1024; // 8MB — matches submit-event.js's MAX_FLYER_BYTES
 
 /* ---------- favorites (added 2026-07-13, Sean: "share and favorite buttons") ----------
    Purely client-side/this-browser — a heart toggle stored in localStorage, keyed by each
@@ -71,15 +86,11 @@ const state = {
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
   showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline/Grid/List
                           // listings only count/show current events unless this is turned on.
-  showWSDC: false,        // hidden by default (2026-07-12, Sean) — WSDC (World Swing Dance Council)
-                          // national/international convention listings are excluded from every view
-                          // and the "of N" count unless this is turned on. See isWSDC() / matchesFilters().
-  showUSADance: false,     // hidden by default (2026-07-12, Sean) — USA Dance nationwide chapter/social
-                          // events (source: usadance.org). Same treatment as WSDC. See isUSADance().
-  showArthurMurray: false, // hidden by default (2026-07-12, Sean) — Arthur Murray national "Dance-O-Rama"
-                          // events (source: arthurmurray.com/events). Same treatment as WSDC. See isArthurMurray().
-  showFredAstaire: false,  // hidden by default (2026-07-12, Sean) — Fred Astaire national competitions
-                          // (source: fredastaire.com/events). Same treatment as WSDC. See isFredAstaire().
+  // WSDC / USA Dance / Arthur Murray / Fred Astaire (2026-07-13, Sean) — these used to be separate
+  // booleans that only "unhid" events (and, per a 2026-07-13 diagnosis, never actually worked live
+  // since they keyed off ev.source_detail, a field stripped from the published dance_events.json —
+  // see isWSDC() etc. below). Rewired to be plain tag members of state.filters.cats, exactly like
+  // every other style chip, so clicking one narrows the list to just that org, same as any style.
 };
 
 /* ---------- helpers: normalization (formatting-only, never invents data) ---------- */
@@ -104,7 +115,8 @@ function locationOf(venue) {
   return loc;
 }
 function kindOf(ev) {
-  return (ev.type === "weekly_recurring" || ev.type === "monthly_recurring") ? "Recurring" : "One-time";
+  return (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring")
+    ? "Recurring" : "One-time";
 }
 function parseISO(d) {
   if (typeof d !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
@@ -132,6 +144,26 @@ function monthlyRuleParts(rule) {
   const nth = { first: 1, "1st": 1, second: 2, "2nd": 2, third: 3, "3rd": 3, fourth: 4, "4th": 4 }[m[1].toLowerCase()];
   const dow = DAY_ORDER.findIndex(d => d.toLowerCase() === m[2].toLowerCase());
   return { nth, dow };
+}
+/* Monthly-on-a-calendar-date rule (added 2026-07-13, Sean: "the 15th of every month") —
+   a SEPARATE convention from monthlyRuleParts() above, which only understands "Nth Weekday"
+   (e.g. "First Saturday"). This one accepts a bare day-of-month number, optionally with an
+   ordinal suffix ("15" or "15th"), and is tried as a fallback wherever monthlyRuleParts()
+   returns null for a monthly_recurring event. The two formats are mutually exclusive and
+   distinguishable on sight, so no separate schema field was needed — monthly_rule just
+   holds whichever format the event actually uses. */
+function monthlyDateOfMonth(rule) {
+  if (typeof rule !== "string") return null;
+  const m = /^\s*(\d{1,2})(?:st|nd|rd|th)?\s*$/i.exec(rule);
+  if (!m) return null;
+  const day = Number(m[1]);
+  return (day >= 1 && day <= 31) ? day : null;
+}
+/* "1st"/"2nd"/"3rd"/"4th"/... — used to display a numeric monthly_rule in scheduleText(). */
+function ordinal(n) {
+  const suffixes = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
 }
 function dayOf(ev) {
   if (DAY_ORDER.includes(ev.day_of_week)) return ev.day_of_week;
@@ -167,14 +199,40 @@ function nextOccurrence(ev, today) {
   }
   if (ev.type === "monthly_recurring") {
     const rule = monthlyRuleParts(ev.monthly_rule);
-    if (!rule) return null;
+    const dateOfMonth = rule ? null : monthlyDateOfMonth(ev.monthly_rule);
+    if (!rule && !dateOfMonth) return null;
     for (let k = 0; k < 3; k++) {
       const first = new Date(t0.getFullYear(), t0.getMonth() + k, 1);
-      const d = new Date(first);
-      d.setDate(1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
+      let d;
+      if (rule) {
+        d = new Date(first);
+        d.setDate(1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
+      } else {
+        if (dateOfMonth > daysInMonth(first.getFullYear(), first.getMonth())) continue;   // e.g. no Feb 30th — skip, never invent a nearby date
+        d = new Date(first.getFullYear(), first.getMonth(), dateOfMonth);
+      }
       if (d >= t0 && (!end || d <= end) && (!start || d >= start)) return d;
     }
     return null;
+  }
+  /* Every-other-week on a fixed day (added 2026-07-13, Sean) — meaningless without an anchor
+     occurrence, so start_date is REQUIRED here (unlike weekly_recurring, where it's only an
+     optional lower bound). Parity is determined by whole 14-day steps from that anchor. */
+  if (ev.type === "biweekly_recurring") {
+    const target = DAY_ORDER.indexOf(ev.day_of_week);
+    if (target < 0 || !start) return null;
+    let d;
+    if (t0 <= start) {
+      d = new Date(start);
+    } else {
+      d = new Date(t0);
+      d.setDate(d.getDate() + ((target - d.getDay()) + 7) % 7);
+      const diffDays = Math.round((d - start) / 86400000);
+      const rem = ((diffDays % 14) + 14) % 14;
+      if (rem !== 0) d.setDate(d.getDate() + 7);   // same-weekday dates differ by multiples of 7, so the
+    }                                               // only two parities possible here are 0 or 7 mod 14
+    if (end && d > end) return null;
+    return d;
   }
   return null;
 }
@@ -189,8 +247,17 @@ function scheduleText(ev) {
     return tr ? `${s} · ${tr}` : s;
   }
   if (ev.type === "monthly_recurring" && typeof ev.monthly_rule === "string") {
-    const rule = ev.monthly_rule.split("(")[0].trim();   // keep the public part of the rule text
+    const dateOfMonth = monthlyRuleParts(ev.monthly_rule) ? null : monthlyDateOfMonth(ev.monthly_rule);
+    const rule = dateOfMonth
+      ? `${ordinal(dateOfMonth)} of every month`
+      : ev.monthly_rule.split("(")[0].trim();   // keep the public part of the rule text
     return tr ? `${rule} · ${tr}` : rule;
+  }
+  if (ev.type === "biweekly_recurring" && ev.day_of_week) {
+    let s = `Every other ${ev.day_of_week}`;
+    const end = parseISO(ev.end_date);
+    if (end) s += ` (through ${fmtDate(end)})`;
+    return tr ? `${s} · ${tr}` : s;
   }
   const start = parseISO(ev.start_date), end = parseISO(ev.end_date);
   if (start) {
@@ -213,7 +280,7 @@ function pastOccurrenceDate(ev) {
   if (ev.type === "one_time" || ev.type === "tentative") {
     return parseISO(ev.end_date) || parseISO(ev.start_date);
   }
-  if (ev.type === "weekly_recurring" || ev.type === "monthly_recurring") {
+  if (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring") {
     return parseISO(ev.end_date);   // only reached when isPastEvent found an elapsed end_date
   }
   return null;
@@ -298,7 +365,7 @@ async function loadData() {
   let data;
   try {
     // Tolerate a torn-write tail (trailing NULs/garbage after the JSON document).
-    data = JSON.parse(raw.replace(/ +\s*$/g, "").trim());
+    data = JSON.parse(raw.replace(/\u0000+\s*$/g, "").trim());
   } catch (err) {
     state.events = [];
     render();
@@ -337,18 +404,13 @@ function presentValues(fn, order) {
 // value per dimension is included — matches the existing single-value area-attribution
 // pattern already used here, since these Sets can hold more than one value.
 // Sean, 2026-07-13: "WSDC USA Dance arthur Murray and Fed Astarire are all treated as
-// styles. they can be used for this purpose too" — the four national-source toggles live
-// outside state.filters.cats as separate booleans, so they're folded in here as a cats
-// fallback (only when no regular style chip is already selected) rather than ignored.
+// styles. they can be used for this purpose too" — as of the 2026-07-13 filter-bug fix, the
+// four national-source tags are plain members of state.filters.cats (same as any style), so
+// they're already covered by the cats read below with no separate fallback needed.
 function filterSnapshotDetail() {
-  const nationalLabel =
-    state.showWSDC ? "WSDC" :
-    state.showUSADance ? "USA Dance" :
-    state.showArthurMurray ? "Arthur Murray" :
-    state.showFredAstaire ? "Fred Astaire" : null;
   return {
     type: "filter",
-    cats: [...state.filters.cats][0] || nationalLabel || null,
+    cats: [...state.filters.cats][0] || null,
     days: [...state.filters.days][0] || null,
     areas: [...state.filters.areas][0] || null,
     kinds: [...state.filters.kinds][0] || null,
@@ -428,17 +490,10 @@ function makeChip(label, onClick) {
   return b;
 }
 function syncChips() {
-  // "All categories" reads as deselected whenever a national-source toggle (WSDC / USA
-  // Dance / Arthur Murray / Fred Astaire) is on, same as selecting any other style chip —
-  // those toggles live in the Style filter group visually, so "All" should behave
-  // consistently with them even though they're stored as separate booleans, not set members.
-  const nationalToggleOn = state.showWSDC || state.showUSADance || state.showArthurMurray || state.showFredAstaire;
   for (const [group, set] of Object.entries(state.filters)) {
     const holder = document.querySelector(`.chips[data-group="${group}"]`);
     for (const chip of holder.querySelectorAll(".chip")) {
-      const on = chip.dataset.all
-        ? (set.size === 0 && (group !== "cats" || !nationalToggleOn))
-        : set.has(chip.dataset.value);
+      const on = chip.dataset.all ? set.size === 0 : set.has(chip.dataset.value);
       chip.setAttribute("aria-pressed", String(on));
     }
   }
@@ -446,6 +501,12 @@ function syncChips() {
   if (soloHolder) {
     for (const chip of soloHolder.querySelectorAll(".chip"))
       chip.setAttribute("aria-pressed", String(state.filters.cats.has(chip.dataset.value)));
+  }
+  // National-org toggles (WSDC / USA Dance / Arthur Murray / Fred Astaire, 2026-07-13) — same
+  // idea as the solo-style chips above: they're plain state.filters.cats members but live
+  // outside the .chips[data-group="cats"] container, so they need their own aria-pressed sync.
+  for (const [id, tag] of NATIONAL_TAGS) {
+    document.getElementById(id)?.setAttribute("aria-pressed", String(state.filters.cats.has(tag)));
   }
   savePrefs();
 }
@@ -470,34 +531,50 @@ function buildLocSelects() {
   }
 }
 /* WSDC (World Swing Dance Council) registry events — national/international conventions,
-   sourced from worldsdc.com/events, identified by source_detail rather than a dedicated
-   schema field. Excluded from every view by default (see state.showWSDC / #wsdc-toggle). */
+   sourced from worldsdc.com/events. Matched primarily by the "wsdc-" key prefix every event
+   from that crawl was given (2026-07-13 fix: the live site's dance_events.json is the sanitized
+   13-field export — see wcs-fbmessenger SKILL.md's publish step — which never includes
+   source_detail, so a source_detail-only check always returned false in production, silently
+   no-opping this whole filter. key survives sanitization, so check it first; source_detail is
+   kept as a fallback for local/unsanitized data.) */
 function isWSDC(ev) {
-  return typeof ev.source_detail === "string" && /wsdc/i.test(ev.source_detail);
+  return (typeof ev.key === "string" && ev.key.startsWith("wsdc-")) ||
+    (typeof ev.source_detail === "string" && /wsdc/i.test(ev.source_detail));
 }
-/* USA Dance nationwide chapter/social events — sourced from usadance.org/events,
-   identified by source_detail. Excluded from every view by default (see
-   state.showUSADance / #usadance-toggle), same treatment as isWSDC(). */
+/* USA Dance nationwide chapter/social events — sourced from usadance.org/events.
+   Same key-prefix-first fix as isWSDC() above. */
 function isUSADance(ev) {
-  return typeof ev.source_detail === "string" && /usa dance/i.test(ev.source_detail);
+  return (typeof ev.key === "string" && ev.key.startsWith("usa-dance-")) ||
+    (typeof ev.source_detail === "string" && /usa dance/i.test(ev.source_detail));
 }
-/* Arthur Murray national "Dance-O-Rama" events — sourced from arthurmurray.com/events,
-   identified by source_detail. Same default-hidden treatment as isWSDC(). */
+/* Arthur Murray national "Dance-O-Rama" events — sourced from arthurmurray.com/events.
+   Same key-prefix-first fix as isWSDC() above. */
 function isArthurMurray(ev) {
-  return typeof ev.source_detail === "string" && /arthur murray/i.test(ev.source_detail);
+  return (typeof ev.key === "string" && ev.key.startsWith("arthur-murray-")) ||
+    (typeof ev.source_detail === "string" && /arthur murray/i.test(ev.source_detail));
 }
-/* Fred Astaire national competitions — sourced from fredastaire.com/events,
-   identified by source_detail. Same default-hidden treatment as isWSDC(). */
+/* Fred Astaire national competitions — sourced from fredastaire.com/events.
+   Same key-prefix-first fix as isWSDC() above. */
 function isFredAstaire(ev) {
-  return typeof ev.source_detail === "string" && /fred astaire/i.test(ev.source_detail);
+  return (typeof ev.key === "string" && ev.key.startsWith("fred-astaire-")) ||
+    (typeof ev.source_detail === "string" && /fred astaire/i.test(ev.source_detail));
+}
+/* Resolves a cats-Set tag to a match against an event. Real style categories (West Coast
+   Swing, Latin, Ballet, ...) compare against d.category as before; the four national-org
+   tags (added 2026-07-13) compare against the isX() detectors above instead, since an event's
+   org affiliation is independent of its dance-style category. */
+function matchesCat(d, tag) {
+  switch (tag) {
+    case "WSDC": return isWSDC(d.ev);
+    case "USA Dance": return isUSADance(d.ev);
+    case "Arthur Murray": return isArthurMurray(d.ev);
+    case "Fred Astaire": return isFredAstaire(d.ev);
+    default: return d.category === tag;
+  }
 }
 function matchesFilters(d) {
   const f = state.filters;
-  if (isWSDC(d.ev) && !state.showWSDC) return false;
-  if (isUSADance(d.ev) && !state.showUSADance) return false;
-  if (isArthurMurray(d.ev) && !state.showArthurMurray) return false;
-  if (isFredAstaire(d.ev) && !state.showFredAstaire) return false;
-  if (f.cats.size && !f.cats.has(d.category)) return false;
+  if (f.cats.size && ![...f.cats].some(tag => matchesCat(d, tag))) return false;
   if (f.days.size && !f.days.has(d.day)) return false;
   if (f.areas.size && !f.areas.has(d.loc.area)) return false;
   for (const dim of ["country", "state", "town"])
@@ -533,7 +610,7 @@ async function copyText(text) {
 }
 function flashShareCopied(btn) {
   const original = btn.textContent;
-  btn.textContent = "\u2713";
+  btn.textContent = "✓";
   btn.classList.add("copied");
   btn.setAttribute("aria-label", "Link copied!");
   setTimeout(() => {
@@ -572,7 +649,7 @@ function cardActions(ev) {
   const isFav = hasKey && favorites.has(ev.key);
   favBtn.setAttribute("aria-pressed", String(isFav));
   favBtn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
-  favBtn.textContent = isFav ? "\u2665" : "\u2661";
+  favBtn.textContent = isFav ? "♥" : "♡";
   if (!hasKey) {
     favBtn.disabled = true;
     favBtn.title = "This event can't be favorited yet";
@@ -583,7 +660,7 @@ function cardActions(ev) {
       saveFavorites(favorites);
       favBtn.setAttribute("aria-pressed", String(nowOn));
       favBtn.setAttribute("aria-label", nowOn ? "Remove from favorites" : "Add to favorites");
-      favBtn.textContent = nowOn ? "\u2665" : "\u2661";
+      favBtn.textContent = nowOn ? "♥" : "♡";
     });
   }
   wrap.appendChild(favBtn);
@@ -592,7 +669,7 @@ function cardActions(ev) {
   shareBtn.type = "button";
   shareBtn.className = "card-action-btn card-action-share";
   shareBtn.setAttribute("aria-label", "Share this event");
-  shareBtn.textContent = "\u2934";
+  shareBtn.textContent = "⤴";
   shareBtn.addEventListener("click", () => handleShare(ev, shareBtn));
   wrap.appendChild(shareBtn);
 
@@ -780,6 +857,40 @@ function feedbackWidget(ev) {
   const link = document.createElement("input");
   link.type = "url"; link.placeholder = "Link to the correct info (flyer, post, website)";
   link.setAttribute("aria-label", "Link to the correct info");
+
+  // Flyer photo upload (2026-07-13, Sean: "should allow you to upload a flyer for the event,
+  // instantly") — sits alongside the link field rather than replacing it, since a link is still
+  // useful for non-image corrections. When a photo is attached, send() routes through the real
+  // Submissions pipeline (SUBMIT_ENDPOINT) tagged submission_kind:"correction" instead of the
+  // plain-text SEND_ENDPOINT mail relay below, since that relay isn't built for attachments.
+  const photoLabel = document.createElement("label");
+  photoLabel.className = "fb-photo-label";
+  photoLabel.textContent = "Or attach a corrected/updated flyer photo (optional)";
+  const photoInput = document.createElement("input");
+  photoInput.type = "file"; photoInput.accept = "image/*"; photoInput.className = "fb-photo-input";
+  photoInput.setAttribute("aria-label", "Attach a flyer photo");
+  const photoPreview = document.createElement("img");
+  photoPreview.className = "fb-photo-preview"; photoPreview.alt = "Flyer preview"; photoPreview.hidden = true;
+  let photoDataUrl = null;
+  photoInput.addEventListener("change", () => {
+    const file = photoInput.files && photoInput.files[0];
+    photoDataUrl = null;
+    if (!file) { photoPreview.hidden = true; return; }
+    if (file.size > MAX_CORRECTION_PHOTO_BYTES) {
+      status.textContent = "That photo is a bit large — try a smaller image (under 8MB).";
+      photoInput.value = "";
+      photoPreview.hidden = true;
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      photoDataUrl = reader.result;
+      photoPreview.src = photoDataUrl;
+      photoPreview.hidden = false;
+    };
+    reader.readAsDataURL(file);
+  });
+
   const who = document.createElement("input");
   who.type = "text"; who.placeholder = "Your name";
   who.setAttribute("aria-label", "Your name");
@@ -795,7 +906,7 @@ function feedbackWidget(ev) {
   const status = document.createElement("p");
   status.className = "fb-status"; status.setAttribute("role", "status");
 
-  form.append(desc, link, who, actions, status);
+  form.append(desc, link, photoLabel, photoInput, photoPreview, who, actions, status);
   wrap.appendChild(form);
 
   const SUBJECT = "Dance Event Viewer Listing Update Request";
@@ -828,6 +939,58 @@ function feedbackWidget(ev) {
   });
   send.addEventListener("click", async () => {
     if (!desc.value.trim()) { status.textContent = "Please describe what's wrong or missing first."; return; }
+
+    // Photo attached → route through the real Submissions pipeline as a "correction", tagged
+    // with event_key so it never gets mistaken for a new-event submission in the pending queue.
+    const photoFile = photoInput.files && photoInput.files[0];
+    if (photoFile) {
+      if (!SUBMIT_ENDPOINT) {
+        status.textContent = "Photo uploads aren't quite live yet — please use the link field instead, or email ralphseanevans@gmail.com.";
+        return;
+      }
+      if (!photoDataUrl) {
+        status.textContent = "Still reading that photo — try again in a moment.";
+        return;
+      }
+      send.disabled = true;
+      status.textContent = "Sending…";
+      try {
+        const mime = photoDataUrl.split("data:")[1].split(";")[0];
+        const base64 = photoDataUrl.split(",")[1];
+        const payload = {
+          action: "submit",
+          intake_method: "flyer",
+          submission_kind: "correction",
+          event_key: typeof ev.key === "string" ? ev.key : "",
+          name: ev.name,
+          flyer_mime: mime,
+          flyer_base64: base64,
+          source_note: desc.value.trim(),
+          source_url: link.value.trim(),
+          contact_name: who.value.trim(),
+        };
+        const res = await fetch(SUBMIT_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => null);
+        if (data && data.ok) {
+          status.textContent = "Sent — thanks for helping keep the calendar accurate!";
+          desc.value = ""; link.value = ""; who.value = "";
+          photoInput.value = ""; photoDataUrl = null; photoPreview.hidden = true;
+          setTimeout(() => { form.hidden = true; toggle.setAttribute("aria-expanded", "false"); status.textContent = ""; send.disabled = false; }, 2500);
+        } else {
+          send.disabled = false;
+          status.textContent = (data && data.error) || "Couldn't send — please try again, or email ralphseanevans@gmail.com.";
+        }
+      } catch (e) {
+        send.disabled = false;
+        status.textContent = "Couldn't send — please email ralphseanevans@gmail.com instead.";
+      }
+      return;
+    }
+
     if (SEND_ENDPOINT) {
       // Silent send via Sean's Apps Script web app (fire-and-forget; no-cors responses are opaque).
       send.disabled = true;
@@ -942,12 +1105,14 @@ function render() {
   // The "of N" total excludes past events by default (Sean, 2026-07-12) — otherwise
   // it balloons with stale one-time events over time and stops meaning anything.
   // Also excludes WSDC/USA Dance/Arthur Murray/Fred Astaire events by default, same
-  // reasoning as the past-event exclusion (each gated independently by its own toggle).
+  // reasoning as the past-event exclusion (2026-07-13: each is now gated by whether its
+  // tag is selected in state.filters.cats, same source of truth the chips themselves use,
+  // rather than a separate boolean that could drift out of sync).
   const countable = state.events.filter(d =>
-    (state.showWSDC || !isWSDC(d.ev)) &&
-    (state.showUSADance || !isUSADance(d.ev)) &&
-    (state.showArthurMurray || !isArthurMurray(d.ev)) &&
-    (state.showFredAstaire || !isFredAstaire(d.ev))
+    (state.filters.cats.has("WSDC") || !isWSDC(d.ev)) &&
+    (state.filters.cats.has("USA Dance") || !isUSADance(d.ev)) &&
+    (state.filters.cats.has("Arthur Murray") || !isArthurMurray(d.ev)) &&
+    (state.filters.cats.has("Fred Astaire") || !isFredAstaire(d.ev))
   );
   const totalForCount = state.showPast
     ? countable.length
@@ -1001,10 +1166,6 @@ function savePrefs() {
       sel: state.sel,
       filtersOpen: state.filtersOpen,
       showPast: state.showPast,
-      showWSDC: state.showWSDC,
-      showUSADance: state.showUSADance,
-      showArthurMurray: state.showArthurMurray,
-      showFredAstaire: state.showFredAstaire,
     }));
   } catch (e) { /* private mode etc. — prefs just won't persist */ }
 }
@@ -1020,10 +1181,6 @@ function loadPrefs() {
     // always starts collapsed on page load, even if a visitor left it open last time. Still saved
     // in savePrefs() (harmless / no longer read back) rather than ripping out the field entirely.
     if (typeof p.showPast === "boolean") state.showPast = p.showPast;
-    if (typeof p.showWSDC === "boolean") state.showWSDC = p.showWSDC;
-    if (typeof p.showUSADance === "boolean") state.showUSADance = p.showUSADance;
-    if (typeof p.showArthurMurray === "boolean") state.showArthurMurray = p.showArthurMurray;
-    if (typeof p.showFredAstaire === "boolean") state.showFredAstaire = p.showFredAstaire;
   } catch (e) { /* ignore bad prefs */ }
 }
 function setFiltersOpen(open) {
@@ -1079,40 +1236,21 @@ function init() {
     savePrefs();
     render();
   });
-  const wsdcToggle = document.getElementById("wsdc-toggle");
-  wsdcToggle.setAttribute("aria-pressed", String(state.showWSDC));
-  wsdcToggle.addEventListener("click", () => {
-    state.showWSDC = !state.showWSDC;
-    wsdcToggle.setAttribute("aria-pressed", String(state.showWSDC));
-    syncChips(); render();
-    // Activity Pulse (Sean, 2026-07-13: national toggles count as a "style" for this
-    // purpose too) — only signal when turning on, matching every other filter chip.
-    if (state.showWSDC) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
-  });
-  const usadanceToggle = document.getElementById("usadance-toggle");
-  usadanceToggle.setAttribute("aria-pressed", String(state.showUSADance));
-  usadanceToggle.addEventListener("click", () => {
-    state.showUSADance = !state.showUSADance;
-    usadanceToggle.setAttribute("aria-pressed", String(state.showUSADance));
-    syncChips(); render();
-    if (state.showUSADance) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
-  });
-  const arthurMurrayToggle = document.getElementById("arthur-murray-toggle");
-  arthurMurrayToggle.setAttribute("aria-pressed", String(state.showArthurMurray));
-  arthurMurrayToggle.addEventListener("click", () => {
-    state.showArthurMurray = !state.showArthurMurray;
-    arthurMurrayToggle.setAttribute("aria-pressed", String(state.showArthurMurray));
-    syncChips(); render();
-    if (state.showArthurMurray) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
-  });
-  const fredAstaireToggle = document.getElementById("fred-astaire-toggle");
-  fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
-  fredAstaireToggle.addEventListener("click", () => {
-    state.showFredAstaire = !state.showFredAstaire;
-    fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
-    syncChips(); render();
-    if (state.showFredAstaire) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
-  });
+  // National-org toggles (WSDC / USA Dance / Arthur Murray / Fred Astaire) — 2026-07-13 fix:
+  // wired exactly like a makeChip() chip (add/remove a tag in state.filters.cats), so clicking
+  // one narrows the list to just that org, same as any real style chip. aria-pressed for these
+  // is kept in sync by syncChips() (see NATIONAL_TAGS loop there), not set here.
+  for (const [id, tag] of NATIONAL_TAGS) {
+    const btn = document.getElementById(id);
+    if (!btn) continue;
+    btn.addEventListener("click", () => {
+      const set = state.filters.cats;
+      const wasSelected = set.has(tag);
+      wasSelected ? set.delete(tag) : set.add(tag);
+      syncChips(); render();
+      if (!wasSelected) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
+    });
+  }
   const soloToggle = document.getElementById("solo-styles-toggle");
   if (soloToggle) {
     soloToggle.addEventListener("click", () => {
@@ -1131,13 +1269,8 @@ function init() {
       const s = document.getElementById(id);
       if (s) s.value = "";
     }
-    // Reset also clears the 4 national-source toggles (2026-07-13, Sean) — they're stored as
-    // separate booleans (not Set members) so the generic state.filters loop above doesn't touch
-    // them; without this they'd silently survive a reset and keep excluding/including events.
-    state.showWSDC = state.showUSADance = state.showArthurMurray = state.showFredAstaire = false;
-    for (const id of ["wsdc-toggle", "usadance-toggle", "arthur-murray-toggle", "fred-astaire-toggle"]) {
-      document.getElementById(id)?.setAttribute("aria-pressed", "false");
-    }
+    // The 4 national-org toggles are now plain state.filters.cats members (2026-07-13 fix),
+    // so the generic set.clear() loop above already resets them — no special-case needed.
     syncChips(); render();
   });
   // Tabs render only when there's more than one source (future WCS tab).
@@ -1188,10 +1321,31 @@ function occurrencesInMonth(ev, y, m) {
   }
   if (ev.type === "monthly_recurring") {
     const rule = monthlyRuleParts(ev.monthly_rule);
-    if (!rule) return out;
-    const first = new Date(y, m, 1);
-    const dt = new Date(y, m, 1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
+    const dateOfMonth = rule ? null : monthlyDateOfMonth(ev.monthly_rule);
+    if (!rule && !dateOfMonth) return out;
+    let dt;
+    if (rule) {
+      const first = new Date(y, m, 1);
+      dt = new Date(y, m, 1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
+    } else {
+      if (dateOfMonth > daysInMonth(y, m)) return out;   // e.g. no Feb 30th — no occurrence this month
+      dt = new Date(y, m, dateOfMonth);
+    }
     if (dt.getMonth() === m && (!start || dt >= start) && (!end || dt <= end)) out.push(dt.getDate());
+    return out;
+  }
+  if (ev.type === "biweekly_recurring") {
+    const target = DAY_ORDER.indexOf(ev.day_of_week);
+    if (target < 0 || !start) return out;
+    for (let d = 1; d <= daysInMonth(y, m); d++) {
+      const dt = new Date(y, m, d);
+      if (dt.getDay() !== target) continue;
+      if (dt < start) continue;
+      if (end && dt > end) continue;
+      const diffDays = Math.round((dt - start) / 86400000);
+      if (((diffDays % 14) + 14) % 14 !== 0) continue;
+      out.push(d);
+    }
     return out;
   }
   if (!start) return out;
@@ -1204,7 +1358,8 @@ function occurrencesInMonth(ev, y, m) {
 }
 
 function hasDate(d) {
-  return DAY_ORDER.includes(d.ev.day_of_week) || !!monthlyRuleParts(d.ev.monthly_rule) || !!parseISO(d.ev.start_date);
+  return DAY_ORDER.includes(d.ev.day_of_week) || !!monthlyRuleParts(d.ev.monthly_rule) ||
+    !!monthlyDateOfMonth(d.ev.monthly_rule) || !!parseISO(d.ev.start_date);
 }
 
 function renderCalendar(main, visible) {

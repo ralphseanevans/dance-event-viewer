@@ -203,6 +203,12 @@ body {
 }
 .control-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
 
+/* Groups the view switcher and the Filters button together (2026-07-13, Sean: "position it
+   right next to that group") so they read as one control cluster; .control-row's
+   space-between still pushes this whole cluster away from .control-row-right (Submit an
+   Event) on the other side. */
+.view-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
 .view-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .view-btn {
   background: transparent; color: var(--text-dim);
@@ -283,8 +289,9 @@ body {
 .filter-group legend { float: left; color: var(--text-dim); font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; min-width: 52px; padding-top: 6px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 /* National-source toggles (WSDC / USA Dance / Arthur Murray / Fred Astaire), relocated into the
-   Style filter group 2026-07-12 (Sean) — same .past-toggle pill styling, just grouped separately
-   from the style chips themselves so the two don't visually blend into one control. */
+   Style filter group 2026-07-12 (Sean). 2026-07-13 fix: now styled as real .chip elements (not
+   .past-toggle) and wired as state.filters.cats members in app.js, so they look and behave
+   exactly like the style chips above — clicking one narrows the list, same as any style. */
 .source-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   background: var(--bg-card); color: var(--text);
@@ -446,6 +453,9 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .fb-alt:hover { color: var(--text); border-color: var(--text-dim); }
 .fb-send:focus-visible, .fb-alt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .fb-status { color: var(--text-dim); font-size: .82rem; min-height: 1.2em; margin: 0; }
+.fb-photo-label { color: var(--text-dim); font-size: .82rem; margin: 2px 0 -4px; }
+.fb-photo-input { padding: 6px 0; }
+.fb-photo-preview { max-width: 160px; max-height: 160px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; }
 
 /* ---------- List view (added 2026-07-11) — title-only rows, tap to expand ---------- */
 .list-rows { list-style: none; display: flex; flex-direction: column; gap: 8px; }

@@ -116,14 +116,27 @@
         <fieldset class="submit-section">
           <legend>When does this happen? <span class="req">(required)</span></legend>
           <div class="schedule-toggle" role="radiogroup" aria-label="Schedule type">
-            <label><input type="radio" name="schedule_kind" value="recurring" checked> Regular schedule (weekly/monthly)</label>
-            <label><input type="radio" name="schedule_kind" value="one_time"> One-time / special event</label>
+            <label><input type="radio" name="schedule_kind" value="one_time" checked> One-time / special event</label>
+            <label><input type="radio" name="schedule_kind" value="recurring"> Recurring?</label>
           </div>
 
-          <div id="schedule-recurring">
-            <div class="schedule-sub-toggle" role="radiogroup" aria-label="Recurring frequency">
-              <label><input type="radio" name="recur_kind" value="weekly" checked> Weekly</label>
-              <label><input type="radio" name="recur_kind" value="monthly"> Monthly</label>
+          <div id="schedule-one-time">
+            <label class="field-label" for="event-date">Date</label>
+            <input type="date" id="event-date" name="start_date">
+            <div class="time-row">
+              <label class="field-label" for="onetime-start-time">Start time</label>
+              <input type="time" id="onetime-start-time" name="start_time_onetime">
+              <label class="field-label" for="onetime-end-time">End time (optional)</label>
+              <input type="time" id="onetime-end-time" name="end_time_onetime">
+            </div>
+          </div>
+
+          <div id="schedule-recurring" hidden>
+            <div class="schedule-sub-toggle" role="radiogroup" aria-label="Recurring pattern">
+              <label><input type="radio" name="recur_kind" value="weekly" checked> Weekly on a specific day</label>
+              <label><input type="radio" name="recur_kind" value="monthly_nth"> Monthly (a certain week, e.g. "First Saturday")</label>
+              <label><input type="radio" name="recur_kind" value="monthly_date"> Monthly on a specific date (e.g. "the 15th")</label>
+              <label><input type="radio" name="recur_kind" value="biweekly"> Every other week (biweekly)</label>
             </div>
 
             <div id="recur-weekly">
@@ -135,7 +148,7 @@
               </select>
             </div>
 
-            <div id="recur-monthly" hidden>
+            <div id="recur-monthly-nth" hidden>
               <label class="field-label" for="monthly-nth">Which week?</label>
               <div class="monthly-rule-row">
                 <select id="monthly-nth">
@@ -152,22 +165,32 @@
               </div>
             </div>
 
+            <div id="recur-monthly-date" hidden>
+              <label class="field-label" for="monthly-date">Day of the month</label>
+              <input type="number" id="monthly-date" name="monthly_date" min="1" max="31" placeholder="e.g. 15">
+            </div>
+
+            <div id="recur-biweekly" hidden>
+              <label class="field-label" for="biweekly-dow">Day of week</label>
+              <select id="biweekly-dow" name="biweekly_day_of_week">
+                <option value="">Choose a day&hellip;</option>
+                <option>Sunday</option><option>Monday</option><option>Tuesday</option>
+                <option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+              </select>
+              <label class="field-label" for="biweekly-anchor-date">
+                A date this actually happens <span class="req">(required — tells us which weeks)</span>
+              </label>
+              <input type="date" id="biweekly-anchor-date" name="biweekly_anchor_date">
+              <p class="field-hint">
+                Every-other-week events need one real example date so we know which weeks are the "on" weeks.
+              </p>
+            </div>
+
             <div class="time-row">
               <label class="field-label" for="recur-start-time">Start time</label>
               <input type="time" id="recur-start-time" name="start_time_recur">
               <label class="field-label" for="recur-end-time">End time (optional)</label>
               <input type="time" id="recur-end-time" name="end_time_recur">
-            </div>
-          </div>
-
-          <div id="schedule-one-time" hidden>
-            <label class="field-label" for="event-date">Date</label>
-            <input type="date" id="event-date" name="start_date">
-            <div class="time-row">
-              <label class="field-label" for="onetime-start-time">Start time</label>
-              <input type="time" id="onetime-start-time" name="start_time_onetime">
-              <label class="field-label" for="onetime-end-time">End time (optional)</label>
-              <input type="time" id="onetime-end-time" name="end_time_onetime">
             </div>
           </div>
         </fieldset>

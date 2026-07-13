@@ -57,13 +57,17 @@ document.addEventListener("DOMContentLoaded", () => {
     scheduleOneTime.hidden = kind !== "one_time";
   }));
 
-  // Recurring sub-toggle (weekly vs monthly).
+  // Recurring sub-toggle (weekly / monthly-Nth-weekday / monthly-specific-date / biweekly).
   const recurWeekly = $("#recur-weekly");
-  const recurMonthly = $("#recur-monthly");
+  const recurMonthlyNth = $("#recur-monthly-nth");
+  const recurMonthlyDate = $("#recur-monthly-date");
+  const recurBiweekly = $("#recur-biweekly");
   $all('input[name="recur_kind"]').forEach(r => r.addEventListener("change", () => {
     const kind = (document.querySelector('input[name="recur_kind"]:checked') || {}).value;
     recurWeekly.hidden = kind !== "weekly";
-    recurMonthly.hidden = kind !== "monthly";
+    recurMonthlyNth.hidden = kind !== "monthly_nth";
+    recurMonthlyDate.hidden = kind !== "monthly_date";
+    recurBiweekly.hidden = kind !== "biweekly";
   }));
 
   // Flyer preview.
@@ -165,15 +169,30 @@ document.addEventListener("DOMContentLoaded", () => {
           payload.type = "weekly_recurring";
           payload.day_of_week = $("#day-of-week").value;
           if (!payload.day_of_week) { setStatus("Please choose a day of the week.", true); return; }
-          payload.start_time = $("#recur-start-time").value;
-          payload.end_time = $("#recur-end-time").value;
-        } else {
+        } else if (recurKind === "monthly_nth") {
           payload.type = "monthly_recurring";
           const nth = $("#monthly-nth").value, dow = $("#monthly-dow").value;
           payload.monthly_rule = `${nth} ${dow}`;
-          payload.start_time = $("#recur-start-time").value;
-          payload.end_time = $("#recur-end-time").value;
+        } else if (recurKind === "monthly_date") {
+          payload.type = "monthly_recurring";
+          const dom = $("#monthly-date").value;
+          const domNum = Number(dom);
+          if (!dom || !Number.isInteger(domNum) || domNum < 1 || domNum > 31) {
+            setStatus("Please enter a day of the month (1-31).", true); return;
+          }
+          payload.monthly_rule = String(domNum);
+        } else {
+          // biweekly
+          payload.type = "biweekly_recurring";
+          payload.day_of_week = $("#biweekly-dow").value;
+          payload.start_date = $("#biweekly-anchor-date").value;
+          if (!payload.day_of_week) { setStatus("Please choose a day of the week.", true); return; }
+          if (!payload.start_date) {
+            setStatus("Please give us one date this actually happens, so we know which weeks.", true); return;
+          }
         }
+        payload.start_time = $("#recur-start-time").value;
+        payload.end_time = $("#recur-end-time").value;
         if (!payload.start_time) { setStatus("Please enter a start time.", true); return; }
       } else {
         payload.type = "one_time";
