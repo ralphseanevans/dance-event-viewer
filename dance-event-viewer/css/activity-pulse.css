@@ -2,7 +2,8 @@
    About These Listings note (Sean, 2026-07-13: "have them go across under the About these
    listings! from side to side and disapear at the end of the frame. use a nerdy terminal
    font and a terminal green color." / "i mean instead of up the side" / "could you make
-   the text flicker" — replaces every earlier pass of this feature, which drifted upward
+   the text flicker" / "try light blue text that flickers like a theatrical terminal
+   isntead of green" — replaces every earlier pass of this feature, which drifted upward
    along the left edge of the page). No visible panel/chrome — text sits directly on the
    page, same "no visible panel" spirit as every prior version. Scrolls with the page (not
    position:fixed) since it's now docked under a specific section rather than pinned to
@@ -16,13 +17,19 @@
 #activity-rail {
   position: relative;
   width: 100%;
+  max-width: var(--maxw);   /* 2026-07-13 fix (Sean): rail previously spanned the full body width
+                               (no cap), which on wide screens is much wider than the actual content
+                               column (.site-header/.controls both cap at --maxw). That meant the
+                               ticker crawled through empty page margins well outside "the action" —
+                               capping + centering it here so it enters/exits right at the same edges
+                               as everything else on the page. */
+  margin: 2px auto 4px;
   height: calc(2 * 22px);   /* up to 2 concurrent ticker lines — see ROW_HEIGHT_PX/MAX_VISIBLE in
                                activity-pulse.js. Halved from 4 rows (2026-07-13, Sean: "the filters
                                bar could be brought up... half the distance of space between the
                                two") — this empty-most-of-the-time rail was the single biggest
                                contributor to the gap above the controls bar. */
   overflow: hidden;         /* the "disapear at the end of the frame" clip — no fade-out needed */
-  margin: 2px 0 4px;
   pointer-events: none;     /* purely ambient — never intercepts clicks on the page underneath */
 }
 
@@ -54,10 +61,19 @@
 
 /* Right-to-left crawl: enters just off the right edge of the rail, crosses the full width,
    and exits off the left edge — #activity-rail's overflow:hidden does the actual "disappear
-   at the end of the frame," this just moves it there. */
+   at the end of the frame," this just moves it there.
+
+   2026-07-13 fix (Sean: "make it appear closer to the edge of all of the action and end it
+   the same way on the other side"): previously used vw units (100vw / -110vw), sized to the
+   full browser viewport rather than the rail's own (now capped at --maxw) width. On any
+   screen wider than --maxw that meant the message actually started/ended far out past the
+   rail's real edges, deep in the empty page margins — "closer to the edge" fixes that by
+   tying the crawl distance to --maxw (the rail's own width) instead, so entry lands exactly
+   at the rail's right edge and exit is the same distance past its left edge, symmetrically,
+   regardless of how wide the browser window is. */
 @keyframes activity-crawl {
-  0%   { transform: translateX(100vw); }
-  100% { transform: translateX(-110vw); }
+  0%   { transform: translateX(var(--maxw)); }
+  100% { transform: translateX(calc(var(--maxw) * -1.1)); }
 }
 
 /* Terminal flicker: powers on unevenly (like an old CRT/terminal line lighting up) instead
