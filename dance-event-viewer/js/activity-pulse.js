@@ -123,12 +123,12 @@
   var renderQueue = [];        // [{text, count}], waiting for a free slot
   var pendingBuffer = null;    // Map<text, count> — merge buffer, flushed on a timer
   var reducedMotion = false;
-  // Sean, 2026-07-13: "3x the size font then space after the block before another one" —
+  // Sean, 2026-07-13: each concurrently-visible message gets its own starting height
   // each concurrently-visible message gets its own starting height ("slot") so they don't
   // stack on top of each other at the larger font size; they still drift upward together
   // from wherever they started. SLOT_HEIGHT is a generous single-line-at-3x-size estimate;
   // occasional wrapped-to-2-lines messages may touch a neighbor slightly, which is fine.
-  var SLOT_HEIGHT_PX = 130;
+  var SLOT_HEIGHT_PX = 90;
   var slotFree = [];
   for (var __i = 0; __i < MAX_VISIBLE; __i++) slotFree.push(true);
 

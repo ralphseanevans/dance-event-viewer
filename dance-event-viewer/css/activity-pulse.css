@@ -4,30 +4,34 @@
    room's ambience, not another UI card. Mirrors the fixed/pointer-events-none treatment
    already used for .whisper-float on the right side of the page.
 
-   Design revised same night per Sean's follow-up notes: purple text (was grey), 3x the
-   original font size with spacing between concurrently-visible messages (see SLOT_HEIGHT_PX
-   in activity-pulse.js), travels the full height of the page, and dissolves via a color
-   shift (purple -> blue -> matches the page background) rather than a plain opacity fade. */
+   Design revised same night per Sean's follow-up notes: purple text (was grey), travels
+   the full height of the page, and dissolves via a color shift (purple -> blue -> matches
+   the page background) rather than a plain opacity fade.
+
+   Further tuned same night (Sean, 2026-07-13, after seeing it live): original 3x font size
+   and full-width rail let messages overhang onto the event cards, so size was halved again
+   and the rail narrowed to stay inside the left gutter; peak opacity capped at 50% instead
+   of fully solid, per Sean's "make the words 50% opaque" note. */
 
 #activity-rail {
   position: fixed;
   left: 16px;
   bottom: 16px;
-  width: min(420px, 70vw);
+  width: min(160px, 38vw);   /* narrow enough to stay in the left gutter, off the card grid */
   z-index: 35;   /* below Whispers (40) and modal backdrops, above normal page content */
   pointer-events: none;   /* purely ambient — never intercepts clicks on the page underneath */
 }
 
 /* Each message is independently positioned/animated (not flex-stacked) so it can travel the
    full height of the screen without being clipped by a container box. JS assigns each one a
-   starting "slot" height (via inline `bottom`) so concurrently-visible messages don't overlap
-   at this larger size; from that starting point they all drift upward the same way. */
+   starting "slot" height (via inline `bottom`) so concurrently-visible messages don't overlap;
+   from that starting point they all drift upward the same way. */
 .activity-msg {
   position: absolute;
   left: 0;
   bottom: 0;
   max-width: 100%;
-  font-size: 2.4rem;      /* 3x the original .8rem */
+  font-size: 1.2rem;      /* 1.5x the original .8rem — halved again from the initial 2.4rem pass */
   line-height: 1.25;
   font-weight: 600;
   text-shadow: 0 2px 6px rgba(0, 0, 0, .65);   /* keep it legible over busy page backgrounds */
@@ -38,14 +42,14 @@
 
 /* Timing split follows Live_Activity_Feed_Prompt.md's spirit (entry, drift, fade) but
    travels the full page height and dissolves via color (purple -> blue -> background)
-   rather than a plain opacity fade, per Sean's follow-up notes. Fully removed (by JS,
-   not just CSS) at 30s regardless. */
+   rather than a plain opacity fade, per Sean's follow-up notes. Peak opacity capped at .5
+   (not 1) per Sean's "50% opaque" note. Fully removed (by JS, not just CSS) at 30s regardless. */
 @keyframes activity-rise {
-  0%    { opacity: 0; transform: translateY(0);       color: #c9a6ff; }
-  16.6% { opacity: 1; transform: translateY(0);       color: #c9a6ff; }   /* purple */
-  55%   { opacity: 1; transform: translateY(-55vh);   color: #7cb3ff; }   /* shifting blue */
-  85%   { opacity: 1; transform: translateY(-92vh);   color: var(--bg); } /* dissolved into the background */
-  100%  { opacity: 0; transform: translateY(-98vh);   color: var(--bg); } /* travels all the way up the page */
+  0%    { opacity: 0;   transform: translateY(0);       color: #c9a6ff; }
+  16.6% { opacity: .5;  transform: translateY(0);       color: #c9a6ff; }   /* purple */
+  55%   { opacity: .5;  transform: translateY(-55vh);   color: #7cb3ff; }   /* shifting blue */
+  85%   { opacity: .5;  transform: translateY(-92vh);   color: var(--bg); } /* dissolved into the background */
+  100%  { opacity: 0;   transform: translateY(-98vh);   color: var(--bg); } /* travels all the way up the page */
 }
 
 /* Reduced motion: same 30s total lifetime (enforced in JS regardless), but a simple
@@ -56,19 +60,19 @@
   }
 }
 @keyframes activity-fade {
-  0%   { opacity: 0; color: #c9a6ff; }
-  10%  { opacity: 1; color: #c9a6ff; }
-  60%  { opacity: 1; color: #7cb3ff; }
-  100% { opacity: 0; color: var(--bg); }
+  0%   { opacity: 0;  color: #c9a6ff; }
+  10%  { opacity: .5; color: #c9a6ff; }
+  60%  { opacity: .5; color: #7cb3ff; }
+  100% { opacity: 0;  color: var(--bg); }
 }
 
 @media (max-width: 640px) {
   #activity-rail {
     left: 8px;
     bottom: 8px;
-    width: min(240px, 62vw);
+    width: min(120px, 34vw);
   }
-  .activity-msg { font-size: 1.6rem; }
+  .activity-msg { font-size: 0.8rem; }
 }
 
 /* On very small screens the rail would crowd the event list — hide it rather than
