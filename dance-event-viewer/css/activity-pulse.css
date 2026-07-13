@@ -9,15 +9,19 @@
    the page background) rather than a plain opacity fade.
 
    Further tuned same night (Sean, 2026-07-13, after seeing it live): original 3x font size
-   and full-width rail let messages overhang onto the event cards, so size was halved again
-   and the rail narrowed to stay inside the left gutter; peak opacity capped at 50% instead
-   of fully solid, per Sean's "make the words 50% opaque" note. */
+   and full-width rail let messages overhang onto the event cards, so size was halved,
+   then halved again ("half the size again. still large... and it still is overlapping
+   the cards") — turned out the first halving was correct but Sean's browser was serving
+   a 10-minute-cached copy of this file (see the ?v= cache-busting query param on this
+   file's <link> tag in index.html, added the same night to stop this from recurring).
+   Rail narrowed further to stay inside the left gutter; peak opacity capped at 50%
+   instead of fully solid, per Sean's "make the words 50% opaque" note. */
 
 #activity-rail {
   position: fixed;
   left: 16px;
   bottom: 16px;
-  width: min(160px, 38vw);   /* narrow enough to stay in the left gutter, off the card grid */
+  width: min(120px, 30vw);   /* narrow enough to stay in the left gutter, off the card grid */
   z-index: 35;   /* below Whispers (40) and modal backdrops, above normal page content */
   pointer-events: none;   /* purely ambient — never intercepts clicks on the page underneath */
 }
@@ -31,7 +35,7 @@
   left: 0;
   bottom: 0;
   max-width: 100%;
-  font-size: 1.2rem;      /* 1.5x the original .8rem — halved again from the initial 2.4rem pass */
+  font-size: 0.6rem;      /* 0.75x the original .8rem — halved twice from the initial 2.4rem pass */
   line-height: 1.25;
   font-weight: 600;
   text-shadow: 0 2px 6px rgba(0, 0, 0, .65);   /* keep it legible over busy page backgrounds */
@@ -70,9 +74,9 @@
   #activity-rail {
     left: 8px;
     bottom: 8px;
-    width: min(120px, 34vw);
+    width: min(90px, 28vw);
   }
-  .activity-msg { font-size: 0.8rem; }
+  .activity-msg { font-size: 0.4rem; }
 }
 
 /* On very small screens the rail would crowd the event list — hide it rather than
