@@ -1,86 +1,98 @@
-/* Activity Pulse — ambient feed rail, left edge of the page (see js/activity-pulse.js).
-   Deliberately no background chrome/bubble/panel (Sean, 2026-07-13: "no visible panel,
-   just grey text floating up and disappearing") — text should feel like part of the
-   room's ambience, not another UI card. Mirrors the fixed/pointer-events-none treatment
-   already used for .whisper-float on the right side of the page.
+/* Activity Pulse — ambient "someone is doing X" terminal ticker, sitting right under the
+   About These Listings note (Sean, 2026-07-13: "have them go across under the About these
+   listings! from side to side and disapear at the end of the frame. use a nerdy terminal
+   font and a terminal green color." / "i mean instead of up the side" / "could you make
+   the text flicker" — replaces every earlier pass of this feature, which drifted upward
+   along the left edge of the page). No visible panel/chrome — text sits directly on the
+   page, same "no visible panel" spirit as every prior version. Scrolls with the page (not
+   position:fixed) since it's now docked under a specific section rather than pinned to
+   the viewport edge.
 
-   Design revised same night per Sean's follow-up notes: purple text (was grey), travels
-   the full height of the page, and dissolves via a color shift (purple -> blue -> matches
-   the page background) rather than a plain opacity fade.
-
-   Further tuned same night (Sean, 2026-07-13, after seeing it live): original 3x font size
-   and full-width rail let messages overhang onto the event cards, so size was halved,
-   then halved again ("half the size again. still large... and it still is overlapping
-   the cards") — turned out the first halving was correct but Sean's browser was serving
-   a 10-minute-cached copy of this file (see the ?v= cache-busting query param on this
-   file's <link> tag in index.html, added the same night to stop this from recurring).
-   Rail narrowed further to stay inside the left gutter; peak opacity capped at 50%
-   instead of fully solid, per Sean's "make the words 50% opaque" note. */
+   History, for context: started as a grey left-edge upward drift, went through purple text
+   + full-page-height drift + a purple->blue->background color dissolve, then several rounds
+   of size/opacity tuning after Sean found it overhanging the event cards — that whole vertical
+   design is superseded by this horizontal ticker, not layered on top of it. */
 
 #activity-rail {
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
-  width: min(120px, 30vw);   /* narrow enough to stay in the left gutter, off the card grid */
-  z-index: 35;   /* below Whispers (40) and modal backdrops, above normal page content */
-  pointer-events: none;   /* purely ambient — never intercepts clicks on the page underneath */
+  position: relative;
+  width: 100%;
+  height: calc(4 * 22px);   /* up to 4 concurrent ticker lines — see ROW_HEIGHT_PX in activity-pulse.js */
+  overflow: hidden;         /* the "disapear at the end of the frame" clip — no fade-out needed */
+  margin: 2px 0 10px;
+  pointer-events: none;     /* purely ambient — never intercepts clicks on the page underneath */
 }
 
-/* Each message is independently positioned/animated (not flex-stacked) so it can travel the
-   full height of the screen without being clipped by a container box. JS assigns each one a
-   starting "slot" height (via inline `bottom`) so concurrently-visible messages don't overlap;
-   from that starting point they all drift upward the same way. */
+/* Each message is an independent absolutely-positioned line crawling right-to-left across
+   the full width of the rail. JS assigns each one a starting "row" (via inline `top`) so up
+   to 4 concurrently-visible messages run on separate lines instead of overlapping.
+
+   Two separate animations run in parallel on different properties so they don't fight each
+   other: activity-crawl moves it (transform only), activity-flicker handles visibility
+   (opacity only) — a CRT/terminal-style flicker-on at the start plus a couple of stutters
+   mid-crawl, rather than a smooth smooth fade. */
 .activity-msg {
   position: absolute;
   left: 0;
-  bottom: 0;
-  max-width: 100%;
-  font-size: 0.6rem;      /* 0.75x the original .8rem — halved twice from the initial 2.4rem pass */
-  line-height: 1.25;
+  top: 0;
+  white-space: nowrap;   /* a ticker line, not a wrapped paragraph */
+  font-family: ui-monospace, "Cascadia Code", "Cascadia Mono", Consolas, "SFMono-Regular", "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
   font-weight: 600;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, .65);   /* keep it legible over busy page backgrounds */
+  letter-spacing: .02em;
+  color: #39ff14;   /* classic phosphor/terminal green */
+  text-shadow: 0 0 6px rgba(57, 255, 20, .55), 0 0 1px rgba(57, 255, 20, .9);   /* faint CRT glow */
   opacity: 0;
-  animation: activity-rise 30s ease-out forwards;
-  will-change: transform, opacity, color;
+  animation:
+    activity-crawl 15s linear forwards,
+    activity-flicker 15s steps(1, end) forwards;
+  will-change: transform, opacity;
 }
 
-/* Timing split follows Live_Activity_Feed_Prompt.md's spirit (entry, drift, fade) but
-   travels the full page height and dissolves via color (purple -> blue -> background)
-   rather than a plain opacity fade, per Sean's follow-up notes. Peak opacity capped at .5
-   (not 1) per Sean's "50% opaque" note. Fully removed (by JS, not just CSS) at 30s regardless. */
-@keyframes activity-rise {
-  0%    { opacity: 0;   transform: translateY(0);       color: #c9a6ff; }
-  16.6% { opacity: .5;  transform: translateY(0);       color: #c9a6ff; }   /* purple */
-  55%   { opacity: .5;  transform: translateY(-55vh);   color: #7cb3ff; }   /* shifting blue */
-  85%   { opacity: .5;  transform: translateY(-92vh);   color: var(--bg); } /* dissolved into the background */
-  100%  { opacity: 0;   transform: translateY(-98vh);   color: var(--bg); } /* travels all the way up the page */
+/* Right-to-left crawl: enters just off the right edge of the rail, crosses the full width,
+   and exits off the left edge — #activity-rail's overflow:hidden does the actual "disappear
+   at the end of the frame," this just moves it there. */
+@keyframes activity-crawl {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-110vw); }
 }
 
-/* Reduced motion: same 30s total lifetime (enforced in JS regardless), but a simple
-   color/opacity dissolve in place instead of the upward drift. */
+/* Terminal flicker: powers on unevenly (like an old CRT/terminal line lighting up) instead
+   of a clean fade-in, then a couple of brief stutters partway through the crawl. steps(1,end)
+   above makes each keyframe jump snap instead of smoothly tween, for an authentic flicker
+   rather than a pulse. */
+@keyframes activity-flicker {
+  0%   { opacity: 0; }
+  2%   { opacity: 1; }
+  4%   { opacity: .2; }
+  6%   { opacity: 1; }
+  8%   { opacity: .4; }
+  10%  { opacity: 1; }
+  38%  { opacity: 1; }
+  39%  { opacity: .3; }
+  40%  { opacity: 1; }
+  64%  { opacity: 1; }
+  65%  { opacity: .5; }
+  66%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* Reduced motion: same lifetime (enforced in JS regardless), but a calm appear/fade in
+   place at the message's assigned row — no crawl, no flicker (vestibular-safety default). */
 @media (prefers-reduced-motion: reduce) {
   .activity-msg {
-    animation-name: activity-fade;
+    animation: activity-ticker-fade 15s ease-in-out forwards;
+    left: 0;
+    transform: none;
   }
 }
-@keyframes activity-fade {
-  0%   { opacity: 0;  color: #c9a6ff; }
-  10%  { opacity: .5; color: #c9a6ff; }
-  60%  { opacity: .5; color: #7cb3ff; }
-  100% { opacity: 0;  color: var(--bg); }
+@keyframes activity-ticker-fade {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 @media (max-width: 640px) {
-  #activity-rail {
-    left: 8px;
-    bottom: 8px;
-    width: min(90px, 28vw);
-  }
-  .activity-msg { font-size: 0.4rem; }
-}
-
-/* On very small screens the rail would crowd the event list — hide it rather than
-   let it overlap readable content (Sean's spec leaves this decision to build time). */
-@media (max-width: 380px) {
-  #activity-rail { display: none; }
+  #activity-rail { height: calc(4 * 18px); }
+  .activity-msg { font-size: 0.7rem; }
 }

@@ -1,8 +1,11 @@
-/* Activity Pulse — ambient, anonymous "someone is doing X" feed rail along the left
-   edge of the page (see #activity-rail in index.html/activity-pulse.css). Built from
-   Live_Activity_Feed_Prompt.md (Step 1 only — the feed rail — per Sean's 2026-07-13
-   "no visible panel, just grey text" instruction; Step 2's bars panel and Step 3's
-   live-dot indicator were intentionally NOT built).
+/* Activity Pulse — ambient, anonymous "someone is doing X" terminal ticker, crawling
+   right-to-left under the About These Listings note (see #activity-rail in index.html/
+   activity-pulse.css). Built from Live_Activity_Feed_Prompt.md (Step 1 only - the feed
+   rail - per Sean's 2026-07-13 "no visible panel, just grey text" instruction; Step 2's
+   bars panel and Step 3's live-dot indicator were intentionally NOT built). Visual design
+   went through several passes the same night - grey upward drift, purple/blue color
+   dissolve, size/opacity tuning - before landing on this horizontal terminal-style crawl
+   per Sean's "go across... from side to side... nerdy terminal font and terminal green."
 
    Reuses the same Firebase project already wired up for Dance Whispers
    (window.WHISPER_FIREBASE_CONFIG, see index.html) under a new "activity" path, so
@@ -32,7 +35,7 @@
   var MAX_VISIBLE = 4;                 // concurrent messages on screen at once
   var MAX_QUEUE = 8;                   // hard cap on the waiting queue — never let new activity get stuck
                                         // behind an unbounded backlog (see bug note below)
-  var LIFETIME_MS = 30000;             // hard cap: every message is gone by 30s (Sean's spec)
+  var LIFETIME_MS = 15000;             // must match the CSS crawl duration (activity-crawl 15s in activity-pulse.css)
   var MIN_EMIT_INTERVAL_MS = 4000;     // per-session throttle across ALL signal types (batches rapid clicks)
   var EVENT_DEBOUNCE_MS = 3 * 60 * 1000;   // don't re-signal the same event from the same session for 3 min
   var MERGE_WINDOW_MS = 2500;          // buffer window for merging identical messages into "Two dancers are..."
@@ -123,12 +126,12 @@
   var renderQueue = [];        // [{text, count}], waiting for a free slot
   var pendingBuffer = null;    // Map<text, count> — merge buffer, flushed on a timer
   var reducedMotion = false;
-  // Sean, 2026-07-13: each concurrently-visible message gets its own starting height
-  // each concurrently-visible message gets its own starting height ("slot") so they don't
-  // stack on top of each other at the larger font size; they still drift upward together
-  // from wherever they started. SLOT_HEIGHT is a generous single-line-at-3x-size estimate;
-  // occasional wrapped-to-2-lines messages may touch a neighbor slightly, which is fine.
-  var SLOT_HEIGHT_PX = 60;
+  // Sean, 2026-07-13 ("i mean instead of up the side"): messages now crawl horizontally,
+  // so each concurrently-visible one gets its own starting ROW ("slot", reused terminology
+  // from the earlier vertical design) instead of a vertical offset - up to MAX_VISIBLE
+  // messages run on separate ticker lines so they don't overlap mid-crawl. Must roughly
+  // match the row height baked into #activity-rail's CSS height (4 * ROW_HEIGHT_PX-ish).
+  var ROW_HEIGHT_PX = 22;
   var slotFree = [];
   for (var __i = 0; __i < MAX_VISIBLE; __i++) slotFree.push(true);
 
@@ -148,7 +151,7 @@
     var el = document.createElement("div");
     el.className = "activity-msg" + (reducedMotion ? " reduced" : "");
     el.textContent = pluralize(next.text, next.count);
-    el.style.bottom = (slot * SLOT_HEIGHT_PX) + "px";
+    el.style.top = (slot * ROW_HEIGHT_PX) + "px";
     railEl.appendChild(el);
     setTimeout(function () {
       el.remove();
