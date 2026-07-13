@@ -77,7 +77,10 @@
   // Sean, 2026-07-13: "instead of using the word Mixed use mixed dances. same with
   // latin dances." Plain lowercase category name + "dances", unless the category
   // already reads naturally on its own (e.g. "Dance Fit" already says "dance").
+  // The four national-source toggle names keep their original casing (proper nouns/
+  // brand names, e.g. "WSDC" not "wsdc") rather than being lowercased like a style.
   function friendlyCategory(value) {
+    if (NATIONAL_TOGGLE_LABELS.indexOf(value) !== -1) return value + " dances";
     var v = String(value).toLowerCase();
     if (v.indexOf("dance") !== -1) return v;
     return v + " dances";
@@ -117,7 +120,7 @@
           return sentence + ".";
         }
         if (day) return subject + "looking at " + day + "'s dances.";
-        return subject + "looking at dances in the " + area + ".";   // area-only case
+        return "A dancer is looking at dances in the " + area + ".";   // area-only case (no redundant "from AREA... in the AREA")
       }
       case "view": {
         var label = FRIENDLY_VIEW[sig.view];
