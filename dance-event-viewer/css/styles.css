@@ -89,6 +89,42 @@ body {
   letter-spacing: .14em;
 }
 
+/* "Messages from Sean" — a casual, dark-blue update note from the site owner (added
+   2026-07-13 at Sean's request). Deliberately its own color (not the amber "beta-note"
+   warning color below it, not the cyan/pink accent pair) so it reads as a personal aside
+   rather than a system notice or a call-to-action button. */
+.sean-note {
+  max-width: var(--maxw);
+  margin: 14px auto 0;
+  background: linear-gradient(160deg, #14335a, #0e2444);
+  border: 1px solid #2a5c8a;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  box-shadow: 0 10px 30px rgba(10, 30, 60, .35);
+}
+.sean-note-title {
+  margin: 0 0 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: .8rem;
+  color: var(--accent);
+}
+.sean-note-lead {
+  margin: 0 0 12px;
+  color: var(--text);
+  line-height: 1.55;
+}
+.sean-note-list {
+  margin: 0;
+  padding-left: 1.25em;
+  color: var(--text-dim);
+  line-height: 1.6;
+  font-size: .95rem;
+}
+.sean-note-list li { margin-bottom: 6px; }
+.sean-note-list li:last-child { margin-bottom: 0; }
+
 .beta-note {
   max-width: var(--maxw);
   margin: 8px auto 0;
