@@ -43,41 +43,43 @@
     </div>
     <div class="title-block">
       <h1 class="visually-hidden">Dance Event Viewer</h1>
-      <p class="tagline">Connecting Dancers in the South! &middot; good music &middot; great people</p>
+      <div class="title-row">
+        <aside class="sean-note" role="note" aria-label="Messages from Sean">
+          <button class="sean-toggle" type="button" aria-expanded="false" aria-controls="sean-details">
+            <strong>Messages from Sean</strong><span aria-hidden="true">+</span>
+          </button>
+          <div id="sean-details" class="sean-details" hidden>
+            <p class="sean-note-lead">Building this bad boy from the ground up. &#128679;<br>Under construction, fam.. watch this space.</p>
+            <ul class="sean-note-list">
+              <li>The map is a little rough around the edges. If you end up in Zimbabwe&hellip; it&rsquo;s not my fault! I&rsquo;ll fix it later.</li>
+              <li>Share and heart buttons are coming to every card.. hopefully this week!</li>
+              <li>&ldquo;Wrong info? Need to add something?&rdquo; deserves a better line and a new home at the bottom of each card. That glow-up is also planned for this week.</li>
+            </ul>
+          </div>
+        </aside>
+
+        <p class="tagline">Connecting Dancers in the South! &middot; good music &middot; great people</p>
+
+        <aside class="beta-note" role="note">
+          <button class="beta-toggle" type="button" aria-expanded="false" aria-controls="beta-details">
+            <strong>About These Listings</strong><span aria-hidden="true">+</span>
+          </button>
+          <div id="beta-details" class="beta-details" hidden>
+            Listings are gathered automatically and manually, so errors are possible. Spot something wrong or
+            missing? Use <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> and include a link, flyer, or photo.
+            Always confirm details with the venue or organizer.
+          </div>
+        </aside>
+      </div>
     </div>
     <span id="viewer-count" aria-hidden="true"></span>
   </header>
 
-  <aside class="sean-note" role="note" aria-label="Messages from Sean">
-    <button class="sean-toggle" type="button" aria-expanded="true" aria-controls="sean-details">
-      <strong>Messages from Sean</strong><span aria-hidden="true">&minus;</span>
-    </button>
-    <div id="sean-details" class="sean-details">
-      <p class="sean-note-lead">Building this bad boy from the ground up. &#128679;<br>Under construction, fam.. watch this space.</p>
-      <ul class="sean-note-list">
-        <li>The calendar is still a little rough around the edges. I&rsquo;ll give it some love later.</li>
-        <li>Share and heart buttons are coming to every card.. hopefully this week!</li>
-        <li>&ldquo;Wrong info? Need to add something?&rdquo; deserves a better line and a new home at the bottom of each card. That glow-up is also planned for this week.</li>
-      </ul>
-    </div>
-  </aside>
-
-  <aside class="beta-note" role="note">
-    <button class="beta-toggle" type="button" aria-expanded="true" aria-controls="beta-details">
-      <strong>About These Listings</strong><span aria-hidden="true">&minus;</span>
-    </button>
-    <div id="beta-details" class="beta-details">
-      Listings are gathered automatically and manually, so errors are possible. Spot something wrong or
-      missing? Use <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> and include a link, flyer, or photo.
-      Always confirm details with the venue or organizer.
-    </div>
-  </aside>
-
-  <!-- Activity Pulse - ambient "someone is doing X" terminal ticker, right under the About
-       These Listings note (Sean, 2026-07-13: "have them go across... from side to side and
-       disapear at the end of the frame. use a nerdy terminal font and a terminal green
-       color" - replaces the earlier left-edge vertical-drift design). Purely decorative,
-       scrolls with the page; see js/activity-pulse.js. -->
+  <!-- Activity Pulse — ambient "someone is doing X" terminal ticker, right under the header
+       (Sean, 2026-07-13: "have them go across... from side to side and disapear at the end
+       of the frame. use a nerdy terminal font and a terminal green color" — replaces the
+       earlier left-edge vertical-drift design). Purely decorative, scrolls with the page;
+       see js/activity-pulse.js. -->
   <div id="activity-rail" aria-hidden="true"></div>
 
   <nav id="source-tabs" class="source-tabs" aria-label="Event lists" hidden></nav>
@@ -194,27 +196,34 @@
 
   <script>
     (() => {
-      // Wires up any collapsible note (Messages from Sean, About These Listings) — same
-      // toggle/pill mechanics for both, each auto-collapsing a couple seconds after load
-      // (2026-07-13, Sean: made Messages from Sean collapsible to match About These Listings).
-      function wireCollapsible(noteSelector, toggleSelector, autoCollapseMs) {
-        const note = document.querySelector(noteSelector);
-        const toggle = note?.querySelector(toggleSelector);
-        if (!note || !toggle) return;
+      // Header note dropdowns ("Messages from Sean" / "About These Listings") — small pills
+      // flanking the tagline (2026-07-13, Sean: "put the collapsed buttons higher to each
+      // side of ... to conserve vertical space ... have the buttons open up downwards and
+      // not overlap anything"). Both start closed; opening one closes the other so their
+      // floating panels never overlap, and clicking anywhere outside a note closes it.
+      const notes = [
+        { note: document.querySelector('.sean-note'), toggle: document.querySelector('.sean-toggle'), details: document.getElementById('sean-details') },
+        { note: document.querySelector('.beta-note'), toggle: document.querySelector('.beta-toggle'), details: document.getElementById('beta-details') },
+      ].filter(n => n.note && n.toggle && n.details);
 
-        const setOpen = (open) => {
-          note.classList.toggle('is-collapsed', !open);
-          toggle.setAttribute('aria-expanded', String(open));
-          toggle.querySelector('span').textContent = open ? '−' : '+';
-        };
-
-        toggle.addEventListener('click', () => {
-          setOpen(toggle.getAttribute('aria-expanded') !== 'true');
-        });
-        if (autoCollapseMs != null) window.setTimeout(() => setOpen(false), autoCollapseMs);
+      function setOpen(entry, open) {
+        entry.details.hidden = !open;
+        entry.toggle.setAttribute('aria-expanded', String(open));
+        entry.toggle.querySelector('span').textContent = open ? '−' : '+';
       }
-      wireCollapsible('.sean-note', '.sean-toggle', 2000);
-      wireCollapsible('.beta-note', '.beta-toggle', 2000);
+
+      for (const entry of notes) {
+        entry.toggle.addEventListener('click', () => {
+          const opening = entry.toggle.getAttribute('aria-expanded') !== 'true';
+          for (const other of notes) if (other !== entry) setOpen(other, false);
+          setOpen(entry, opening);
+        });
+      }
+      document.addEventListener('click', (e) => {
+        for (const entry of notes) {
+          if (!entry.note.contains(e.target)) setOpen(entry, false);
+        }
+      });
     })();
   </script>
   <script src="js/app.js?v=20260713j"></script>

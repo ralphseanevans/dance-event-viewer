@@ -84,56 +84,72 @@ body {
 .tagline {
   color: var(--text-dim);
   font-size: .98rem;
-  text-align: center;
   text-transform: uppercase;
   letter-spacing: .14em;
 }
 
-/* "Messages from Sean" — a casual, dark-blue update note from the site owner (added
-   2026-07-13 at Sean's request). Deliberately its own color (not the amber "beta-note"
-   warning color below it, not the cyan/pink accent pair) so it reads as a personal aside
-   rather than a system notice or a call-to-action button. Made collapsible (2026-07-13,
-   same day) to match "About These Listings" below it in mechanics/look — same
-   toggle-button + collapsed-pill pattern, own color kept, both toggles shortened. */
-.sean-note {
-  max-width: var(--maxw);
-  margin: 14px auto 0;
+/* Header note toggles ("Messages from Sean" / "About These Listings") — small pills
+   flanking the tagline, both sharing the dark-blue look at rest (2026-07-13, Sean:
+   "put the collapsed buttons higher to each side of ... to conserve vertical space
+   ... make the collapsed button dark blue ... have the buttons open up downwards and
+   not overlap anything"). Previously these were full-width bars stacked below the
+   header that auto-opened then collapsed on load; now they always start closed and
+   clicking one opens a floating panel below the button instead of reflowing the
+   page — that's what eliminates the vertical gap before the controls section.
+   About These Listings keeps its amber color once OPEN (still reads as its own kind
+   of notice), but at rest both toggles match, per "in look." */
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sean-note, .beta-note {
+  position: relative;
+  max-width: none;
+  margin: 0;
+}
+
+.sean-toggle, .beta-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
   background: linear-gradient(160deg, #14335a, #0e2444);
   border: 1px solid #2a5c8a;
-  border-radius: var(--radius);
-  padding: 8px 14px;
-  box-shadow: 0 10px 30px rgba(10, 30, 60, .35);
-}
-.sean-toggle {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 0;
   color: var(--accent);
-  background: transparent;
-  border: 0;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
 }
-.sean-toggle strong {
+.sean-toggle strong, .beta-toggle strong {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .1em;
-  font-size: .8rem;
+  font-size: .72rem;
 }
-.sean-toggle span { font-size: 1rem; line-height: 1; }
-.sean-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.sean-details { margin-top: 8px; }
-.sean-note.is-collapsed .sean-details { display: none; }
-.sean-note.is-collapsed {
-  width: fit-content;
-  padding: 4px 14px;
-  border-radius: 999px;
+.sean-toggle span, .beta-toggle span { font-size: 1rem; line-height: 1; }
+.sean-toggle:hover, .beta-toggle:hover { filter: brightness(1.15); }
+.sean-toggle:focus-visible, .beta-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.sean-details, .beta-details {
+  position: absolute;
+  top: calc(100% + 8px);
+  z-index: 30;
+  width: min(300px, 86vw);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .5);
 }
-.sean-note.is-collapsed .sean-toggle { width: auto; }
+.sean-details[hidden], .beta-details[hidden] { display: none; }
+
+.sean-details {
+  left: 0;
+  padding: 14px 16px;
+  background: linear-gradient(160deg, #14335a, #0e2444);
+  border: 1px solid #2a5c8a;
+}
 .sean-note-lead {
   margin: 0 0 12px;
   color: var(--text);
@@ -149,43 +165,16 @@ body {
 .sean-note-list li { margin-bottom: 6px; }
 .sean-note-list li:last-child { margin-bottom: 0; }
 
-.beta-note {
-  max-width: var(--maxw);
-  margin: 8px auto 0;
+.beta-details {
+  right: 0;
+  padding: 10px 14px;
   background: var(--badge-warn-bg);
   color: var(--badge-warn-fg);
+  font-size: .82rem;
+  line-height: 1.4;
   border: 1px solid #6b511f;
-  border-radius: var(--radius);
-  padding: 6px 12px;
-  font-size: .78rem;
-  line-height: 1.35;
 }
-.beta-note a { color: var(--badge-warn-fg); text-decoration: underline; }
-.beta-note strong { text-transform: uppercase; letter-spacing: .08em; }
-.beta-toggle {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 0;
-  color: inherit;
-  background: transparent;
-  border: 0;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.beta-toggle span { font-size: 1rem; line-height: 1; }
-.beta-toggle:focus-visible { outline: 2px solid var(--badge-warn-fg); outline-offset: 3px; }
-.beta-details { margin-top: 4px; }
-.beta-note.is-collapsed .beta-details { display: none; }
-.beta-note.is-collapsed {
-  width: fit-content;
-  padding: 4px 14px;
-  border-radius: 999px;
-}
-.beta-note.is-collapsed .beta-toggle { width: auto; }
+.beta-details a { color: var(--badge-warn-fg); text-decoration: underline; }
 
 .source-tabs {
   max-width: var(--maxw);
