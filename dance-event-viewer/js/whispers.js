@@ -48,6 +48,30 @@
     return div.innerHTML;
   }
 
+  /* Live viewer count — Sean's own troubleshooting readout (unlabeled, understated,
+     see #viewer-count in index.html/styles.css). Reuses the Firebase connection already
+     opened for Whispers rather than a second app instance. Each open tab claims one
+     ephemeral child under "presence/", removed automatically on disconnect (tab close,
+     navigation, network drop) via onDisconnect() — the standard Firebase presence pattern.
+     Requires a Realtime Database rule granting read+write on "presence" (separate from the
+     existing "whispers" rule); if that rule isn't present yet, the write silently fails
+     and the counter just never appears — never breaks the rest of the page. */
+  function initViewerPresence(db) {
+    var countEl = document.getElementById("viewer-count");
+    if (!countEl) return;
+    try {
+      var myRef = db.ref("presence").push();
+      db.ref(".info/connected").on("value", function (snap) {
+        if (snap.val() !== true) return;
+        myRef.onDisconnect().remove();
+        myRef.set(true);
+      });
+      db.ref("presence").on("value", function (snap) {
+        countEl.textContent = String(snap.numChildren());
+      });
+    } catch (e) { /* nice-to-have only — never break the page over it */ }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var floatEl = document.getElementById("whisper-float");
     var minimizeBtn = document.getElementById("whisper-minimize");
@@ -87,6 +111,8 @@
     firebase.initializeApp(cfg);
     var db = firebase.database();
     var whispersRef = db.ref("whispers");
+
+    initViewerPresence(db);
 
     var seenEmpty = false;
     whispersRef.orderByChild("ts").limitToLast(30).on("child_added", function (snap) {

@@ -340,10 +340,17 @@ function makeChip(label, onClick) {
   return b;
 }
 function syncChips() {
+  // "All categories" reads as deselected whenever a national-source toggle (WSDC / USA
+  // Dance / Arthur Murray / Fred Astaire) is on, same as selecting any other style chip —
+  // those toggles live in the Style filter group visually, so "All" should behave
+  // consistently with them even though they're stored as separate booleans, not set members.
+  const nationalToggleOn = state.showWSDC || state.showUSADance || state.showArthurMurray || state.showFredAstaire;
   for (const [group, set] of Object.entries(state.filters)) {
     const holder = document.querySelector(`.chips[data-group="${group}"]`);
     for (const chip of holder.querySelectorAll(".chip")) {
-      const on = chip.dataset.all ? set.size === 0 : set.has(chip.dataset.value);
+      const on = chip.dataset.all
+        ? (set.size === 0 && (group !== "cats" || !nationalToggleOn))
+        : set.has(chip.dataset.value);
       chip.setAttribute("aria-pressed", String(on));
     }
   }
@@ -876,32 +883,28 @@ function init() {
   wsdcToggle.addEventListener("click", () => {
     state.showWSDC = !state.showWSDC;
     wsdcToggle.setAttribute("aria-pressed", String(state.showWSDC));
-    savePrefs();
-    render();
+    syncChips(); render();
   });
   const usadanceToggle = document.getElementById("usadance-toggle");
   usadanceToggle.setAttribute("aria-pressed", String(state.showUSADance));
   usadanceToggle.addEventListener("click", () => {
     state.showUSADance = !state.showUSADance;
     usadanceToggle.setAttribute("aria-pressed", String(state.showUSADance));
-    savePrefs();
-    render();
+    syncChips(); render();
   });
   const arthurMurrayToggle = document.getElementById("arthur-murray-toggle");
   arthurMurrayToggle.setAttribute("aria-pressed", String(state.showArthurMurray));
   arthurMurrayToggle.addEventListener("click", () => {
     state.showArthurMurray = !state.showArthurMurray;
     arthurMurrayToggle.setAttribute("aria-pressed", String(state.showArthurMurray));
-    savePrefs();
-    render();
+    syncChips(); render();
   });
   const fredAstaireToggle = document.getElementById("fred-astaire-toggle");
   fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
   fredAstaireToggle.addEventListener("click", () => {
     state.showFredAstaire = !state.showFredAstaire;
     fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
-    savePrefs();
-    render();
+    syncChips(); render();
   });
   startSubmitAttention();
   if (!state.filtersOpen) setTimeout(startFiltersAttention, 1000);   // starts right as the Submit flash finishes

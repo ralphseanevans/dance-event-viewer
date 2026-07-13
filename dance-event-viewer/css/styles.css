@@ -40,7 +40,23 @@ body {
   padding: 28px 0 10px;
   display: grid;
   gap: 12px;
+  position: relative;
 }
+/* Unlabeled live-viewer count, deliberately understated (Sean's own troubleshooting
+   readout, not a visitor-facing feature) — a bare number tucked in the corner. */
+#viewer-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: .65rem;
+  line-height: 1;
+  color: var(--text-dim);
+  opacity: .55;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  user-select: none;
+}
+#viewer-count:empty { display: none; }
 #brand-slot {
   min-width: 0;
 }
