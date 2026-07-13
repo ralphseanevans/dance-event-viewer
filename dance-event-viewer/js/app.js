@@ -313,6 +313,30 @@ function presentValues(fn, order) {
   const vals = new Set(state.events.map(fn).filter(Boolean));
   return order ? order.filter(v => vals.has(v)) : [...vals].sort();
 }
+// Activity Pulse: a snapshot of every currently-active filter dimension, used to compose
+// combined ticker sentences ("A dancer is interested in west coast swing dances on
+// Thursday.") instead of one generic line per click (Sean, 2026-07-13: "you can make the
+// sentences more interesting if there is more filters selected"). Only the first selected
+// value per dimension is included — matches the existing single-value area-attribution
+// pattern already used here, since these Sets can hold more than one value.
+// Sean, 2026-07-13: "WSDC USA Dance arthur Murray and Fed Astarire are all treated as
+// styles. they can be used for this purpose too" — the four national-source toggles live
+// outside state.filters.cats as separate booleans, so they're folded in here as a cats
+// fallback (only when no regular style chip is already selected) rather than ignored.
+function filterSnapshotDetail() {
+  const nationalLabel =
+    state.showWSDC ? "WSDC" :
+    state.showUSADance ? "USA Dance" :
+    state.showArthurMurray ? "Arthur Murray" :
+    state.showFredAstaire ? "Fred Astaire" : null;
+  return {
+    type: "filter",
+    cats: [...state.filters.cats][0] || nationalLabel || null,
+    days: [...state.filters.days][0] || null,
+    areas: [...state.filters.areas][0] || null,
+    kinds: [...state.filters.kinds][0] || null,
+  };
+}
 function buildFilterChips() {
   const groups = {
     // "cats" only covers the core partner-dance categories here — Solo Dance Styles get their
@@ -340,13 +364,11 @@ function buildFilterChips() {
         wasSelected ? set.delete(v) : set.add(v);
         syncChips(); render();
         // Activity Pulse signal (Sean, 2026-07-13) — only on selecting a specific value,
-        // not on deselecting or on the generic "All" chip. For category selections, also
-        // pass the currently-selected area (if any) so the message can say "A dancer from
-        // Pensacola area is interested in West Coast Swing." per Sean's follow-up notes.
+        // not on deselecting or on the generic "All" chip. Sends a full snapshot of every
+        // active filter dimension so the ticker can compose a combined sentence when more
+        // than one is selected, not just the value that was just clicked.
         if (!wasSelected) {
-          const detail = { type: "filter", group, value: v };
-          if (group === "cats") detail.area = [...state.filters.areas][0] || null;
-          window.dispatchEvent(new CustomEvent("activity-signal", { detail }));
+          window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
         }
       });
       chip.dataset.value = v;
@@ -373,9 +395,7 @@ function buildSoloStyleChips() {
       wasSelected ? set.delete(v) : set.add(v);
       syncChips(); render();
       if (!wasSelected) {
-        window.dispatchEvent(new CustomEvent("activity-signal", {
-          detail: { type: "filter", group: "cats", value: v, area: [...state.filters.areas][0] || null }
-        }));
+        window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
       }
     });
     chip.dataset.value = v;
@@ -954,6 +974,9 @@ function init() {
     state.showWSDC = !state.showWSDC;
     wsdcToggle.setAttribute("aria-pressed", String(state.showWSDC));
     syncChips(); render();
+    // Activity Pulse (Sean, 2026-07-13: national toggles count as a "style" for this
+    // purpose too) — only signal when turning on, matching every other filter chip.
+    if (state.showWSDC) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
   });
   const usadanceToggle = document.getElementById("usadance-toggle");
   usadanceToggle.setAttribute("aria-pressed", String(state.showUSADance));
@@ -961,6 +984,7 @@ function init() {
     state.showUSADance = !state.showUSADance;
     usadanceToggle.setAttribute("aria-pressed", String(state.showUSADance));
     syncChips(); render();
+    if (state.showUSADance) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
   });
   const arthurMurrayToggle = document.getElementById("arthur-murray-toggle");
   arthurMurrayToggle.setAttribute("aria-pressed", String(state.showArthurMurray));
@@ -968,6 +992,7 @@ function init() {
     state.showArthurMurray = !state.showArthurMurray;
     arthurMurrayToggle.setAttribute("aria-pressed", String(state.showArthurMurray));
     syncChips(); render();
+    if (state.showArthurMurray) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
   });
   const fredAstaireToggle = document.getElementById("fred-astaire-toggle");
   fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
@@ -975,6 +1000,7 @@ function init() {
     state.showFredAstaire = !state.showFredAstaire;
     fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
     syncChips(); render();
+    if (state.showFredAstaire) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
   });
   const soloToggle = document.getElementById("solo-styles-toggle");
   if (soloToggle) {

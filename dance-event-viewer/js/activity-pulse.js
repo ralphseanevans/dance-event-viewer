@@ -1,10 +1,10 @@
 /* Activity Pulse — ambient, anonymous "someone is doing X" terminal ticker, crawling
    right-to-left under the About These Listings note (see #activity-rail in index.html/
-   activity-pulse.css). Built from Live_Activity_Feed_Prompt.md (Step 1 only - the feed
-   rail - per Sean's 2026-07-13 "no visible panel, just grey text" instruction; Step 2's
+   activity-pulse.css). Built from Live_Activity_Feed_Prompt.md (Step 1 only — the feed
+   rail — per Sean's 2026-07-13 "no visible panel, just grey text" instruction; Step 2's
    bars panel and Step 3's live-dot indicator were intentionally NOT built). Visual design
-   went through several passes the same night - grey upward drift, purple/blue color
-   dissolve, size/opacity tuning - before landing on this horizontal terminal-style crawl
+   went through several passes the same night — grey upward drift, purple/blue color
+   dissolve, size/opacity tuning — before landing on this horizontal terminal-style crawl
    per Sean's "go across... from side to side... nerdy terminal font and terminal green."
 
    Reuses the same Firebase project already wired up for Dance Whispers
@@ -35,7 +35,7 @@
   var MAX_VISIBLE = 4;                 // concurrent messages on screen at once
   var MAX_QUEUE = 8;                   // hard cap on the waiting queue — never let new activity get stuck
                                         // behind an unbounded backlog (see bug note below)
-  var LIFETIME_MS = 15000;             // must match the CSS crawl duration (activity-crawl 15s in activity-pulse.css)
+  var LIFETIME_MS = 15000;             // must match the CSS crawl duration (activity-ticker 15s in activity-pulse.css)
   var MIN_EMIT_INTERVAL_MS = 4000;     // per-session throttle across ALL signal types (batches rapid clicks)
   var EVENT_DEBOUNCE_MS = 3 * 60 * 1000;   // don't re-signal the same event from the same session for 3 min
   var MERGE_WINDOW_MS = 2500;          // buffer window for merging identical messages into "Two dancers are..."
@@ -56,6 +56,11 @@
   var VALID_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   var VALID_AREAS = ["Pensacola area", "Mobile area", "Elsewhere / unlisted"];
   var VALID_KINDS = ["Recurring", "One-time"];
+  // Sean, 2026-07-13: "WSDC USA Dance arthur Murray and Fed Astarire are all treated as
+  // styles. they can be used for this purpose too" — these four live outside the site's
+  // normal style/category list (separate toggles, not dance_events.json style values), so
+  // they need their own small whitelist alongside validCategories.
+  var NATIONAL_TOGGLE_LABELS = ["WSDC", "USA Dance", "Arthur Murray", "Fred Astaire"];
 
   var sessionId = (function () {
     try {
@@ -78,6 +83,11 @@
     return v + " dances";
   }
 
+  function isValidCategory(value) {
+    return typeof value === "string" &&
+      ((validCategories && validCategories.has(value)) || NATIONAL_TOGGLE_LABELS.indexOf(value) !== -1);
+  }
+
   /* ---------- message templates ----------
      Every template renders to a sentence starting "A dancer is " so the merge/pluralize
      step below can uniformly upgrade it to "Two dancers are ..." / "N dancers are ...".
@@ -86,28 +96,29 @@
      environment" — no UI/filter jargon (view names, "listing," etc.). */
   function templateFor(sig) {
     switch (sig.type) {
-      case "filter":
-        if (sig.group === "cats") {
-          if (!validCategories || !validCategories.has(sig.value)) return null;
-          // Sean, 2026-07-13: attribute the currently-selected area if there is one
-          // ("A dancer from Pensacola area is interested in latin dances."), falling
-          // back to the generic form when no area filter is active.
-          var hasArea = typeof sig.area === "string" && VALID_AREAS.indexOf(sig.area) !== -1;
-          return (hasArea ? "A dancer from " + sig.area + " is" : "A dancer is") + " interested in " + friendlyCategory(sig.value) + ".";
+      case "filter": {
+        // Sean, 2026-07-13: "you can make the sentences more interesting if there is more
+        // filters selected. the dance is interested in west coast swing dances on
+        // thursday." — sig carries a full snapshot of every active filter dimension
+        // (see filterSnapshotDetail() in app.js), and this composes ONE sentence from
+        // whichever are actually set, rather than one generic line per click.
+        var cat = isValidCategory(sig.cats) ? sig.cats : null;
+        var day = (typeof sig.days === "string" && VALID_DAYS.indexOf(sig.days) !== -1) ? sig.days : null;
+        var area = (typeof sig.areas === "string" && VALID_AREAS.indexOf(sig.areas) !== -1) ? sig.areas : null;
+        var kind = (typeof sig.kinds === "string" && VALID_KINDS.indexOf(sig.kinds) !== -1) ? sig.kinds : null;
+        if (!cat && !day && !area && !kind) return null;   // nothing recognizable — drop
+
+        var subject = "A dancer" + (area ? " from " + area : "") + " is ";
+        if (cat || kind) {
+          var noun = cat ? friendlyCategory(cat) : (kind.toLowerCase() + " dances");
+          if (cat && kind) noun = kind.toLowerCase() + " " + friendlyCategory(cat);
+          var sentence = subject + "interested in " + noun;
+          if (day) sentence += " on " + day;
+          return sentence + ".";
         }
-        if (sig.group === "days") {
-          if (VALID_DAYS.indexOf(sig.value) === -1) return null;
-          return "A dancer is looking at " + sig.value + " dances.";
-        }
-        if (sig.group === "areas") {
-          if (VALID_AREAS.indexOf(sig.value) === -1) return null;
-          return "A dancer is looking at dances in the " + sig.value + ".";
-        }
-        if (sig.group === "kinds") {
-          if (VALID_KINDS.indexOf(sig.value) === -1) return null;
-          return "A dancer is looking at " + sig.value.toLowerCase() + " dances.";
-        }
-        return null;
+        if (day) return subject + "looking at " + day + "'s dances.";
+        return subject + "looking at dances in the " + area + ".";   // area-only case
+      }
       case "view": {
         var label = FRIENDLY_VIEW[sig.view];
         if (!label) return null;
@@ -142,7 +153,7 @@
   var reducedMotion = false;
   // Sean, 2026-07-13 ("i mean instead of up the side"): messages now crawl horizontally,
   // so each concurrently-visible one gets its own starting ROW ("slot", reused terminology
-  // from the earlier vertical design) instead of a vertical offset - up to MAX_VISIBLE
+  // from the earlier vertical design) instead of a vertical offset — up to MAX_VISIBLE
   // messages run on separate ticker lines so they don't overlap mid-crawl. Must roughly
   // match the row height baked into #activity-rail's CSS height (4 * ROW_HEIGHT_PX-ish).
   var ROW_HEIGHT_PX = 22;
@@ -227,8 +238,12 @@
     lastEmitAt = now;
     var payload = { sessionId: sessionId, type: detail.type, ts: firebase.database.ServerValue.TIMESTAMP };
     if (detail.type === "filter") {
-      payload.group = detail.group; payload.value = detail.value;
-      if (detail.group === "cats" && typeof detail.area === "string") payload.area = detail.area;
+      // Full snapshot (see filterSnapshotDetail() in app.js) — only include fields that
+      // are actually set, keeps written records small and matches what templateFor() reads.
+      if (typeof detail.cats === "string") payload.cats = detail.cats;
+      if (typeof detail.days === "string") payload.days = detail.days;
+      if (typeof detail.areas === "string") payload.areas = detail.areas;
+      if (typeof detail.kinds === "string") payload.kinds = detail.kinds;
     }
     if (detail.type === "view") { payload.view = detail.view; }
     if (detail.type === "event_viewed") { payload.eventId = detail.eventId; }
