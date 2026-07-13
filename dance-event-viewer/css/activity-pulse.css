@@ -52,7 +52,7 @@
    and exits off the left edge — #activity-rail's overflow:hidden does the actual "disappear
    at the end of the frame," this just moves it there. */
 @keyframes activity-crawl {
-  0%   { transform: translateX(100%); }
+  0%   { transform: translateX(100vw); }
   100% { transform: translateX(-110vw); }
 }
 
