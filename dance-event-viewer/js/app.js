@@ -40,6 +40,23 @@ const MAP_MARKER_COLORS = {
 // While empty, the form falls back to opening Gmail compose. No credentials live in this page.
 const SEND_ENDPOINT = "https://script.google.com/macros/s/AKfycbyTcNCMl42HCDosDST23_E2m_9vYLa6tKiCSIH8Y23G4KYrA5iL-efcbMyZVuGwFD3S/exec";
 
+/* ---------- favorites (added 2026-07-13, Sean: "share and favorite buttons") ----------
+   Purely client-side/this-browser — a heart toggle stored in localStorage, keyed by each
+   event's stable `key` field. No server, no account, nothing sent anywhere. Events with no
+   `key` (shouldn't happen given loadData()'s whitelist, but guarded anyway) can't be
+   favorited — there's no stable id to remember them by. */
+const FAVORITES_KEY = "dance-event-viewer-favorites-v1";
+function loadFavorites() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+    return new Set(Array.isArray(arr) ? arr.filter(v => typeof v === "string") : []);
+  } catch (e) { return new Set(); }
+}
+function saveFavorites(set) {
+  try { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...set])); } catch (e) { /* private mode etc. — just won't persist */ }
+}
+let favorites = loadFavorites();
+
 /* ---------- state ---------- */
 const state = {
   sourceId: SOURCES[0].id,
@@ -489,12 +506,106 @@ function matchesFilters(d) {
   return true;
 }
 
+/* ---------- share (added 2026-07-13, Sean: "share and favorite buttons") ----------
+   Native share sheet where available (mobile Safari/Chrome); clipboard copy everywhere
+   else. The site has no per-event deep links, so the shared text carries the event's
+   own details (name, schedule, venue) plus a link to the calendar itself — the
+   recipient gets the info even though the URL always points at the homepage. */
+function shareTextFor(ev) {
+  const parts = [ev.name.trim()];
+  const sched = scheduleText(ev);
+  if (sched) parts.push(sched);
+  if (typeof ev.venue === "string" && ev.venue.trim()) parts.push(ev.venue.trim());
+  return parts.join("\n");
+}
+async function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fall through */ }
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) { return false; }
+}
+function flashShareCopied(btn) {
+  const original = btn.textContent;
+  btn.textContent = "\u2713";
+  btn.classList.add("copied");
+  btn.setAttribute("aria-label", "Link copied!");
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.classList.remove("copied");
+    btn.setAttribute("aria-label", "Share this event");
+  }, 1800);
+}
+async function handleShare(ev, btn) {
+  const text = shareTextFor(ev);
+  const url = location.origin + location.pathname;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: ev.name.trim(), text, url });
+      return;
+    } catch (e) {
+      if (e && e.name === "AbortError") return;   // user cancelled the share sheet — not an error
+      // real failure (e.g. share unsupported for this data) — fall through to clipboard below
+    }
+  }
+  const ok = await copyText(`${text}\n${url}`);
+  if (ok) flashShareCopied(btn);
+}
+
+/* Favorite + share icon buttons, top-right corner of every card — built once here so
+   Timeline, Grid, List (expanded row), Map popup, and Calendar popup all get them for
+   free, since they all render through this same card() function. */
+function cardActions(ev) {
+  const wrap = document.createElement("div");
+  wrap.className = "card-actions";
+
+  const favBtn = document.createElement("button");
+  favBtn.type = "button";
+  favBtn.className = "card-action-btn card-action-favorite";
+  const hasKey = typeof ev.key === "string" && ev.key;
+  const isFav = hasKey && favorites.has(ev.key);
+  favBtn.setAttribute("aria-pressed", String(isFav));
+  favBtn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
+  favBtn.textContent = isFav ? "\u2665" : "\u2661";
+  if (!hasKey) {
+    favBtn.disabled = true;
+    favBtn.title = "This event can't be favorited yet";
+  } else {
+    favBtn.addEventListener("click", () => {
+      const nowOn = !favorites.has(ev.key);
+      nowOn ? favorites.add(ev.key) : favorites.delete(ev.key);
+      saveFavorites(favorites);
+      favBtn.setAttribute("aria-pressed", String(nowOn));
+      favBtn.setAttribute("aria-label", nowOn ? "Remove from favorites" : "Add to favorites");
+      favBtn.textContent = nowOn ? "\u2665" : "\u2661";
+    });
+  }
+  wrap.appendChild(favBtn);
+
+  const shareBtn = document.createElement("button");
+  shareBtn.type = "button";
+  shareBtn.className = "card-action-btn card-action-share";
+  shareBtn.setAttribute("aria-label", "Share this event");
+  shareBtn.textContent = "\u2934";
+  shareBtn.addEventListener("click", () => handleShare(ev, shareBtn));
+  wrap.appendChild(shareBtn);
+
+  return wrap;
+}
+
 /* ---------- rendering (whitelist only, textContent only) ---------- */
 function card(d, { showWhen, isPast }) {
   const { ev } = d;
   const el = document.createElement("article");
   el.className = "card";
   if (isPast) el.classList.add("is-past");
+  el.appendChild(cardActions(ev));
 
   const art = document.createElement("div");
   art.className = "card-art";

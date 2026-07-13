@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260713i">
+  <link rel="stylesheet" href="css/styles.css?v=20260713j">
   <link rel="stylesheet" href="css/whispers.css">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713h">
 
@@ -49,13 +49,17 @@
   </header>
 
   <aside class="sean-note" role="note" aria-label="Messages from Sean">
-    <p class="sean-note-title">Messages from Sean:</p>
-    <p class="sean-note-lead">Building this bad boy from the ground up. &#128679;<br>Under construction, fam.. watch this space.</p>
-    <ul class="sean-note-list">
-      <li>The calendar is still a little rough around the edges. I&rsquo;ll give it some love later.</li>
-      <li>Share and heart buttons are coming to every card.. hopefully this week!</li>
-      <li>&ldquo;Wrong info? Need to add something?&rdquo; deserves a better line and a new home at the bottom of each card. That glow-up is also planned for this week.</li>
-    </ul>
+    <button class="sean-toggle" type="button" aria-expanded="true" aria-controls="sean-details">
+      <strong>Messages from Sean</strong><span aria-hidden="true">&minus;</span>
+    </button>
+    <div id="sean-details" class="sean-details">
+      <p class="sean-note-lead">Building this bad boy from the ground up. &#128679;<br>Under construction, fam.. watch this space.</p>
+      <ul class="sean-note-list">
+        <li>The calendar is still a little rough around the edges. I&rsquo;ll give it some love later.</li>
+        <li>Share and heart buttons are coming to every card.. hopefully this week!</li>
+        <li>&ldquo;Wrong info? Need to add something?&rdquo; deserves a better line and a new home at the bottom of each card. That glow-up is also planned for this week.</li>
+      </ul>
+    </div>
   </aside>
 
   <aside class="beta-note" role="note">
@@ -190,23 +194,30 @@
 
   <script>
     (() => {
-      const note = document.querySelector('.beta-note');
-      const toggle = note?.querySelector('.beta-toggle');
-      if (!note || !toggle) return;
+      // Wires up any collapsible note (Messages from Sean, About These Listings) — same
+      // toggle/pill mechanics for both, each auto-collapsing a couple seconds after load
+      // (2026-07-13, Sean: made Messages from Sean collapsible to match About These Listings).
+      function wireCollapsible(noteSelector, toggleSelector, autoCollapseMs) {
+        const note = document.querySelector(noteSelector);
+        const toggle = note?.querySelector(toggleSelector);
+        if (!note || !toggle) return;
 
-      const setOpen = (open) => {
-        note.classList.toggle('is-collapsed', !open);
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.querySelector('span').textContent = open ? '−' : '+';
-      };
+        const setOpen = (open) => {
+          note.classList.toggle('is-collapsed', !open);
+          toggle.setAttribute('aria-expanded', String(open));
+          toggle.querySelector('span').textContent = open ? '−' : '+';
+        };
 
-      toggle.addEventListener('click', () => {
-        setOpen(toggle.getAttribute('aria-expanded') !== 'true');
-      });
-      window.setTimeout(() => setOpen(false), 2000);
+        toggle.addEventListener('click', () => {
+          setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+        });
+        if (autoCollapseMs != null) window.setTimeout(() => setOpen(false), autoCollapseMs);
+      }
+      wireCollapsible('.sean-note', '.sean-toggle', 2000);
+      wireCollapsible('.beta-note', '.beta-toggle', 2000);
     })();
   </script>
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=20260713j"></script>
   <script src="js/whispers.js"></script>
   <script src="js/activity-pulse.js?v=20260713h"></script>
 </body>

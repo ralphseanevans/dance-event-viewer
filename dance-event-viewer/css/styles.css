@@ -92,24 +92,48 @@ body {
 /* "Messages from Sean" — a casual, dark-blue update note from the site owner (added
    2026-07-13 at Sean's request). Deliberately its own color (not the amber "beta-note"
    warning color below it, not the cyan/pink accent pair) so it reads as a personal aside
-   rather than a system notice or a call-to-action button. */
+   rather than a system notice or a call-to-action button. Made collapsible (2026-07-13,
+   same day) to match "About These Listings" below it in mechanics/look — same
+   toggle-button + collapsed-pill pattern, own color kept, both toggles shortened. */
 .sean-note {
   max-width: var(--maxw);
   margin: 14px auto 0;
   background: linear-gradient(160deg, #14335a, #0e2444);
   border: 1px solid #2a5c8a;
   border-radius: var(--radius);
-  padding: 16px 20px;
+  padding: 8px 14px;
   box-shadow: 0 10px 30px rgba(10, 30, 60, .35);
 }
-.sean-note-title {
-  margin: 0 0 8px;
+.sean-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sean-toggle strong {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .1em;
   font-size: .8rem;
-  color: var(--accent);
 }
+.sean-toggle span { font-size: 1rem; line-height: 1; }
+.sean-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.sean-details { margin-top: 8px; }
+.sean-note.is-collapsed .sean-details { display: none; }
+.sean-note.is-collapsed {
+  width: fit-content;
+  padding: 4px 14px;
+  border-radius: 999px;
+}
+.sean-note.is-collapsed .sean-toggle { width: auto; }
 .sean-note-lead {
   margin: 0 0 12px;
   color: var(--text);
@@ -132,7 +156,7 @@ body {
   color: var(--badge-warn-fg);
   border: 1px solid #6b511f;
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: 6px 12px;
   font-size: .78rem;
   line-height: 1.35;
 }
@@ -158,7 +182,7 @@ body {
 .beta-note.is-collapsed .beta-details { display: none; }
 .beta-note.is-collapsed {
   width: fit-content;
-  padding: 6px 16px;
+  padding: 4px 14px;
   border-radius: 999px;
 }
 .beta-note.is-collapsed .beta-toggle { width: auto; }
@@ -324,12 +348,43 @@ main { max-width: var(--maxw); margin: 0 auto; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--gap); }
 
 .card {
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 16px 18px;
   display: flex; flex-direction: column; gap: 8px;
 }
+
+/* Share/favorite icon buttons — top-right corner of every card (added 2026-07-13, Sean:
+   "share and favorite buttons"). Absolutely positioned so they sit consistently in the
+   corner regardless of whether a card has art/badges above the title; painted above the
+   card's static content automatically (no z-index tuning needed) since positioned
+   elements always stack above non-positioned siblings. */
+.card-actions {
+  position: absolute;
+  top: 10px; right: 10px;
+  display: flex; gap: 6px;
+}
+.card-action-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(14, 20, 32, .72);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: .95rem; line-height: 1;
+  padding: 0; cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.card-action-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.card-action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-action-btn:disabled { opacity: .35; cursor: default; }
+.card-action-favorite[aria-pressed="true"] {
+  color: var(--accent-pink); border-color: var(--accent-pink);
+  background: rgba(255, 95, 162, .14);
+}
+.card-action-share.copied { color: var(--accent); border-color: var(--accent); }
 .card-art { min-height: 0; }               /* per-event graphic (from logo-map.json) */
 .card-art img {
   display: block; margin: 0 auto;
