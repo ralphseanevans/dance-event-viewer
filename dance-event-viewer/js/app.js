@@ -12,7 +12,15 @@
 const SOURCES = [
   { id: "dance", label: "All Dance Events", file: "../dance_events.json" },
 ];
-const CATEGORY_WHITELIST = ["West Coast Swing", "Mixed", "Latin", "Argentine Tango"];
+const CORE_CATEGORIES = ["West Coast Swing", "Mixed", "Latin", "Argentine Tango"];
+// Solo Dance Styles (added 2026-07-13, Sean) — Pensacola Coastals Dance Studio's class schedule.
+// These render in their own collapsed "Solo Dance Styles" group in the Style filter (see
+// buildSoloStyleChips/#solo-styles-chips) rather than the flat partner-dance chip row, but they
+// still write into the SAME state.filters.cats Set — a class is just a category like any other,
+// only the UI grouping differs. Bachata is deliberately NOT here: it's an existing partner-dance
+// entry already categorized "Latin" (sensual-sundays-bachata-pensacola-coastals) — leave it alone.
+const SOLO_STYLES = ["Ballet", "Jazz", "Hip Hop", "Contemporary", "Heels", "Pom", "Musical Theatre", "Dance Fit"];
+const CATEGORY_WHITELIST = [...CORE_CATEGORIES, ...SOLO_STYLES];
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PREFS_KEY = "dance-event-viewer-prefs-v2";   // UI prefs only — never event data. (v2: location model changed 2026-07-11)
@@ -24,6 +32,9 @@ const MAP_TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright
 const MAP_MARKER_COLORS = {
   "West Coast Swing": "#4cc2ff", "Mixed": "#7fe0a7", "Latin": "#ffc27d",
   "Argentine Tango": "#ff5fa2", "Other": "#9fadc4",
+  // Solo Dance Styles (2026-07-13) — see SOLO_STYLES above.
+  "Ballet": "#a78bfa", "Jazz": "#fde047", "Hip Hop": "#f87171", "Contemporary": "#2dd4bf",
+  "Heels": "#e879f9", "Pom": "#a3e635", "Musical Theatre": "#818cf8", "Dance Fit": "#f59e0b",
 };
 // Silent-send endpoint for the correction form: Sean's Google Apps Script web app /exec URL.
 // While empty, the form falls back to opening Gmail compose. No credentials live in this page.
@@ -304,7 +315,10 @@ function presentValues(fn, order) {
 }
 function buildFilterChips() {
   const groups = {
-    cats: presentValues(d => d.category, [...CATEGORY_WHITELIST, OTHER]),
+    // "cats" only covers the core partner-dance categories here — Solo Dance Styles get their
+    // own holder (buildSoloStyleChips) so they don't clutter the main Style row, even though
+    // both groups toggle the same state.filters.cats Set underneath.
+    cats: presentValues(d => d.category, [...CORE_CATEGORIES, OTHER]),
     days: presentValues(d => d.day, DAY_ORDER),
     areas: presentValues(d => d.loc.area, ["Pensacola area", "Mobile area", "Elsewhere / unlisted"]),
     kinds: presentValues(d => d.kind, ["Recurring", "One-time"]),
@@ -330,7 +344,28 @@ function buildFilterChips() {
     }
     holder.closest(".filter-group").hidden = values.length <= 1;
   }
+  buildSoloStyleChips();
   syncChips();
+}
+/* Solo Dance Styles — separate collapsed chip row under the Style group (see #solo-styles-chips
+   / .solo-styles-toggle in index.html). Chips here toggle state.filters.cats, same as the main
+   Style chips — the split is presentation-only, not a second filter dimension. */
+function buildSoloStyleChips() {
+  const holder = document.getElementById("solo-styles-chips");
+  const wrap = document.querySelector(".solo-styles-group");
+  if (!holder || !wrap) return;
+  holder.textContent = "";
+  const values = presentValues(d => d.category, SOLO_STYLES);
+  for (const v of values) {
+    const chip = makeChip(v, () => {
+      const set = state.filters.cats;
+      set.has(v) ? set.delete(v) : set.add(v);
+      syncChips(); render();
+    });
+    chip.dataset.value = v;
+    holder.appendChild(chip);
+  }
+  wrap.hidden = values.length === 0;
 }
 function makeChip(label, onClick) {
   const b = document.createElement("button");
@@ -353,6 +388,11 @@ function syncChips() {
         : set.has(chip.dataset.value);
       chip.setAttribute("aria-pressed", String(on));
     }
+  }
+  const soloHolder = document.getElementById("solo-styles-chips");
+  if (soloHolder) {
+    for (const chip of soloHolder.querySelectorAll(".chip"))
+      chip.setAttribute("aria-pressed", String(state.filters.cats.has(chip.dataset.value)));
   }
   savePrefs();
 }
@@ -906,6 +946,14 @@ function init() {
     fredAstaireToggle.setAttribute("aria-pressed", String(state.showFredAstaire));
     syncChips(); render();
   });
+  const soloToggle = document.getElementById("solo-styles-toggle");
+  if (soloToggle) {
+    soloToggle.addEventListener("click", () => {
+      const open = soloToggle.getAttribute("aria-expanded") !== "true";
+      soloToggle.setAttribute("aria-expanded", String(open));
+      document.getElementById("solo-styles-chips").hidden = !open;
+    });
+  }
   startSubmitAttention();
   if (!state.filtersOpen) setTimeout(startFiltersAttention, 1000);   // starts right as the Submit flash finishes
   document.getElementById("reset-filters").addEventListener("click", () => {
@@ -915,6 +963,13 @@ function init() {
     for (const id of ["sel-country", "sel-state", "sel-town"]) {
       const s = document.getElementById(id);
       if (s) s.value = "";
+    }
+    // Reset also clears the 4 national-source toggles (2026-07-13, Sean) — they're stored as
+    // separate booleans (not Set members) so the generic state.filters loop above doesn't touch
+    // them; without this they'd silently survive a reset and keep excluding/including events.
+    state.showWSDC = state.showUSADance = state.showArthurMurray = state.showFredAstaire = false;
+    for (const id of ["wsdc-toggle", "usadance-toggle", "arthur-murray-toggle", "fred-astaire-toggle"]) {
+      document.getElementById(id)?.setAttribute("aria-pressed", "false");
     }
     syncChips(); render();
   });

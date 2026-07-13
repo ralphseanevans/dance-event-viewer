@@ -245,6 +245,14 @@ body {
 .chip[aria-pressed="true"] { background: var(--chip-on-bg); border-color: var(--chip-on-border); font-weight: 600; }
 .chip:hover { border-color: var(--text-dim); }
 
+/* Solo Dance Styles (2026-07-13) — collapsed-by-default sub-group in the Style filter for
+   studio/class categories (Ballet, Jazz, Hip Hop, etc.) that aren't partner dances. Same
+   .past-toggle pill as the national-source toggles above; the chevron rotates open on expand. */
+.solo-styles-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+.solo-styles-toggle span { display: inline-block; transition: transform .15s ease; margin-left: 2px; }
+.solo-styles-toggle[aria-expanded="true"] span { transform: rotate(90deg); }
+.solo-styles-group .chips[hidden] { display: none; }
+
 .loc-selects { display: flex; gap: 12px; flex-wrap: wrap; width: 100%; padding-left: 64px; }
 .loc-selects label { color: var(--text-dim); font-size: .85rem; display: flex; align-items: center; gap: 6px; }
 .loc-selects select {
