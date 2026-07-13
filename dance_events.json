@@ -2311,6 +2311,21 @@
       "venue": "The Pensacola Coastals Dance Studio, 433 S Hwy 29, Cantonment, FL",
       "cost": "Drop-in $10–$25 / $100 monthly unlimited",
       "source_url": "https://pensacolacoastals.wixsite.com/thepensacolacoastals/studio-classes"
+    },
+    {
+      "key": "proam-in-paradise-2026-04-30",
+      "name": "Pro/Am in Paradise",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "start_date": "2026-04-30",
+      "end_date": "2026-05-04",
+      "start_time": null,
+      "end_time": null,
+      "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526 (workshops & competitions); Beach Day meetup Fri 9am at Gulfside Pavilion, Casino Beach",
+      "cost": null,
+      "source_url": "https://pensacolaswingdancesociety.com/proam-in-paradise"
     }
   ]
 }
