@@ -336,8 +336,14 @@ function buildFilterChips() {
     for (const v of values) {
       const chip = makeChip(v, () => {
         const set = state.filters[group];
-        set.has(v) ? set.delete(v) : set.add(v);
+        const wasSelected = set.has(v);
+        wasSelected ? set.delete(v) : set.add(v);
         syncChips(); render();
+        // Activity Pulse signal (Sean, 2026-07-13) — only on selecting a specific value,
+        // not on deselecting or on the generic "All" chip.
+        if (!wasSelected) {
+          window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "filter", group, value: v } }));
+        }
       });
       chip.dataset.value = v;
       holder.appendChild(chip);
@@ -359,8 +365,12 @@ function buildSoloStyleChips() {
   for (const v of values) {
     const chip = makeChip(v, () => {
       const set = state.filters.cats;
-      set.has(v) ? set.delete(v) : set.add(v);
+      const wasSelected = set.has(v);
+      wasSelected ? set.delete(v) : set.add(v);
       syncChips(); render();
+      if (!wasSelected) {
+        window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "filter", group: "cats", value: v } }));
+      }
     });
     chip.dataset.value = v;
     holder.appendChild(chip);
@@ -604,6 +614,11 @@ function listRow(d, isPast) {
     }
     btn.setAttribute("aria-expanded", String(!open));
     details.hidden = open;
+    // Activity Pulse signal — only when opening (not collapsing), matches "opening/expanding
+    // an event card" in Live_Activity_Feed_Prompt.md's event-interest signal list.
+    if (!open && typeof ev.key === "string") {
+      window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "event_viewed", eventId: ev.key } }));
+    }
   });
 
   return li;
@@ -663,7 +678,12 @@ function feedbackWidget(ev) {
   toggle.addEventListener("click", () => {
     form.hidden = !form.hidden;
     toggle.setAttribute("aria-expanded", String(!form.hidden));
-    if (!form.hidden) desc.focus();
+    if (!form.hidden) {
+      desc.focus();
+      // Activity Pulse signal — opening the correction/"open invite" form (Live_Activity_Feed_Prompt.md
+      // Step 1, item 3), only on opening, not on cancel.
+      window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "open_invite" } }));
+    }
   });
   cancel.addEventListener("click", () => {
     form.hidden = true;
@@ -903,7 +923,11 @@ function startSubmitAttention() {
 function init() {
   loadPrefs();
   for (const b of document.querySelectorAll(".view-btn"))
-    b.addEventListener("click", () => setView(b.dataset.view));
+    b.addEventListener("click", () => {
+      setView(b.dataset.view);
+      // Activity Pulse signal — only on an actual click, not the setView(state.view) restore below.
+      window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "view", view: b.dataset.view } }));
+    });
   setView(state.view);
   document.getElementById("filters-toggle").addEventListener("click", () => {
     setFiltersOpen(!state.filtersOpen);
@@ -1243,6 +1267,12 @@ function renderMap(main, visible) {
       popupEl.className = "map-pin-popup";
       popupEl.appendChild(card(d, { showWhen: true }));
       marker.bindPopup(popupEl, { maxWidth: 280 });
+      // Activity Pulse signal — selecting an event marker on the Map view.
+      if (typeof d.ev.key === "string") {
+        marker.on("popupopen", () => {
+          window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "event_viewed", eventId: d.ev.key } }));
+        });
+      }
       if (coords.precision === "city") marker.bindTooltip("Approximate location — exact address not available", { direction: "top" });
       bounds.push([coords.lat, coords.lon]);
     }
@@ -1337,6 +1367,10 @@ function openImageLightbox(src, label) {
 }
 
 function openEventPopup(item, dt) {
+  // Activity Pulse signal — opening an event via the Calendar view's day chip.
+  if (item?.ev && typeof item.ev.key === "string") {
+    window.dispatchEvent(new CustomEvent("activity-signal", { detail: { type: "event_viewed", eventId: item.ev.key } }));
+  }
   const backdrop = document.createElement("div");
   backdrop.className = "cal-pop-backdrop";
   const pop = document.createElement("div");

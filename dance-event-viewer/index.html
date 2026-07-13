@@ -22,6 +22,7 @@
 
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/whispers.css">
+  <link rel="stylesheet" href="css/activity-pulse.css">
 
   <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
@@ -36,6 +37,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
+  <!-- Activity Pulse — ambient "someone is doing X" feed, left edge, no visible panel/chrome
+       (Sean, 2026-07-13). Purely decorative; see js/activity-pulse.js. -->
+  <div id="activity-rail" aria-hidden="true"></div>
+
   <header class="site-header">
     <div id="brand-slot">
       <img src="assets/dance-event-viewer-banner.png" alt="Dance Event Viewer — a dancing couple under blue and pink club lights">
@@ -190,5 +195,6 @@
   </script>
   <script src="js/app.js"></script>
   <script src="js/whispers.js"></script>
+  <script src="js/activity-pulse.js"></script>
 </body>
 </html>
