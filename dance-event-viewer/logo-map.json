@@ -11,7 +11,9 @@
     "good-ole-social-dance-2026-07-17": "../graphics/logos/good_ole_social.jpg",
     "mobtown-workshop-and-social-2026-07-11": "../graphics/logos/MobTown_mobileWCS.png",
     "southern-national-2026-10-15": "../graphics/logos/IMG_0017.PNG",
-    "sensual-sundays-bachata-pensacola-coastals": "../graphics/logos/sensual-sundays-bachata-class.jpg"
+    "sensual-sundays-bachata-pensacola-coastals": "../graphics/logos/sensual-sundays-bachata-class.jpg",
+    "north-alabama-tuesday-night-wcs-social-summer-2026": "../graphics/logos/north-alabama-wcs-tuesday-socials-july-2026.jpg",
+    "tango-lab-fridays-july-2026": "../graphics/logos/TangoLab-chapel.jpg"
   },
   "patterns": [
     { "contains": "mobtown", "logo": "../graphics/logos/MobTown_mobileWCS.png" },
