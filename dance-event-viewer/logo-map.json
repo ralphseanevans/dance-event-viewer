@@ -15,9 +15,14 @@
     "north-alabama-tuesday-night-wcs-social-summer-2026": "../graphics/logos/north-alabama-wcs-tuesday-socials-july-2026.jpg",
     "tango-lab-fridays-july-2026": "../graphics/logos/TangoLab-chapel.jpg",
     "ballroom-lynn-warwick-house-2026-07-29": "../graphics/logos/bill-thrall-portrait.jpg",
-    "bobe-st-studio-coaching-with-justin-tuesdays": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png"
+    "bobe-st-studio-coaching-with-justin-tuesdays": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png",
+    "wcs-garysusandance-thursdays-the-way-you-move": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg"
   },
   "patterns": [
+    {
+      "contains": "wcs-garysusandance-thursdays-the-way-you-move",
+      "logo": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg"
+    },
     {
       "contains": "sanders-beach-ballroom-weekly-classes",
       "logo": "../graphics/logos/upload-sanders-beach-ballroom-weekly-classes-9491e9d8.png"
