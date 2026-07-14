@@ -44,32 +44,7 @@
     <div class="title-block">
       <h1 class="visually-hidden">Dance Event Viewer</h1>
       <div class="title-row">
-        <aside class="sean-note" role="note" aria-label="Under Construction">
-          <button class="sean-toggle" type="button" aria-expanded="false" aria-controls="sean-details">
-            <strong>&#128679; Under Construction</strong><span aria-hidden="true">+</span>
-          </button>
-          <div id="sean-details" class="sean-details" hidden>
-            <p class="sean-note-lead">Building this bad boy from the ground up. &#128679;<br>Under construction, fam.. watch this space.</p>
-            <ul class="sean-note-list">
-              <li>The map is a little rough around the edges. If you end up in Zimbabwe&hellip; it&rsquo;s not my fault! I&rsquo;ll fix it later.</li>
-              <li>Share and Favorite buttons are coming to every card.. hopefully this week!</li>
-              <li>&ldquo;Wrong info? Need to add something?&rdquo; deserves a better line and a new home at the bottom of each card. That glow-up is also planned for this week.</li>
-            </ul>
-          </div>
-        </aside>
-
         <p class="tagline">Connecting Dancers in the South! &middot; good music &middot; great people</p>
-
-        <aside class="beta-note" role="note">
-          <button class="beta-toggle" type="button" aria-expanded="false" aria-controls="beta-details">
-            <strong>About These Listings</strong><span aria-hidden="true">+</span>
-          </button>
-          <div id="beta-details" class="beta-details" hidden>
-            Listings are gathered automatically and manually, so errors are possible. Spot something wrong or
-            missing? Use <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> and include a link, flyer, or photo.
-            Always confirm details with the venue or organizer.
-          </div>
-        </aside>
       </div>
     </div>
     <span id="viewer-count" aria-hidden="true"></span>
@@ -99,6 +74,17 @@
         </button>
         <a href="submit-event.html" class="submit-event-btn">Submit an Event</a>
       </div>
+
+      <aside class="beta-note" role="note">
+        <button class="beta-toggle" type="button" aria-expanded="false" aria-controls="beta-details">
+          <strong>About These Listings</strong><span aria-hidden="true">+</span>
+        </button>
+        <div id="beta-details" class="beta-details" hidden>
+          Listings are gathered automatically and manually, so errors are possible. Spot something wrong or
+          missing? Use <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> and include a link, flyer, or photo.
+          Always confirm details with the venue or organizer.
+        </div>
+      </aside>
     </div>
 
     <div id="filter-panel" class="filter-panel" hidden>
@@ -196,13 +182,11 @@
 
   <script>
     (() => {
-      // Header note dropdowns ("Under Construction" / "About These Listings") \u2014 small pills
-      // flanking the tagline (2026-07-13, Sean: "put the collapsed buttons higher to each
-      // side of ... to conserve vertical space ... have the buttons open up downwards and
-      // not overlap anything"). Both start closed; opening one closes the other so their
-      // floating panels never overlap, and clicking anywhere outside a note closes it.
+      // "About These Listings" dropdown — a small pill living in the filters bar
+      // (2026-07-14, Sean: removed the "Under Construction" note and moved this one
+      // down to the filters bar). Starts closed; opens a floating panel below the
+      // button, and clicking anywhere outside the note closes it.
       const notes = [
-        { note: document.querySelector('.sean-note'), toggle: document.querySelector('.sean-toggle'), details: document.getElementById('sean-details') },
         { note: document.querySelector('.beta-note'), toggle: document.querySelector('.beta-toggle'), details: document.getElementById('beta-details') },
       ].filter(n => n.note && n.toggle && n.details);
 
@@ -226,7 +210,7 @@
       });
     })();
   </script>
-  <script src="js/app.js?v=20260713j"></script>
+  <script src="js/app.js?v=20260714a"></script>
   <script src="js/whispers.js"></script>
   <script src="js/activity-pulse.js?v=20260713i"></script>
 </body>

@@ -1145,21 +1145,15 @@ function render() {
     }
   }
 
-  // The "of N" total excludes past events by default (Sean, 2026-07-12) — otherwise
-  // it balloons with stale one-time events over time and stops meaning anything.
-  // Also excludes WSDC/USA Dance/Arthur Murray/Fred Astaire events by default, same
-  // reasoning as the past-event exclusion (2026-07-13: each is now gated by whether its
-  // tag is selected in state.filters.cats, same source of truth the chips themselves use,
-  // rather than a separate boolean that could drift out of sync).
-  const countable = state.events.filter(d =>
-    (state.filters.cats.has("WSDC") || !isWSDC(d.ev)) &&
-    (state.filters.cats.has("USA Dance") || !isUSADance(d.ev)) &&
-    (state.filters.cats.has("Arthur Murray") || !isArthurMurray(d.ev)) &&
-    (state.filters.cats.has("Fred Astaire") || !isFredAstaire(d.ev))
-  );
-  const totalForCount = state.showPast
-    ? countable.length
-    : countable.filter(d => !isPastEvent(d, today)).length;
+  // Count reads "[left] of [right] events shown" (Sean, 2026-07-14): the LEFT number is
+  // what the current filters are allowing (the events actually displayed = `shown`), and
+  // the RIGHT number is the total events the site is hosting. So with nothing filtered the
+  // two match ("150 of 150"), and any filter narrows the left number ("5 of 150"). Past
+  // events are excluded from the total by default (Sean, 2026-07-12) so it doesn't balloon
+  // with stale one-time events; turning on "Show Past Events" brings them into both counts.
+  const totalHosted = state.showPast
+    ? state.events.length
+    : state.events.filter(d => !isPastEvent(d, today)).length;
 
   if (!shown) {
     const empty = document.createElement("div");
@@ -1168,9 +1162,9 @@ function render() {
       ? "No events match these filters."
       : "No upcoming events match these filters. Try clearing a filter, turning on “Show Past Events,” or open the Calendar to browse by month.";
     main.appendChild(empty);
-    setStatus(`0 of ${totalForCount} events shown`, false);
+    setStatus(`0 of ${totalHosted} events shown`, false);
   } else {
-    setStatus(`${shown} of ${totalForCount} event${totalForCount === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}`, false);
+    setStatus(`${shown} of ${totalHosted} event${totalHosted === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}`, false);
   }
 }
 
