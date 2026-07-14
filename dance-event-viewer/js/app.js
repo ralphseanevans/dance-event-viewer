@@ -32,8 +32,8 @@ const NATIONAL_TAGS = [
 ];
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const PREFS_KEY = "dance-event-viewer-prefs-v2";   // UI prefs only — never event data. (v2: location model changed 2026-07-11)
-const DEFAULT_AREAS = [];   // default to All locations per Sean (2026-07-11: was Pensacola+Mobile only)
+const PREFS_KEY = "dance-event-viewer-prefs-v3";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
+const DEFAULT_AREAS = ["Pensacola area", "Mobile area"];   // 2026-07-14 (Sean): default the Location filter to Pensacola + Mobile — the site's core audience for now; visitors can widen it via the Location chips or Reset filters. (Was [] "all locations" from 2026-07-11; Pensacola+Mobile before that.)
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
 const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map view (optional; page works without it)
 const MAP_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";  // free, no API key
