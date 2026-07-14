@@ -1,12 +1,12 @@
 {
   "_schema_notes": "Cached geocoding results for the Map view (Leaflet + OpenStreetMap, added 2026-07-12). Keyed by the EXACT venue string as it appears in dance_events.json -- app.js looks up an event's venue text here first. Geocoded once via OpenStreetMap's free Nominatim service (never per-visitor -- that would violate their usage policy) and cached here so the map never makes a live geocoding call. 'precision': 'exact' means Nominatim resolved the specific address; 'city' means the specific venue/address wasn't found in OpenStreetMap's data (common for small local halls) and this falls back to the city center instead -- an honest approximate pin rather than an invented precise one. 'city_fallbacks' is used by app.js automatically for any venue NOT listed here at all (derived from the same Pensacola/Mobile/Panama City Beach text-matching locationOf() already uses for the Location filter) so a brand-new venue still gets at least a city-level pin without needing this file updated first. To improve a 'city' precision entry later: add the venue to OpenStreetMap (anyone can edit, free) and re-geocode, or ask Sean for a manual lat/lon from Google Maps and hardcode it here.",
   "venues": {
-    "Ragon Hall, 2600 Stratford Rd, Pensacola, FL": { "lat": 30.4213090, "lon": -87.2169149, "precision": "city" },
-    "The Way You Move, 918 Winton Ave, Pensacola, FL": { "lat": 30.4213090, "lon": -87.2169149, "precision": "city" },
-    "The Way You Move, 918 Winton Ave, Pensacola, FL 32501": { "lat": 30.4213090, "lon": -87.2169149, "precision": "city" },
+    "Ragon Hall, 2600 Stratford Rd, Pensacola, FL": { "lat": 30.5105292, "lon": -87.3096376, "precision": "exact" },
+    "Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526": { "lat": 30.5105292, "lon": -87.3096376, "precision": "exact" },
+    "The Way You Move, 918 Winton Ave, Pensacola, FL 32507": { "lat": 30.3866088, "lon": -87.3029444, "precision": "exact" },
     "David Miner Ballroom/Dancesport Academy, 262 Azalea Rd, Mobile, AL 36609": { "lat": 30.6752477, "lon": -88.1484221, "precision": "exact" },
     "Chapel Collective, Historic Sacred Heart Building, 1010 N 12th Ave, Pensacola, FL 32501": { "lat": 30.4263337, "lon": -87.2027663, "precision": "exact" },
-    "Pensacola, FL (Ragon Hall per flyer branding)": { "lat": 30.4213090, "lon": -87.2169149, "precision": "city" },
+    "Pensacola, FL (Ragon Hall per flyer branding)": { "lat": 30.5105292, "lon": -87.3096376, "precision": "exact" },
     "Sanders Beach-Corinne Jones Resource Center, Pensacola, FL": { "lat": 30.4007327, "lon": -87.2364662, "precision": "exact" },
     "Sanders Beach Community Center, 913 South \"I\" St, Pensacola, FL": { "lat": 30.4007327, "lon": -87.2364662, "precision": "exact" },
     "Pensacola, FL (exact venue not listed on the event page)": { "lat": 30.4213090, "lon": -87.2169149, "precision": "city" },
