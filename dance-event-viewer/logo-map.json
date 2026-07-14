@@ -7,7 +7,7 @@
     "west-coast-wednesdays-in-july-2026": "../graphics/logos/way-you-move-wcs-wednesdays-july-2026.jpg",
     "ragon-hall-first-saturday-monthly-dance": "../graphics/logos/ragon-hall-first-saturday-big-dance-night-2026-07.jpg",
     "3rd-saturday-west-coast-swing-old-sacred-heart-2026-07-18": "../graphics/logos/chapel-collective-dance-room-2026-12.png",
-    "sanders-beach-ballroom-weekly-classes": "../graphics/logos/IMG_0015.JPG",
+    "sanders-beach-ballroom-weekly-classes": "../graphics/logos/upload-sanders-beach-ballroom-weekly-classes-9491e9d8.png",
     "good-ole-social-dance-2026-07-17": "../graphics/logos/good_ole_social.jpg",
     "mobtown-workshop-and-social-2026-07-11": "../graphics/logos/MobTown_mobileWCS.png",
     "southern-national-2026-10-15": "../graphics/logos/IMG_0017.PNG",
@@ -18,6 +18,10 @@
     "bobe-st-studio-coaching-with-justin-tuesdays": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png"
   },
   "patterns": [
+    {
+      "contains": "sanders-beach-ballroom-weekly-classes",
+      "logo": "../graphics/logos/upload-sanders-beach-ballroom-weekly-classes-9491e9d8.png"
+    },
     {
       "contains": "bobe-st-studio-coaching-with-justin-tuesdays",
       "logo": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png"
