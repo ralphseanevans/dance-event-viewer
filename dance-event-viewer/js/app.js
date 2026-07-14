@@ -995,8 +995,47 @@ function feedbackWidget(ev) {
       return;
     }
 
-    if (SEND_ENDPOINT) {
-      // Silent send via Sean's Apps Script web app (fire-and-forget; no-cors responses are opaque).
+    // Text-only correction → also routed through the Submissions pipeline (2026-07-13,
+    // Sean's hourly auto-fix: trusted senders' fixes are queued and applied to the
+    // listing data automatically; everyone else's land in Sean's review queue).
+    if (SUBMIT_ENDPOINT) {
+      send.disabled = true;
+      status.textContent = "Sending…";
+      try {
+        const payload = {
+          action: "submit",
+          intake_method: "form",
+          submission_kind: "correction",
+          event_key: typeof ev.key === "string" ? ev.key : "",
+          type: typeof ev.type === "string" ? ev.type : "",
+          name: ev.name,
+          source_note: desc.value.trim(),
+          source_url: link.value.trim(),
+          contact_name: who.value.trim(),
+        };
+        const res = await fetch(SUBMIT_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => null);
+        if (data && data.ok) {
+          status.textContent = data.queued
+            ? "Got it — your fix is queued and usually lands on the listing within the hour."
+            : "Sent — thanks for helping keep the calendar accurate!";
+          desc.value = ""; link.value = ""; who.value = "";
+          setTimeout(() => { form.hidden = true; toggle.setAttribute("aria-expanded", "false"); status.textContent = ""; send.disabled = false; }, 2500);
+        } else {
+          send.disabled = false;
+          status.textContent = (data && data.error) || "Couldn't send — please try again, or email ralphseanevans@gmail.com.";
+        }
+      } catch (e) {
+        send.disabled = false;
+        status.textContent = "Couldn't send — please email ralphseanevans@gmail.com instead.";
+      }
+    } else if (SEND_ENDPOINT) {
+      // Silent send via Sean's Apps Script mail relay (fallback if the Submissions
+      // pipeline endpoint is ever blank; fire-and-forget, no-cors responses are opaque).
       send.disabled = true;
       status.textContent = "Sending…";
       try {
