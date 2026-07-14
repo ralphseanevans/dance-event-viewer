@@ -574,6 +574,15 @@ function matchesCat(d, tag) {
 }
 function matchesFilters(d) {
   const f = state.filters;
+  // National-org feeds (WSDC / USA Dance / Arthur Murray / Fred Astaire) are OPT-IN
+  // (Sean, 2026-07-14): each is a nationwide event set that otherwise floods the default
+  // local view, so an event belonging to one is hidden UNLESS that org's own chip is
+  // selected — matching the chips' "select to show only these" design. Selecting the chip
+  // lets its events through here; the cats test below then narrows to the chosen tags.
+  if (isWSDC(d.ev) && !f.cats.has("WSDC")) return false;
+  if (isUSADance(d.ev) && !f.cats.has("USA Dance")) return false;
+  if (isArthurMurray(d.ev) && !f.cats.has("Arthur Murray")) return false;
+  if (isFredAstaire(d.ev) && !f.cats.has("Fred Astaire")) return false;
   if (f.cats.size && ![...f.cats].some(tag => matchesCat(d, tag))) return false;
   if (f.days.size && !f.days.has(d.day)) return false;
   if (f.areas.size && !f.areas.has(d.loc.area)) return false;
@@ -1147,8 +1156,10 @@ function render() {
 
   // Count reads "[left] of [right] events shown" (Sean, 2026-07-14): the LEFT number is
   // what the current filters are allowing (the events actually displayed = `shown`), and
-  // the RIGHT number is the total events the site is hosting. So with nothing filtered the
-  // two match ("150 of 150"), and any filter narrows the left number ("5 of 150"). Past
+  // the RIGHT number is the total events the site is hosting. By default the LEFT shows the
+  // local/regional events (the four national-org feeds — WSDC/USA Dance/Arthur Murray/Fred
+  // Astaire — are opt-in, hidden until their chip is picked), e.g. "41 of 156"; picking a
+  // national chip or any filter changes the left number. Past
   // events are excluded from the total by default (Sean, 2026-07-12) so it doesn't balloon
   // with stale one-time events; turning on "Show Past Events" brings them into both counts.
   const totalHosted = state.showPast
