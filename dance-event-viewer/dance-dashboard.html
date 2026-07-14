@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<!--
+  Dance Event Viewer — Review Dashboard (hosted, phone-friendly).
+  ==============================================================
+  This is the PUBLIC-HOSTED companion to the local Submission_Review.html.
+  It is safe to host on GitHub Pages because it contains NO REVIEW_TOKEN:
+  it authenticates with a separate DASHBOARD_PASSWORD (a Script Property on
+  the Apps Script backend) that the visitor types once and the browser keeps
+  in localStorage. The real REVIEW_TOKEN never leaves the server.
+
+  Talks to the same Apps Script web app the public form posts to:
+    - POST {action:"list", password}                 -> all submission rows
+    - POST {action:"update", password, row_id, ...}  -> Approve / Deny / Hold / edit
+
+  Requires the 2026-07-13 backend update (password auth + "hold" status +
+  action:"list") — see Dashboard_Deploy_Instructions.md. Until Sean redeploys
+  the .gs and adds the DASHBOARD_PASSWORD property, this page can't log in.
+
+  Run-the-skills buttons are NOT here — they live in the Cowork artifact
+  (they need to trigger Claude scheduled tasks, which a web page can't do).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f16">
+<title>Dance Review Dashboard</title>
+<style>
+  :root {
+    --bg: #0b0f16;
+    --bg-raised: #131a24;
+    --bg-card: #171f2b;
+    --border: #29323f;
+    --text: #e7ecf3;
+    --text-dim: #93a0b3;
+    --accent: #7fd1ae;
+    --accent-soft: #16332a;
+    --danger: #e8768a;
+    --danger-soft: #3a1e24;
+    --warn: #e8c27a;
+    --warn-soft: #332a12;
+    --info: #7fb2e8;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: env(safe-area-inset-top) 12px calc(40px + env(safe-area-inset-bottom));
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  header.top { text-align: center; padding: 18px 0 8px; }
+  header.top h1 { font-size: 1.15rem; margin: 0; letter-spacing: .04em; text-transform: uppercase; }
+  header.top .sub { color: var(--text-dim); font-size: .82rem; margin: 4px 0 0; }
+
+  /* Sticky tab bar, horizontally scrollable on narrow screens */
+  .tabbar {
+    position: sticky; top: 0; z-index: 10; background: var(--bg);
+    display: flex; gap: 8px; overflow-x: auto; padding: 10px 2px; margin: 0 -2px 6px;
+    scrollbar-width: none;
+  }
+  .tabbar::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 0 0 auto; background: var(--bg-card); color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 999px; padding: 9px 15px;
+    font-size: .88rem; cursor: pointer; white-space: nowrap;
+  }
+  .tab.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .tab .count { opacity: .8; margin-left: 5px; }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .status-line { color: var(--text-dim); font-size: .82rem; min-height: 1.1em; flex: 1; }
+  .status-line.error { color: var(--danger); }
+  .refresh { background: var(--bg-card); color: var(--text-dim); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 12px; font: inherit; font-size: .82rem; cursor: pointer; }
+
+  .card {
+    background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 15px; margin-bottom: 14px;
+  }
+  .card.correction { border-left: 3px solid var(--warn); }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: .74rem; font-weight: 700; letter-spacing: .02em; }
+  .badge.pending { background: var(--warn); color: #24210b; }
+  .badge.pendingflyer { background: var(--warn); color: #24210b; }
+  .badge.hold { background: var(--info); color: #0a1a2b; }
+  .badge.approved { background: var(--accent); color: #0b1f17; }
+  .badge.rejected, .badge.denied { background: var(--danger); color: #2b0d13; }
+  .badge.published, .badge.applied { background: #2c3a52; color: #a9c4ee; }
+  .badge.pendingfix { background: var(--info); color: #0a1a2b; }
+  .badge.failed, .badge.extractionfailed { background: var(--danger-soft); color: var(--danger); }
+  .badge.aidrafted { background: #2c3a52; color: #a9c4ee; }
+  .badge.kind { background: var(--warn-soft); color: var(--warn); }
+  .meta { color: var(--text-dim); font-size: .76rem; }
+
+  /* "What they submitted" — the info entered at Send time */
+  .submitted {
+    background: var(--bg-card); border: 1px solid #45391c; border-radius: 10px;
+    padding: 11px 13px; margin-bottom: 12px; font-size: .88rem;
+  }
+  .submitted .label { color: var(--warn); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; font-weight: 700; }
+  .submitted .row { display: flex; gap: 8px; padding: 3px 0; }
+  .submitted .row .k { color: var(--text-dim); flex: 0 0 92px; }
+  .submitted .row .v { color: var(--text); word-break: break-word; }
+  .submitted .row .v a { color: var(--accent); }
+  .submitted .note { margin-top: 6px; padding: 8px 10px; background: var(--bg); border-radius: 8px; white-space: pre-wrap; line-height: 1.45; }
+
+  .flyer-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+  .flyer-thumb { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); flex: 0 0 auto; }
+  .flyer-link { color: var(--accent); font-size: .84rem; text-decoration: none; }
+
+  details.edit { margin-bottom: 10px; }
+  details.edit > summary { color: var(--text-dim); font-size: .82rem; cursor: pointer; padding: 6px 0; list-style: none; }
+  details.edit > summary::-webkit-details-marker { display: none; }
+  details.edit > summary::before { content: "▸ "; }
+  details.edit[open] > summary::before { content: "▾ "; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin: 8px 0 4px; }
+  @media (max-width: 500px) { .grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { color: var(--text-dim); font-size: .7rem; text-transform: uppercase; letter-spacing: .03em; }
+  .field input {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 9px; font: inherit; font-size: .9rem; width: 100%;
+  }
+  .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .contact-block { background: var(--bg-card); border: 1px solid #3a4a3f; border-radius: 8px; padding: 9px 11px; margin-bottom: 10px; font-size: .84rem; }
+  .contact-block .label { color: var(--accent); font-size: .7rem; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 3px; }
+
+  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .actions .wide { grid-column: 1 / -1; }
+  button.act {
+    font: inherit; font-size: .92rem; font-weight: 700; padding: 12px 10px; border-radius: 10px;
+    border: 1px solid var(--border); cursor: pointer; background: var(--bg-card); color: var(--text);
+  }
+  button.act:disabled { opacity: .5; cursor: not-allowed; }
+  button.approve { background: var(--accent); color: #0b1f17; border-color: var(--accent); }
+  button.deny { background: var(--danger); color: #2b0d13; border-color: var(--danger); }
+  button.hold { background: var(--info); color: #0a1a2b; border-color: var(--info); }
+  button.ghost { background: transparent; color: var(--text-dim); font-weight: 500; }
+  .card-status { font-size: .82rem; margin-top: 8px; min-height: 1em; text-align: center; }
+  .card-status.error { color: var(--danger); }
+  .card-status.ok { color: var(--accent); }
+  .auto-note { color: var(--info); font-size: .8rem; margin-bottom: 6px; }
+
+  .empty { text-align: center; color: var(--text-dim); padding: 44px 0; }
+
+  /* Password gate */
+  .gate { max-width: 360px; margin: 12vh auto 0; text-align: center; }
+  .gate h2 { font-size: 1.05rem; margin: 0 0 6px; }
+  .gate p { color: var(--text-dim); font-size: .86rem; margin: 0 0 16px; }
+  .gate input { width: 100%; background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px; font: inherit; font-size: 1rem; margin-bottom: 10px; }
+  .gate button { width: 100%; background: var(--accent); color: #0b1f17; border: none; border-radius: 10px;
+    padding: 13px; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
+  .gate .err { color: var(--danger); font-size: .82rem; min-height: 1.1em; margin-top: 8px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Password gate -->
+    <div id="gate" class="gate hidden">
+      <h2>Dance Review Dashboard</h2>
+      <p>Enter the dashboard password to load the queue.</p>
+      <input id="gate-input" type="password" inputmode="text" autocomplete="current-password" placeholder="Password" />
+      <button id="gate-btn">Unlock</button>
+      <div id="gate-err" class="err"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="app" class="hidden">
+      <header class="top">
+        <h1>Review Dashboard</h1>
+        <p class="sub">Approve · Deny · Hold — flyers &amp; info changes</p>
+      </header>
+      <div class="tabbar" id="tabs"></div>
+      <div class="toolbar">
+        <span class="status-line" id="status-line"></span>
+        <button class="refresh" id="refresh">↻ Refresh</button>
+      </div>
+      <div id="cards"></div>
+    </div>
+  </div>
+
+<script>
+"use strict";
+
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbwtL7anIfkIv7XBkR7AwDKKc13DBPrEghmcEEZiURWR_NLZI3s8CdayU6VQzelK9VMn6w/exec";
+const PW_KEY = "dosDashPw";
+
+// Which raw statuses fall under each tab.
+const TAB_DEFS = [
+  { key: "pending",  label: "Pending",  statuses: ["pending", "pending-flyer", "fix-failed"] },
+  { key: "hold",     label: "Hold",     statuses: ["hold"] },
+  { key: "approved", label: "Approved", statuses: ["approved"] },
+  { key: "denied",   label: "Denied",   statuses: ["rejected", "denied"] },
+  { key: "replaced", label: "Instantly Replaced", statuses: ["published", "applied", "pending-fix"] },
+  { key: "all",      label: "All",      statuses: null },
+];
+
+// Editable event fields (shown in the collapsible "Edit details" section).
+const EDITABLE_FIELDS = [
+  { key: "name", label: "Event name" },
+  { key: "style", label: "Style" },
+  { key: "type", label: "Type" },
+  { key: "day_of_week", label: "Day of week" },
+  { key: "monthly_rule", label: "Monthly rule" },
+  { key: "start_date", label: "Start date" },
+  { key: "end_date", label: "End date" },
+  { key: "start_time", label: "Start time" },
+  { key: "end_time", label: "End time" },
+  { key: "venue", label: "Venue" },
+  { key: "organizer", label: "Organizer" },
+  { key: "cost", label: "Cost" },
+];
+
+let allRows = [];
+let currentTab = "pending";
+let password = localStorage.getItem(PW_KEY) || "";
+
+function $(sel, root) { return (root || document).querySelector(sel); }
+
+function driveFileId(url) {
+  const m = /\/d\/([a-zA-Z0-9_-]+)/.exec(url || "");
+  return m ? m[1] : null;
+}
+function fmtTimestamp(iso) {
+  try { return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
+  catch (e) { return iso || ""; }
+}
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function statusClass(s) { return String(s || "").replace(/[^a-z]/gi, "").toLowerCase(); }
+
+async function apiPost(payload) {
+  const res = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(Object.assign({ password: password }, payload)),
+  });
+  return res.json();
+}
+
+/* ---------- Password gate ---------- */
+function showGate(errMsg) {
+  $("#app").classList.add("hidden");
+  $("#gate").classList.remove("hidden");
+  $("#gate-err").textContent = errMsg || "";
+  $("#gate-input").focus();
+}
+function hideGate() {
+  $("#gate").classList.add("hidden");
+  $("#app").classList.remove("hidden");
+}
+function submitGate() {
+  const val = $("#gate-input").value.trim();
+  if (!val) { $("#gate-err").textContent = "Enter the password."; return; }
+  password = val;
+  localStorage.setItem(PW_KEY, val);
+  hideGate();
+  loadRows();
+}
+
+/* ---------- Load + render ---------- */
+async function loadRows() {
+  const statusLine = $("#status-line");
+  statusLine.textContent = "Loading…";
+  statusLine.classList.remove("error");
+  try {
+    const data = await apiPost({ action: "list" });
+    if (!data.ok) {
+      if (/unauthorized/i.test(data.error || "")) {
+        localStorage.removeItem(PW_KEY); password = "";
+        showGate("That password didn't work. Try again.");
+        return;
+      }
+      throw new Error(data.error || "unknown error");
+    }
+    allRows = data.rows || [];
+    statusLine.textContent = "Updated " + new Date().toLocaleTimeString(undefined, { timeStyle: "short" });
+    renderTabs();
+    renderCards();
+  } catch (err) {
+    statusLine.textContent = "Couldn't load: " + err.message;
+    statusLine.classList.add("error");
+  }
+}
+
+function rowsForTab(key) {
+  const def = TAB_DEFS.find(t => t.key === key);
+  if (!def || def.statuses === null) return allRows.slice();
+  return allRows.filter(r => def.statuses.includes(r.status));
+}
+
+function renderTabs() {
+  const el = $("#tabs");
+  el.innerHTML = "";
+  TAB_DEFS.forEach(def => {
+    const count = rowsForTab(def.key).length;
+    const btn = document.createElement("button");
+    btn.className = "tab" + (currentTab === def.key ? " active" : "");
+    btn.innerHTML = escapeHtml(def.label) + `<span class="count">${count}</span>`;
+    btn.addEventListener("click", () => { currentTab = def.key; renderTabs(); renderCards(); });
+    el.appendChild(btn);
+  });
+}
+
+function renderCards() {
+  const cardsEl = $("#cards");
+  cardsEl.innerHTML = "";
+  const rows = rowsForTab(currentTab);
+  rows.sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
+  if (rows.length === 0) {
+    const label = TAB_DEFS.find(t => t.key === currentTab).label.toLowerCase();
+    cardsEl.innerHTML = `<p class="empty">Nothing in ${escapeHtml(label)}.</p>`;
+    return;
+  }
+  rows.forEach(row => cardsEl.appendChild(renderCard(row)));
+}
+
+function renderCard(row) {
+  const isCorrection = String(row.submission_kind) === "correction";
+  const isAutoApplied = ["published", "applied"].includes(row.status);
+  const isQueuedAuto = row.status === "pending-fix";
+
+  const card = document.createElement("div");
+  card.className = "card" + (isCorrection ? " correction" : "");
+
+  // Head: badges + timestamp
+  const head = document.createElement("div");
+  head.className = "card-head";
+  const badges = document.createElement("div");
+  badges.className = "badges";
+  badges.innerHTML = `<span class="badge ${statusClass(row.status)}">${escapeHtml(row.status || "?")}</span>`;
+  badges.innerHTML += `<span class="badge kind">${isCorrection ? "Wrong info? / Add info" : "New event"}</span>`;
+  if (row.intake_method === "flyer" && row.extraction_status && !["none", ""].includes(row.extraction_status)) {
+    badges.innerHTML += `<span class="badge ${statusClass(row.extraction_status)}">${row.extraction_status === "ai-drafted" ? "AI drafted" : "extraction failed"}</span>`;
+  }
+  const meta = document.createElement("span");
+  meta.className = "meta";
+  meta.textContent = `${row.intake_method || "form"} · ${fmtTimestamp(row.timestamp)}`;
+  head.appendChild(badges); head.appendChild(meta);
+  card.appendChild(head);
+
+  if (isAutoApplied) {
+    const n = document.createElement("div");
+    n.className = "auto-note";
+    n.textContent = row.status === "published"
+      ? "⚡ Auto-published to the live site (trusted sender). No action needed."
+      : "⚡ Auto-applied to the calendar data (trusted sender). No action needed.";
+    card.appendChild(n);
+  } else if (isQueuedAuto) {
+    const n = document.createElement("div");
+    n.className = "auto-note";
+    n.textContent = "⏳ Queued for the hourly auto-fix (trusted sender). Will be applied automatically.";
+    card.appendChild(n);
+  }
+
+  // Flyer
+  if (row.flyer_url) {
+    const fr = document.createElement("div");
+    fr.className = "flyer-row";
+    const fileId = driveFileId(row.flyer_url);
+    const img = document.createElement("img");
+    img.className = "flyer-thumb"; img.alt = "Flyer"; img.loading = "lazy";
+    img.src = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w300` : "";
+    img.onerror = () => { img.style.display = "none"; };
+    const link = document.createElement("a");
+    link.className = "flyer-link"; link.href = row.flyer_url; link.target = "_blank"; link.rel = "noopener noreferrer";
+    link.textContent = "Open full-size flyer ↗";
+    fr.appendChild(img); fr.appendChild(link);
+    card.appendChild(fr);
+  }
+
+  // "What they submitted" — the info entered at Send time
+  card.appendChild(renderSubmitted(row, isCorrection));
+
+  // Editable details (collapsible)
+  const inputs = {};
+  const det = document.createElement("details");
+  det.className = "edit";
+  const sum = document.createElement("summary");
+  sum.textContent = "Edit details";
+  det.appendChild(sum);
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  EDITABLE_FIELDS.forEach(f => {
+    const wrap = document.createElement("div");
+    wrap.className = "field";
+    const lab = document.createElement("label"); lab.textContent = f.label;
+    const inp = document.createElement("input"); inp.type = "text"; inp.value = row[f.key] == null ? "" : row[f.key]; inp.dataset.key = f.key;
+    wrap.appendChild(lab); wrap.appendChild(inp); grid.appendChild(wrap);
+    inputs[f.key] = inp;
+  });
+  det.appendChild(grid);
+  card.appendChild(det);
+
+  // Contact (internal only)
+  if (row.contact_name || row.contact_email || row.contact_phone) {
+    const c = document.createElement("div");
+    c.className = "contact-block";
+    const parts = [row.contact_name, row.contact_email, row.contact_phone].filter(Boolean).map(escapeHtml);
+    c.innerHTML = `<div class="label">Contact (internal only)</div>${parts.join(" · ")}`;
+    card.appendChild(c);
+  }
+
+  // Actions
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  const approveBtn = mkBtn("Approve", "act approve");
+  const denyBtn = mkBtn("Deny", "act deny");
+  const holdBtn = mkBtn("Hold", "act hold");
+  actions.appendChild(approveBtn); actions.appendChild(denyBtn); actions.appendChild(holdBtn);
+  const saveBtn = mkBtn("Save edits", "act ghost wide");
+  actions.appendChild(saveBtn);
+  const backBtn = mkBtn("↩ Back to Pending", "act ghost wide");
+  if (row.status !== "pending") actions.appendChild(backBtn);
+  card.appendChild(actions);
+
+  const cardStatus = document.createElement("p");
+  cardStatus.className = "card-status";
+  card.appendChild(cardStatus);
+
+  const allBtns = [approveBtn, denyBtn, holdBtn, saveBtn, backBtn];
+  function collectFields() {
+    const f = {};
+    Object.keys(inputs).forEach(k => { f[k] = inputs[k].value; });
+    return f;
+  }
+  async function doUpdate(status, includeFields) {
+    allBtns.forEach(b => b.disabled = true);
+    cardStatus.textContent = "Saving…"; cardStatus.className = "card-status";
+    try {
+      const payload = { action: "update", row_id: row.row_id };
+      if (includeFields) payload.fields = collectFields();
+      if (status) payload.status = status;
+      const data = await apiPost(payload);
+      if (!data.ok) throw new Error(data.error || "unknown error");
+      cardStatus.textContent = status ? "Marked " + labelFor(status) + "." : "Saved.";
+      cardStatus.classList.add("ok");
+      await loadRows();
+    } catch (err) {
+      cardStatus.textContent = "Couldn't save: " + err.message;
+      cardStatus.classList.add("error");
+      allBtns.forEach(b => b.disabled = false);
+    }
+  }
+  approveBtn.addEventListener("click", () => doUpdate("approved", true));
+  denyBtn.addEventListener("click", () => doUpdate("rejected", false));
+  holdBtn.addEventListener("click", () => doUpdate("hold", true));
+  saveBtn.addEventListener("click", () => doUpdate(null, true));
+  backBtn.addEventListener("click", () => doUpdate("pending", false));
+
+  return card;
+}
+
+function labelFor(status) {
+  if (status === "rejected" || status === "denied") return "Denied";
+  if (status === "hold") return "Hold";
+  if (status === "approved") return "Approved";
+  if (status === "pending") return "Pending";
+  return status;
+}
+
+function mkBtn(text, cls) {
+  const b = document.createElement("button");
+  b.className = cls; b.textContent = text;
+  return b;
+}
+
+/* The exact info the submitter entered when they hit Send. For corrections this
+   is what came through the site's "Wrong info? / Need to add info?" widget. */
+function renderSubmitted(row, isCorrection) {
+  const box = document.createElement("div");
+  box.className = "submitted";
+  const rows = [];
+  if (isCorrection && row.event_key) {
+    rows.push(["Event", escapeHtml(row.name || row.event_key)]);
+    rows.push(["Listing key", escapeHtml(row.event_key)]);
+  } else {
+    if (row.name) rows.push(["Event", escapeHtml(row.name)]);
+    const sched = [row.day_of_week, row.monthly_rule, row.start_date, row.start_time && ("at " + row.start_time)].filter(Boolean).join(" · ");
+    if (sched) rows.push(["When", escapeHtml(sched)]);
+    if (row.venue) rows.push(["Venue", escapeHtml(row.venue)]);
+    if (row.style) rows.push(["Style", escapeHtml(row.style) + (row.style_other ? " (" + escapeHtml(row.style_other) + ")" : "")]);
+    if (row.cost) rows.push(["Cost", escapeHtml(row.cost)]);
+  }
+  if (row.source_url) rows.push(["Link", `<a href="${escapeHtml(row.source_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(row.source_url)}</a>`]);
+  if (row.contact_name) rows.push(["From", escapeHtml(row.contact_name)]);
+
+  let html = `<div class="label">${isCorrection ? "Submitted via “Wrong info? / Need to add info?”" : "What they submitted"}</div>`;
+  rows.forEach(r => { html += `<div class="row"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`; });
+  if (row.source_note) {
+    html += `<div class="note">${escapeHtml(row.source_note)}</div>`;
+  } else if (isCorrection) {
+    html += `<div class="note" style="color:var(--text-dim)">(No message typed — see flyer / fields above.)</div>`;
+  }
+  box.innerHTML = html;
+  return box;
+}
+
+/* ---------- Boot ---------- */
+$("#gate-btn").addEventListener("click", submitGate);
+$("#gate-input").addEventListener("keydown", e => { if (e.key === "Enter") submitGate(); });
+$("#refresh").addEventListener("click", loadRows);
+
+if (password) { hideGate(); loadRows(); } else { showGate(); }
+</script>
+</body>
+</html>
