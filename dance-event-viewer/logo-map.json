@@ -16,9 +16,14 @@
     "tango-lab-fridays-july-2026": "../graphics/logos/TangoLab-chapel.jpg",
     "ballroom-lynn-warwick-house-2026-07-29": "../graphics/logos/bill-thrall-portrait.jpg",
     "bobe-st-studio-coaching-with-justin-tuesdays": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png",
-    "wcs-garysusandance-thursdays-the-way-you-move": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg"
+    "wcs-garysusandance-thursdays-the-way-you-move": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg",
+    "sso-lindy-and-blues-fridays-the-way-you-move": "../graphics/logos/upload-sso-lindy-and-blues-fridays-the-way-you-move-c3414e8f.jpg"
   },
   "patterns": [
+    {
+      "contains": "sso-lindy-and-blues-fridays-the-way-you-move",
+      "logo": "../graphics/logos/upload-sso-lindy-and-blues-fridays-the-way-you-move-c3414e8f.jpg"
+    },
     {
       "contains": "wcs-garysusandance-thursdays-the-way-you-move",
       "logo": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg"
