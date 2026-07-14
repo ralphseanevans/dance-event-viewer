@@ -938,11 +938,12 @@ function feedbackWidget(ev) {
     toggle.setAttribute("aria-expanded", "false");
   });
   send.addEventListener("click", async () => {
-    if (!desc.value.trim()) { status.textContent = "Please describe what's wrong or missing first."; return; }
-
     // Photo attached → route through the real Submissions pipeline as a "correction", tagged
     // with event_key so it never gets mistaken for a new-event submission in the pending queue.
+    // A photo-only send is valid (2026-07-13, Sean's one-step flyer flow) — the description is
+    // only required when there's no photo to speak for itself.
     const photoFile = photoInput.files && photoInput.files[0];
+    if (!photoFile && !desc.value.trim()) { status.textContent = "Please describe what's wrong or missing first."; return; }
     if (photoFile) {
       if (!SUBMIT_ENDPOINT) {
         status.textContent = "Photo uploads aren't quite live yet — please use the link field instead, or email ralphseanevans@gmail.com.";
@@ -962,6 +963,7 @@ function feedbackWidget(ev) {
           intake_method: "flyer",
           submission_kind: "correction",
           event_key: typeof ev.key === "string" ? ev.key : "",
+          type: typeof ev.type === "string" ? ev.type : "",
           name: ev.name,
           flyer_mime: mime,
           flyer_base64: base64,
@@ -976,7 +978,9 @@ function feedbackWidget(ev) {
         });
         const data = await res.json().catch(() => null);
         if (data && data.ok) {
-          status.textContent = "Sent — thanks for helping keep the calendar accurate!";
+          status.textContent = data.published
+            ? "Your flyer is live! Give it a couple of minutes, then refresh to see it on this listing."
+            : "Sent for review — the flyer will appear on this listing once approved. Thanks!";
           desc.value = ""; link.value = ""; who.value = "";
           photoInput.value = ""; photoDataUrl = null; photoPreview.hidden = true;
           setTimeout(() => { form.hidden = true; toggle.setAttribute("aria-expanded", "false"); status.textContent = ""; send.disabled = false; }, 2500);
