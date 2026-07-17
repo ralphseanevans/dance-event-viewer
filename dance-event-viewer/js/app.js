@@ -173,6 +173,22 @@ function ordinal(n) {
   const v = n % 100;
   return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
 }
+/* "Nth weekday of the month" exclusions for an otherwise-weekly event (added 2026-07-17,
+   Sean: "SSO doesn't have a dance on 3rd Fridays"). ev.exclude_monthly_rules is an array of
+   "Nth Weekday" strings — same grammar monthlyRuleParts() already understands (e.g.
+   "First Friday", "Third Friday"). A weekly_recurring occurrence landing on one of those
+   Nth-weekdays is suppressed, so a series that meets "every Friday except the 1st & 3rd" is
+   modeled in place without splitting the key (which would orphan its logo/calendar links). */
+function isExcludedOccurrence(ev, dt) {
+  const rules = ev && ev.exclude_monthly_rules;
+  if (!Array.isArray(rules) || !rules.length) return false;
+  const dow = dt.getDay();
+  const nth = Math.floor((dt.getDate() - 1) / 7) + 1;
+  return rules.some(r => {
+    const p = monthlyRuleParts(r);
+    return p && p.dow === dow && p.nth === nth;
+  });
+}
 function dayOf(ev) {
   if (DAY_ORDER.includes(ev.day_of_week)) return ev.day_of_week;
   const rule = monthlyRuleParts(ev.monthly_rule);
@@ -201,6 +217,11 @@ function nextOccurrence(ev, today) {
     if (start && d < start) {
       d = new Date(start);
       d.setDate(d.getDate() + ((target - d.getDay()) + 7) % 7);
+    }
+    // Skip Nth-weekday exclusions (e.g. SSO doesn't meet the 1st/3rd Friday) — jump a week at a time.
+    for (let guard = 0; guard < 60 && isExcludedOccurrence(ev, d); guard++) {
+      d.setDate(d.getDate() + 7);
+      if (end && d > end) return null;
     }
     if (end && d > end) return null;
     return d;
@@ -249,6 +270,12 @@ function scheduleText(ev) {
   const tr = timeRange(ev);
   if (ev.type === "weekly_recurring" && ev.day_of_week) {
     let s = `Every ${ev.day_of_week}`;
+    if (Array.isArray(ev.exclude_monthly_rules) && ev.exclude_monthly_rules.length) {
+      const nths = ev.exclude_monthly_rules
+        .map(r => { const p = monthlyRuleParts(r); return p ? ordinal(p.nth) : null; })
+        .filter(Boolean);
+      if (nths.length) s += ` (except the ${nths.join(" & ")} ${ev.day_of_week})`;
+    }
     const start = parseISO(ev.start_date), end = parseISO(ev.end_date);
     if (start && end) s += ` (${fmtDate(start)} – ${fmtDate(end)})`;
     else if (end) s += ` (through ${fmtDate(end)})`;
@@ -1992,6 +2019,7 @@ function occurrencesInMonth(ev, y, m) {
       if (dt.getDay() !== target) continue;
       if (start && dt < start) continue;
       if (end && dt > end) continue;
+      if (isExcludedOccurrence(ev, dt)) continue;
       out.push(d);
     }
     return out;
