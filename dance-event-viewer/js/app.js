@@ -680,7 +680,10 @@ function flashShareCopied(btn) {
 }
 async function handleShare(ev, btn) {
   const text = shareTextFor(ev);
-  const url = location.origin + location.pathname;
+  // Per-event share pages (2026-07-17): each event has /e/<key>.html with its OWN link
+  // preview (name, schedule, flyer) that instantly redirects here — so shared links show
+  // THE dance, not a generic card. Falls back to the page URL just in case.
+  const url = ev.key ? `${location.origin}/e/${ev.key}.html` : location.origin + location.pathname;
   if (navigator.share) {
     try {
       await navigator.share({ title: ev.name.trim(), text, url });
