@@ -85,6 +85,31 @@ textarea { resize: vertical; }
   border: 1px solid var(--border); object-fit: contain;
 }
 
+/* iOS-friendly upload control: hide the raw file input (its only tappable region
+   is the small native button — a dead zone when the input is stretched full-width)
+   and make the full-width label the tap target. Specificity (input.visually-...)
+   is kept a hair above the shared `input[type="file"]` rule above so width wins. */
+input.visually-hidden-file {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.file-button {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 16px 18px; cursor: pointer;
+  background: var(--bg); color: var(--text);
+  border: 1px dashed var(--border); border-radius: 8px;
+  font-size: 1rem; text-align: center; -webkit-tap-highlight-color: transparent;
+  transition: border-color .15s, background .15s;
+}
+.file-button:hover { border-color: var(--accent); }
+.file-button:active { background: var(--accent-soft); border-color: var(--accent); }
+.file-button.has-file { border-style: solid; border-color: var(--chip-on-border); color: var(--accent); }
+.file-button-icon { font-size: 1.25rem; line-height: 1; }
+.file-button-text { font-weight: 500; word-break: break-word; }
+input.visually-hidden-file:focus-visible + .file-button {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
 .schedule-toggle, .schedule-sub-toggle {
   display: flex; gap: 16px; flex-wrap: wrap;
   color: var(--text); font-size: .92rem;
