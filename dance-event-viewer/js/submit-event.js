@@ -30,6 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function syncMethod() {
     const method = (methodRadios.find(r => r.checked) || {}).value || "flyer";
+    // Highlight the active tab via a class too, so it doesn't rely on :has()
+    // (unsupported on older mobile Safari) — the tab-vs-button confusion this
+    // whole redesign fixes was precisely a missing active-tab indicator.
+    methodRadios.forEach(r => {
+      const tab = r.closest(".method-tab");
+      if (tab) tab.classList.toggle("is-active", r.checked);
+    });
     sectionFlyer.hidden = method !== "flyer";
     sectionSourceForm.hidden = method !== "form";
     sectionSourceLink.hidden = method !== "link";
