@@ -28,7 +28,11 @@ body {
   100% { transform:translate3d(-9px,108vh,0) rotate(372deg); }
 }
 .controls,.filter-panel,.card,.list-row,.cal-toolbar,.map-popup-card,.whisper-float-head,.whisper-sub,.whisper-form { box-shadow:0 20px 55px rgba(0,0,0,.24); }
-.traveling-toggle { background:linear-gradient(92deg,var(--accent-soft),#332029); color:var(--accent-pink); }
+/* Off (default): pink outline — eye-catching but clearly NOT "on". The on state is
+   handled by base .past-toggle[aria-pressed="true"] (higher specificity), so on = solid
+   accent-soft fill like every other selected control. (2026-07-17: was an unconditional
+   fill that made the off state read as selected.) */
+.traveling-toggle[aria-pressed="false"] { background:transparent; color:var(--accent-pink); border-color:var(--accent-pink); }
 .activity-msg { color:#e59a83; text-shadow:0 0 6px rgba(232,120,91,.5),0 0 1px rgba(229,154,131,.9); }
 .whisper-bubble { background:#e5b2a6; border-color:#c98278; }
 .whisper-bubble p { color:#321c25; }
