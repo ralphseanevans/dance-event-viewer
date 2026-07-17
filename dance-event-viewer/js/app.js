@@ -400,6 +400,7 @@ async function loadData() {
   setStatus("Loading events…", false);
   await loadLogoMap();
   await loadVenueCoords();
+  await loadWebEvents();
   let raw;
   try {
     const res = await fetch(`${src.file}?t=${Date.now()}`, { cache: "no-store" });
@@ -428,7 +429,17 @@ async function loadData() {
     setStatus("The events file has an unexpected format. Nothing is displayed rather than showing wrong information.", true);
     return;
   }
-  state.events = list
+  // Overlay merge: fold in trusted flyer auto-publishes from web-events.json.
+  // The canonical list wins on key, so once a skill folds an overlay event into
+  // dance_events.json (same key), the core copy silently supersedes the overlay
+  // one instead of double-listing. Keyless overlay entries (shouldn't happen —
+  // the backend always assigns a key) are kept as-is.
+  const coreKeys = new Set(list.map(ev => ev && ev.key).filter(Boolean));
+  const overlayOnly = (state.webEvents || []).filter(
+    ev => ev && !(typeof ev.key === "string" && coreKeys.has(ev.key))
+  );
+  const merged = overlayOnly.length ? list.concat(overlayOnly) : list;
+  state.events = merged
     .filter(ev => ev && typeof ev.name === "string" && ev.name.trim())
     .map(ev => ({
       ev,
