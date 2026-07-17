@@ -65,7 +65,15 @@
         <label class="field-label" for="flyer-input">
           Upload a photo of the flyer <span class="req">(required)</span>
         </label>
-        <input type="file" id="flyer-input" name="flyer" accept="image/*">
+        <!-- The raw file input is visually hidden; the full-width label below is the
+             tap target. A styled file input only reacts to taps on its small native
+             button (a dead zone on iOS Safari) — a label[for] reliably opens the
+             photo picker across mobile browsers. -->
+        <input type="file" id="flyer-input" name="flyer" accept="image/*" class="visually-hidden-file">
+        <label class="file-button" for="flyer-input" id="flyer-button">
+          <span class="file-button-icon" aria-hidden="true">📷</span>
+          <span class="file-button-text" id="flyer-button-text">Tap to choose or take a photo</span>
+        </label>
         <img id="flyer-preview" alt="Flyer preview" hidden>
         <p class="field-hint">
           We'll read the flyer automatically to draft the event details — you don't need to retype
