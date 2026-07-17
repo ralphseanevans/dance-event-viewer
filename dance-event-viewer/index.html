@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260713n">
+  <link rel="stylesheet" href="css/styles.css?v=20260717b">
   <link rel="stylesheet" href="css/whispers.css">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
 
@@ -54,6 +54,7 @@
         <p class="tagline">Connecting Dancers in the South! &middot; good music &middot; great people</p>
       </div>
     </div>
+    <a href="submit-event.html" class="submit-event-btn header-submit">Submit an Event</a>
     <span id="viewer-count" aria-hidden="true"></span>
   </header>
 
@@ -76,63 +77,61 @@
           <button type="button" class="view-btn" data-view="calendar" aria-pressed="false">Calendar</button>
           <button type="button" class="view-btn" data-view="map" aria-pressed="false">Map</button>
         </div>
-        <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
-          <span class="filters-toggle-label">Filters</span><span class="filters-toggle-icon" aria-hidden="true">›</span>
-        </button>
         <button type="button" id="traveling-toggle" class="past-toggle traveling-toggle" aria-pressed="false"
           title="By default this calendar shows events across the South (FL, GA, AL, MS, LA, TN, SC, NC). Turn this on to also browse national conventions and competitions — handy when you're traveling.">
           Traveling? Show national events
         </button>
-        <a href="submit-event.html" class="submit-event-btn">Submit an Event</a>
       </div>
-
-      <aside class="beta-note" role="note">
-        <button class="beta-toggle" type="button" aria-expanded="false" aria-controls="beta-details">
-          <strong>About These Listings</strong><span aria-hidden="true">+</span>
-        </button>
-        <div id="beta-details" class="beta-details" hidden>
-          This calendar focuses on dance events across the South — Florida through the Carolinas. Turn on <em>&ldquo;Traveling? Show national events&rdquo;</em> to browse conventions and competitions nationwide. Listings are gathered automatically and manually, so errors are possible. Spot something wrong or
-          missing? Use <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> and include a link, flyer, or photo.
-          Always confirm details with the venue or organizer.
-        </div>
-      </aside>
     </div>
 
+    <!-- Always-visible quick filters (redesign 2026-07-17): Dance style + Day pill rows;
+         everything else lives in the collapsible Filters panel below. -->
+    <div class="quick-filters">
+      <div class="qf-group">
+        <span class="qf-label" id="lbl-style">Dance style</span>
+        <div class="chips chips-scroll" data-group="cats" id="main-style-chips" role="group" aria-labelledby="lbl-style"></div>
+      </div>
+      <div class="qf-group">
+        <span class="qf-label" id="lbl-day">Day</span>
+        <div class="chips chips-scroll" data-group="days" role="group" aria-labelledby="lbl-day"></div>
+      </div>
+      <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
+        <span class="filters-toggle-label">Filters</span><span id="filters-count" class="filters-count"></span><span class="filters-toggle-icon" aria-hidden="true">›</span>
+      </button>
+    </div>
+
+    <!-- Active-filter summary chips: visible only while the panel is closed and filters are on. -->
+    <div id="active-chips" class="active-chips" hidden></div>
+
     <div id="filter-panel" class="filter-panel" hidden>
-      <fieldset class="filter-group" id="fg-category">
-        <legend>Style</legend>
-        <div class="chips" data-group="cats"></div>
-                <div class="solo-styles-group" hidden>
-          <button type="button" id="solo-styles-toggle" class="past-toggle solo-styles-toggle" aria-expanded="false" aria-controls="solo-styles-chips"
-            title="Solo/studio class styles (Ballet, Jazz, Hip Hop, Contemporary, Heels, Pom, Musical Theatre, Dance Fit) — not partner dances. Collapsed by default.">
-            Solo Dance Styles <span aria-hidden="true">&rsaquo;</span>
-          </button>
-          <div class="chips" data-group="cats-solo" id="solo-styles-chips" hidden></div>
-        </div>
-      </fieldset>
-      <fieldset class="filter-group" id="fg-day">
-        <legend>Day</legend>
-        <div class="chips" data-group="days"></div>
-      </fieldset>
+      <div class="filter-panel-top">
+        <strong class="filter-panel-title">Filters<span id="filters-count-panel" class="filters-count"></span></strong>
+        <button type="button" id="reset-filters" class="reset-btn">Clear all</button>
+      </div>
       <fieldset class="filter-group" id="fg-area">
         <legend>Location</legend>
         <div class="chips" data-group="areas"></div>
-        <div class="loc-selects">
+        <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose another location&hellip;</button>
+        <div class="loc-selects" id="loc-selects" hidden>
           <label>Country <select id="sel-country"></select></label>
-          <label>State <select id="sel-state"></select></label>
-          <label>Town <select id="sel-town"></select></label>
+          <label>State <select id="sel-state" disabled></select></label>
+          <label>Town <select id="sel-town" disabled></select></label>
         </div>
       </fieldset>
       <fieldset class="filter-group" id="fg-kind">
-        <legend>Type</legend>
-        <div class="chips" data-group="kinds"></div>
+        <legend>Event type</legend>
+        <div class="chips chips-radio" data-group="kinds"></div>
         <button type="button" id="past-toggle" class="past-toggle" aria-pressed="false"
           title="Past events are hidden by default to keep this list current. Turn this on to see recently-ended events too (shown greyed out).">
           Show Past Events
         </button>
       </fieldset>
-      <div class="filter-panel-actions">
-        <button type="button" id="reset-filters" class="reset-btn">Reset filters</button>
+      <fieldset class="filter-group" id="fg-solo">
+        <legend>Solo dance styles</legend>
+        <div class="chips" data-group="cats" id="solo-styles-chips"></div>
+      </fieldset>
+      <div class="filter-panel-apply">
+        <button type="button" id="apply-filters" class="apply-btn">Show events</button>
       </div>
     </div>
   </section>
@@ -173,37 +172,7 @@
     </div>
   </div>
 
-  <script>
-    (() => {
-      // "About These Listings" dropdown — a small pill living in the filters bar
-      // (2026-07-14, Sean: removed the "Under Construction" note and moved this one
-      // down to the filters bar). Starts closed; opens a floating panel below the
-      // button, and clicking anywhere outside the note closes it.
-      const notes = [
-        { note: document.querySelector('.beta-note'), toggle: document.querySelector('.beta-toggle'), details: document.getElementById('beta-details') },
-      ].filter(n => n.note && n.toggle && n.details);
-
-      function setOpen(entry, open) {
-        entry.details.hidden = !open;
-        entry.toggle.setAttribute('aria-expanded', String(open));
-        entry.toggle.querySelector('span').textContent = open ? '\u2212' : '+';
-      }
-
-      for (const entry of notes) {
-        entry.toggle.addEventListener('click', () => {
-          const opening = entry.toggle.getAttribute('aria-expanded') !== 'true';
-          for (const other of notes) if (other !== entry) setOpen(other, false);
-          setOpen(entry, opening);
-        });
-      }
-      document.addEventListener('click', (e) => {
-        for (const entry of notes) {
-          if (!entry.note.contains(e.target)) setOpen(entry, false);
-        }
-      });
-    })();
-  </script>
-  <script src="js/app.js?v=20260717a"></script>
+    <script src="js/app.js?v=20260717b"></script>
   <script src="js/whispers.js"></script>
   <script src="js/activity-pulse.js?v=20260713i"></script>
 </body>

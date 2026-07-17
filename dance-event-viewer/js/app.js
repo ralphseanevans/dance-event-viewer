@@ -15,7 +15,7 @@ const SOURCES = [
 const CORE_CATEGORIES = ["West Coast Swing", "Mixed", "Latin", "Argentine Tango"];
 // Solo Dance Styles (added 2026-07-13, Sean) — Pensacola Coastals Dance Studio's class schedule.
 // These render in their own collapsed "Solo Dance Styles" group in the Style filter (see
-// buildSoloStyleChips/#solo-styles-chips) rather than the flat partner-dance chip row, but they
+// #solo-styles-chips in the Filters panel, 2026-07-17 redesign) rather than the main Style row, but they
 // still write into the SAME state.filters.cats Set — a class is just a category like any other,
 // only the UI grouping differs. Bachata is deliberately NOT here: it's an existing partner-dance
 // entry already categorized "Latin" (sensual-sundays-bachata-pensacola-coastals) — leave it alone.
@@ -414,100 +414,190 @@ function filterSnapshotDetail() {
     kinds: [...state.filters.kinds][0] || null,
   };
 }
-function buildFilterChips() {
-  const groups = {
-    // "cats" only covers the core partner-dance categories here — Solo Dance Styles get their
-    // own holder (buildSoloStyleChips) so they don't clutter the main Style row, even though
-    // both groups toggle the same state.filters.cats Set underneath.
-    cats: presentValues(d => d.category, [...CORE_CATEGORIES, OTHER]),
-    days: presentValues(d => d.day, DAY_ORDER),
-    areas: presentValues(d => d.loc.area, ["Pensacola area", "Mobile area", "Elsewhere / unlisted"]),
-    kinds: presentValues(d => d.kind, ["Recurring", "One-time"]),
-  };
-  buildLocSelects();
-  for (const [group, values] of Object.entries(groups)) {
-    const holder = document.querySelector(`.chips[data-group="${group}"]`);
-    holder.textContent = "";
-    const all = makeChip(group === "cats" ? "All categories" : "All", () => {
-      state.filters[group].clear();
-      syncChips(); render();
-    });
-    all.dataset.all = "1";
-    holder.appendChild(all);
-    for (const v of values) {
-      const chip = makeChip(v, () => {
-        const set = state.filters[group];
-        const wasSelected = set.has(v);
-        wasSelected ? set.delete(v) : set.add(v);
-        syncChips(); render();
-        // Activity Pulse signal (Sean, 2026-07-13) — only on selecting a specific value,
-        // not on deselecting or on the generic "All" chip. Sends a full snapshot of every
-        // active filter dimension so the ticker can compose a combined sentence when more
-        // than one is selected, not just the value that was just clicked.
-        if (!wasSelected) {
-          window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
-        }
-      });
-      chip.dataset.value = v;
-      holder.appendChild(chip);
-    }
-    holder.closest(".filter-group").hidden = values.length <= 1;
-  }
-  buildSoloStyleChips();
-  syncChips();
-}
-/* Solo Dance Styles — separate collapsed chip row under the Style group (see #solo-styles-chips
-   / .solo-styles-toggle in index.html). Chips here toggle state.filters.cats, same as the main
-   Style chips — the split is presentation-only, not a second filter dimension. */
-function buildSoloStyleChips() {
-  const holder = document.getElementById("solo-styles-chips");
-  const wrap = document.querySelector(".solo-styles-group");
-  if (!holder || !wrap) return;
-  holder.textContent = "";
-  const values = presentValues(d => d.category, SOLO_STYLES);
-  for (const v of values) {
-    const chip = makeChip(v, () => {
-      const set = state.filters.cats;
-      const wasSelected = set.has(v);
-      wasSelected ? set.delete(v) : set.add(v);
-      syncChips(); render();
-      if (!wasSelected) {
-        window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
-      }
-    });
-    chip.dataset.value = v;
-    holder.appendChild(chip);
-  }
-  wrap.hidden = values.length === 0;
-}
-function makeChip(label, onClick) {
+/* ---------- Filter UI (redesigned 2026-07-17 per Sean's spec) ----------
+   Always-visible "Dance style" + "Day" pill rows; Location / Event type / Solo styles /
+   Country-State-Town live in the collapsible panel. Facet counts on every option, dimmed
+   (never hidden) at zero. Event type is SINGLE-select (radio-style); style/day/location are
+   multi-select (checkbox-style). Active filters echo as removable summary chips while the
+   panel is closed, and the whole filter state round-trips through the URL query string. */
+const AREA_LABELS = { "Pensacola area": "Pensacola", "Mobile area": "Mobile", "Elsewhere / unlisted": "Elsewhere" };
+const SINGLE_SELECT_GROUPS = ["kinds"];
+function chipLabel(group, v) { return group === "areas" ? (AREA_LABELS[v] || v) : v; }
+
+function makeChip(label, onClick, single) {
   const b = document.createElement("button");
-  b.type = "button"; b.className = "chip"; b.textContent = label;
+  b.type = "button"; b.className = "chip" + (single ? " chip-radio" : "");
   b.setAttribute("aria-pressed", "false");
+  const t = document.createElement("span"); t.className = "chip-label"; t.textContent = label; b.appendChild(t);
+  const c = document.createElement("span"); c.className = "chip-count"; b.appendChild(c);
   b.addEventListener("click", onClick);
   return b;
 }
-function syncChips() {
-  for (const [group, set] of Object.entries(state.filters)) {
-    const holder = document.querySelector(`.chips[data-group="${group}"]`);
+function toggleValue(group, v) {
+  const set = state.filters[group];
+  const wasSelected = set.has(v);
+  if (SINGLE_SELECT_GROUPS.includes(group)) { set.clear(); if (!wasSelected) set.add(v); }
+  else { wasSelected ? set.delete(v) : set.add(v); }
+  render();
+  if (!wasSelected) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
+}
+function buildFilterChips() {
+  const groups = {
+    cats:  { holder: document.getElementById("main-style-chips"), values: presentValues(d => d.category, [...CORE_CATEGORIES, OTHER]), all: "All styles" },
+    days:  { holder: document.querySelector('.chips[data-group="days"]'), values: presentValues(d => d.day, DAY_ORDER), all: "Any day" },
+    areas: { holder: document.querySelector('.chips[data-group="areas"]'), values: presentValues(d => d.loc.area, ["Pensacola area", "Mobile area", "Elsewhere / unlisted"]), all: "Anywhere" },
+    kinds: { holder: document.querySelector('.chips[data-group="kinds"]'), values: presentValues(d => d.kind, ["Recurring", "One-time"]), all: "All types" },
+  };
+  buildLocSelects();
+  for (const [group, cfg] of Object.entries(groups)) {
+    if (!cfg.holder) continue;
+    cfg.holder.textContent = "";
+    const single = SINGLE_SELECT_GROUPS.includes(group);
+    const all = makeChip(cfg.all, () => { state.filters[group].clear(); render(); }, single);
+    all.dataset.all = "1";
+    cfg.holder.appendChild(all);
+    for (const v of cfg.values) {
+      const chip = makeChip(chipLabel(group, v), () => toggleValue(group, v), single);
+      chip.dataset.value = v;
+      cfg.holder.appendChild(chip);
+    }
+  }
+  const solo = document.getElementById("solo-styles-chips");
+  if (solo) {
+    solo.textContent = "";
+    for (const v of presentValues(d => d.category, SOLO_STYLES)) {
+      const chip = makeChip(v, () => toggleValue("cats", v), false);
+      chip.dataset.value = v;
+      solo.appendChild(chip);
+    }
+    solo.closest(".filter-group").hidden = !solo.children.length;
+  }
+  updateFilterUI();
+}
+/* Facet count: events that would show if `value` were the ONLY selection in its group,
+   with every other group's current filters (and the regional/past scopes) applied.
+   value === null -> the group unfiltered. */
+function facetCount(group, value) {
+  const saved = state.filters[group];
+  state.filters[group] = value === null ? new Set() : new Set([value]);
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  let n = 0;
+  for (const d of state.events) if (matchesFilters(d) && (state.showPast || !isPastEvent(d, t))) n++;
+  state.filters[group] = saved;
+  return n;
+}
+function currentShownCount() {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return state.events.filter(d => matchesFilters(d) && (state.showPast || !isPastEvent(d, t))).length;
+}
+function activeFilterList() {
+  const out = [];
+  for (const [group, set] of Object.entries(state.filters))
+    for (const v of set) out.push({ group, v, label: chipLabel(group, v) });
+  for (const dim of ["country", "state", "town"])
+    if (state.sel[dim]) out.push({ group: "sel", v: dim, label: state.sel[dim] });
+  return out;
+}
+function updateFilterUI() {
+  for (const holder of document.querySelectorAll(".chips[data-group]")) {
+    const group = holder.dataset.group;
+    const set = state.filters[group];
+    if (!set) continue;
     for (const chip of holder.querySelectorAll(".chip")) {
       const on = chip.dataset.all ? set.size === 0 : set.has(chip.dataset.value);
       chip.setAttribute("aria-pressed", String(on));
+      const cEl = chip.querySelector(".chip-count");
+      if (chip.dataset.all) { if (cEl) cEl.textContent = ""; continue; }
+      const n = facetCount(group, chip.dataset.value);
+      if (cEl) cEl.textContent = ` (${n})`;
+      chip.classList.toggle("chip-dim", n === 0 && !on);
     }
   }
-  const soloHolder = document.getElementById("solo-styles-chips");
-  if (soloHolder) {
-    for (const chip of soloHolder.querySelectorAll(".chip"))
-      chip.setAttribute("aria-pressed", String(state.filters.cats.has(chip.dataset.value)));
+  const act = activeFilterList();
+  for (const id of ["filters-count", "filters-count-panel"]) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = act.length ? ` (${act.length})` : "";
   }
+  const apply = document.getElementById("apply-filters");
+  if (apply) { const n = currentShownCount(); apply.textContent = `Show ${n} event${n === 1 ? "" : "s"}`; }
+  renderActiveChips(act);
+  syncUrl();
   savePrefs();
 }
+function renderActiveChips(act) {
+  const row = document.getElementById("active-chips");
+  if (!row) return;
+  act = act || activeFilterList();
+  row.textContent = "";
+  if (state.filtersOpen || !act.length) { row.hidden = true; return; }
+  row.hidden = false;
+  for (const a of act) {
+    const chip = document.createElement("button");
+    chip.type = "button"; chip.className = "active-chip";
+    chip.setAttribute("aria-label", `Remove filter ${a.label}`);
+    chip.append(a.label + " ");
+    const x = document.createElement("span"); x.className = "active-chip-x"; x.setAttribute("aria-hidden", "true"); x.textContent = "\u00d7";
+    chip.appendChild(x);
+    chip.addEventListener("click", () => {
+      if (a.group === "sel") {
+        state.sel[a.v] = "";
+        if (a.v === "country") { state.sel.state = ""; state.sel.town = ""; }
+        if (a.v === "state") state.sel.town = "";
+        buildLocSelects();
+      } else state.filters[a.group].delete(a.v);
+      render();
+    });
+    row.appendChild(chip);
+  }
+  const clear = document.createElement("button");
+  clear.type = "button"; clear.className = "active-clear"; clear.textContent = "Clear all";
+  clear.addEventListener("click", clearAllFilters);
+  row.appendChild(clear);
+}
+function clearAllFilters() {
+  for (const set of Object.values(state.filters)) set.clear();
+  state.filters.areas = new Set(DEFAULT_AREAS);
+  state.sel = { country: "", state: "", town: "" };
+  buildLocSelects();
+  render();
+}
+/* ---------- URL state (2026-07-17): active filters live in the query string, so filtered
+   views are shareable links and back/forward work. localStorage keeps only view/showPast. */
+const URL_KEYS = { cats: "style", days: "day", areas: "area", kinds: "type" };
+function syncUrl() {
+  const p = new URLSearchParams();
+  for (const [group, key] of Object.entries(URL_KEYS))
+    if (state.filters[group].size) p.set(key, [...state.filters[group]].join("|"));
+  for (const dim of ["country", "state", "town"]) if (state.sel[dim]) p.set(dim, state.sel[dim]);
+  if (state.showPast) p.set("past", "1");
+  if (state.showNational) p.set("travel", "1");
+  const qs = p.toString().replace(/%7C/gi, "|").replace(/%20/g, "+");
+  const url = location.pathname + (qs ? "?" + qs : "");
+  if (url !== location.pathname + location.search) history.replaceState(null, "", url);
+}
+function applyUrl() {
+  const p = new URLSearchParams(location.search);
+  let any = false;
+  for (const [group, key] of Object.entries(URL_KEYS)) {
+    if (!p.has(key)) continue;
+    any = true;
+    state.filters[group] = new Set(p.get(key).split("|").filter(Boolean));
+  }
+  for (const dim of ["country", "state", "town"])
+    if (p.has(dim)) { state.sel[dim] = p.get(dim); any = true; }
+  if (p.get("past") === "1") { state.showPast = true; any = true; }
+  state.showNational = p.get("travel") === "1";
+  return any;
+}
+/* Country -> State -> Town cascade: each level's options come from events matching the
+   levels above it; State stays disabled until a Country is chosen, Town until a State. */
 function buildLocSelects() {
-  const dims = { country: "sel-country", state: "sel-state", town: "sel-town" };
-  for (const [dim, id] of Object.entries(dims)) {
-    const sel = document.getElementById(id);
+  const dims = ["country", "state", "town"];
+  for (let i = 0; i < dims.length; i++) {
+    const dim = dims[i], sel = document.getElementById("sel-" + dim);
     if (!sel) continue;
-    const values = [...new Set(state.events.map(d => d.loc[dim]).filter(v => v && v !== "Unlisted"))].sort();
+    const pool = state.events.filter(d => dims.slice(0, i).every(pd => !state.sel[pd] || d.loc[pd] === state.sel[pd]));
+    const values = [...new Set(pool.map(d => d.loc[dim]).filter(v => v && v !== "Unlisted"))].sort();
     sel.textContent = "";
     const any = document.createElement("option");
     any.value = ""; any.textContent = "Any";
@@ -519,16 +609,15 @@ function buildLocSelects() {
     }
     sel.value = values.includes(state.sel[dim]) ? state.sel[dim] : "";
     state.sel[dim] = sel.value;
-    sel.onchange = () => { state.sel[dim] = sel.value; savePrefs(); render(); };
+    sel.disabled = i > 0 && !state.sel[dims[i - 1]];
+    sel.onchange = () => {
+      state.sel[dim] = sel.value;
+      for (const later of dims.slice(i + 1)) state.sel[later] = "";
+      buildLocSelects();
+      render();
+    };
   }
 }
-/* WSDC (World Swing Dance Council) registry events — national/international conventions,
-   sourced from worldsdc.com/events. Matched primarily by the "wsdc-" key prefix every event
-   from that crawl was given (2026-07-13 fix: the live site's dance_events.json is the sanitized
-   13-field export — see wcs-fbmessenger SKILL.md's publish step — which never includes
-   source_detail, so a source_detail-only check always returned false in production, silently
-   no-opping this whole filter. key survives sanitization, so check it first; source_detail is
-   kept as a fallback for local/unsanitized data.) */
 function matchesCat(d, tag) {
   return d.category === tag;
 }
@@ -1131,6 +1220,7 @@ function render() {
     const scopeWord = state.showNational ? "" : " Southern";
     setStatus(`${shown} of ${totalHosted}${scopeWord} event${totalHosted === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}${hint}`, false);
   }
+  updateFilterUI();
 }
 
 function bucketize(items, today) {
@@ -1161,11 +1251,11 @@ function setView(view) {
   render();
 }
 function savePrefs() {
+  // 2026-07-17 redesign: filters/sel are NO LONGER persisted here — the URL query string
+  // owns filter state (shareable links). Only true UI prefs remain.
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
       view: state.view,
-      filters: Object.fromEntries(Object.entries(state.filters).map(([k, v]) => [k, [...v]])),
-      sel: state.sel,
       filtersOpen: state.filtersOpen,
       showPast: state.showPast,
     }));
@@ -1175,13 +1265,7 @@ function loadPrefs() {
   try {
     const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
     if (["timeline", "grid", "list", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
-    for (const k of Object.keys(state.filters))
-      if (Array.isArray(p.filters?.[k])) state.filters[k] = new Set(p.filters[k]);
-    for (const dim of ["country", "state", "town"])
-      if (typeof p.sel?.[dim] === "string") state.sel[dim] = p.sel[dim];
-    // filtersOpen is intentionally NOT restored from prefs (Sean, 2026-07-12) — the filter panel
-    // always starts collapsed on page load, even if a visitor left it open last time. Still saved
-    // in savePrefs() (harmless / no longer read back) rather than ripping out the field entirely.
+    // filtersOpen intentionally NOT restored (Sean, 2026-07-12) — panel starts collapsed.
     if (typeof p.showPast === "boolean") state.showPast = p.showPast;
   } catch (e) { /* ignore bad prefs */ }
 }
@@ -1191,6 +1275,8 @@ function setFiltersOpen(open) {
   const toggle = document.getElementById("filters-toggle");
   panel.hidden = !open;
   toggle.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("sheet-open", open);   // mobile bottom-sheet scroll lock
+  renderActiveChips();                                   // summary chips only show while closed
   savePrefs();
 }
 let filtersAttentionTimer = null;
@@ -1218,6 +1304,7 @@ function startSubmitAttention() {
 
 function init() {
   loadPrefs();
+  applyUrl();   // URL query string wins over defaults (shareable filtered links, 2026-07-17)
   for (const b of document.querySelectorAll(".view-btn"))
     b.addEventListener("click", () => {
       setView(b.dataset.view);
@@ -1238,16 +1325,37 @@ function init() {
     savePrefs();
     render();
   });
-  // "Traveling? Show national events" (2026-07-17, Phase 0) — a scope toggle like
-  // showPast, never persisted; Reset filters leaves it alone (scope, not a filter).
+  // "Traveling? Show national events" — scope toggle; may arrive pre-set from a shared
+  // ?travel=1 URL, so aria syncs from state here (2026-07-17 redesign).
   const travelToggle = document.getElementById("traveling-toggle");
   if (travelToggle) {
+    travelToggle.setAttribute("aria-pressed", String(state.showNational));
     travelToggle.addEventListener("click", () => {
       state.showNational = !state.showNational;
       travelToggle.setAttribute("aria-pressed", String(state.showNational));
       render();
     });
   }
+  // Redesign wiring (2026-07-17): apply button closes the panel; "Choose another location…"
+  // reveals the cascading dropdowns; back/forward re-applies filters from the URL.
+  document.getElementById("apply-filters")?.addEventListener("click", () => setFiltersOpen(false));
+  const locMore = document.getElementById("loc-more");
+  if (locMore) locMore.addEventListener("click", () => {
+    const box = document.getElementById("loc-selects");
+    const open = box.hidden;
+    box.hidden = !open;
+    locMore.setAttribute("aria-expanded", String(open));
+  });
+  window.addEventListener("popstate", () => {
+    for (const set of Object.values(state.filters)) set.clear();
+    state.sel = { country: "", state: "", town: "" };
+    state.showNational = false;
+    applyUrl();
+    document.getElementById("traveling-toggle")?.setAttribute("aria-pressed", String(state.showNational));
+    document.getElementById("past-toggle")?.setAttribute("aria-pressed", String(state.showPast));
+    buildLocSelects();
+    render();
+  });
   const soloToggle = document.getElementById("solo-styles-toggle");
   if (soloToggle) {
     soloToggle.addEventListener("click", () => {
@@ -1258,18 +1366,7 @@ function init() {
   }
   startSubmitAttention();
   if (!state.filtersOpen) setTimeout(startFiltersAttention, 1000);   // starts right as the Submit flash finishes
-  document.getElementById("reset-filters").addEventListener("click", () => {
-    for (const set of Object.values(state.filters)) set.clear();
-    state.filters.areas = new Set(DEFAULT_AREAS);                 // reset = back to defaults
-    state.sel = { country: "", state: "", town: "" };
-    for (const id of ["sel-country", "sel-state", "sel-town"]) {
-      const s = document.getElementById(id);
-      if (s) s.value = "";
-    }
-    // The 4 national-org toggles are now plain state.filters.cats members (2026-07-13 fix),
-    // so the generic set.clear() loop above already resets them — no special-case needed.
-    syncChips(); render();
-  });
+  document.getElementById("reset-filters").addEventListener("click", clearAllFilters);
   // Tabs render only when there's more than one source (future WCS tab).
   const tabs = document.getElementById("source-tabs");
   if (SOURCES.length > 1) {
@@ -1366,6 +1463,7 @@ function renderCalendar(main, visible) {
   wrap.setAttribute("aria-label", "Event calendar");
   wrap.appendChild(calHeader());
   const dated = visible.filter(hasDate);
+  wrap.appendChild(calLegend(dated));
   if (cal.mode === "year") renderYear(wrap, dated); else renderMonth(wrap, dated);
   const undated = visible.filter(d => !hasDate(d));
   if (undated.length) {
@@ -1377,6 +1475,39 @@ function renderCalendar(main, visible) {
   main.appendChild(wrap);
 }
 
+/* Color legend (Sean, 2026-07-17: "there needs to be a color legend for the calendar that
+   makes sense"). Built from the categories actually visible this render — no dead entries —
+   using the SAME colors as the day-cell chips and the Map markers (MAP_MARKER_COLORS is the
+   single source of truth for category colors). Adds an "Unconfirmed date" swatch only when a
+   tentative event is on screen. */
+function calLegend(dated) {
+  const box = document.createElement("div");
+  box.className = "cal-legend";
+  box.setAttribute("aria-label", "Calendar color legend");
+  const order = Object.keys(MAP_MARKER_COLORS);
+  const cats = [...new Set(dated.map(d => d.category || OTHER))]
+    .sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  for (const c of cats) {
+    const item = document.createElement("span");
+    item.className = "cal-legend-item";
+    const sw = document.createElement("span");
+    sw.className = "cal-legend-swatch";
+    sw.style.background = MAP_MARKER_COLORS[c] || MAP_MARKER_COLORS.Other;
+    item.appendChild(sw);
+    item.append(c);
+    box.appendChild(item);
+  }
+  if (dated.some(d => d.ev.type === "tentative")) {
+    const item = document.createElement("span");
+    item.className = "cal-legend-item";
+    const sw = document.createElement("span");
+    sw.className = "cal-legend-swatch cal-legend-swatch-tentative";
+    item.appendChild(sw);
+    item.append("Unconfirmed date");
+    box.appendChild(item);
+  }
+  return box;
+}
 function calBtn(label, onClick, aria) {
   const b = document.createElement("button");
   b.type = "button"; b.className = "cal-btn"; b.textContent = label;

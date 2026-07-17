@@ -645,3 +645,82 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 @media (max-width: 640px) {
   .map-canvas { height: 360px; }
 }
+
+/* ============================================================
+   Filter redesign (2026-07-17, Sean's spec): quick-filter rows,
+   summary chips, facet counts, radio pills, bottom sheet.
+   ============================================================ */
+.header-submit { position: absolute; top: 14px; right: 16px; z-index: 5; }
+.site-header { position: relative; }
+
+.quick-filters { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.qf-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.qf-label { flex: 0 0 auto; color: var(--text-dim); font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; width: 92px; }
+.quick-filters .filters-toggle { align-self: flex-start; margin-left: 102px; }
+.filters-count { color: var(--accent); font-weight: 600; }
+
+/* selection states: filled+check when on, dark+border when off, brighter border on hover */
+.chip { transition: border-color .12s ease, background .12s ease; }
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] .chip-label::before { content: "✓ "; font-weight: 700; }
+.chip.chip-radio .chip-label::before { content: "○ "; font-weight: 400; }
+.chip.chip-radio[aria-pressed="true"] .chip-label::before { content: "● "; }
+.chip-count { opacity: .65; font-size: .85em; }
+.chip.chip-dim { opacity: .38; }
+.chip.chip-dim:hover { opacity: .7; }
+
+/* horizontal scroll pill rows (mobile especially) */
+.chips-scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+.chips-scroll .chip { flex: 0 0 auto; white-space: nowrap; }
+
+/* active-filter summary chips (panel closed) */
+.active-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.active-chip { background: var(--chip-on-bg); color: var(--text); border: 1px solid var(--accent);
+  border-radius: 999px; padding: 4px 12px; font-size: .85rem; cursor: pointer; }
+.active-chip .active-chip-x { margin-left: 4px; opacity: .8; font-weight: 700; }
+.active-chip:hover { border-color: var(--accent-pink); }
+.active-clear { background: none; border: none; color: var(--accent); cursor: pointer;
+  font-size: .85rem; text-decoration: underline; padding: 4px 6px; }
+
+/* panel top row + apply */
+.filter-panel-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.filter-panel-title { font-size: 1rem; }
+.filter-panel-top .reset-btn { margin-left: auto; }
+.filter-panel-apply { margin-top: 12px; }
+.apply-btn { width: 100%; background: var(--accent); color: #06121d; border: none; border-radius: 10px;
+  padding: 12px 16px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.apply-btn:hover { filter: brightness(1.1); }
+
+/* Location extras */
+.loc-more { background: none; border: none; color: var(--accent); cursor: pointer; padding: 6px 0;
+  font-size: .88rem; text-decoration: underline; display: block; }
+.loc-selects label { display: block; margin: 6px 0; }
+.loc-selects select:disabled { opacity: .4; }
+
+/* mobile: bottom sheet with sticky apply */
+@media (max-width: 640px) {
+  .qf-label { width: auto; min-width: 84px; }
+  .quick-filters .filters-toggle { margin-left: 0; }
+  .filter-panel { position: fixed; left: 0; right: 0; bottom: 0; top: auto; max-height: 82vh;
+    overflow-y: auto; z-index: 1200; border-radius: 16px 16px 0 0; margin: 0;
+    box-shadow: 0 -8px 30px rgba(0,0,0,.55); background: var(--bg-raised); padding: 16px; }
+  .filter-panel-apply { position: sticky; bottom: 0; background: var(--bg-raised);
+    padding: 10px 0 4px; margin: 12px -2px 0; }
+  body.sheet-open { overflow: hidden; }
+}
+
+/* Calendar color legend (2026-07-17) — swatches match cal-chip + map marker colors. */
+.cal-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 2px 10px; font-size: .82rem; color: var(--text-dim); }
+.cal-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend-swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+.cal-legend-swatch-tentative { background: var(--badge-warn-bg); border: 1px solid var(--badge-warn-fg); }
+/* Solo-style day chips: give them their real colors so chips + legend agree (previously
+   they fell back to the default blue, indistinguishable from West Coast Swing). */
+.cal-chip[data-cat="Ballet"] { background: #2a2347; color: #a78bfa; }
+.cal-chip[data-cat="Jazz"] { background: #3a3510; color: #fde047; }
+.cal-chip[data-cat="Hip Hop"] { background: #3d1a1a; color: #f87171; }
+.cal-chip[data-cat="Contemporary"] { background: #0f3530; color: #2dd4bf; }
+.cal-chip[data-cat="Heels"] { background: #38173d; color: #e879f9; }
+.cal-chip[data-cat="Pom"] { background: #2b3510; color: #a3e635; }
+.cal-chip[data-cat="Musical Theatre"] { background: #20244a; color: #818cf8; }
+.cal-chip[data-cat="Dance Fit"] { background: #3a2a08; color: #f59e0b; }
