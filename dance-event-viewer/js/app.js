@@ -21,19 +21,19 @@ const CORE_CATEGORIES = ["West Coast Swing", "Mixed", "Latin", "Argentine Tango"
 // entry already categorized "Latin" (sensual-sundays-bachata-pensacola-coastals) — leave it alone.
 const SOLO_STYLES = ["Ballet", "Jazz", "Hip Hop", "Contemporary", "Heels", "Pom", "Musical Theatre", "Dance Fit"];
 const CATEGORY_WHITELIST = [...CORE_CATEGORIES, ...SOLO_STYLES];
-// National-org toggle buttons (2026-07-13 fix) — static HTML buttons (not built via makeChip)
-// that behave as state.filters.cats tag members, same exclusive-narrowing behavior as any
-// style chip. See isWSDC()/isUSADance()/isArthurMurray()/isFredAstaire() and matchesCat().
-const NATIONAL_TAGS = [
-  ["wsdc-toggle", "WSDC"],
-  ["usadance-toggle", "USA Dance"],
-  ["arthur-murray-toggle", "Arthur Murray"],
-  ["fred-astaire-toggle", "Fred Astaire"],
-];
+// Regional pivot (2026-07-17, Sean — Phase 0 of the Regional Repositioning Plan): the
+// default view shows Southern events; everything else (rest of the US + the few
+// international entries) sits behind the "Traveling? Show national events" toggle.
+// Geography replaced the old per-org gating — the WSDC / USA Dance / Arthur Murray /
+// Fred Astaire toggle chips were removed 2026-07-17; an in-region event shows by
+// default no matter which source found it. ev.state comes from the published data
+// (2-letter US state; null = unknown/international -> treated as non-regional).
+const SOUTHEAST = ["FL", "GA", "AL", "MS", "LA", "TN", "SC", "NC"];
+function isRegional(ev) { return SOUTHEAST.includes(ev.state); }
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const PREFS_KEY = "dance-event-viewer-prefs-v3";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
-const DEFAULT_AREAS = ["Pensacola area", "Mobile area"];   // 2026-07-14 (Sean): default the Location filter to Pensacola + Mobile — the site's core audience for now; visitors can widen it via the Location chips or Reset filters. (Was [] "all locations" from 2026-07-11; Pensacola+Mobile before that.)
+const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
+const DEFAULT_AREAS = [];   // 2026-07-17 (Phase 0): default widened from Pensacola+Mobile to the whole Southeast-8 — the regional gate in matchesFilters() now defines default scope; Location chips/dropdowns narrow it. (PREFS_KEY bumped v3->v4 so returning visitors pick up the new default once.)
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
 const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map view (optional; page works without it)
 const MAP_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";  // free, no API key
@@ -86,11 +86,9 @@ const state = {
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
   showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline/Grid/List
                           // listings only count/show current events unless this is turned on.
-  // WSDC / USA Dance / Arthur Murray / Fred Astaire (2026-07-13, Sean) — these used to be separate
-  // booleans that only "unhid" events (and, per a 2026-07-13 diagnosis, never actually worked live
-  // since they keyed off ev.source_detail, a field stripped from the published dance_events.json —
-  // see isWSDC() etc. below). Rewired to be plain tag members of state.filters.cats, exactly like
-  // every other style chip, so clicking one narrows the list to just that org, same as any style.
+  showNational: false,   // "Traveling? Show national events" (2026-07-17, Phase 0) — out-of-region
+                         // events hide until this is on. Deliberately NOT persisted: every visit
+                         // starts regional. Reset filters does not touch it (scope, not a filter).
 };
 
 /* ---------- helpers: normalization (formatting-only, never invents data) ---------- */
@@ -502,12 +500,6 @@ function syncChips() {
     for (const chip of soloHolder.querySelectorAll(".chip"))
       chip.setAttribute("aria-pressed", String(state.filters.cats.has(chip.dataset.value)));
   }
-  // National-org toggles (WSDC / USA Dance / Arthur Murray / Fred Astaire, 2026-07-13) — same
-  // idea as the solo-style chips above: they're plain state.filters.cats members but live
-  // outside the .chips[data-group="cats"] container, so they need their own aria-pressed sync.
-  for (const [id, tag] of NATIONAL_TAGS) {
-    document.getElementById(id)?.setAttribute("aria-pressed", String(state.filters.cats.has(tag)));
-  }
   savePrefs();
 }
 function buildLocSelects() {
@@ -537,52 +529,15 @@ function buildLocSelects() {
    source_detail, so a source_detail-only check always returned false in production, silently
    no-opping this whole filter. key survives sanitization, so check it first; source_detail is
    kept as a fallback for local/unsanitized data.) */
-function isWSDC(ev) {
-  return (typeof ev.key === "string" && ev.key.startsWith("wsdc-")) ||
-    (typeof ev.source_detail === "string" && /wsdc/i.test(ev.source_detail));
-}
-/* USA Dance nationwide chapter/social events — sourced from usadance.org/events.
-   Same key-prefix-first fix as isWSDC() above. */
-function isUSADance(ev) {
-  return (typeof ev.key === "string" && ev.key.startsWith("usa-dance-")) ||
-    (typeof ev.source_detail === "string" && /usa dance/i.test(ev.source_detail));
-}
-/* Arthur Murray national "Dance-O-Rama" events — sourced from arthurmurray.com/events.
-   Same key-prefix-first fix as isWSDC() above. */
-function isArthurMurray(ev) {
-  return (typeof ev.key === "string" && ev.key.startsWith("arthur-murray-")) ||
-    (typeof ev.source_detail === "string" && /arthur murray/i.test(ev.source_detail));
-}
-/* Fred Astaire national competitions — sourced from fredastaire.com/events.
-   Same key-prefix-first fix as isWSDC() above. */
-function isFredAstaire(ev) {
-  return (typeof ev.key === "string" && ev.key.startsWith("fred-astaire-")) ||
-    (typeof ev.source_detail === "string" && /fred astaire/i.test(ev.source_detail));
-}
-/* Resolves a cats-Set tag to a match against an event. Real style categories (West Coast
-   Swing, Latin, Ballet, ...) compare against d.category as before; the four national-org
-   tags (added 2026-07-13) compare against the isX() detectors above instead, since an event's
-   org affiliation is independent of its dance-style category. */
 function matchesCat(d, tag) {
-  switch (tag) {
-    case "WSDC": return isWSDC(d.ev);
-    case "USA Dance": return isUSADance(d.ev);
-    case "Arthur Murray": return isArthurMurray(d.ev);
-    case "Fred Astaire": return isFredAstaire(d.ev);
-    default: return d.category === tag;
-  }
+  return d.category === tag;
 }
 function matchesFilters(d) {
   const f = state.filters;
-  // National-org feeds (WSDC / USA Dance / Arthur Murray / Fred Astaire) are OPT-IN
-  // (Sean, 2026-07-14): each is a nationwide event set that otherwise floods the default
-  // local view, so an event belonging to one is hidden UNLESS that org's own chip is
-  // selected — matching the chips' "select to show only these" design. Selecting the chip
-  // lets its events through here; the cats test below then narrows to the chosen tags.
-  if (isWSDC(d.ev) && !f.cats.has("WSDC")) return false;
-  if (isUSADance(d.ev) && !f.cats.has("USA Dance")) return false;
-  if (isArthurMurray(d.ev) && !f.cats.has("Arthur Murray")) return false;
-  if (isFredAstaire(d.ev) && !f.cats.has("Fred Astaire")) return false;
+  // Regional default (Phase 0, 2026-07-17): out-of-region events (state not in the
+  // Southeast-8 — includes null/unknown/international) only show while the
+  // "Traveling? Show national events" toggle is on. Past-gating is separate (showPast).
+  if (!state.showNational && !isRegional(d.ev)) return false;
   if (f.cats.size && ![...f.cats].some(tag => matchesCat(d, tag))) return false;
   if (f.days.size && !f.days.has(d.day)) return false;
   if (f.areas.size && !f.areas.has(d.loc.area)) return false;
@@ -1154,28 +1109,27 @@ function render() {
     }
   }
 
-  // Count reads "[left] of [right] events shown" (Sean, 2026-07-14): the LEFT number is
-  // what the current filters are allowing (the events actually displayed = `shown`), and
-  // the RIGHT number is the total events the site is hosting. By default the LEFT shows the
-  // local/regional events (the four national-org feeds — WSDC/USA Dance/Arthur Murray/Fred
-  // Astaire — are opt-in, hidden until their chip is picked), e.g. "41 of 156"; picking a
-  // national chip or any filter changes the left number. Past
-  // events are excluded from the total by default (Sean, 2026-07-12) so it doesn't balloon
-  // with stale one-time events; turning on "Show Past Events" brings them into both counts.
-  const totalHosted = state.showPast
-    ? state.events.length
-    : state.events.filter(d => !isPastEvent(d, today)).length;
+  // Count reads "[left] of [right] events shown" (Sean, 2026-07-14), made scope-aware for
+  // the regional pivot (2026-07-17): RIGHT = total events in the CURRENT SCOPE (Southern by
+  // default; everything while "Traveling?" is on) and the line hints how many more wait
+  // behind the toggle. Past events stay out of both numbers unless "Show Past Events" is on.
+  const inScope = d => state.showNational || isRegional(d.ev);
+  const notPast = d => state.showPast || !isPastEvent(d, today);
+  const totalHosted = state.events.filter(d => inScope(d) && notPast(d)).length;
+  const moreNational = state.showNational ? 0 : state.events.filter(d => !isRegional(d.ev) && notPast(d)).length;
+  const hint = moreNational ? ` · ${moreNational} more nationwide — turn on “Traveling?” to see them` : "";
 
   if (!shown) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
     empty.textContent = state.showPast
       ? "No events match these filters."
-      : "No upcoming events match these filters. Try clearing a filter, turning on “Show Past Events,” or open the Calendar to browse by month.";
+      : "No upcoming events match these filters. Try clearing a filter, turning on “Show Past Events” or “Traveling?”, or open the Calendar to browse by month.";
     main.appendChild(empty);
-    setStatus(`0 of ${totalHosted} events shown`, false);
+    setStatus(`0 of ${totalHosted} events shown${hint}`, false);
   } else {
-    setStatus(`${shown} of ${totalHosted} event${totalHosted === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}`, false);
+    const scopeWord = state.showNational ? "" : " Southern";
+    setStatus(`${shown} of ${totalHosted}${scopeWord} event${totalHosted === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}${hint}`, false);
   }
 }
 
@@ -1284,19 +1238,14 @@ function init() {
     savePrefs();
     render();
   });
-  // National-org toggles (WSDC / USA Dance / Arthur Murray / Fred Astaire) — 2026-07-13 fix:
-  // wired exactly like a makeChip() chip (add/remove a tag in state.filters.cats), so clicking
-  // one narrows the list to just that org, same as any real style chip. aria-pressed for these
-  // is kept in sync by syncChips() (see NATIONAL_TAGS loop there), not set here.
-  for (const [id, tag] of NATIONAL_TAGS) {
-    const btn = document.getElementById(id);
-    if (!btn) continue;
-    btn.addEventListener("click", () => {
-      const set = state.filters.cats;
-      const wasSelected = set.has(tag);
-      wasSelected ? set.delete(tag) : set.add(tag);
-      syncChips(); render();
-      if (!wasSelected) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
+  // "Traveling? Show national events" (2026-07-17, Phase 0) — a scope toggle like
+  // showPast, never persisted; Reset filters leaves it alone (scope, not a filter).
+  const travelToggle = document.getElementById("traveling-toggle");
+  if (travelToggle) {
+    travelToggle.addEventListener("click", () => {
+      state.showNational = !state.showNational;
+      travelToggle.setAttribute("aria-pressed", String(state.showNational));
+      render();
     });
   }
   const soloToggle = document.getElementById("solo-styles-toggle");

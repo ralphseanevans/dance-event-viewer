@@ -13,9 +13,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dance Event Viewer — Find Dance Events Across the U.S.</title>
-  <meta name="description" content="Browse upcoming dance events across the U.S. — West Coast Swing socials, classes, workshops and more. Find dances near you. Good music, great people.">
+  <title>Dance Event Viewer — Dance Events Across the South</title>
+  <meta name="description" content="Find dance events across the South — West Coast Swing socials, classes, and workshops in Florida, Georgia, Alabama, Mississippi, Louisiana, Tennessee, and the Carolinas. Traveling? Browse national events too.">
   <link rel="canonical" href="https://danceeventviewer.net/dance-event-viewer/">
+  <meta property="og:title" content="Dance Event Viewer — Dance Events Across the South">
+  <meta property="og:description" content="Find dance events across the South — West Coast Swing socials, classes, and workshops. Traveling? Browse national events too.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://danceeventviewer.net/dance-event-viewer/">
+  <meta property="og:image" content="https://danceeventviewer.net/dance-event-viewer/assets/dance-event-viewer-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
   <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. Loaded BEFORE
        styles.css so our dark-theme overrides (in styles.css) win over Leaflet's own defaults. -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -73,6 +79,10 @@
         <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
           <span class="filters-toggle-label">Filters</span><span class="filters-toggle-icon" aria-hidden="true">›</span>
         </button>
+        <button type="button" id="traveling-toggle" class="past-toggle traveling-toggle" aria-pressed="false"
+          title="By default this calendar shows events across the South (FL, GA, AL, MS, LA, TN, SC, NC). Turn this on to also browse national conventions and competitions — handy when you're traveling.">
+          Traveling? Show national events
+        </button>
         <a href="submit-event.html" class="submit-event-btn">Submit an Event</a>
       </div>
 
@@ -81,7 +91,7 @@
           <strong>About These Listings</strong><span aria-hidden="true">+</span>
         </button>
         <div id="beta-details" class="beta-details" hidden>
-          Listings are gathered automatically and manually, so errors are possible. Spot something wrong or
+          This calendar focuses on dance events across the South — Florida through the Carolinas. Turn on <em>&ldquo;Traveling? Show national events&rdquo;</em> to browse conventions and competitions nationwide. Listings are gathered automatically and manually, so errors are possible. Spot something wrong or
           missing? Use <em>&ldquo;Wrong info? Need to add info?&rdquo;</em> and include a link, flyer, or photo.
           Always confirm details with the venue or organizer.
         </div>
@@ -92,25 +102,7 @@
       <fieldset class="filter-group" id="fg-category">
         <legend>Style</legend>
         <div class="chips" data-group="cats"></div>
-        <div class="source-toggles">
-          <button type="button" id="wsdc-toggle" class="chip" aria-pressed="false"
-            title="WSDC (World Swing Dance Council) national/international WCS conventions and competitions, mostly outside this area. Select to show only these.">
-            WSDC
-          </button>
-          <button type="button" id="usadance-toggle" class="chip" aria-pressed="false"
-            title="USA Dance nationwide chapter and social dance events, mostly outside this area. Select to show only these.">
-            USA Dance
-          </button>
-          <button type="button" id="arthur-murray-toggle" class="chip" aria-pressed="false"
-            title="Arthur Murray national Dance-O-Rama events, mostly outside this area. Select to show only these.">
-            Arthur Murray
-          </button>
-          <button type="button" id="fred-astaire-toggle" class="chip" aria-pressed="false"
-            title="Fred Astaire national dance competitions, mostly outside this area. Select to show only these.">
-            Fred Astaire
-          </button>
-        </div>
-        <div class="solo-styles-group" hidden>
+                <div class="solo-styles-group" hidden>
           <button type="button" id="solo-styles-toggle" class="past-toggle solo-styles-toggle" aria-expanded="false" aria-controls="solo-styles-chips"
             title="Solo/studio class styles (Ballet, Jazz, Hip Hop, Contemporary, Heels, Pom, Musical Theatre, Dance Fit) — not partner dances. Collapsed by default.">
             Solo Dance Styles <span aria-hidden="true">&rsaquo;</span>
@@ -211,7 +203,7 @@
       });
     })();
   </script>
-  <script src="js/app.js?v=20260714c"></script>
+  <script src="js/app.js?v=20260717a"></script>
   <script src="js/whispers.js"></script>
   <script src="js/activity-pulse.js?v=20260713i"></script>
 </body>
