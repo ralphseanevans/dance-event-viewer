@@ -766,3 +766,134 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .cal-chip[data-cat="Pom"] { background: #2b3510; color: #a3e635; }
 .cal-chip[data-cat="Musical Theatre"] { background: #20244a; color: #818cf8; }
 .cal-chip[data-cat="Dance Fit"] { background: #3a2a08; color: #f59e0b; }
+
+/* ============================================================================
+   Multi-select share — "Share several dances as one" (2026-07-17, Sean).
+   All colors come from the theme's CSS variables, so this layer automatically
+   matches whatever theme is active (Moonlit Ember today) with no hard-coded hues.
+   ============================================================================ */
+
+/* Entry toggle — same pill language as .past-toggle; a warm gradient when active. */
+.share-several-toggle[aria-pressed="true"] {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+}
+
+/* The per-card select control is hidden until "Share several" is on; while selecting,
+   it becomes the ONLY corner action so the choice is unambiguous. */
+.card-action-select { display: none; }
+body.selecting .card-action-select { display: flex; }
+body.selecting .card-action-favorite,
+body.selecting .card-action-share { display: none; }
+.card-action-select[aria-pressed="true"] {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  font-weight: 700;
+}
+/* While selecting, cards invite a tap and lift a little when chosen. */
+body.selecting .card.selectable { cursor: pointer; }
+body.selecting .card.selectable:hover { border-color: var(--text-dim); }
+.card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent) inset, 0 14px 40px rgba(0, 0, 0, .35) !important;
+}
+
+/* Floating action bar (bottom, above the whisper widget). */
+.combo-bar {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  z-index: 60; display: flex; align-items: center; gap: 12px;
+  width: min(620px, calc(100vw - 28px));
+  padding: 10px 12px 10px 18px;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: 999px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+}
+.combo-bar[hidden] { display: none; }
+.combo-bar-count { color: var(--text); font-size: .95rem; font-weight: 600; white-space: nowrap; }
+.combo-bar-spacer { flex: 1 1 auto; }
+.combo-bar-btn {
+  border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
+  padding: 8px 16px; font-size: .92rem; font-weight: 600;
+  background: transparent; color: var(--text-dim);
+}
+.combo-bar-btn:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
+.combo-bar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.combo-bar-btn:disabled { opacity: .4; cursor: default; }
+.combo-bar-share {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+}
+.combo-bar-share:disabled { background: var(--bg-card); color: var(--text-dim); }
+
+/* The "lovely share" preview modal — reuses .cal-pop-backdrop for the scrim. */
+.combo-pop {
+  max-width: 460px; width: 100%; max-height: 88vh; overflow: auto;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: 18px; position: relative;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .6);
+}
+.combo-pop .pop-close {
+  position: absolute; top: 10px; right: 14px; z-index: 2;
+  background: rgba(0, 0, 0, .28); width: 30px; height: 30px; border-radius: 999px;
+  border: none; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer;
+}
+.combo-pop .pop-close:hover { background: rgba(0, 0, 0, .45); }
+
+/* The poster (also the layout mirrored onto the saved PNG). */
+.combo-poster { border-radius: 18px 18px 0 0; overflow: hidden; }
+.combo-poster-head {
+  padding: 26px 24px 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #1a1119;
+}
+.combo-headline { margin: 0; font-size: 1.6rem; line-height: 1.15; font-weight: 800; letter-spacing: -.01em; }
+.combo-sub { margin: 8px 0 0; font-size: .9rem; font-weight: 600; opacity: .82; }
+.combo-list { list-style: none; margin: 0; padding: 8px 20px 4px; display: grid; gap: 4px; }
+.combo-item { display: flex; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+.combo-item:last-child { border-bottom: none; }
+.combo-dot { font-size: 1.1rem; line-height: 1.4; flex: 0 0 auto; }
+.combo-item-body { min-width: 0; }
+.combo-item-name { margin: 0; font-size: 1.06rem; font-weight: 700; color: var(--text); }
+.combo-item-when { margin: 3px 0 0; font-size: .94rem; font-weight: 600; color: var(--accent-pink); }
+.combo-item-meta { margin: 3px 0 0; font-size: .88rem; color: var(--text-dim); }
+.combo-poster-foot {
+  margin: 0; padding: 6px 24px 18px; color: var(--accent);
+  font-size: .9rem; font-weight: 700;
+}
+.combo-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 20px 20px; }
+.combo-btn {
+  flex: 1 1 auto; border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
+  padding: 11px 14px; font-size: .95rem; font-weight: 600;
+  background: transparent; color: var(--text-dim);
+}
+.combo-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.combo-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.combo-btn.copied { color: var(--accent); border-color: var(--accent); }
+.combo-btn-primary {
+  flex-basis: 100%; color: #fff; border-color: transparent;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+}
+.combo-btn-primary.copied { color: #fff; background: linear-gradient(92deg, var(--accent-pink), var(--accent)); }
+
+/* Recipient banner for a shared-set (?events=) link. */
+.shared-set-banner {
+  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  max-width: var(--maxw); margin: 0 auto 12px; padding: 12px 18px;
+  background: var(--accent-soft); border: 1px solid var(--chip-on-border);
+  border-radius: var(--radius); color: var(--text); font-weight: 600;
+}
+.shared-set-clear {
+  border: 1px solid var(--chip-on-border); background: transparent; color: var(--accent);
+  border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: .9rem; font-weight: 600;
+}
+.shared-set-clear:hover { color: var(--text); border-color: var(--text-dim); }
+.shared-set-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .combo-bar { bottom: 12px; padding: 9px 10px 9px 14px; gap: 8px; }
+  .combo-bar-count { font-size: .86rem; }
+  .combo-bar-btn { padding: 8px 13px; font-size: .86rem; }
+  .combo-headline { font-size: 1.4rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card.is-selected { transition: box-shadow .15s ease, border-color .15s ease; }
+}
