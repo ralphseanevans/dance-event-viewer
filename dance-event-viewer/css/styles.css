@@ -787,6 +787,13 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
     -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   body.sheet-open #filter-backdrop { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0;
     z-index: 1100; background: rgba(0, 0, 0, .45); }
+  /* THE stacking fix (2026-07-17, from Sean's iPhone screenshots): moonlit-ember-theme.css
+     gives every page section position:relative+z-index:1, which makes .controls a stacking
+     context that CAPTURES the sheet's z-index:1200 — so the status line, timeline cards
+     (later siblings, also z-1), the combo bar (z-60) and whispers (z-40) all painted ON TOP
+     of the open sheet. Lifting .controls itself while the sheet is open frees the sheet and
+     backdrop to cover them. Scoped to this mobile block — the sheet only overlays here. */
+  body.sheet-open .controls { z-index: 1200; }
   .filter-panel-apply { position: -webkit-sticky; position: sticky; bottom: 0; background: var(--bg-raised);
     padding: 10px 0 4px; margin: 12px -2px 0; }
   body.sheet-open { overflow: hidden; }
