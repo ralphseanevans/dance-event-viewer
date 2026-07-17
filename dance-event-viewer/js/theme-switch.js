@@ -8,6 +8,19 @@
   var STORE_KEY = "dev-theme";
   var VALID = { ember: true, classic: true };
 
+  // Each theme also swaps the hero banner so the graphic matches the palette
+  // (Sean, 2026-07-17): warm banner for Ember, the original blue/pink one for Classic.
+  var BANNERS = {
+    ember: {
+      src: "assets/dance-event-viewer-banner.png",
+      alt: "Dance Event Viewer — a dancing couple under warm club lights"
+    },
+    classic: {
+      src: "assets/dance-event-viewer-banner-classic.png",
+      alt: "Dance Event Viewer — a dancing couple under blue and pink club lights"
+    }
+  };
+
   function saved() {
     var t = null;
     try { t = localStorage.getItem(STORE_KEY); } catch (e) {}
@@ -18,6 +31,9 @@
     if (!VALID[theme]) theme = "ember";
     document.documentElement.setAttribute("data-theme", theme);
     if (persist) { try { localStorage.setItem(STORE_KEY, theme); } catch (e) {} }
+    var banner = BANNERS[theme];
+    var img = document.getElementById("brand-img");
+    if (img && banner) { img.setAttribute("src", banner.src); img.setAttribute("alt", banner.alt); }
     var opts = document.querySelectorAll(".theme-option");
     for (var i = 0; i < opts.length; i++) {
       opts[i].setAttribute("aria-checked",
