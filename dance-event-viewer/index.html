@@ -41,7 +41,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260717h">
+  <link rel="stylesheet" href="css/styles.css?v=20260717i">
   <link rel="stylesheet" href="css/whispers.css">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260717e">
@@ -181,8 +181,12 @@
         <button type="button" id="reset-filters" class="reset-btn">Clear all</button>
         <button type="button" id="filters-close" class="filters-close" aria-label="Close filters">&#10005;</button>
       </div>
-      <fieldset class="filter-group" id="fg-area">
-        <legend>Location</legend>
+      <!-- Filter groups were <fieldset>/<legend> until 2026-07-17. display:flex on fieldset
+           is unreliable on several mobile browsers (contents rendered stacked/overlapping on
+           Sean's phone), so these are plain divs now — grouping semantics kept via
+           role="group" + aria-labelledby. -->
+      <div class="filter-group" id="fg-area" role="group" aria-labelledby="fg-area-label">
+        <span class="fg-legend" id="fg-area-label">Location</span>
         <div class="chips" data-group="areas"></div>
         <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose another location&hellip;</button>
         <div class="loc-selects" id="loc-selects" hidden>
@@ -190,19 +194,19 @@
           <label>State <select id="sel-state" disabled></select></label>
           <label>Town <select id="sel-town" disabled></select></label>
         </div>
-      </fieldset>
-      <fieldset class="filter-group" id="fg-kind">
-        <legend>Event type</legend>
+      </div>
+      <div class="filter-group" id="fg-kind" role="group" aria-labelledby="fg-kind-label">
+        <span class="fg-legend" id="fg-kind-label">Event type</span>
         <div class="chips chips-radio" data-group="kinds"></div>
         <button type="button" id="past-toggle" class="past-toggle" aria-pressed="false"
           title="Past events are hidden by default to keep this list current. Turn this on to see recently-ended events too (shown greyed out).">
           Show Past Events
         </button>
-      </fieldset>
-      <fieldset class="filter-group" id="fg-solo">
-        <legend>Solo dance styles</legend>
+      </div>
+      <div class="filter-group" id="fg-solo" role="group" aria-labelledby="fg-solo-label">
+        <span class="fg-legend" id="fg-solo-label">Solo dance styles</span>
         <div class="chips" data-group="cats" id="solo-styles-chips"></div>
-      </fieldset>
+      </div>
       <div class="filter-panel-apply">
         <button type="button" id="apply-filters" class="apply-btn">Show events</button>
       </div>
