@@ -52,6 +52,7 @@
       "type": "weekly_recurring",
       "day_of_week": "Friday",
       "monthly_rule": null,
+      "exclude_monthly_rules": ["First Friday", "Third Friday"],
       "start_date": null,
       "end_date": null,
       "start_time": "19:00",
