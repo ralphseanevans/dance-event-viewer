@@ -73,17 +73,27 @@ document.addEventListener("DOMContentLoaded", () => {
   // Flyer preview.
   const flyerInput = $("#flyer-input");
   const flyerPreview = $("#flyer-preview");
+  const flyerButton = $("#flyer-button");
+  const flyerButtonText = $("#flyer-button-text");
+  const FLYER_BTN_DEFAULT = flyerButtonText ? flyerButtonText.textContent : "";
+  function resetFlyerButton() {
+    if (flyerButtonText) flyerButtonText.textContent = FLYER_BTN_DEFAULT;
+    if (flyerButton) flyerButton.classList.remove("has-file");
+  }
   let flyerDataUrl = null;
   flyerInput.addEventListener("change", () => {
     const file = flyerInput.files && flyerInput.files[0];
     flyerDataUrl = null;
-    if (!file) { flyerPreview.hidden = true; return; }
+    if (!file) { flyerPreview.hidden = true; resetFlyerButton(); return; }
     if (file.size > MAX_FLYER_BYTES) {
       setStatus("That photo is a bit large — try a smaller image (under 8MB).", true);
       flyerInput.value = "";
       flyerPreview.hidden = true;
+      resetFlyerButton();
       return;
     }
+    if (flyerButtonText) flyerButtonText.textContent = file.name;
+    if (flyerButton) flyerButton.classList.add("has-file");
     const reader = new FileReader();
     reader.onload = () => {
       flyerDataUrl = reader.result;
@@ -223,6 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
         form.reset();
         flyerPreview.hidden = true;
         flyerDataUrl = null;
+        resetFlyerButton();
         syncMethod();
         setStatus("Thanks! Your submission is in for review.", false, true);
       } else {
