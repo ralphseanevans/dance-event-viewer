@@ -642,10 +642,16 @@ function matchesFilters(d) {
    own details (name, schedule, venue) plus a link to the calendar itself — the
    recipient gets the info even though the URL always points at the homepage. */
 function shareTextFor(ev) {
-  const parts = [ev.name.trim()];
+  // 2026-07-17 (Sean: "make the part that we share look more attractive... draw people to
+  // the site"): emoji-structured share card instead of a bare text blob. The link itself
+  // unfurls into the warm banner via the site's Open Graph tags (root page included).
+  const parts = ["\ud83d\udc83\ud83d\udd7a " + ev.name.trim()];
   const sched = scheduleText(ev);
-  if (sched) parts.push(sched);
-  if (typeof ev.venue === "string" && ev.venue.trim()) parts.push(ev.venue.trim());
+  if (sched) parts.push("\ud83d\udcc5 " + sched);
+  if (typeof ev.venue === "string" && ev.venue.trim()) parts.push("\ud83d\udccd " + ev.venue.trim());
+  if (typeof ev.cost === "string" && ev.cost.trim()) parts.push("\ud83c\udfab " + ev.cost.trim());
+  parts.push("");
+  parts.push("Found on Dance Event Viewer \u2014 dance events across the South, all in one place \u2728");
   return parts.join("\n");
 }
 async function copyText(text) {
