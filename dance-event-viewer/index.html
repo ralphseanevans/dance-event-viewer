@@ -30,6 +30,7 @@
   <link rel="stylesheet" href="css/styles.css?v=20260717c">
   <link rel="stylesheet" href="css/whispers.css">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
+  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260716a">
 
   <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
@@ -44,6 +45,23 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
+  <!-- Decorative page-wide ash. Styling and reduced-motion behavior live in
+       css/moonlit-ember-theme.css; it is intentionally separate from the hero. -->
+  <div id="site-ash-layer" aria-hidden="true">
+    <i style="--x:3%;--d:-3s;--t:18s;--s:3px"></i><i style="--x:8%;--d:-15s;--t:24s;--s:2px"></i>
+    <i style="--x:13%;--d:-8s;--t:20s;--s:4px"></i><i style="--x:18%;--d:-19s;--t:27s;--s:2px"></i>
+    <i style="--x:23%;--d:-5s;--t:22s;--s:3px"></i><i style="--x:29%;--d:-13s;--t:19s;--s:2px"></i>
+    <i style="--x:34%;--d:-1s;--t:26s;--s:4px"></i><i style="--x:39%;--d:-22s;--t:29s;--s:2px"></i>
+    <i style="--x:44%;--d:-10s;--t:21s;--s:3px"></i><i style="--x:49%;--d:-17s;--t:25s;--s:2px"></i>
+    <i style="--x:54%;--d:-7s;--t:23s;--s:4px"></i><i style="--x:59%;--d:-20s;--t:28s;--s:2px"></i>
+    <i style="--x:64%;--d:-4s;--t:19s;--s:3px"></i><i style="--x:69%;--d:-12s;--t:24s;--s:2px"></i>
+    <i style="--x:74%;--d:-24s;--t:30s;--s:4px"></i><i style="--x:79%;--d:-9s;--t:22s;--s:2px"></i>
+    <i style="--x:84%;--d:-18s;--t:26s;--s:3px"></i><i style="--x:89%;--d:-2s;--t:20s;--s:2px"></i>
+    <i style="--x:94%;--d:-14s;--t:27s;--s:4px"></i><i style="--x:98%;--d:-6s;--t:23s;--s:2px"></i>
+    <i style="--x:6%;--d:-25s;--t:31s;--s:2px"></i><i style="--x:26%;--d:-16s;--t:28s;--s:3px"></i>
+    <i style="--x:47%;--d:-23s;--t:32s;--s:2px"></i><i style="--x:71%;--d:-11s;--t:25s;--s:3px"></i>
+    <i style="--x:92%;--d:-21s;--t:29s;--s:2px"></i>
+  </div>
   <header class="site-header">
     <div id="brand-slot">
       <img src="assets/dance-event-viewer-banner.png" alt="Dance Event Viewer — a dancing couple under blue and pink club lights">

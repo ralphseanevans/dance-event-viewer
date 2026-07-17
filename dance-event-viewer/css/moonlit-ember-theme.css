@@ -1,0 +1,38 @@
+/* Moonlit Ember visual layer — 2026-07-16.
+   Loaded after existing styles so layout, hero, and behavior stay untouched. */
+:root {
+  --bg:#0b0c15; --bg-raised:#151624; --bg-card:#1b1822; --border:#3d2b37;
+  --text:#f6eadf; --text-dim:#a99ca5; --accent:#e8785b; --accent-pink:#db8d85;
+  --accent-soft:#3b2027; --badge-warn-bg:#493323; --badge-warn-fg:#f3c58e;
+  --chip-on-bg:#47252d; --chip-on-border:#e8785b; --danger:#f28c82;
+}
+html,body { background:#0b0c15; }
+body {
+  min-height:100vh;
+  background-image:radial-gradient(circle at 72% 4%,rgba(92,43,62,.38) 0,transparent 34rem),radial-gradient(circle at 12% 55%,rgba(58,35,48,.22) 0,transparent 30rem),linear-gradient(180deg,#111421 0%,#0b0c15 58%,#080910 100%);
+  background-attachment:fixed;
+}
+#site-ash-layer { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.site-header,#activity-rail,.source-tabs,.controls,.status-line,#results,.site-footer { position:relative; z-index:1; }
+#site-ash-layer i {
+  position:absolute; top:-12px; left:var(--x); width:var(--s); height:calc(var(--s) * .72); display:block;
+  opacity:.23; background:#d98068; clip-path:polygon(0 35%,70% 0,100% 58%,34% 100%);
+  filter:drop-shadow(0 0 3px rgba(232,120,91,.22));
+  animation:moonlit-ash-fall var(--t) linear var(--d) infinite; will-change:transform;
+}
+#site-ash-layer i:nth-child(3n) { background:#9c7580; opacity:.17; }
+#site-ash-layer i:nth-child(4n) { background:#e6aa87; opacity:.2; }
+@keyframes moonlit-ash-fall {
+  0% { transform:translate3d(-16px,-4vh,0) rotate(0deg); }
+  46% { transform:translate3d(22px,51vh,0) rotate(184deg); }
+  100% { transform:translate3d(-9px,108vh,0) rotate(372deg); }
+}
+.controls,.filter-panel,.card,.list-row,.cal-toolbar,.map-popup-card,.whisper-float-head,.whisper-sub,.whisper-form { box-shadow:0 20px 55px rgba(0,0,0,.24); }
+.traveling-toggle { background:linear-gradient(92deg,var(--accent-soft),#332029); color:var(--accent-pink); }
+.activity-msg { color:#e59a83; text-shadow:0 0 6px rgba(232,120,91,.5),0 0 1px rgba(229,154,131,.9); }
+.whisper-bubble { background:#e5b2a6; border-color:#c98278; }
+.whisper-bubble p { color:#321c25; }
+.whisper-time { color:#74454d; }
+.whisper-form button[type="submit"] { color:#171019; }
+.leaflet-container { background:#10111b; color:var(--text); }
+@media (prefers-reduced-motion:reduce) { #site-ash-layer { display:none; } }
