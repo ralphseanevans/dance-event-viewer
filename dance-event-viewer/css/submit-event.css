@@ -65,20 +65,47 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 textarea { resize: vertical; }
 
+/* Intake-method selector as a tab bar (Sean, 2026-07-17): reads as real tabs on a
+   baseline rule with an accent underline on the active one — so it's obvious
+   "Upload a Flyer" is a selected tab whose content is already shown below, not a
+   button that failed to pop something up. `.is-active` is a JS-set fallback so the
+   highlight doesn't depend on :has() (older mobile Safari). */
 .method-tabs {
-  display: flex; gap: 10px; flex-wrap: wrap;
+  display: flex; gap: 2px; flex-wrap: nowrap;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
 }
+.method-tabs::-webkit-scrollbar { display: none; }
 .method-tab {
   display: inline-flex; align-items: center; gap: 6px;
-  background: var(--bg-card); color: var(--text-dim);
-  border: 1px solid var(--border); border-radius: 999px;
-  padding: 5px 16px; cursor: pointer; font-size: .92rem;
+  background: transparent; color: var(--text-dim);
+  border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  border-radius: 8px 8px 0 0; padding: 8px 15px; cursor: pointer;
+  font-size: .92rem; white-space: nowrap; flex: 0 0 auto;
+  transition: color .15s, border-color .15s, background .15s;
 }
 .method-tab input { position: absolute; opacity: 0; width: 0; height: 0; }
-.method-tab:has(input:checked) {
-  background: var(--accent-soft); color: var(--accent); border-color: var(--chip-on-border); font-weight: 600;
+.method-tab:hover { color: var(--text); }
+.method-tab:has(input:checked), .method-tab.is-active {
+  background: var(--accent-soft); color: var(--accent); font-weight: 600;
+  border-bottom-color: var(--accent);
 }
-.method-tab:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.method-tab:has(input:focus-visible), .method-tab:focus-within {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+/* min-width:0 keeps this grid item from stretching the section to the tab row's
+   full (overflowing) width — instead it stays in its cell and .method-tabs scrolls. */
+.method-tabs-wrap { position: relative; min-width: 0; }
+@media (max-width: 420px) {
+  /* On a phone the three descriptive tabs don't all fit, so the row scrolls; a
+     right-edge fade signals there's a tab (Paste a Link) to swipe to. */
+  .method-tab { padding: 8px 10px; font-size: .82rem; gap: 4px; }
+  .method-tabs-wrap::after {
+    content: ""; position: absolute; top: 0; right: 0; bottom: 2px; width: 26px;
+    background: linear-gradient(to right, transparent, var(--bg-raised));
+    pointer-events: none;
+  }
+}
 
 #flyer-preview {
   max-width: 100%; max-height: 260px; border-radius: 8px;
