@@ -1,40 +1,69 @@
-/* Moonlit Ember visual layer — 2026-07-16.
-   Loaded after existing styles so layout, hero, and behavior stay untouched. */
-:root {
+/* Site theme effects + palettes — Moonlit Ember (2026-07-16), extended 2026-07-17 to
+   support a user-selectable theme. Two palettes are offered via a data-theme attribute on
+   <html>, set by js/theme-switch.js and remembered in localStorage("dev-theme"):
+     • (default / [data-theme="ember"])  Moonlit Ember — warm orange
+     • [data-theme="classic"]            Classic Blue — the site's original palette
+   Both share the SAME falling-ash + gradient background; only the colors differ. The base
+   Classic Blue palette (--bg/--text/--accent/…) lives in styles.css :root; the ember block
+   below overrides it and is the default, so existing visitors see no change unless they pick
+   Classic. Shared effects read the --page-bg / --ash-* / --pulse-* / --whisper-* tokens so
+   they recolor automatically per theme. */
+
+/* ---- Moonlit Ember (default) ---- */
+:root:not([data-theme]), :root[data-theme="ember"] {
   --bg:#0b0c15; --bg-raised:#151624; --bg-card:#1b1822; --border:#3d2b37;
   --text:#f6eadf; --text-dim:#a99ca5; --accent:#e8785b; --accent-pink:#db8d85;
   --accent-soft:#3b2027; --badge-warn-bg:#493323; --badge-warn-fg:#f3c58e;
   --chip-on-bg:#47252d; --chip-on-border:#e8785b; --danger:#f28c82;
+  /* shared-effect colors — ember flavor */
+  --page-bg:
+    radial-gradient(circle at 72% 4%,rgba(92,43,62,.38) 0,transparent 34rem),
+    radial-gradient(circle at 12% 55%,rgba(58,35,48,.22) 0,transparent 30rem),
+    linear-gradient(180deg,#111421 0%,#0b0c15 58%,#080910 100%);
+  --ash-a:#d98068; --ash-b:#9c7580; --ash-c:#e6aa87; --ash-glow:rgba(232,120,91,.22);
+  --pulse-color:#e59a83; --pulse-shadow:0 0 6px rgba(232,120,91,.5),0 0 1px rgba(229,154,131,.9);
+  --whisper-bubble-bg:#e5b2a6; --whisper-bubble-border:#c98278;
 }
-html,body { background:#0b0c15; }
+
+/* ---- Classic Blue (the site's original palette; --bg/--text/--accent/… inherit from
+   styles.css :root, so only the shared-effect colors are declared here) ---- */
+:root[data-theme="classic"] {
+  --page-bg:
+    radial-gradient(circle at 72% 4%,rgba(38,86,130,.40) 0,transparent 34rem),
+    radial-gradient(circle at 12% 55%,rgba(28,58,96,.24) 0,transparent 30rem),
+    linear-gradient(180deg,#101a2a 0%,#0e1420 58%,#0a0f18 100%);
+  --ash-a:#5aa0e6; --ash-b:#7f88d0; --ash-c:#8fc6ef; --ash-glow:rgba(76,194,255,.24);
+  --pulse-color:#7fc0ef; --pulse-shadow:0 0 6px rgba(76,194,255,.5),0 0 1px rgba(140,198,239,.9);
+  --whisper-bubble-bg:#b7cdec; --whisper-bubble-border:#8aa6d0;
+}
+
+html,body { background:var(--bg); }
 body {
   min-height:100vh;
-  background-image:radial-gradient(circle at 72% 4%,rgba(92,43,62,.38) 0,transparent 34rem),radial-gradient(circle at 12% 55%,rgba(58,35,48,.22) 0,transparent 30rem),linear-gradient(180deg,#111421 0%,#0b0c15 58%,#080910 100%);
+  background-image:var(--page-bg);
   background-attachment:fixed;
 }
 #site-ash-layer { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
 .site-header,#activity-rail,.source-tabs,.controls,.status-line,#results,.site-footer { position:relative; z-index:1; }
 #site-ash-layer i {
   position:absolute; top:-12px; left:var(--x); width:var(--s); height:calc(var(--s) * .72); display:block;
-  opacity:.23; background:#d98068; clip-path:polygon(0 35%,70% 0,100% 58%,34% 100%);
-  filter:drop-shadow(0 0 3px rgba(232,120,91,.22));
+  opacity:.23; background:var(--ash-a); clip-path:polygon(0 35%,70% 0,100% 58%,34% 100%);
+  filter:drop-shadow(0 0 3px var(--ash-glow));
   animation:moonlit-ash-fall var(--t) linear var(--d) infinite; will-change:transform;
 }
-#site-ash-layer i:nth-child(3n) { background:#9c7580; opacity:.17; }
-#site-ash-layer i:nth-child(4n) { background:#e6aa87; opacity:.2; }
+#site-ash-layer i:nth-child(3n) { background:var(--ash-b); opacity:.17; }
+#site-ash-layer i:nth-child(4n) { background:var(--ash-c); opacity:.2; }
 @keyframes moonlit-ash-fall {
   0% { transform:translate3d(-16px,-4vh,0) rotate(0deg); }
   46% { transform:translate3d(22px,51vh,0) rotate(184deg); }
   100% { transform:translate3d(-9px,108vh,0) rotate(372deg); }
 }
 .controls,.filter-panel,.card,.list-row,.cal-toolbar,.map-popup-card,.whisper-float-head,.whisper-sub,.whisper-form { box-shadow:0 20px 55px rgba(0,0,0,.24); }
-/* Off (default): pink outline — eye-catching but clearly NOT "on". The on state is
-   handled by base .past-toggle[aria-pressed="true"] (higher specificity), so on = solid
-   accent-soft fill like every other selected control. (2026-07-17: was an unconditional
-   fill that made the off state read as selected.) */
+/* Traveling toggle off-state: outline, not fill (2026-07-17). On state = base
+   .past-toggle[aria-pressed="true"], which wins on specificity. --accent-pink recolors per theme. */
 .traveling-toggle[aria-pressed="false"] { background:transparent; color:var(--accent-pink); border-color:var(--accent-pink); }
-.activity-msg { color:#e59a83; text-shadow:0 0 6px rgba(232,120,91,.5),0 0 1px rgba(229,154,131,.9); }
-.whisper-bubble { background:#e5b2a6; border-color:#c98278; }
+.activity-msg { color:var(--pulse-color); text-shadow:var(--pulse-shadow); }
+.whisper-bubble { background:var(--whisper-bubble-bg); border-color:var(--whisper-bubble-border); }
 .whisper-bubble p { color:#321c25; }
 .whisper-time { color:#74454d; }
 .whisper-form button[type="submit"] { color:#171019; }

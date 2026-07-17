@@ -13,6 +13,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Apply the saved color theme before first paint so there's no flash of the wrong palette.
+       Full switcher wiring lives in js/theme-switch.js. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("dev-theme");
+        document.documentElement.setAttribute("data-theme", (t === "classic" || t === "ember") ? t : "ember");
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "ember");
+      }
+    })();
+  </script>
   <title>Dance Event Viewer — Dance Events Across the South</title>
   <meta name="description" content="Find dance events across the South — West Coast Swing socials, classes, and workshops in Florida, Georgia, Alabama, Mississippi, Louisiana, Tennessee, and the Carolinas. Traveling? Browse national events too.">
   <link rel="canonical" href="https://danceeventviewer.net/dance-event-viewer/">
@@ -29,10 +41,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260717c">
+  <link rel="stylesheet" href="css/styles.css?v=20260717e">
   <link rel="stylesheet" href="css/whispers.css">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
-  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260717d">
+  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260717e">
+  <script defer src="js/theme-switch.js?v=20260717e"></script>
 
   <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
@@ -113,6 +126,29 @@
           title="By default this calendar shows events across the South (FL, GA, AL, MS, LA, TN, SC, NC). Turn this on to also browse national conventions and competitions — handy when you're traveling.">
           Traveling? Show national events
         </button>
+      </div>
+      <div class="control-row-right">
+        <div class="theme-switch">
+          <button type="button" id="theme-switch-btn" class="theme-switch-btn"
+            aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu"
+            title="Change the site's color theme">
+            <span class="theme-switch-dot" aria-hidden="true"></span>
+            <span>Theme</span>
+            <span class="theme-caret" aria-hidden="true">▾</span>
+          </button>
+          <div id="theme-menu" class="theme-menu" role="menu" aria-label="Color theme" hidden>
+            <button type="button" class="theme-option" role="menuitemradio" data-theme-value="ember" aria-checked="true">
+              <span class="theme-swatch swatch-ember" aria-hidden="true"></span>
+              <span class="theme-option-label">Moonlit Ember</span>
+              <span class="theme-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="theme-option" role="menuitemradio" data-theme-value="classic" aria-checked="false">
+              <span class="theme-swatch swatch-classic" aria-hidden="true"></span>
+              <span class="theme-option-label">Classic Blue</span>
+              <span class="theme-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
