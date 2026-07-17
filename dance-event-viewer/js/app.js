@@ -1948,6 +1948,14 @@ function init() {
   // Redesign wiring (2026-07-17): apply button closes the panel; "Choose another location…"
   // reveals the cascading dropdowns; back/forward re-applies filters from the URL.
   document.getElementById("apply-filters")?.addEventListener("click", () => setFiltersOpen(false));
+  // Extra ways out of the panel (2026-07-17): on phones the bottom sheet covers the
+  // Filters button that opened it, so "Show events" was the only exit. Now also: the
+  // ✕ in the panel header, tapping the dimmed backdrop (mobile), and the Escape key.
+  document.getElementById("filters-close")?.addEventListener("click", () => setFiltersOpen(false));
+  document.getElementById("filter-backdrop")?.addEventListener("click", () => setFiltersOpen(false));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state.filtersOpen) setFiltersOpen(false);
+  });
   const locMore = document.getElementById("loc-more");
   if (locMore) locMore.addEventListener("click", () => {
     const box = document.getElementById("loc-selects");
