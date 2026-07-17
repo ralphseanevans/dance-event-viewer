@@ -209,12 +209,30 @@ body {
    Event) on the other side. */
 .view-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-.view-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+/* View switcher styled as a tab bar (Sean, 2026-07-17): a row of tabs sitting on
+   a baseline rule, the active one marked by an accent underline — not a segmented
+   pill. Scrolls horizontally on very narrow screens rather than wrapping. */
+.view-switch {
+  display: inline-flex; max-width: 100%; gap: 2px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+}
+.view-switch::-webkit-scrollbar { display: none; }
 .view-btn {
   background: transparent; color: var(--text-dim);
-  border: none; padding: 5px 16px; cursor: pointer; font-size: .92rem;
+  border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  border-radius: 8px 8px 0 0; padding: 7px 15px; cursor: pointer;
+  font-size: .92rem; white-space: nowrap; flex: 0 0 auto;
+  transition: color .15s, border-color .15s, background .15s;
 }
-.view-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.view-btn:hover { color: var(--text); }
+.view-btn[aria-pressed="true"] {
+  background: var(--accent-soft); color: var(--accent); font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+@media (max-width: 480px) {
+  .view-btn { padding: 7px 11px; font-size: .88rem; }
+}
 .view-btn:focus-visible, .chip:focus-visible, .reset-btn:focus-visible, .source-tabs button:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
