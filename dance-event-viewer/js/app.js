@@ -79,6 +79,10 @@ const state = {
   view: "timeline",
   logos: {},             // from logo-map.json — purely decorative, optional
   logoPatterns: [],      // fallback substring rules so rolled-over series keep their logo
+  webEvents: [],         // from web-events.json — optional overlay of trusted flyer auto-publishes,
+                         // separate file from dance_events.json so the two writers never clobber each
+                         // other. Merged into the main list on load (main list wins on key). Absence
+                         // or failure never affects the core events, same as logo-map/venue-coords.
   venueCoords: {},       // from venue-coords.json — exact-match venue -> {lat, lon}, decorative/optional
   cityFallbacks: {},     // from venue-coords.json — city name -> {lat, lon}, used when no exact match exists
   filters: { cats: new Set(), days: new Set(), areas: new Set(DEFAULT_AREAS), kinds: new Set() },
@@ -89,7 +93,13 @@ const state = {
   showNational: false,   // "Traveling? Show national events" (2026-07-17, Phase 0) — out-of-region
                          // events hide until this is on. Deliberately NOT persisted: every visit
                          // starts regional. Reset filters does not touch it (scope, not a filter).
+  selectMode: false,     // "Share several" multi-select mode (2026-07-17, Sean: "share multiple
+                         // dances at one time... make it look good together"). Not persisted.
+  eventKeys: new Set(),  // when a shared-set link (?events=k1|k2) is opened, restrict the view to
+                         // exactly those events so the recipient lands on the shared dances.
 };
+/* Keys of events the visitor has ticked for a combined share (this session only, never stored). */
+const shareSelection = new Set();
 
 /* ---------- helpers: normalization (formatting-only, never invents data) ---------- */
 function normCategory(style) {
@@ -296,6 +306,20 @@ async function loadLogoMap() {
       ? j.patterns.filter(p => p && typeof p.contains === "string" && p.contains && typeof p.logo === "string" && p.logo)
       : [];
   } catch (err) { state.logos = {}; state.logoPatterns = []; }
+}
+/* Optional overlay of trusted flyer auto-publishes (../web-events.json, written
+   by the submission backend). Same defensive contract as loadLogoMap: any
+   failure or absence leaves state.webEvents = [] and the core list is unaffected.
+   Kept a SEPARATE file from dance_events.json on purpose — the skills' publish
+   pipeline owns dance_events.json and never touches this, so neither writer can
+   clobber the other. */
+async function loadWebEvents() {
+  try {
+    const res = await fetch(`../web-events.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) { state.webEvents = []; return; }
+    const j = JSON.parse((await res.text()).replace(/ +\s*$/g, "").trim());
+    state.webEvents = Array.isArray(j?.events) ? j.events : [];
+  } catch (err) { state.webEvents = []; }
 }
 function logoFor(key) {
   if (typeof key !== "string" || !key) return null;
@@ -571,6 +595,7 @@ function syncUrl() {
   for (const dim of ["country", "state", "town"]) if (state.sel[dim]) p.set(dim, state.sel[dim]);
   if (state.showPast) p.set("past", "1");
   if (state.showNational) p.set("travel", "1");
+  if (state.eventKeys.size) p.set("events", [...state.eventKeys].join("|"));   // shared-set landing link
   const qs = p.toString().replace(/%7C/gi, "|").replace(/%20/g, "+");
   const url = location.pathname + (qs ? "?" + qs : "");
   if (url !== location.pathname + location.search) history.replaceState(null, "", url);
@@ -587,6 +612,14 @@ function applyUrl() {
     if (p.has(dim)) { state.sel[dim] = p.get(dim); any = true; }
   if (p.get("past") === "1") { state.showPast = true; any = true; }
   state.showNational = p.get("travel") === "1";
+  // Shared-set link: show exactly the listed events, regardless of region/past, so the
+  // recipient always sees the dances that were shared with them (2026-07-17).
+  if (p.has("events")) {
+    state.eventKeys = new Set(p.get("events").split("|").filter(Boolean));
+    if (state.eventKeys.size) { state.showPast = true; state.showNational = true; any = true; }
+  } else {
+    state.eventKeys = new Set();
+  }
   return any;
 }
 /* Country -> State -> Town cascade: each level's options come from events matching the
@@ -623,6 +656,9 @@ function matchesCat(d, tag) {
 }
 function matchesFilters(d) {
   const f = state.filters;
+  // Shared-set landing (2026-07-17): a ?events= link pins the view to exactly those events;
+  // all other filters/scope are bypassed so the recipient sees precisely what was shared.
+  if (state.eventKeys.size) return !!(d.ev && typeof d.ev.key === "string" && state.eventKeys.has(d.ev.key));
   // Regional default (Phase 0, 2026-07-17): out-of-region events (state not in the
   // Southeast-8 — includes null/unknown/international) only show while the
   // "Traveling? Show national events" toggle is on. Past-gating is separate (showPast).
@@ -697,6 +733,513 @@ async function handleShare(ev, btn) {
   if (ok) flashShareCopied(btn);
 }
 
+/* ============================================================================
+   Multi-select share — "share several dances as one" (2026-07-17, Sean:
+   "make it an option to share multiple dances at one time... make it look good
+   together... (three dances all this weekend!)... without cluttering the chat").
+
+   Flow: tap "Share several" → each card gets a select toggle → a floating bar
+   tracks the count → "Share these" opens ONE lovely combined post (smart headline
+   like "Three dances this weekend!", concise event list, a link that lands the
+   recipient on exactly those dances, plus copy-text and save-as-image options).
+   Built on the same navigator.share / clipboard pattern as single-event share.
+   ============================================================================ */
+const NUMBER_WORDS = ["zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven",
+  "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+function numberWord(n) { return (n >= 1 && n <= 12) ? NUMBER_WORDS[n] : String(n); }
+
+/* Which near-future "window" a single dance falls in, from its next date. These are the
+   crisp, warm buckets people actually think in. Weekend (Sat/Sun in the upcoming weekend)
+   is checked before the generic "this week"; "tomorrow" is kept separate so a weekday
+   next-day reads as "tomorrow" rather than a flat "this week". (2026-07-17) */
+function comboBucket(next, t0) {
+  if (!next) return "later";
+  const ahead = Math.round((new Date(next.getFullYear(), next.getMonth(), next.getDate()) - t0) / 86400000);
+  if (ahead < 0) return "later";
+  if (ahead === 0) return "today";
+  if (ahead === 1) return "tomorrow";
+  const untilSat = 6 - t0.getDay();
+  const isWeekend = next.getDay() === 0 || next.getDay() === 6;
+  if (isWeekend && ahead <= untilSat + 1) return "weekend";
+  if (ahead <= untilSat) return "thisweek";
+  if (ahead <= untilSat + 7) return "nextweek";
+  return "later";
+}
+/* Today's dances read as "tonight" (these are evening socials) unless every one of them
+   is clearly a daytime event (starts before 4pm) — then "today". */
+function comboTodayWord(its) {
+  const daytime = its.every(it => {
+    const t = it.ev && it.ev.start_time;
+    return typeof t === "string" && /^\d{1,2}:/.test(t) && Number(t.split(":")[0]) < 16;
+  });
+  return daytime ? "today" : "tonight";
+}
+const COMBO_PHRASES = { tomorrow: "tomorrow", weekend: "this weekend", thisweek: "this week", nextweek: "next week", later: "coming up" };
+function comboPhrase(key, its) { return key === "today" ? comboTodayWord(its) : COMBO_PHRASES[key]; }
+
+/* The headline: the hook that makes people click. "dance chances" (not "dances") because a
+   listing is sometimes a class or workshop, not a social — Sean, 2026-07-17. One window →
+   "Three dance chances this weekend!"; a split set → a compound line spanning up to THREE
+   days → "Three dance chances tonight, two tomorrow & one this weekend!" (a dance weekend
+   runs Fri–Sun, so three days matters). Four-plus windows fall back to "N dance chances
+   coming up!" rather than an unwieldy run-on. */
+function comboNoun(count) { return `dance chance${count === 1 ? "" : "s"}`; }
+function comboHeadline(items, today) {
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const n = items.length;
+  const order = ["today", "tomorrow", "weekend", "thisweek", "nextweek", "later"];
+  const groups = new Map();
+  for (const it of items) {
+    const b = comboBucket(it.next, t0);
+    if (!groups.has(b)) groups.set(b, []);
+    groups.get(b).push(it);
+  }
+  // A weekend-day "tomorrow" (Saturday when today is Friday) folds into "this weekend"
+  // when the set also spans the weekend — so Sat+Sun reads "this weekend", not "tomorrow & …".
+  if (groups.has("tomorrow") && groups.has("weekend") &&
+      groups.get("tomorrow").every(it => it.next && (it.next.getDay() === 0 || it.next.getDay() === 6))) {
+    groups.get("weekend").unshift(...groups.get("tomorrow"));
+    groups.delete("tomorrow");
+  }
+  const present = order.filter(k => groups.has(k));
+  if (present.length === 1) {
+    const k = present[0];
+    return `${numberWord(n)} ${comboNoun(n)} ${comboPhrase(k, groups.get(k))}${k === "later" ? "" : "!"}`;
+  }
+  if (present.length >= 2 && present.length <= 3) {
+    // First segment carries the "dance chances" noun; the rest are just "<n> <phrase>".
+    const segs = present.map(k => ({ n: groups.get(k).length, phrase: comboPhrase(k, groups.get(k)), key: k }));
+    const parts = segs.map((s, i) => i === 0
+      ? `${numberWord(s.n)} ${comboNoun(s.n)} ${s.phrase}`
+      : `${numberWord(s.n).toLowerCase()} ${s.phrase}`);
+    const body = parts.length === 2
+      ? parts.join(" & ")
+      : `${parts.slice(0, -1).join(", ")} & ${parts[parts.length - 1]}`;
+    return body + (segs[segs.length - 1].key === "later" ? "" : "!");
+  }
+  return `${numberWord(n)} ${comboNoun(n)} coming up!`;
+}
+/* One display date/time line per event — prefers the concrete next occurrence, falls
+   back to the recurrence text so multi-day / undated events still read cleanly. */
+function comboWhenLine(d) {
+  if (d.next) {
+    const tr = timeRange(d.ev);
+    return tr ? `${fmtDate(d.next)} · ${tr}` : fmtDate(d.next);
+  }
+  return scheduleText(d.ev) || "";
+}
+/* Selected events, decorated with their next occurrence and sorted soonest-first. */
+function selectedShareItems() {
+  const today = new Date();
+  const items = state.events
+    .filter(d => d && d.ev && typeof d.ev.key === "string" && shareSelection.has(d.ev.key))
+    .map(d => ({ ...d, next: nextOccurrence(d.ev, today) }));
+  items.sort((a, b) => (a.next ? a.next.getTime() : Infinity) - (b.next ? b.next.getTime() : Infinity));
+  return items;
+}
+/* A link that reopens the site showing EXACTLY these dances (see applyUrl ?events=). */
+function comboShareUrl(items) {
+  const keys = items.map(d => d.ev.key).filter(Boolean);
+  const base = location.origin + location.pathname;
+  return keys.length ? `${base}?events=${keys.join("|")}` : base;
+}
+/* The shared text block — concise, emoji-structured, one dance per stanza. Matches the
+   single-event share voice so both feel like the same site. */
+function buildComboText(items, headline, url) {
+  const lines = [`✨ ${headline} ✨`, ""];
+  for (const d of items) {
+    const ev = d.ev;
+    lines.push("💃 " + ev.name.trim());
+    const when = comboWhenLine(d);
+    if (when) lines.push("📅 " + when);
+    if (typeof ev.venue === "string" && ev.venue.trim()) lines.push("📍 " + ev.venue.trim());
+    if (typeof ev.cost === "string" && ev.cost.trim()) lines.push("🎫 " + ev.cost.trim());
+    lines.push("");
+  }
+  lines.push("See them all on Dance Event Viewer ✨");
+  lines.push(url);
+  return lines.join("\n");
+}
+
+function setSelectMode(on) {
+  state.selectMode = on;
+  document.body.classList.toggle("selecting", on);
+  const t = document.getElementById("share-several-toggle");
+  if (t) {
+    t.setAttribute("aria-pressed", String(on));
+    t.textContent = on ? "✕ Done selecting" : "✦ Share several";
+  }
+  if (!on) shareSelection.clear();
+  updateComboBar();
+  render();
+}
+function updateComboBar() {
+  const bar = document.getElementById("combo-bar");
+  if (!bar) return;
+  const n = shareSelection.size;
+  bar.hidden = !state.selectMode;
+  const count = bar.querySelector("#combo-bar-count");
+  if (count) count.textContent = n === 0 ? "Tap dances to add them" : `${n} dance${n === 1 ? "" : "s"} selected`;
+  const shareBtn = bar.querySelector("#combo-share-btn");
+  if (shareBtn) shareBtn.disabled = n < 1;
+  const clearBtn = bar.querySelector("#combo-clear-btn");
+  if (clearBtn) clearBtn.disabled = n === 0;
+}
+/* Toggle one event in/out of the share set and keep every on-screen copy of that card
+   (a card can appear once per view, plus popups) visually in sync. */
+function toggleShareSelect(ev) {
+  const key = ev && typeof ev.key === "string" ? ev.key : null;
+  if (!key) return;
+  const now = !shareSelection.has(key);
+  now ? shareSelection.add(key) : shareSelection.delete(key);
+  const esc = (window.CSS && CSS.escape) ? CSS.escape(key) : key.replace(/["\\]/g, "\\$&");
+  document.querySelectorAll(`.card[data-key="${esc}"]`).forEach(c => c.classList.toggle("is-selected", now));
+  document.querySelectorAll(`.card-action-select[data-key="${esc}"]`).forEach(b => {
+    b.setAttribute("aria-pressed", String(now));
+    b.setAttribute("aria-label", now ? "Remove from share set" : "Add to share set");
+    b.textContent = now ? "✓" : "+";
+  });
+  updateComboBar();
+}
+
+async function handleComboShare(items, btn) {
+  const today = new Date();
+  const headline = comboHeadline(items, today);
+  const url = comboShareUrl(items);
+  const text = buildComboText(items, headline, url);
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: headline, text });   // text already carries the link
+      return true;
+    } catch (e) {
+      if (e && e.name === "AbortError") return false;      // user cancelled — not an error
+      // fall through to clipboard
+    }
+  }
+  const ok = await copyText(text);
+  if (ok && btn) flashComboBtn(btn, "Copied ✓");
+  return ok;
+}
+function flashComboBtn(btn, label) {
+  const original = btn.dataset.label || btn.textContent;
+  btn.dataset.label = original;
+  btn.textContent = label;
+  btn.classList.add("copied");
+  clearTimeout(btn._flashTimer);
+  btn._flashTimer = setTimeout(() => {
+    btn.textContent = btn.dataset.label || original;
+    btn.classList.remove("copied");
+  }, 1800);
+}
+
+/* The "lovely share" preview — a warm, gradient-headed card that shows exactly how the
+   combined post reads, then hands off to the native share sheet / clipboard / image. */
+function openComboShareModal(items) {
+  if (!items.length) return;
+  const today = new Date();
+  const headline = comboHeadline(items, today);
+  const backdrop = document.createElement("div");
+  backdrop.className = "cal-pop-backdrop";
+  const pop = document.createElement("div");
+  pop.className = "combo-pop";
+  pop.setAttribute("role", "dialog");
+  pop.setAttribute("aria-modal", "true");
+  pop.setAttribute("aria-label", "Share these dances");
+
+  const close = document.createElement("button");
+  close.type = "button"; close.className = "pop-close"; close.textContent = "×";
+  close.setAttribute("aria-label", "Close");
+  pop.appendChild(close);
+
+  // The visual poster (also the exact thing rendered to an image on "Save image").
+  const poster = document.createElement("div");
+  poster.className = "combo-poster";
+  const head = document.createElement("div");
+  head.className = "combo-poster-head";
+  const hEl = document.createElement("p");
+  hEl.className = "combo-headline"; hEl.textContent = headline;
+  const subEl = document.createElement("p");
+  subEl.className = "combo-sub"; subEl.textContent = "Dance Event Viewer · all in one place";
+  head.append(hEl, subEl);
+  poster.appendChild(head);
+
+  const list = document.createElement("ul");
+  list.className = "combo-list";
+  for (const d of items) {
+    const ev = d.ev;
+    const li = document.createElement("li");
+    li.className = "combo-item";
+    const dot = document.createElement("span");
+    dot.className = "combo-dot"; dot.setAttribute("aria-hidden", "true"); dot.textContent = "💃";
+    const body = document.createElement("div");
+    body.className = "combo-item-body";
+    const nm = document.createElement("p");
+    nm.className = "combo-item-name"; nm.textContent = ev.name.trim();
+    body.appendChild(nm);
+    const when = comboWhenLine(d);
+    if (when) {
+      const w = document.createElement("p");
+      w.className = "combo-item-when"; w.textContent = when;
+      body.appendChild(w);
+    }
+    const meta = [];
+    if (typeof ev.venue === "string" && ev.venue.trim()) meta.push(ev.venue.trim());
+    if (typeof ev.cost === "string" && ev.cost.trim()) meta.push(ev.cost.trim());
+    if (meta.length) {
+      const m = document.createElement("p");
+      m.className = "combo-item-meta"; m.textContent = meta.join("  ·  ");
+      body.appendChild(m);
+    }
+    li.append(dot, body);
+    list.appendChild(li);
+  }
+  poster.appendChild(list);
+  const foot = document.createElement("p");
+  foot.className = "combo-poster-foot"; foot.textContent = "danceeventviewer.net ✨";
+  poster.appendChild(foot);
+  pop.appendChild(poster);
+
+  // Actions
+  const actions = document.createElement("div");
+  actions.className = "combo-actions";
+  const shareBtn = document.createElement("button");
+  shareBtn.type = "button"; shareBtn.className = "combo-btn combo-btn-primary";
+  shareBtn.textContent = navigator.share ? "Share these dances" : "Copy to share";
+  shareBtn.addEventListener("click", () => handleComboShare(items, shareBtn));
+  const copyBtn = document.createElement("button");
+  copyBtn.type = "button"; copyBtn.className = "combo-btn";
+  copyBtn.textContent = "Copy text";
+  copyBtn.addEventListener("click", async () => {
+    const url = comboShareUrl(items);
+    const ok = await copyText(buildComboText(items, headline, url));
+    if (ok) flashComboBtn(copyBtn, "Copied ✓");
+  });
+  const imgBtn = document.createElement("button");
+  imgBtn.type = "button"; imgBtn.className = "combo-btn";
+  imgBtn.textContent = "Save image";
+  imgBtn.addEventListener("click", () => handleComboShareImage(items, imgBtn));
+  actions.append(shareBtn, copyBtn, imgBtn);
+  pop.appendChild(actions);
+
+  backdrop.appendChild(pop);
+  const done = () => { backdrop.remove(); document.removeEventListener("keydown", esc); };
+  const esc = (e) => { if (e.key === "Escape") done(); };
+  close.addEventListener("click", done);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) done(); });
+  document.addEventListener("keydown", esc);
+  document.body.appendChild(backdrop);
+  close.focus();
+}
+
+/* Render the same design to a PNG so a whole weekend of dances can go into a chat as ONE
+   image. Reads the live theme colors so it always matches the site. Pure canvas — no
+   external libs, no tainting (all text). Shares the file where supported, else downloads. */
+function renderComboPoster(items, headline) {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (name, fallback) => { const s = cs.getPropertyValue(name).trim(); return s || fallback; };
+  const bg = v("--bg", "#0b0c15");
+  const bgCard = v("--bg-card", "#1b1822");
+  const text = v("--text", "#f6eadf");
+  const textDim = v("--text-dim", "#a99ca5");
+  const accent = v("--accent", "#e8785b");
+  const accentPink = v("--accent-pink", "#db8d85");
+
+  const W = 1080, PAD = 72, scale = 2;   // scale for crisp output
+  // Measure to compute height first (two passes: measure, then draw).
+  const measure = document.createElement("canvas").getContext("2d");
+  const contentW = W - PAD * 2;
+  const wrap = (ctx, str, font, maxW) => {
+    ctx.font = font;
+    const words = String(str).split(/\s+/);
+    const out = []; let line = "";
+    for (const word of words) {
+      const test = line ? line + " " + word : word;
+      if (ctx.measureText(test).width > maxW && line) { out.push(line); line = word; }
+      else line = test;
+    }
+    if (line) out.push(line);
+    return out;
+  };
+  const F_HEAD = "700 58px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  const F_SUB = "500 26px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  const F_NAME = "700 38px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  const F_WHEN = "500 30px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  const F_META = "400 27px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  const F_FOOT = "600 27px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+
+  const headLines = wrap(measure, headline, F_HEAD, contentW - 40);
+  const headBand = 60 + headLines.length * 66 + 44;   // top pad + lines + subtitle
+  const blocks = items.map(d => {
+    const nameLines = wrap(measure, d.ev.name.trim(), F_NAME, contentW - 70);
+    const when = comboWhenLine(d);
+    const meta = [];
+    if (typeof d.ev.venue === "string" && d.ev.venue.trim()) meta.push(d.ev.venue.trim());
+    if (typeof d.ev.cost === "string" && d.ev.cost.trim()) meta.push(d.ev.cost.trim());
+    const metaLine = meta.join("   ·   ");
+    const metaLines = metaLine ? wrap(measure, metaLine, F_META, contentW - 70) : [];
+    let h = 22 + nameLines.length * 46;
+    if (when) h += 40;
+    h += metaLines.length * 36;
+    h += 22;
+    return { nameLines, when, metaLines, h };
+  });
+  const listH = blocks.reduce((s, b) => s + b.h, 0) + (blocks.length - 1) * 14;
+  const footH = 90;
+  const H = headBand + 40 + listH + footH + PAD * 0.4;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W * scale; canvas.height = Math.round(H) * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+  ctx.textBaseline = "top";
+
+  // Background
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  // Header gradient band
+  const grad = ctx.createLinearGradient(0, 0, W, headBand);
+  grad.addColorStop(0, accent); grad.addColorStop(1, accentPink);
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, headBand);
+  // Headline (dark ink on the warm band for contrast)
+  ctx.fillStyle = "#1a1119";
+  ctx.font = F_HEAD;
+  let y = 56;
+  for (const ln of headLines) { ctx.fillText(ln, PAD, y); y += 66; }
+  ctx.font = F_SUB; ctx.fillStyle = "rgba(26,17,25,.82)";
+  ctx.fillText("Dance Event Viewer · all in one place", PAD, y + 4);
+
+  // Event list
+  y = headBand + 40;
+  ctx.textAlign = "left";
+  for (const b of blocks) {
+    // accent tick
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.roundRect(PAD, y + 6, 8, b.h - 18, 4); ctx.fill();
+    const tx = PAD + 34;
+    let ly = y + 6;
+    ctx.fillStyle = text; ctx.font = F_NAME;
+    for (const ln of b.nameLines) { ctx.fillText(ln, tx, ly); ly += 46; }
+    if (b.when) { ctx.fillStyle = accentPink; ctx.font = F_WHEN; ctx.fillText(b.when, tx, ly + 2); ly += 40; }
+    ctx.fillStyle = textDim; ctx.font = F_META;
+    for (const ln of b.metaLines) { ctx.fillText(ln, tx, ly + 2); ly += 36; }
+    y += b.h + 14;
+  }
+  // Footer
+  ctx.fillStyle = accent; ctx.font = F_FOOT;
+  ctx.fillText("danceeventviewer.net  ✨", PAD, H - footH + 18);
+
+  return canvas;
+}
+async function handleComboShareImage(items, btn) {
+  let canvas;
+  try { canvas = renderComboPoster(items, comboHeadline(items, new Date())); }
+  catch (e) { if (btn) flashComboBtn(btn, "Couldn't build image"); return; }
+  const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+  if (!blob) { if (btn) flashComboBtn(btn, "Couldn't build image"); return; }
+  const fname = "dances-to-share.png";
+  // Try a native image share first (mobile) — the whole point is ONE image into a chat.
+  if (navigator.canShare && navigator.share) {
+    try {
+      const file = new File([blob], fname, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: comboHeadline(items, new Date()) });
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") return;
+      // fall through to download
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  if (btn) flashComboBtn(btn, "Saved ✓");
+}
+
+/* Inject the "Share several" entry toggle and the floating action bar. Done in JS (not
+   index.html) so this feature stays self-contained and independent of other in-flight
+   edits to the page markup. */
+function ensureComboUI() {
+  if (!document.getElementById("share-several-toggle")) {
+    const group = document.querySelector(".view-group");
+    if (group) {
+      const t = document.createElement("button");
+      t.type = "button";
+      t.id = "share-several-toggle";
+      t.className = "past-toggle share-several-toggle";
+      t.setAttribute("aria-pressed", "false");
+      t.title = "Pick several dances and share them as one lovely post — instead of posting each one separately.";
+      t.textContent = "✦ Share several";
+      t.addEventListener("click", () => setSelectMode(!state.selectMode));
+      group.appendChild(t);
+    }
+  }
+  if (!document.getElementById("combo-bar")) {
+    const bar = document.createElement("div");
+    bar.id = "combo-bar"; bar.className = "combo-bar"; bar.hidden = true;
+    bar.setAttribute("role", "region"); bar.setAttribute("aria-label", "Share selected dances");
+    const count = document.createElement("span");
+    count.id = "combo-bar-count"; count.className = "combo-bar-count";
+    count.textContent = "Tap dances to add them";
+    const spacer = document.createElement("span"); spacer.className = "combo-bar-spacer";
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button"; clearBtn.id = "combo-clear-btn"; clearBtn.className = "combo-bar-btn combo-bar-clear";
+    clearBtn.textContent = "Clear"; clearBtn.disabled = true;
+    clearBtn.addEventListener("click", () => {
+      const keys = [...shareSelection];
+      shareSelection.clear();
+      for (const k of keys) {
+        const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : k;
+        document.querySelectorAll(`.card[data-key="${esc}"]`).forEach(c => c.classList.remove("is-selected"));
+        document.querySelectorAll(`.card-action-select[data-key="${esc}"]`).forEach(b => {
+          b.setAttribute("aria-pressed", "false");
+          b.setAttribute("aria-label", "Add to share set");
+          b.textContent = "+";
+        });
+      }
+      updateComboBar();
+    });
+    const shareBtn = document.createElement("button");
+    shareBtn.type = "button"; shareBtn.id = "combo-share-btn"; shareBtn.className = "combo-bar-btn combo-bar-share";
+    shareBtn.textContent = "Share these"; shareBtn.disabled = true;
+    shareBtn.addEventListener("click", () => {
+      const items = selectedShareItems();
+      if (items.length) openComboShareModal(items);
+    });
+    bar.append(count, spacer, clearBtn, shareBtn);
+    document.body.appendChild(bar);
+  }
+  updateComboBar();
+}
+
+/* Banner shown when a shared-set link (?events=…) is open: tells the recipient they're
+   viewing a curated set and offers a one-tap escape to the full calendar. */
+function ensureSharedSetBanner() {
+  const existing = document.getElementById("shared-set-banner");
+  if (!state.eventKeys.size) { if (existing) existing.remove(); return existing ? true : false; }
+  if (existing) return true;
+  const results = document.getElementById("results");
+  if (!results || !results.parentNode) return false;
+  const bar = document.createElement("div");
+  bar.id = "shared-set-banner"; bar.className = "shared-set-banner";
+  const msg = document.createElement("span");
+  const n = state.eventKeys.size;
+  msg.textContent = `💃 Someone shared ${n === 1 ? "a dance" : n + " dances"} with you`;
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "shared-set-clear";
+  btn.textContent = "See all events";
+  btn.addEventListener("click", () => {
+    state.eventKeys = new Set();
+    syncUrl();
+    ensureSharedSetBanner();
+    render();
+  });
+  bar.append(msg, btn);
+  results.parentNode.insertBefore(bar, results);
+  return true;
+}
+
 /* Favorite + share icon buttons, top-right corner of every card — built once here so
    Timeline, Grid, List (expanded row), Map popup, and Calendar popup all get them for
    free, since they all render through this same card() function. */
@@ -735,6 +1278,24 @@ function cardActions(ev) {
   shareBtn.addEventListener("click", () => handleShare(ev, shareBtn));
   wrap.appendChild(shareBtn);
 
+  // Multi-select toggle — hidden by CSS unless body.selecting is on (Share several mode).
+  const selBtn = document.createElement("button");
+  selBtn.type = "button";
+  selBtn.className = "card-action-btn card-action-select";
+  const selKey = (typeof ev.key === "string" && ev.key) ? ev.key : null;
+  const isSel = selKey && shareSelection.has(selKey);
+  selBtn.setAttribute("aria-pressed", String(!!isSel));
+  selBtn.setAttribute("aria-label", isSel ? "Remove from share set" : "Add to share set");
+  selBtn.textContent = isSel ? "✓" : "+";
+  if (!selKey) {
+    selBtn.disabled = true;
+    selBtn.title = "This event can't be shared yet";
+  } else {
+    selBtn.dataset.key = selKey;
+    selBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleShareSelect(ev); });
+  }
+  wrap.appendChild(selBtn);
+
   return wrap;
 }
 
@@ -744,6 +1305,17 @@ function card(d, { showWhen, isPast }) {
   const el = document.createElement("article");
   el.className = "card";
   if (isPast) el.classList.add("is-past");
+  if (typeof ev.key === "string" && ev.key) el.dataset.key = ev.key;
+  if (state.selectMode && typeof ev.key === "string" && shareSelection.has(ev.key)) el.classList.add("is-selected");
+  // In "Share several" mode, tapping anywhere on the card's own surface toggles selection —
+  // but not when the tap lands on a real control (flyer, venue-map, links, the action buttons).
+  if (state.selectMode && typeof ev.key === "string" && ev.key) {
+    el.classList.add("selectable");
+    el.addEventListener("click", (e) => {
+      if (e.target.closest("a, button, input, textarea, select, .card-art-trigger")) return;
+      toggleShareSelect(ev);
+    });
+  }
   el.appendChild(cardActions(ev));
 
   const art = document.createElement("div");
@@ -1128,6 +1700,7 @@ function feedbackWidget(ev) {
 function render() {
   const main = document.getElementById("results");
   main.textContent = "";
+  ensureSharedSetBanner();   // shows/hides the "someone shared these with you" strip
   const today = new Date();
   const visible = state.events.filter(matchesFilters);
 
@@ -1376,6 +1949,7 @@ function init() {
   startSubmitAttention();
   if (!state.filtersOpen) setTimeout(startFiltersAttention, 1000);   // starts right as the Submit flash finishes
   document.getElementById("reset-filters").addEventListener("click", clearAllFilters);
+  ensureComboUI();   // "Share several" toggle + floating action bar (2026-07-17)
   // Tabs render only when there's more than one source (future WCS tab).
   const tabs = document.getElementById("source-tabs");
   if (SOURCES.length > 1) {
