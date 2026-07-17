@@ -41,11 +41,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260717f">
+  <link rel="stylesheet" href="css/styles.css?v=20260717h">
   <link rel="stylesheet" href="css/whispers.css">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260717e">
-  <script defer src="js/theme-switch.js?v=20260717e"></script>
+  <script defer src="js/theme-switch.js?v=20260717f"></script>
 
   <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
   <script>
@@ -90,8 +90,32 @@
     <i style="--x:10.1%;--d:-22.4s;--t:22.0s;--s:8px"></i><i style="--x:55.8%;--d:-8.6s;--t:14.2s;--s:9px"></i><i style="--x:20.8%;--d:-28.5s;--t:27.1s;--s:9px"></i><i style="--x:40.8%;--d:-22.4s;--t:27.2s;--s:9px"></i><i style="--x:81.0%;--d:-15.1s;--t:30.7s;--s:5px"></i>
   </div>
   <header class="site-header">
+    <!-- Color-theme picker, top-left of the page (Sean, 2026-07-17). Flips the site between
+         Moonlit Ember and Classic Blue — palette, background/ash tint, AND the hero banner
+         graphic. Menu wiring + banner swap live in js/theme-switch.js. -->
+    <div class="theme-switch">
+      <button type="button" id="theme-switch-btn" class="theme-switch-btn"
+        aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu"
+        title="Change the site's color theme">
+        <span class="theme-switch-dot" aria-hidden="true"></span>
+        <span>Theme</span>
+        <span class="theme-caret" aria-hidden="true">▾</span>
+      </button>
+      <div id="theme-menu" class="theme-menu" role="menu" aria-label="Color theme" hidden>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="ember" aria-checked="true">
+          <span class="theme-swatch swatch-ember" aria-hidden="true"></span>
+          <span class="theme-option-label">Moonlit Ember</span>
+          <span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="classic" aria-checked="false">
+          <span class="theme-swatch swatch-classic" aria-hidden="true"></span>
+          <span class="theme-option-label">Classic Blue</span>
+          <span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+      </div>
+    </div>
     <div id="brand-slot">
-      <img src="assets/dance-event-viewer-banner.png" alt="Dance Event Viewer — a dancing couple under warm club lights">
+      <img id="brand-img" src="assets/dance-event-viewer-banner.png" alt="Dance Event Viewer — a dancing couple under warm club lights">
     </div>
     <div class="title-block">
       <h1 class="visually-hidden">Dance Event Viewer</h1>
@@ -127,29 +151,6 @@
           Traveling? Show national events
         </button>
       </div>
-      <div class="control-row-right">
-        <div class="theme-switch">
-          <button type="button" id="theme-switch-btn" class="theme-switch-btn"
-            aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu"
-            title="Change the site's color theme">
-            <span class="theme-switch-dot" aria-hidden="true"></span>
-            <span>Theme</span>
-            <span class="theme-caret" aria-hidden="true">▾</span>
-          </button>
-          <div id="theme-menu" class="theme-menu" role="menu" aria-label="Color theme" hidden>
-            <button type="button" class="theme-option" role="menuitemradio" data-theme-value="ember" aria-checked="true">
-              <span class="theme-swatch swatch-ember" aria-hidden="true"></span>
-              <span class="theme-option-label">Moonlit Ember</span>
-              <span class="theme-check" aria-hidden="true">✓</span>
-            </button>
-            <button type="button" class="theme-option" role="menuitemradio" data-theme-value="classic" aria-checked="false">
-              <span class="theme-swatch swatch-classic" aria-hidden="true"></span>
-              <span class="theme-option-label">Classic Blue</span>
-              <span class="theme-check" aria-hidden="true">✓</span>
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Always-visible quick filters (redesign 2026-07-17): Dance style + Day pill rows;
@@ -171,10 +172,14 @@
     <!-- Active-filter summary chips: visible only while the panel is closed and filters are on. -->
     <div id="active-chips" class="active-chips" hidden></div>
 
+    <!-- Backdrop behind the mobile bottom-sheet (2026-07-17): dims the page and closes the
+         sheet on tap. Shown by CSS only while body.sheet-open on small screens. -->
+    <div id="filter-backdrop" aria-hidden="true"></div>
     <div id="filter-panel" class="filter-panel" hidden>
       <div class="filter-panel-top">
         <strong class="filter-panel-title">Filters<span id="filters-count-panel" class="filters-count"></span></strong>
         <button type="button" id="reset-filters" class="reset-btn">Clear all</button>
+        <button type="button" id="filters-close" class="filters-close" aria-label="Close filters">&#10005;</button>
       </div>
       <fieldset class="filter-group" id="fg-area">
         <legend>Location</legend>
@@ -240,7 +245,7 @@
     </div>
   </div>
 
-    <script src="js/app.js?v=20260717g"></script>
+    <script src="js/app.js?v=20260717h"></script>
   <script src="js/whispers.js"></script>
   <script src="js/activity-pulse.js?v=20260713i"></script>
 </body>
