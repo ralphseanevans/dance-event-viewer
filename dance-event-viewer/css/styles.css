@@ -301,6 +301,11 @@ body {
    mirroring the top-right Submit button. Menu opens left-aligned here (base rule anchors it
    right), and a subtle scrim keeps the button legible over the hero banner in both themes. */
 .site-header .theme-switch { position: absolute; top: 14px; left: 16px; z-index: 6; }
+.site-header.theme-menu-open {
+  /* Lift the header only while the menu is open so the dropdown paints above the
+     Timeline/Grid/List/Calendar/Map controls, then returns to normal on close. */
+  z-index: 2000;
+}
 .site-header .theme-menu { right: auto; left: 0; }
 .site-header .theme-switch-btn {
   background: rgba(10, 12, 20, .55);
