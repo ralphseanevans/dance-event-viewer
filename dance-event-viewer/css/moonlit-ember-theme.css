@@ -1,13 +1,6 @@
-/* Site theme effects + palettes — Moonlit Ember (2026-07-16), extended 2026-07-17 to
-   support a user-selectable theme. Two palettes are offered via a data-theme attribute on
-   <html>, set by js/theme-switch.js and remembered in localStorage("dev-theme"):
-     • (default / [data-theme="ember"])  Moonlit Ember — warm orange
-     • [data-theme="classic"]            Classic Blue — the site's original palette
-   Both share the SAME falling-ash + gradient background; only the colors differ. The base
-   Classic Blue palette (--bg/--text/--accent/…) lives in styles.css :root; the ember block
-   below overrides it and is the default, so existing visitors see no change unless they pick
-   Classic. Shared effects read the --page-bg / --ash-* / --pulse-* / --whisper-* tokens so
-   they recolor automatically per theme. */
+/* Dance Event Viewer palette collection. Thirteen user-selectable themes share the same
+   layout, falling-ash effect, event functionality, and accessible UI states. The selected
+   data-theme is set by js/theme-switch.js and remembered in localStorage("dev-theme"). */
 
 /* ---- Moonlit Ember (default) ---- */
 :root:not([data-theme]), :root[data-theme="ember"] {
@@ -22,7 +15,6 @@
     linear-gradient(180deg,#111421 0%,#0b0c15 58%,#080910 100%);
   --ash-a:#d98068; --ash-b:#9c7580; --ash-c:#e6aa87; --ash-glow:rgba(232,120,91,.22);
   --pulse-color:#e59a83; --pulse-shadow:0 0 6px rgba(232,120,91,.5),0 0 1px rgba(229,154,131,.9);
-  --whisper-bubble-bg:#e5b2a6; --whisper-bubble-border:#c98278;
 }
 
 /* ---- Classic Blue (the site's original palette; --bg/--text/--accent/… inherit from
@@ -34,7 +26,107 @@
     linear-gradient(180deg,#101a2a 0%,#0e1420 58%,#0a0f18 100%);
   --ash-a:#5aa0e6; --ash-b:#7f88d0; --ash-c:#8fc6ef; --ash-glow:rgba(76,194,255,.24);
   --pulse-color:#7fc0ef; --pulse-shadow:0 0 6px rgba(76,194,255,.5),0 0 1px rgba(140,198,239,.9);
-  --whisper-bubble-bg:#b7cdec; --whisper-bubble-border:#8aa6d0;
+}
+
+/* ---- Additional palettes (added 2026-07-18) ---- */
+:root[data-theme="ennis"] {
+  --bg:#17131b; --bg-raised:#2c252e; --bg-card:#2d1a22; --border:#584b51;
+  --text:#ead8d2; --text-dim:#b8a196; --accent:#e3b3db; --accent-pink:#8488aa;
+  --accent-soft:#432d40; --badge-warn-bg:#49333f; --badge-warn-fg:#e8c6d8;
+  --chip-on-bg:#493348; --chip-on-border:#e3b3db; --danger:#f0929a;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(59,44,60,.55) 0,transparent 34rem),linear-gradient(180deg,#22161e,#17131b 68%,#100d12);
+  --ash-a:#e3b3db; --ash-b:#8488aa; --ash-c:#b8a196; --ash-glow:rgba(227,179,219,.24);
+  --pulse-color:#d8abd1; --pulse-shadow:0 0 6px rgba(227,179,219,.5);
+}
+:root[data-theme="cybergum"] {
+  --bg:#211923; --bg-raised:#3a2b3b; --bg-card:#2d4a54; --border:#65455f;
+  --text:#ffd8ba; --text-dim:#eb8d9c; --accent:#20b8b6; --accent-pink:#d768b5;
+  --accent-soft:#214f52; --badge-warn-bg:#5b3c40; --badge-warn-fg:#ffd8ba;
+  --chip-on-bg:#244e52; --chip-on-border:#20b8b6; --danger:#ff7286;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(79,36,77,.65) 0,transparent 34rem),linear-gradient(180deg,#2f2534,#211923 58%,#171d23);
+  --ash-a:#eb8d9c; --ash-b:#20b8b6; --ash-c:#bc4a9b; --ash-glow:rgba(235,141,156,.25);
+  --pulse-color:#eb8d9c; --pulse-shadow:0 0 6px rgba(235,141,156,.5);
+}
+:root[data-theme="crimson"] {
+  --bg:#09010d; --bg-raised:#17001d; --bg-card:#270022; --border:#611033;
+  --text:#f6e8ee; --text-dim:#c58298; --accent:#0ce6f2; --accent-pink:#ff2b62;
+  --accent-soft:#123d49; --badge-warn-bg:#4f1429; --badge-warn-fg:#ffb6ca;
+  --chip-on-bg:#143e49; --chip-on-border:#0ce6f2; --danger:#ff4b6f;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(69,3,39,.7) 0,transparent 34rem),linear-gradient(180deg,#17001d,#09010d 70%,#030005);
+  --ash-a:#ff0546; --ash-b:#0ce6f2; --ash-c:#9c173b; --ash-glow:rgba(255,5,70,.3);
+  --pulse-color:#0ce6f2; --pulse-shadow:0 0 7px rgba(12,230,242,.58);
+}
+:root[data-theme="deadcity"] {
+  --bg:#0c0a08; --bg-raised:#181410; --bg-card:#241e18; --border:#504234;
+  --text:#d8d0c0; --text-dim:#a98b77; --accent:#d35b35; --accent-pink:#d09040;
+  --accent-soft:#44251b; --badge-warn-bg:#4b3820; --badge-warn-fg:#efc47b;
+  --chip-on-bg:#47271b; --chip-on-border:#d35b35; --danger:#e66b55;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(53,42,32,.66) 0,transparent 34rem),linear-gradient(180deg,#181410,#0c0a08 68%,#070604);
+  --ash-a:#b89880; --ash-b:#c04020; --ash-c:#718c3d; --ash-glow:rgba(192,64,32,.24);
+  --pulse-color:#d09040; --pulse-shadow:0 0 6px rgba(208,144,64,.5);
+}
+:root[data-theme="bloodmoon"] {
+  --bg:#130310; --bg-raised:#270721; --bg-card:#3c0921; --border:#64122e;
+  --text:#f4d9df; --text-dim:#c17789; --accent:#ff353a; --accent-pink:#e0272b;
+  --accent-soft:#54101f; --badge-warn-bg:#531a20; --badge-warn-fg:#ffc0c4;
+  --chip-on-bg:#56111f; --chip-on-border:#ff353a; --danger:#ff676b;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(82,11,32,.72) 0,transparent 34rem),linear-gradient(180deg,#270721,#130310 68%,#090106);
+  --ash-a:#ff252b; --ash-b:#7d0f1f; --ash-c:#d3181c; --ash-glow:rgba(255,37,43,.3);
+  --pulse-color:#ff6266; --pulse-shadow:0 0 7px rgba(255,37,43,.58);
+}
+:root[data-theme="hope"] {
+  --bg:#150e10; --bg-raised:#272739; --bg-card:#393849; --border:#4f5964;
+  --text:#e1e9eb; --text-dim:#9db0b4; --accent:#b7ced2; --accent-pink:#8e9caf;
+  --accent-soft:#3a4650; --badge-warn-bg:#494431; --badge-warn-fg:#ddd2a8;
+  --chip-on-bg:#3b4750; --chip-on-border:#b7ced2; --danger:#d98b8f;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(57,56,73,.65) 0,transparent 34rem),linear-gradient(180deg,#272739,#150e10 70%,#0d090a);
+  --ash-a:#9db5ba; --ash-b:#687688; --ash-c:#d8e0e2; --ash-glow:rgba(157,181,186,.25);
+  --pulse-color:#b7ced2; --pulse-shadow:0 0 6px rgba(157,181,186,.5);
+}
+:root[data-theme="neonmoon"] {
+  --bg:#000; --bg-raised:#211932; --bg-card:#2e2246; --border:#5f4886;
+  --text:#eee9ff; --text-dim:#a78bd3; --accent:#70b9fb; --accent-pink:#fe279f;
+  --accent-soft:#293d60; --badge-warn-bg:#4b3158; --badge-warn-fg:#f0b4ec;
+  --chip-on-bg:#2b3f63; --chip-on-border:#70b9fb; --danger:#ff5d92;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(95,72,134,.7) 0,transparent 34rem),linear-gradient(180deg,#1a1128,#08040e 62%,#000);
+  --ash-a:#fe0094; --ash-b:#70b9fb; --ash-c:#8767bd; --ash-glow:rgba(254,0,148,.3);
+  --pulse-color:#70b9fb; --pulse-shadow:0 0 7px rgba(112,185,251,.6);
+}
+:root[data-theme="monster"] {
+  --bg:#2b0341; --bg-raised:#103b4f; --bg-card:#08785e; --border:#467f72;
+  --text:#f2eb7c; --text-dim:#b8dc69; --accent:#ef75aa; --accent-pink:#42b7b8;
+  --accent-soft:#5b275e; --badge-warn-bg:#605923; --badge-warn-fg:#fff59a;
+  --chip-on-bg:#5a285e; --chip-on-border:#ef75aa; --danger:#ff83a4;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(139,41,150,.72) 0,transparent 34rem),linear-gradient(180deg,#103b4f,#182743 54%,#2b0341);
+  --ash-a:#de5b91; --ash-b:#89d63c; --ash-c:#289094; --ash-glow:rgba(222,91,145,.3);
+  --pulse-color:#f2eb7c; --pulse-shadow:0 0 7px rgba(242,235,124,.52);
+}
+:root[data-theme="technobike"] {
+  --bg:#101923; --bg-raised:#243d4b; --bg-card:#234b54; --border:#39747a;
+  --text:#d8fff0; --text-dim:#83cdb4; --accent:#07ef5c; --accent-pink:#2fc995;
+  --accent-soft:#185c42; --badge-warn-bg:#4a4920; --badge-warn-fg:#dfe986;
+  --chip-on-bg:#185c42; --chip-on-border:#07ef5c; --danger:#ff7d73;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(42,97,110,.7) 0,transparent 34rem),linear-gradient(180deg,#1d2938,#101923 70%,#0a1017);
+  --ash-a:#07ef5c; --ash-b:#13b37e; --ash-c:#2a93a0; --ash-glow:rgba(7,239,92,.28);
+  --pulse-color:#07ef5c; --pulse-shadow:0 0 7px rgba(7,239,92,.58);
+}
+:root[data-theme="baldur"] {
+  --bg:#091118; --bg-raised:#172b35; --bg-card:#194146; --border:#426a6b;
+  --text:#f5e8d1; --text-dim:#a9c9c3; --accent:#2cc0c1; --accent-pink:#e36c50;
+  --accent-soft:#1d5254; --badge-warn-bg:#59412c; --badge-warn-fg:#f4ce91;
+  --chip-on-bg:#1c5153; --chip-on-border:#2cc0c1; --danger:#f17a65;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(38,62,67,.75) 0,transparent 34rem),linear-gradient(180deg,#172b35,#0f1b26 64%,#091118);
+  --ash-a:#dd5639; --ash-b:#20a5a6; --ash-c:#f5e8d1; --ash-glow:rgba(32,165,166,.3);
+  --pulse-color:#2cc0c1; --pulse-shadow:0 0 7px rgba(32,165,166,.58);
+}
+:root[data-theme="crimson4"] {
+  --bg:#1b0326; --bg-raised:#300c30; --bg-card:#461436; --border:#71334d;
+  --text:#eff9d6; --text-dim:#c79d95; --accent:#d26758; --accent-pink:#a53669;
+  --accent-soft:#5a243c; --badge-warn-bg:#5a3b2b; --badge-warn-fg:#f1c69c;
+  --chip-on-bg:#5a243c; --chip-on-border:#d26758; --danger:#ef756c;
+  --page-bg:radial-gradient(circle at 72% 4%,rgba(122,28,75,.72) 0,transparent 34rem),linear-gradient(180deg,#300c30,#1b0326 68%,#100117);
+  --ash-a:#ba5044; --ash-b:#7a1c4b; --ash-c:#eff9d6; --ash-glow:rgba(186,80,68,.3);
+  --pulse-color:#d26758; --pulse-shadow:0 0 7px rgba(186,80,68,.58);
 }
 
 html,body { background:var(--bg); }
@@ -58,14 +150,10 @@ body {
   46% { transform:translate3d(22px,51vh,0) rotate(184deg); }
   100% { transform:translate3d(-9px,108vh,0) rotate(372deg); }
 }
-.controls,.filter-panel,.card,.list-row,.cal-toolbar,.map-popup-card,.whisper-float-head,.whisper-sub,.whisper-form { box-shadow:0 20px 55px rgba(0,0,0,.24); }
+.controls,.filter-panel,.card,.list-row,.cal-toolbar,.map-popup-card { box-shadow:0 20px 55px rgba(0,0,0,.24); }
 /* Traveling toggle off-state: outline, not fill (2026-07-17). On state = base
    .past-toggle[aria-pressed="true"], which wins on specificity. --accent-pink recolors per theme. */
 .traveling-toggle[aria-pressed="false"] { background:transparent; color:var(--accent-pink); border-color:var(--accent-pink); }
 .activity-msg { color:var(--pulse-color); text-shadow:var(--pulse-shadow); }
-.whisper-bubble { background:var(--whisper-bubble-bg); border-color:var(--whisper-bubble-border); }
-.whisper-bubble p { color:#321c25; }
-.whisper-time { color:#74454d; }
-.whisper-form button[type="submit"] { color:#171019; }
 .leaflet-container { background:#10111b; color:var(--text); }
 @media (prefers-reduced-motion:reduce) { #site-ash-layer { display:none; } }
