@@ -49,6 +49,7 @@
   function init() {
     var btn = document.getElementById("theme-switch-btn");
     var menu = document.getElementById("theme-menu");
+    var header = btn ? btn.closest(".site-header") : null;
     if (!btn || !menu) return;
 
     apply(saved(), false); // sync menu checkmarks with the theme the head script already set
@@ -56,12 +57,14 @@
     function open() {
       menu.hidden = false;
       btn.setAttribute("aria-expanded", "true");
+      if (header) header.classList.add("theme-menu-open");
       document.addEventListener("click", onDoc, true);
       document.addEventListener("keydown", onKey, true);
     }
     function close() {
       menu.hidden = true;
       btn.setAttribute("aria-expanded", "false");
+      if (header) header.classList.remove("theme-menu-open");
       document.removeEventListener("click", onDoc, true);
       document.removeEventListener("keydown", onKey, true);
     }
