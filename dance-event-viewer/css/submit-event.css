@@ -65,46 +65,111 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 textarea { resize: vertical; }
 
-/* Intake-method selector as a tab bar (Sean, 2026-07-17): reads as real tabs on a
-   baseline rule with an accent underline on the active one — so it's obvious
-   "Upload a Flyer" is a selected tab whose content is already shown below, not a
-   button that failed to pop something up. `.is-active` is a JS-set fallback so the
-   highlight doesn't depend on :has() (older mobile Safari). */
-.method-tabs {
-  display: flex; gap: 2px; flex-wrap: nowrap;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+/* Intake method as physical folder tabs joined to the active content panel. The tabs
+   remain in normal flow; the panel begins beneath them, and only the active tab masks
+   its lower seam. `.is-active` keeps this independent of :has() support. */
+.method-picker { margin-bottom: 16px; min-width: 0; }
+.method-picker-title {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
 }
-.method-tabs::-webkit-scrollbar { display: none; }
+.method-tabs-wrap {
+  position: relative;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 3px 0 0;
+  background: linear-gradient(to bottom, transparent calc(100% - 1px), var(--border) 0);
+}
+.method-tabs-wrap::-webkit-scrollbar { display: none; }
+.method-tabs {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  min-width: 100%;
+  flex-wrap: nowrap;
+}
 .method-tab {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: transparent; color: var(--text-dim);
-  border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
-  border-radius: 8px 8px 0 0; padding: 8px 15px; cursor: pointer;
-  font-size: .92rem; white-space: nowrap; flex: 0 0 auto;
-  transition: color .15s, border-color .15s, background .15s;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  flex: 0 0 auto;
+  padding: 8px 15px 7px;
+  background: color-mix(in srgb, var(--bg-card) 45%, var(--bg-raised));
+  color: color-mix(in srgb, var(--text-dim) 65%, var(--text));
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 2px 2px;
+  cursor: pointer;
+  font-size: .92rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .method-tab input { position: absolute; opacity: 0; width: 0; height: 0; }
-.method-tab:hover { color: var(--text); }
+.method-tab:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-color: var(--text-dim);
+}
 .method-tab:has(input:checked), .method-tab.is-active {
-  background: var(--accent-soft); color: var(--accent); font-weight: 600;
-  border-bottom-color: var(--accent);
+  z-index: 2;
+  background: var(--bg-raised);
+  color: color-mix(in srgb, var(--accent) 75%, var(--text));
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 12px var(--accent-soft);
+}
+.method-tab:has(input:checked)::after, .method-tab.is-active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--bg-raised);
+  pointer-events: none;
 }
 .method-tab:has(input:focus-visible), .method-tab:focus-within {
-  outline: 2px solid var(--accent); outline-offset: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
-/* min-width:0 keeps this grid item from stretching the section to the tab row's
-   full (overflowing) width — instead it stays in its cell and .method-tabs scrolls. */
-.method-tabs-wrap { position: relative; min-width: 0; }
-@media (max-width: 420px) {
-  /* On a phone the three descriptive tabs don't all fit, so the row scrolls; a
-     right-edge fade signals there's a tab (Paste a Link) to swipe to. */
-  .method-tab { padding: 8px 10px; font-size: .82rem; gap: 4px; }
-  .method-tabs-wrap::after {
-    content: ""; position: absolute; top: 0; right: 0; bottom: 2px; width: 26px;
-    background: linear-gradient(to right, transparent, var(--bg-raised));
-    pointer-events: none;
+.method-panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 16px 18px;
+}
+.method-content-section {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.method-content-section legend {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0 4px;
+}
+.method-content-section[hidden] { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .method-tab {
+    transition: color .15s ease, border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
   }
+}
+@media (max-width: 420px) {
+  .method-tab { padding-inline: 10px; font-size: .82rem; gap: 4px; }
+  .method-panel { padding-inline: 14px; }
 }
 
 #flyer-preview {

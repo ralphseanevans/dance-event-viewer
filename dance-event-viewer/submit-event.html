@@ -20,7 +20,7 @@
   <meta name="robots" content="noindex">
   <title>Submit an Event — Dance Event Viewer</title>
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/submit-event.css">
+  <link rel="stylesheet" href="css/submit-event.css?v=20260718a">
 </head>
 <body class="submit-page">
   <header class="site-header">
@@ -41,8 +41,8 @@
 
     <form id="submit-form" novalidate>
       <!-- Step: intake method ------------------------------------------------ -->
-      <fieldset class="submit-section">
-        <legend>How would you like to tell us?</legend>
+      <section class="method-picker" aria-labelledby="method-picker-title">
+        <h2 class="method-picker-title" id="method-picker-title">How would you like to tell us?</h2>
         <div class="method-tabs-wrap">
           <div class="method-tabs" role="radiogroup" aria-label="Submission method">
             <label class="method-tab">
@@ -59,10 +59,11 @@
             </label>
           </div>
         </div>
-      </fieldset>
+
+        <div class="method-panel">
 
       <!-- Flyer path ----------------------------------------------------------- -->
-      <fieldset class="submit-section" id="section-flyer">
+      <fieldset class="method-content-section" id="section-flyer">
         <legend>Flyer photo</legend>
         <label class="field-label" for="flyer-input">
           Upload a photo of the flyer <span class="req">(required)</span>
@@ -84,7 +85,7 @@
       </fieldset>
 
       <!-- Form / Link shared source fields -------------------------------------- -->
-      <fieldset class="submit-section" id="section-source-form">
+      <fieldset class="method-content-section" id="section-source-form">
         <label class="field-label" for="source-note">
           How do you know about this event? <span class="req">(required)</span>
         </label>
@@ -92,12 +93,14 @@
           placeholder="e.g. I'm the organizer, I saw it on Facebook, a friend told me..."></textarea>
       </fieldset>
 
-      <fieldset class="submit-section" id="section-source-link">
+      <fieldset class="method-content-section" id="section-source-link">
         <label class="field-label" for="source-url">
           Link to the event <span class="req">(required)</span>
         </label>
         <input type="url" id="source-url" name="source_url" placeholder="https://...">
       </fieldset>
+        </div>
+      </section>
 
       <!-- Event details (skipped for the pure flyer path) ------------------------ -->
       <div id="section-details">
