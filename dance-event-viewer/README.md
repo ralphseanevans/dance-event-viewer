@@ -72,8 +72,10 @@ filter card. It is a compact rectangular control—not a filter chip—and says
 **Advanced**, with a funnel icon, optional `N active` badge, and a down chevron. Its
 label remains concise while the chevron rotates to show the open state. On desktop, `#filter-panel` is
 a sibling card separated from the quick-filter card by exactly 12px of page background;
-on mobile it retains the fixed bottom-sheet behavior. Active-filter summary chips stay
-above the disclosure so the disclosure remains the bottom-left action in the main card.
+on mobile it retains the fixed bottom-sheet behavior. Timeline deliberately suppresses
+the redundant selected-filter summary row because the selected quick-filter buttons
+already show their state; Calendar and Map retain the removable summary chips above the
+disclosure. The disclosure remains the bottom-left action in the main card.
 
 `index.html` contains one decorative element immediately inside `<body>`:
 **`#site-ash-layer`**. Its particles are CSS-only, click-through, fixed behind the
@@ -97,9 +99,22 @@ The same script also injects a small theme-colored **low-poly panel creature**. 
 random 9-17 second intervals it chooses a new horizontal position, rises from behind
 the main controls panel, glances from side to side for 2.3-3.8 seconds, and ducks away.
 Its approved low peek remains unchanged in open space; when the chosen position overlaps
-the view tabs, it rises higher so the tabs do not hide its face.
+the view tabs, it rises higher so the tabs do not hide its face. On phones, only this
+over-tabs state gets an additional rise; the non-tab position keeps the approved low peek.
 Its first appearance comes sooner for previewing. It is decorative and click-through,
 pauses in hidden tabs, and is removed by the reduced-motion treatment.
+
+Sean's **United States 250th anniversary artwork** is permanently centered in normal
+flow immediately **above** the Dance Event Viewer banner. Its reviewed desktop size is
+753×438px—exactly 75% larger than the prior 430×250 overlay—and it no longer overlaps
+the banner or controls. On narrow screens it scales down to the available width. The
+complete picture and all wording remain visible; the flag is
+rendered as a separate crop of the supplied artwork and ripples continuously while the
+wording stays stable below it with a crisp white outline around the letter shapes. The source asset is
+`assets/usa-250-anniversary.png`; the page renders the background-free derivative
+`assets/usa-250-anniversary-transparent.png`, preserving the flag's white stripes and
+all lettering without a rectangular parchment field. Reduced-motion visitors keep the
+complete artwork but see a still flag.
 
 ## Published copy (2026-07-11)
 

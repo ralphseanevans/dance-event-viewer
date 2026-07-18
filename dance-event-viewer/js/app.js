@@ -585,7 +585,7 @@ function renderActiveChips(act) {
   if (!row) return;
   act = act || activeFilterList();
   row.textContent = "";
-  if (state.filtersOpen || !act.length) { row.hidden = true; return; }
+  if (state.view === "timeline" || state.filtersOpen || !act.length) { row.hidden = true; return; }
   row.hidden = false;
   for (const a of act) {
     const chip = document.createElement("button");
@@ -1866,6 +1866,7 @@ function setView(view) {
     b.setAttribute("aria-pressed", String(b.dataset.view === view));
   savePrefs();
   render();
+  renderActiveChips();
 }
 function savePrefs() {
   // 2026-07-17 redesign: filters/sel are NO LONGER persisted here — the URL query string

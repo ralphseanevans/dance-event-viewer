@@ -255,13 +255,53 @@ body {
   from { transform:translateX(-3px); }
   to { transform:translateX(2px); }
 }
+.anniversary-feature {
+  --anniversary-bg-height:438px;
+  width:753px; height:438px; margin:12px auto 18px;
+  position:relative; overflow:visible; pointer-events:none;
+  border:0; border-radius:0; background:transparent;
+}
+.anniversary-feature-flag,.anniversary-feature-words {
+  position:absolute; left:0; width:100%; display:block;
+  background-image:url("../assets/usa-250-anniversary-transparent.png");
+  background-repeat:no-repeat; background-size:100% var(--anniversary-bg-height);
+}
+.anniversary-feature-flag {
+  top:0; height:66%; background-position:center top;
+  transform-origin:0 50%;
+  animation:anniversary-flag-wave 1.35s ease-in-out infinite alternate;
+  will-change:transform,filter;
+}
+.anniversary-feature-words {
+  bottom:0; height:36%; background-position:center bottom;
+  filter:
+    brightness(1.28) saturate(1.12)
+    drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff)
+    drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff);
+}
+.site-header .anniversary-feature {
+  position:relative; left:auto; top:auto; bottom:auto; z-index:4;
+  width:min(753px,calc(100vw - 34px)); height:438px; margin:0 auto 18px;
+}
+@keyframes anniversary-flag-wave {
+  from { transform:perspective(360px) rotateY(-2.4deg) skewY(-.7deg) scaleX(.992); filter:brightness(.96); }
+  to { transform:perspective(360px) rotateY(3.2deg) skewY(.9deg) scaleX(1.012); filter:brightness(1.06); }
+}
 @media (max-width:600px) {
   #site-club-lights-layer .club-beam { width:34vw; opacity:.055; filter:blur(14px); }
   #club-light-bloom { width:98.6vmax; height:98.6vmax; }
   .panel-peeker { top:37px; transform:translate(-50%,42px) scale(.88) rotate(var(--peeker-tilt,0deg)); }
   .panel-peeker.is-peeking { transform:translate(-50%,-34px) scale(.88) rotate(var(--peeker-tilt,0deg)); }
-  .panel-peeker.is-peeking.is-over-tabs { transform:translate(-50%,-67px) scale(.88) rotate(var(--peeker-tilt,0deg)); }
+  .panel-peeker.is-peeking.is-over-tabs { transform:translate(-50%,-84px) scale(.88) rotate(var(--peeker-tilt,0deg)); }
+  .anniversary-feature { width:calc(100vw - 34px); margin:10px auto 14px; }
+  .site-header .anniversary-feature {
+    --anniversary-bg-height:auto;
+    position:relative; left:auto; top:auto; bottom:auto;
+    width:calc(100vw - 34px); height:auto; aspect-ratio:3/2;
+    margin:10px auto 14px; z-index:1;
+  }
 }
 @media (prefers-reduced-motion:reduce) {
   #site-ash-layer,#site-club-lights-layer,.panel-peeker { display:none; }
+  .anniversary-feature-flag { animation:none; }
 }
