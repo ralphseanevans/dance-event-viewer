@@ -7,9 +7,9 @@
    dissolve, size/opacity tuning — before landing on this horizontal terminal-style crawl
    per Sean's "go across... from side to side... nerdy terminal font and terminal green."
 
-   Reuses the same Firebase project already wired up for Dance Whispers
-   (window.WHISPER_FIREBASE_CONFIG, see index.html) under a new "activity" path, so
-   there is no second Firebase project/account and no new config to manage.
+   Uses the viewer's Firebase project (window.ACTIVITY_FIREBASE_CONFIG, see index.html)
+   under the "activity" path. Dance Whispers was removed 2026-07-18; Activity Pulse and
+   the anonymous live viewer count remain as separate, non-chat features.
 
    Privacy / trust model (see Live_Activity_Feed_Prompt.md for the full spec this
    follows):
@@ -257,6 +257,24 @@
     } catch (e) { /* ambient nice-to-have only — never break the page over it */ }
   }
 
+  /* Anonymous live viewer count. This used to live inside whispers.js; it belongs here
+     now because it uses the same Firebase connection but has no dependency on chat. */
+  function initViewerPresence(db) {
+    var countEl = document.getElementById("viewer-count");
+    if (!countEl) return;
+    try {
+      var myRef = db.ref("presence").push();
+      db.ref(".info/connected").on("value", function (snap) {
+        if (snap.val() !== true) return;
+        myRef.onDisconnect().remove();
+        myRef.set(true);
+      });
+      db.ref("presence").on("value", function (snap) {
+        countEl.textContent = String(snap.numChildren());
+      });
+    } catch (e) { /* nice-to-have only */ }
+  }
+
   /* ---------- boot ---------- */
   document.addEventListener("DOMContentLoaded", function () {
     railEl = document.getElementById("activity-rail");
@@ -283,11 +301,12 @@
       })
       .catch(function () { eventNameByKey = {}; validCategories = new Set(["Other"]); });
 
-    var cfg = window.WHISPER_FIREBASE_CONFIG;
-    if (!cfg || !cfg.apiKey || typeof firebase === "undefined") return;   // stays quietly empty, same as Whispers
+    var cfg = window.ACTIVITY_FIREBASE_CONFIG;
+    if (!cfg || !cfg.apiKey || typeof firebase === "undefined") return;   // stays quietly empty
 
     if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
     var db = firebase.database();
+    initViewerPresence(db);
     var activityRef = db.ref("activity");
     window.__activityPulseRef = activityRef;
 
