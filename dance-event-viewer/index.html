@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260718b">
+  <link rel="stylesheet" href="css/styles.css?v=20260718c">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260718a">
   <script defer src="js/theme-switch.js?v=20260718b"></script>
@@ -170,15 +170,19 @@
   <nav id="source-tabs" class="source-tabs" aria-label="Event lists" hidden></nav>
 
   <section class="controls" aria-label="View and filters">
-    <div class="control-row">
-      <div class="view-group">
-        <div class="view-switch" role="group" aria-label="View mode">
+    <div class="view-tabs-row">
+      <div class="view-switch" role="group" aria-label="View mode">
           <button type="button" class="view-btn" data-view="timeline" aria-pressed="true">Timeline</button>
           <button type="button" class="view-btn" data-view="grid" aria-pressed="false">Grid</button>
           <button type="button" class="view-btn" data-view="list" aria-pressed="false">List</button>
           <button type="button" class="view-btn" data-view="calendar" aria-pressed="false">Calendar</button>
           <button type="button" class="view-btn" data-view="map" aria-pressed="false">Map</button>
-        </div>
+      </div>
+    </div>
+
+    <div class="controls-panel-inner">
+      <div class="control-row">
+        <div class="view-group">
         <button type="button" id="traveling-toggle" class="past-toggle traveling-toggle" aria-pressed="false"
           title="By default this calendar shows events across the South (FL, GA, AL, MS, LA, TN, SC, NC). Turn this on to also browse national conventions and competitions — handy when you're traveling.">
           Traveling? Show national events
@@ -243,6 +247,7 @@
       <div class="filter-panel-apply">
         <button type="button" id="apply-filters" class="apply-btn">Show events</button>
       </div>
+    </div>
     </div>
   </section>
 

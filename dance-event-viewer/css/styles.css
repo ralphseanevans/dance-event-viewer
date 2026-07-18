@@ -194,9 +194,15 @@ body {
 .controls {
   max-width: var(--maxw);
   margin: 8px auto 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.controls-panel-inner {
   background: var(--bg-raised);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
   padding: 8px 16px;
   display: grid;
   gap: 10px;
@@ -209,31 +215,78 @@ body {
    Event) on the other side. */
 .view-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-/* View switcher styled as a tab bar (Sean, 2026-07-17): a row of tabs sitting on
-   a baseline rule, the active one marked by an accent underline — not a segmented
-   pill. Scrolls horizontally on very narrow screens rather than wrapping. */
+/* Folder-style view tabs. The row stays in normal flow and supplies the visible
+   top edge of the lower controls panel; narrow screens scroll it horizontally. */
+.view-tabs-row {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 3px 16px 0;
+  background: linear-gradient(to bottom, transparent calc(100% - 1px), var(--border) 0);
+}
+.view-tabs-row::-webkit-scrollbar { display: none; }
 .view-switch {
-  display: inline-flex; max-width: 100%; gap: 2px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  min-width: 100%;
 }
-.view-switch::-webkit-scrollbar { display: none; }
 .view-btn {
-  background: transparent; color: var(--text-dim);
-  border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
-  border-radius: 8px 8px 0 0; padding: 7px 15px; cursor: pointer;
-  font-size: .92rem; white-space: nowrap; flex: 0 0 auto;
-  transition: color .15s, border-color .15s, background .15s;
+  position: relative;
+  z-index: 1;
+  min-height: 40px;
+  flex: 0 0 auto;
+  padding: 8px 16px 7px;
+  background: color-mix(in srgb, var(--bg-card) 45%, var(--bg-raised));
+  color: color-mix(in srgb, var(--text-dim) 65%, var(--text));
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 2px 2px;
+  cursor: pointer;
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
 }
-.view-btn:hover { color: var(--text); }
+.view-btn:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-color: var(--text-dim);
+}
 .view-btn[aria-pressed="true"] {
-  background: var(--accent-soft); color: var(--accent); font-weight: 600;
-  border-bottom-color: var(--accent);
+  z-index: 2;
+  background: var(--bg-raised);
+  color: color-mix(in srgb, var(--accent) 75%, var(--text));
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 12px var(--accent-soft);
+}
+.view-btn[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--bg-raised);
+  pointer-events: none;
+}
+.view-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .view-btn {
+    transition: color .15s ease, border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
 }
 @media (max-width: 480px) {
-  .view-btn { padding: 7px 11px; font-size: .88rem; }
+  .view-tabs-row { padding-inline: 8px; }
+  .view-btn { padding-inline: 12px; font-size: .88rem; }
 }
-.view-btn:focus-visible, .chip:focus-visible, .reset-btn:focus-visible, .source-tabs button:focus-visible {
+.chip:focus-visible, .reset-btn:focus-visible, .source-tabs button:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
 
