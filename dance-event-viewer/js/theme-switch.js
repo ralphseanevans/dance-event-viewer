@@ -1,12 +1,15 @@
-/* Theme switcher (2026-07-17) — dropdown in the control row that flips the site between
-   "Moonlit Ember" (default) and "Classic Blue". Sets data-theme on <html>; CSS in
-   styles.css + moonlit-ember-theme.css does the rest. Choice is remembered in
+/* Theme switcher — dropdown that applies one of the viewer's thirteen color palettes.
+   Sets data-theme on <html>; CSS in styles.css + moonlit-ember-theme.css does the rest. Choice is remembered in
    localStorage("dev-theme"). A tiny inline script in <head> applies the saved theme before
    first paint (no flash); this file wires the menu and keeps its checkmarks in sync. */
 (function () {
   "use strict";
   var STORE_KEY = "dev-theme";
-  var VALID = { ember: true, classic: true };
+  var VALID = {
+    ember:true, classic:true, ennis:true, cybergum:true, crimson:true, deadcity:true,
+    bloodmoon:true, hope:true, neonmoon:true, monster:true, technobike:true, baldur:true,
+    crimson4:true
+  };
 
   // Each theme also swaps the hero banner so the graphic matches the palette
   // (Sean, 2026-07-17): warm banner for Ember, the original blue/pink one for Classic.
@@ -31,7 +34,9 @@
     if (!VALID[theme]) theme = "ember";
     document.documentElement.setAttribute("data-theme", theme);
     if (persist) { try { localStorage.setItem(STORE_KEY, theme); } catch (e) {} }
-    var banner = BANNERS[theme];
+    // Only Classic has a separate historical banner. Every other palette retains the
+    // current Moonlit Ember hero, so adding themes does not invent or load missing assets.
+    var banner = BANNERS[theme] || BANNERS.ember;
     var img = document.getElementById("brand-img");
     if (img && banner) { img.setAttribute("src", banner.src); img.setAttribute("alt", banner.alt); }
     var opts = document.querySelectorAll(".theme-option");
