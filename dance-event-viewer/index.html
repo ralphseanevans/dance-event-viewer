@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260718d">
+  <link rel="stylesheet" href="css/styles.css?v=20260718e">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260718a">
   <script defer src="js/theme-switch.js?v=20260718b"></script>
@@ -224,12 +224,13 @@
            role="group" + aria-labelledby. -->
       <div class="filter-group" id="fg-area" role="group" aria-labelledby="fg-area-label">
         <span class="fg-legend" id="fg-area-label">Location</span>
-        <div class="chips" data-group="areas"></div>
-        <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose another location&hellip;</button>
-        <div class="loc-selects" id="loc-selects" hidden>
-          <label>Country <select id="sel-country"></select></label>
-          <label>State <select id="sel-state" disabled></select></label>
-          <label>Town <select id="sel-town" disabled></select></label>
+        <div class="location-filter-content">
+          <div class="chips" data-group="areas"></div>
+          <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose another location</button>
+          <div class="loc-selects" id="loc-selects" hidden>
+            <label>State <select id="sel-state"></select></label>
+            <label>Town <select id="sel-town" disabled></select></label>
+          </div>
         </div>
       </div>
       <div class="filter-group" id="fg-kind" role="group" aria-labelledby="fg-kind-label">
@@ -262,7 +263,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js?v=20260718b"></script>
+  <script src="js/app.js?v=20260718k"></script>
   <script src="js/activity-pulse.js?v=20260718a"></script>
 </body>
 </html>

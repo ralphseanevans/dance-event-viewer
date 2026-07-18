@@ -455,6 +455,7 @@ body {
 .solo-styles-group .chips[hidden] { display: none; }
 
 .loc-selects { display: flex; gap: 12px; flex-wrap: wrap; width: 100%; padding-left: 64px; }
+.loc-selects[hidden] { display: none; }
 .loc-selects label { color: var(--text-dim); font-size: .85rem; display: flex; align-items: center; gap: 6px; }
 .loc-selects select {
   background: var(--bg-card); color: var(--text);
@@ -846,9 +847,13 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 #filter-backdrop { display: none; }
 
 /* Location extras */
-.loc-more { background: none; border: none; color: var(--accent); cursor: pointer; padding: 6px 0;
-  font-size: .88rem; text-decoration: underline; display: block; }
-.loc-selects label { display: block; margin: 6px 0; }
+.location-filter-content { min-width: 0; flex: 1 1 520px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.loc-more { background: none; border: none; color: var(--accent); cursor: pointer; padding: 4px 0;
+  font: inherit; font-size: .88rem; text-decoration: underline; text-underline-offset: 2px; display: block; }
+.loc-more:hover { color: var(--text); }
+.loc-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.loc-selects { padding-left: 0; }
+.loc-selects label { margin: 4px 0; }
 .loc-selects select:disabled { opacity: .4; }
 
 /* mobile: bottom sheet */

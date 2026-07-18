@@ -655,13 +655,15 @@ function applyUrl() {
   return any;
 }
 /* Country -> State -> Town cascade: each level's options come from events matching the
-   levels above it; State stays disabled until a Country is chosen, Town until a State. */
+   dimensions above it; only rendered controls participate in the visible cascade, so
+   State can stand alone while Town stays disabled until a State is chosen. */
 function buildLocSelects() {
   const dims = ["country", "state", "town"];
-  for (let i = 0; i < dims.length; i++) {
-    const dim = dims[i], sel = document.getElementById("sel-" + dim);
-    if (!sel) continue;
-    const pool = state.events.filter(d => dims.slice(0, i).every(pd => !state.sel[pd] || d.loc[pd] === state.sel[pd]));
+  const visibleDims = dims.filter(dim => document.getElementById("sel-" + dim));
+  for (let i = 0; i < visibleDims.length; i++) {
+    const dim = visibleDims[i], sel = document.getElementById("sel-" + dim);
+    const dimIndex = dims.indexOf(dim);
+    const pool = state.events.filter(d => dims.slice(0, dimIndex).every(pd => !state.sel[pd] || d.loc[pd] === state.sel[pd]));
     const values = [...new Set(pool.map(d => d.loc[dim]).filter(v => v && v !== "Unlisted"))].sort();
     sel.textContent = "";
     const any = document.createElement("option");
@@ -674,10 +676,10 @@ function buildLocSelects() {
     }
     sel.value = values.includes(state.sel[dim]) ? state.sel[dim] : "";
     state.sel[dim] = sel.value;
-    sel.disabled = i > 0 && !state.sel[dims[i - 1]];
+    sel.disabled = i > 0 && !state.sel[visibleDims[i - 1]];
     sel.onchange = () => {
       state.sel[dim] = sel.value;
-      for (const later of dims.slice(i + 1)) state.sel[later] = "";
+      for (const later of dims.slice(dimIndex + 1)) state.sel[later] = "";
       buildLocSelects();
       render();
     };
@@ -1959,12 +1961,20 @@ function init() {
     if (e.key === "Escape" && state.filtersOpen) setFiltersOpen(false);
   });
   const locMore = document.getElementById("loc-more");
-  if (locMore) locMore.addEventListener("click", () => {
+  const toggleLocationSelects = () => {
     const box = document.getElementById("loc-selects");
     const open = box.hidden;
     box.hidden = !open;
     locMore.setAttribute("aria-expanded", String(open));
-  });
+  };
+  if (locMore) {
+    locMore.addEventListener("click", toggleLocationSelects);
+    locMore.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      toggleLocationSelects();
+    });
+  }
   window.addEventListener("popstate", () => {
     for (const set of Object.values(state.filters)) set.clear();
     state.sel = { country: "", state: "", town: "" };
