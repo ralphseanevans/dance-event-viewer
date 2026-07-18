@@ -1,7 +1,7 @@
 # Dance Event Viewer
 
 Community viewer for partner-dance events (West Coast Swing and more) in the
-Southern United States. Live site: see the GitHub Pages URL on this repo.
+Southern United States. Live site: https://danceeventviewer.net/dance-event-viewer/
 
 - `dance-event-viewer/` — the site (plain HTML/CSS/JS, no build step)
 - `dance_events.json` — public event data (name, style, schedule, venue, cost only)
@@ -27,3 +27,6 @@ and Crimson Gameboy. Palette definitions live in
 Dance Whispers was removed on 2026-07-18. Activity Pulse and the anonymous live viewer
 count remain; both use the Firebase configuration in `dance-event-viewer/index.html` and
 run through `dance-event-viewer/js/activity-pulse.js`.
+
+See `docs/THEME-SYSTEM.md` for theme IDs, file ownership, maintenance rules, and the
+release checklist. Release history is recorded in `CHANGELOG.md`.
