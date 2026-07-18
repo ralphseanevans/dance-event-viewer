@@ -104,17 +104,13 @@ over-tabs state gets an additional rise; the non-tab position keeps the approved
 Its first appearance comes sooner for previewing. It is decorative and click-through,
 pauses in hidden tabs, and is removed by the reduced-motion treatment.
 
-Sean's **United States 250th anniversary artwork** is permanently centered in normal
-flow immediately **above** the Dance Event Viewer banner. Its reviewed desktop size is
-753×438px—exactly 75% larger than the prior 430×250 overlay—and it no longer overlaps
-the banner or controls. On narrow screens it scales down to the available width. The
-complete picture and all wording remain visible; the flag is
-rendered as a separate crop of the supplied artwork and ripples continuously while the
-wording stays stable below it with a crisp white outline around the letter shapes. The source asset is
-`assets/usa-250-anniversary.png`; the page renders the background-free derivative
-`assets/usa-250-anniversary-transparent.png`, preserving the flag's white stripes and
-all lettering without a rectangular parchment field. Reduced-motion visitors keep the
-complete artwork but see a still flag.
+Sean's **United States 250th anniversary artwork** is temporarily disabled so the page
+does not download or animate the large flag image. Its source files remain in `assets/`
+for an easy future restoration, but `index.html` contains no anniversary feature markup.
+
+The **Theme** control and **Submit an Event** link share one compact header-action row
+immediately above the Dance Event Viewer banner. Theme stays left-aligned and Submit an
+Event stays right-aligned at desktop and phone widths.
 
 ## Published copy (2026-07-11)
 

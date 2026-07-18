@@ -344,22 +344,26 @@ body {
 .theme-option[aria-checked="true"] { font-weight: 600; }
 .theme-option[aria-checked="true"] .theme-check { opacity: 1; }
 
-/* Header placement (Sean, 2026-07-17): the theme picker sits at the top-LEFT of the page,
-   mirroring the top-right Submit button. Menu opens left-aligned here (base rule anchors it
-   right), and a subtle scrim keeps the button legible over the hero banner in both themes. */
-.site-header .theme-switch { position: absolute; top: 14px; left: 16px; z-index: 6; }
+/* Header actions: Theme and Submit sit together on the row immediately above the hero banner. */
+.site-header { grid-template-columns: auto 1fr; }
+.site-header .theme-switch {
+  position: relative; top: auto; left: auto; z-index: 6;
+  grid-column: 1; grid-row: 1; justify-self: start; align-self: center;
+}
+.site-header #brand-slot { grid-column: 1 / -1; grid-row: 2; }
+.site-header .title-block { grid-column: 1 / -1; grid-row: 3; }
 .site-header.theme-menu-open {
   /* Lift the header only while the menu is open so the dropdown paints above the
      Timeline/Grid/List/Calendar/Map controls, then returns to normal on close. */
   z-index: 2000;
 }
 .site-header .theme-menu { right: auto; left: 0; }
+.site-header .theme-menu { max-height: min(40vh, 420px); }
 .site-header .theme-switch-btn {
   background: rgba(10, 12, 20, .55);
   -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
 }
 @media (max-width: 560px) {
-  .site-header .theme-switch { top: 8px; left: 8px; }
   .site-header .theme-switch-btn { padding: 4px 11px; font-size: .82rem; }
 }
 
@@ -805,7 +809,11 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
    Filter redesign (2026-07-17, Sean's spec): quick-filter rows,
    summary chips, facet counts, radio pills, bottom sheet.
    ============================================================ */
-.header-submit { position: absolute; top: 14px; right: 16px; z-index: 5; }
+.header-submit {
+  position: relative; top: auto; right: auto; z-index: 5;
+  grid-column: 2; grid-row: 1; justify-self: end; align-self: center;
+  white-space: nowrap;
+}
 .site-header { position: relative; }
 
 .quick-filters { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; min-width: 0; max-width: 100%; }  /* min-width:0 — .controls is a grid on mobile; without this the row can't shrink/scroll */
