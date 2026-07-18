@@ -548,10 +548,6 @@ function facetCount(group, value) {
   state.filters[group] = saved;
   return n;
 }
-function currentShownCount() {
-  const t = new Date(); t.setHours(0, 0, 0, 0);
-  return state.events.filter(d => matchesFilters(d) && (state.showPast || !isPastEvent(d, t))).length;
-}
 function activeFilterList() {
   const out = [];
   for (const [group, set] of Object.entries(state.filters))
@@ -580,8 +576,6 @@ function updateFilterUI() {
     const el = document.getElementById(id);
     if (el) el.textContent = act.length ? ` (${act.length})` : "";
   }
-  const apply = document.getElementById("apply-filters");
-  if (apply) { const n = currentShownCount(); apply.textContent = `Show ${n} event${n === 1 ? "" : "s"}`; }
   renderActiveChips(act);
   syncUrl();
   savePrefs();
@@ -1956,12 +1950,9 @@ function init() {
       render();
     });
   }
-  // Redesign wiring (2026-07-17): apply button closes the panel; "Choose another location…"
-  // reveals the cascading dropdowns; back/forward re-applies filters from the URL.
-  document.getElementById("apply-filters")?.addEventListener("click", () => setFiltersOpen(false));
-  // Extra ways out of the panel (2026-07-17): on phones the bottom sheet covers the
-  // Filters button that opened it, so "Show events" was the only exit. Now also: the
-  // ✕ in the panel header, tapping the dimmed backdrop (mobile), and the Escape key.
+  // "Choose another location…" reveals the cascading dropdowns; back/forward re-applies
+  // filters from the URL. Filters take effect immediately, so the panel needs no apply button.
+  // The panel closes through the ✕, the dimmed mobile backdrop, or the Escape key.
   document.getElementById("filters-close")?.addEventListener("click", () => setFiltersOpen(false));
   document.getElementById("filter-backdrop")?.addEventListener("click", () => setFiltersOpen(false));
   document.addEventListener("keydown", (e) => {
