@@ -265,7 +265,7 @@ body {
 
 .theme-menu {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 30;
-  min-width: 200px; padding: 6px;
+  min-width: 220px; max-height: min(72vh, 540px); overflow-y: auto; padding: 6px;
   background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px;
   box-shadow: 0 20px 55px rgba(0, 0, 0, .45);
   display: flex; flex-direction: column; gap: 2px;
@@ -281,6 +281,17 @@ body {
 .theme-swatch { width: 15px; height: 15px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18); }
 .swatch-ember { background: linear-gradient(135deg, #e8785b, #db8d85); }
 .swatch-classic { background: linear-gradient(135deg, #4cc2ff, #ff5fa2); }
+.swatch-ennis { background: linear-gradient(135deg, #e3b3db, #8488aa); }
+.swatch-cybergum { background: linear-gradient(135deg, #20b8b6, #d768b5); }
+.swatch-crimson { background: linear-gradient(135deg, #0ce6f2, #ff0546); }
+.swatch-deadcity { background: linear-gradient(135deg, #c04020, #718c3d); }
+.swatch-bloodmoon { background: linear-gradient(135deg, #ff252b, #7d0f1f); }
+.swatch-hope { background: linear-gradient(135deg, #b7ced2, #687688); }
+.swatch-neonmoon { background: linear-gradient(135deg, #70b9fb, #fe0094); }
+.swatch-monster { background: linear-gradient(135deg, #08785e, #de5b91); }
+.swatch-technobike { background: linear-gradient(135deg, #2a616e, #07ef5c); }
+.swatch-baldur { background: linear-gradient(135deg, #20a5a6, #dd5639); }
+.swatch-crimson4 { background: linear-gradient(135deg, #ba5044, #7a1c4b); }
 .theme-option-label { flex: 1; }
 .theme-check { color: var(--accent); opacity: 0; }
 .theme-option[aria-checked="true"] { font-weight: 600; }
