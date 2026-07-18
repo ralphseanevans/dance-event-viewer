@@ -19,7 +19,9 @@
     (function () {
       try {
         var t = localStorage.getItem("dev-theme");
-        document.documentElement.setAttribute("data-theme", (t === "classic" || t === "ember") ? t : "ember");
+        var valid = { ember:1, classic:1, ennis:1, cybergum:1, crimson:1, deadcity:1,
+          bloodmoon:1, hope:1, neonmoon:1, monster:1, technobike:1, baldur:1, crimson4:1 };
+        document.documentElement.setAttribute("data-theme", valid[t] ? t : "ember");
       } catch (e) {
         document.documentElement.setAttribute("data-theme", "ember");
       }
@@ -41,15 +43,14 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260717k">
-  <link rel="stylesheet" href="css/whispers.css">
+  <link rel="stylesheet" href="css/styles.css?v=20260718a">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
-  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260717e">
-  <script defer src="js/theme-switch.js?v=20260717f"></script>
+  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260718a">
+  <script defer src="js/theme-switch.js?v=20260718a"></script>
 
-  <!-- Dance Whispers — Firebase Realtime Database config (dance-event-viewer project). -->
+  <!-- Firebase Realtime Database config used by Activity Pulse and the live viewer count. -->
   <script>
-    window.WHISPER_FIREBASE_CONFIG = {
+    window.ACTIVITY_FIREBASE_CONFIG = {
       apiKey: "AIzaSyBwhVMohQcX06b5I50z1Uaa1r2q-4sYes8",
       authDomain: "dance-event-viewer.firebaseapp.com",
       databaseURL: "https://dance-event-viewer-default-rtdb.firebaseio.com",
@@ -90,9 +91,8 @@
     <i style="--x:10.1%;--d:-22.4s;--t:22.0s;--s:8px"></i><i style="--x:55.8%;--d:-8.6s;--t:14.2s;--s:9px"></i><i style="--x:20.8%;--d:-28.5s;--t:27.1s;--s:9px"></i><i style="--x:40.8%;--d:-22.4s;--t:27.2s;--s:9px"></i><i style="--x:81.0%;--d:-15.1s;--t:30.7s;--s:5px"></i>
   </div>
   <header class="site-header">
-    <!-- Color-theme picker, top-left of the page (Sean, 2026-07-17). Flips the site between
-         Moonlit Ember and Classic Blue — palette, background/ash tint, AND the hero banner
-         graphic. Menu wiring + banner swap live in js/theme-switch.js. -->
+    <!-- Color-theme picker. All palettes share the existing site layout and functionality;
+         menu wiring and the saved preference live in js/theme-switch.js. -->
     <div class="theme-switch">
       <button type="button" id="theme-switch-btn" class="theme-switch-btn"
         aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu"
@@ -111,6 +111,39 @@
           <span class="theme-swatch swatch-classic" aria-hidden="true"></span>
           <span class="theme-option-label">Classic Blue</span>
           <span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="ennis" aria-checked="false">
+          <span class="theme-swatch swatch-ennis" aria-hidden="true"></span><span class="theme-option-label">Ennis Blade</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="cybergum" aria-checked="false">
+          <span class="theme-swatch swatch-cybergum" aria-hidden="true"></span><span class="theme-option-label">CyberGum6</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="crimson" aria-checked="false">
+          <span class="theme-swatch swatch-crimson" aria-hidden="true"></span><span class="theme-option-label">Ink-Crimson</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="deadcity" aria-checked="false">
+          <span class="theme-swatch swatch-deadcity" aria-hidden="true"></span><span class="theme-option-label">Dead City</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="bloodmoon" aria-checked="false">
+          <span class="theme-swatch swatch-bloodmoon" aria-hidden="true"></span><span class="theme-option-label">BloodMoon21</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="hope" aria-checked="false">
+          <span class="theme-swatch swatch-hope" aria-hidden="true"></span><span class="theme-option-label">Hope Diamond</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="neonmoon" aria-checked="false">
+          <span class="theme-swatch swatch-neonmoon" aria-hidden="true"></span><span class="theme-option-label">Neon Moon Tarot</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="monster" aria-checked="false">
+          <span class="theme-swatch swatch-monster" aria-hidden="true"></span><span class="theme-option-label">Monster Paper</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="technobike" aria-checked="false">
+          <span class="theme-swatch swatch-technobike" aria-hidden="true"></span><span class="theme-option-label">Technobike</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="baldur" aria-checked="false">
+          <span class="theme-swatch swatch-baldur" aria-hidden="true"></span><span class="theme-option-label">Neon Darkness</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="crimson4" aria-checked="false">
+          <span class="theme-swatch swatch-crimson4" aria-hidden="true"></span><span class="theme-option-label">Crimson Gameboy</span><span class="theme-check" aria-hidden="true">✓</span>
         </button>
       </div>
     </div>
@@ -227,30 +260,7 @@
     </div>
   </footer>
 
-  <!-- Dance Whispers — anonymous chat bubbles floating along the side, synced live for every visitor. -->
-  <div id="whisper-float" class="whisper-float collapsed" aria-label="Dance whispers">
-    <div class="whisper-float-head">
-      <span class="whisper-float-title">💬 Dance Whispers</span>
-      <button type="button" id="whisper-minimize" class="whisper-minimize" aria-label="Expand whispers" aria-expanded="false">+</button>
-    </div>
-    <div class="whisper-body">
-      <p class="whisper-sub">Keep &lsquo;em classy &amp; fun &mdash; everyone here can see them.</p>
-      <div id="whisper-list" class="whisper-list" aria-live="polite">
-        <p class="whisper-empty">Loading whispers&hellip;</p>
-      </div>
-      <form id="whisper-form" class="whisper-form">
-        <textarea id="whisper-input" maxlength="200" rows="2" placeholder="Say something classy &amp; fun..." required></textarea>
-        <div class="whisper-form-row">
-          <span id="whisper-count" class="whisper-count">200</span>
-          <button type="submit">Whisper it</button>
-        </div>
-        <p id="whisper-msg" class="whisper-msg" role="status"></p>
-      </form>
-    </div>
-  </div>
-
-    <script src="js/app.js?v=20260717i"></script>
-  <script src="js/whispers.js"></script>
-  <script src="js/activity-pulse.js?v=20260713i"></script>
+  <script src="js/app.js?v=20260717i"></script>
+  <script src="js/activity-pulse.js?v=20260718a"></script>
 </body>
 </html>
