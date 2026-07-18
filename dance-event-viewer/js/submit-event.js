@@ -13,7 +13,9 @@
 
 const SUBMIT_ENDPOINT = "https://script.google.com/macros/s/AKfycbwtL7anIfkIv7XBkR7AwDKKc13DBPrEghmcEEZiURWR_NLZI3s8CdayU6VQzelK9VMn6w/exec";
 
-const MAX_FLYER_BYTES = 8 * 1024 * 1024; // 8MB — plenty for a phone photo, keeps requests reasonable
+const MAX_FLYER_BYTES = 8 * 1024 * 1024;        // 8MB per photo — plenty for a phone photo
+const MAX_FLYER_COUNT = 5;                      // photos of the SAME flyer (front/back/close-ups)
+const MAX_FLYER_TOTAL_BYTES = 20 * 1024 * 1024; // combined cap keeps the POST well under Apps Script limits
 
 function $(sel, root) { return (root || document).querySelector(sel); }
 function $all(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
@@ -77,9 +79,10 @@ document.addEventListener("DOMContentLoaded", () => {
     recurBiweekly.hidden = kind !== "biweekly";
   }));
 
-  // Flyer preview.
+  // Flyer photos (multiple allowed — all photos of the SAME flyer/event; they feed
+  // one submission, with the first photo used as the event's card image).
   const flyerInput = $("#flyer-input");
-  const flyerPreview = $("#flyer-preview");
+  const flyerPreviews = $("#flyer-previews");
   const flyerButton = $("#flyer-button");
   const flyerButtonText = $("#flyer-button-text");
   const FLYER_BTN_DEFAULT = flyerButtonText ? flyerButtonText.textContent : "";
@@ -87,27 +90,106 @@ document.addEventListener("DOMContentLoaded", () => {
     if (flyerButtonText) flyerButtonText.textContent = FLYER_BTN_DEFAULT;
     if (flyerButton) flyerButton.classList.remove("has-file");
   }
-  let flyerDataUrl = null;
-  flyerInput.addEventListener("change", () => {
-    const file = flyerInput.files && flyerInput.files[0];
-    flyerDataUrl = null;
-    if (!file) { flyerPreview.hidden = true; resetFlyerButton(); return; }
-    if (file.size > MAX_FLYER_BYTES) {
-      setStatus("That photo is a bit large — try a smaller image (under 8MB).", true);
+  function readAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+  let flyerImages = []; // [{ mime, base64 }] in the order chosen
+  function clearFlyerImages() {
+    flyerImages = [];
+    if (flyerPreviews) { flyerPreviews.hidden = true; flyerPreviews.innerHTML = ""; }
+    resetFlyerButton();
+  }
+  flyerInput.addEventListener("change", async () => {
+    const files = Array.from(flyerInput.files || []);
+    clearFlyerImages();
+    if (!files.length) return;
+    if (files.length > MAX_FLYER_COUNT) {
+      setStatus(`That's a lot of photos — please pick up to ${MAX_FLYER_COUNT} (of the same flyer).`, true);
       flyerInput.value = "";
-      flyerPreview.hidden = true;
-      resetFlyerButton();
       return;
     }
-    if (flyerButtonText) flyerButtonText.textContent = file.name;
-    if (flyerButton) flyerButton.classList.add("has-file");
-    const reader = new FileReader();
-    reader.onload = () => {
-      flyerDataUrl = reader.result;
-      flyerPreview.src = flyerDataUrl;
-      flyerPreview.hidden = false;
-    };
-    reader.readAsDataURL(file);
+    let total = 0;
+    for (const f of files) {
+      total += f.size;
+      if (f.size > MAX_FLYER_BYTES) {
+        setStatus(`"${f.name}" is a bit large — each photo needs to be under 8MB.`, true);
+        flyerInput.value = "";
+        return;
+      }
+    }
+    if (total > MAX_FLYER_TOTAL_BYTES) {
+      setStatus("Those photos add up to too much — please keep the total under 20MB.", true);
+      flyerInput.value = "";
+      return;
+    }
+    try {
+      const dataUrls = await Promise.all(files.map(readAsDataUrl));
+      flyerImages = dataUrls.map((u) => ({
+        mime: u.split("data:")[1].split(";")[0],
+        base64: u.split(",")[1],
+      }));
+      if (flyerButtonText) {
+        flyerButtonText.textContent = files.length === 1 ? files[0].name : `${files.length} photos selected`;
+      }
+      if (flyerButton) flyerButton.classList.add("has-file");
+      if (flyerPreviews) {
+        flyerPreviews.innerHTML = "";
+        dataUrls.forEach((u, i) => {
+          const img = document.createElement("img");
+          img.src = u;
+          img.alt = `Flyer photo ${i + 1} preview`;
+          flyerPreviews.appendChild(img);
+        });
+        flyerPreviews.hidden = false;
+      }
+      setStatus("", false, false);
+    } catch (readErr) {
+      clearFlyerImages();
+      flyerInput.value = "";
+      setStatus("Couldn't read one of those photos — please try again.", true);
+    }
+  });
+
+  // Optional flyer on the Fill Out Details path (single image; becomes the event's
+  // card image — instantly for a trusted submitter, after approval otherwise).
+  const formFlyerInput = $("#form-flyer-input");
+  const formFlyerPreview = $("#form-flyer-preview");
+  const formFlyerButton = $("#form-flyer-button");
+  const formFlyerButtonText = $("#form-flyer-button-text");
+  const FORM_FLYER_BTN_DEFAULT = formFlyerButtonText ? formFlyerButtonText.textContent : "";
+  let formFlyerImage = null; // { mime, base64 } or null
+  function clearFormFlyer() {
+    formFlyerImage = null;
+    if (formFlyerPreview) { formFlyerPreview.hidden = true; formFlyerPreview.removeAttribute("src"); }
+    if (formFlyerButtonText) formFlyerButtonText.textContent = FORM_FLYER_BTN_DEFAULT;
+    if (formFlyerButton) formFlyerButton.classList.remove("has-file");
+  }
+  if (formFlyerInput) formFlyerInput.addEventListener("change", async () => {
+    const file = formFlyerInput.files && formFlyerInput.files[0];
+    clearFormFlyer();
+    if (!file) return;
+    if (file.size > MAX_FLYER_BYTES) {
+      setStatus("That flyer image is a bit large — try a smaller image (under 8MB).", true);
+      formFlyerInput.value = "";
+      return;
+    }
+    try {
+      const dataUrl = await readAsDataUrl(file);
+      formFlyerImage = { mime: dataUrl.split("data:")[1].split(";")[0], base64: dataUrl.split(",")[1] };
+      if (formFlyerButtonText) formFlyerButtonText.textContent = file.name;
+      if (formFlyerButton) formFlyerButton.classList.add("has-file");
+      if (formFlyerPreview) { formFlyerPreview.src = dataUrl; formFlyerPreview.hidden = false; }
+      setStatus("", false, false);
+    } catch (readErr) {
+      clearFormFlyer();
+      formFlyerInput.value = "";
+      setStatus("Couldn't read that image — please try again.", true);
+    }
   });
 
   const statusEl = $("#submit-status");
@@ -135,18 +217,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (method === "flyer") {
       if (!flyerInput.files || !flyerInput.files[0]) {
-        setStatus("Please choose a flyer photo to upload.", true);
+        setStatus("Please choose at least one flyer photo to upload.", true);
         return;
       }
-      if (!flyerDataUrl) {
-        setStatus("Still reading that photo — try again in a moment.", true);
+      if (!flyerImages.length) {
+        setStatus("Still reading those photos — try again in a moment.", true);
         return;
       }
-      const [, mimeAndB64] = flyerDataUrl.split("data:");
-      const mime = mimeAndB64.split(";")[0];
-      const base64 = flyerDataUrl.split(",")[1];
-      payload.flyer_mime = mime;
-      payload.flyer_base64 = base64;
+      // First photo keeps the original field names so an older backend still works;
+      // any additional photos of the same flyer ride along in flyers_extra.
+      payload.flyer_mime = flyerImages[0].mime;
+      payload.flyer_base64 = flyerImages[0].base64;
+      if (flyerImages.length > 1) {
+        payload.flyers_extra = flyerImages.slice(1).map((f) => ({ mime: f.mime, base64: f.base64 }));
+      }
     } else {
       // Form / Link paths share the same required details.
       if (method === "form") {
@@ -219,6 +303,12 @@ document.addEventListener("DOMContentLoaded", () => {
         payload.end_time = $("#onetime-end-time").value;
         if (!payload.start_time) { setStatus("Please enter a start time.", true); return; }
       }
+
+      // Optional flyer image on the details path — becomes the event's card image.
+      if (method === "form" && formFlyerImage) {
+        payload.flyer_mime = formFlyerImage.mime;
+        payload.flyer_base64 = formFlyerImage.base64;
+      }
     }
 
     if (!SUBMIT_ENDPOINT) {
@@ -238,11 +328,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json().catch(() => null);
       if (data && data.ok) {
         form.reset();
-        flyerPreview.hidden = true;
-        flyerDataUrl = null;
-        resetFlyerButton();
+        clearFlyerImages();
+        clearFormFlyer();
         syncMethod();
-        setStatus("Thanks! Your submission is in for review.", false, true);
+        setStatus(data.published
+          ? "Thanks! Your event is live — it'll show on the calendar in a minute or two."
+          : "Thanks! Your submission is in for review.", false, true);
       } else {
         setStatus((data && data.error) || "Something went wrong — please try again.", true);
       }

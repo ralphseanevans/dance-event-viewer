@@ -202,6 +202,18 @@ event data with the full safe-write/test/publish pipeline (never deletes events,
 never changes keys — ambiguous asks are held for Sean). Everyone else's corrections
 land in Sean's review queue, with an email either way.
 
+**Submit an Event page — flyer handling (2026-07-18):** the "Upload a Flyer" intake
+now accepts **multiple photos of the same flyer** (front/back, close-ups — up to 5,
+8MB each / 20MB total) in one submission: the first photo is the one published as the
+event's card image, all photos go to the Drive intake folder (extras in the sheet's
+`extra_flyer_urls` column) and all are sent to Gemini together in one extraction call.
+The "Fill Out Details" intake gained an **optional flyer image**: the typed details are
+authoritative (no AI extraction), and a trusted sender name ("Ralph"/"admin123") puts
+the event + flyer live immediately via the `web-events.json` overlay + logo layer,
+while anyone else's is held — Sean's email Approve link publishes the **event and
+flyer together** (not just the image). Backend spec-of-record:
+`Daily Operating System/Submission_AppsScript_Code.gs`.
+
 ## Views & filters
 
 - **Timeline** (default): events grouped by next occurrence — Today / This Week / Next Week / Later.

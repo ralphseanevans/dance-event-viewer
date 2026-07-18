@@ -166,9 +166,18 @@ textarea { resize: vertical; }
   .method-panel { padding-inline: 14px; }
 }
 
-#flyer-preview {
+#flyer-preview, .flyer-preview-img {
   max-width: 100%; max-height: 260px; border-radius: 8px;
   border: 1px solid var(--border); object-fit: contain;
+}
+
+/* Multi-photo previews for the flyer path (several photos of the same flyer). */
+.flyer-previews {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+}
+.flyer-previews img {
+  width: 104px; height: 104px; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--border);
 }
 
 /* iOS-friendly upload control: hide the raw file input (its only tappable region
