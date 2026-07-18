@@ -1,22 +1,184 @@
 {
   "_schema_notes": "Cached geocoding results for the Map view (Leaflet + OpenStreetMap, added 2026-07-12). Keyed by the EXACT venue string as it appears in dance_events.json -- app.js looks up an event's venue text here first. Geocoded once via OpenStreetMap's free Nominatim service (never per-visitor -- that would violate their usage policy) and cached here so the map never makes a live geocoding call. 'precision': 'exact' means Nominatim resolved the specific address; 'city' means the specific venue/address wasn't found in OpenStreetMap's data (common for small local halls) and this falls back to the city center instead -- an honest approximate pin rather than an invented precise one. 'city_fallbacks' is used by app.js automatically for any venue NOT listed here at all (derived from the same Pensacola/Mobile/Panama City Beach text-matching locationOf() already uses for the Location filter) so a brand-new venue still gets at least a city-level pin without needing this file updated first. To improve a 'city' precision entry later: add the venue to OpenStreetMap (anyone can edit, free) and re-geocode, or ask Sean for a manual lat/lon from Google Maps and hardcode it here.",
   "venues": {
-    "Ragon Hall, 2600 Stratford Rd, Pensacola, FL": { "lat": 30.5105292, "lon": -87.3096376, "precision": "exact" },
-    "Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526": { "lat": 30.5105292, "lon": -87.3096376, "precision": "exact" },
-    "The Way You Move, 918 Winton Ave, Pensacola, FL 32507": { "lat": 30.3866088, "lon": -87.3029444, "precision": "exact" },
-    "David Miner Ballroom/Dancesport Academy, 262 Azalea Rd, Mobile, AL 36609": { "lat": 30.6752477, "lon": -88.1484221, "precision": "exact" },
-    "Chapel Collective, Historic Sacred Heart Building, 1010 N 12th Ave, Pensacola, FL 32501": { "lat": 30.4263337, "lon": -87.2027663, "precision": "exact" },
-    "Pensacola, FL (Ragon Hall per flyer branding)": { "lat": 30.5105292, "lon": -87.3096376, "precision": "exact" },
-    "Sanders Beach-Corinne Jones Resource Center, Pensacola, FL": { "lat": 30.4007327, "lon": -87.2364662, "precision": "exact" },
-    "Sanders Beach Community Center, 913 South \"I\" St, Pensacola, FL": { "lat": 30.4007327, "lon": -87.2364662, "precision": "exact" },
-    "Pensacola, FL (exact venue not listed on the event page)": { "lat": 30.4213090, "lon": -87.2169149, "precision": "city" },
-    "Panama City Beach, FL (host hotel -- see website)": { "lat": 30.1765914, "lon": -85.8053860, "precision": "city" },
-    "The Chapel, Historic Sacred Heart Building, Suite 211, 1010 N 12th Ave, Pensacola, FL 32501": { "lat": 30.4263337, "lon": -87.2027663, "precision": "exact" },
-    "Lynn Warwick's House, 8470 Junior Rd, Mobile, AL 36695": { "lat": 30.6346172, "lon": -88.2408605, "precision": "exact" }
+    "Ragon Hall, 2600 Stratford Rd, Pensacola, FL": {
+      "lat": 30.5105292,
+      "lon": -87.3096376,
+      "precision": "exact"
+    },
+    "Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526": {
+      "lat": 30.5105292,
+      "lon": -87.3096376,
+      "precision": "exact"
+    },
+    "The Way You Move, 918 Winton Ave, Pensacola, FL 32507": {
+      "lat": 30.3866088,
+      "lon": -87.3029444,
+      "precision": "exact"
+    },
+    "David Miner Ballroom/Dancesport Academy, 262 Azalea Rd, Mobile, AL 36609": {
+      "lat": 30.6752477,
+      "lon": -88.1484221,
+      "precision": "exact"
+    },
+    "Chapel Collective, Historic Sacred Heart Building, 1010 N 12th Ave, Pensacola, FL 32501": {
+      "lat": 30.4263337,
+      "lon": -87.2027663,
+      "precision": "exact"
+    },
+    "Pensacola, FL (Ragon Hall per flyer branding)": {
+      "lat": 30.5105292,
+      "lon": -87.3096376,
+      "precision": "exact"
+    },
+    "Sanders Beach-Corinne Jones Resource Center, Pensacola, FL": {
+      "lat": 30.4007327,
+      "lon": -87.2364662,
+      "precision": "exact"
+    },
+    "Sanders Beach Community Center, 913 South \"I\" St, Pensacola, FL": {
+      "lat": 30.4007327,
+      "lon": -87.2364662,
+      "precision": "exact"
+    },
+    "Pensacola, FL (exact venue not listed on the event page)": {
+      "lat": 30.421309,
+      "lon": -87.2169149,
+      "precision": "city"
+    },
+    "Panama City Beach, FL (host hotel -- see website)": {
+      "lat": 30.1765914,
+      "lon": -85.805386,
+      "precision": "city"
+    },
+    "The Chapel, Historic Sacred Heart Building, Suite 211, 1010 N 12th Ave, Pensacola, FL 32501": {
+      "lat": 30.4263337,
+      "lon": -87.2027663,
+      "precision": "exact"
+    },
+    "Lynn Warwick's House, 8470 Junior Rd, Mobile, AL 36695": {
+      "lat": 30.6346172,
+      "lon": -88.2408605,
+      "precision": "exact"
+    },
+    "Fort Lauderdale Marriott Coral Springs Hotel & Convention Center, 11775 Heron Bay Blvd, Coral Springs, FL 33076": {
+      "lat": 26.310194768546,
+      "lon": -80.296123571156,
+      "precision": "exact"
+    },
+    "Marriott Jacksonville Downtown, 245 Water St, Jacksonville, FL 32202": {
+      "lat": 30.325491111784,
+      "lon": -81.661624204174,
+      "precision": "exact"
+    },
+    "Hilton Raleigh North Hills, 3415 Wake Forest Rd, Raleigh, NC 27609": {
+      "lat": 35.829129232719,
+      "lon": -78.619546829686,
+      "precision": "exact"
+    },
+    "Crowne Plaza Atlanta Perimeter at Ravinia, 4355 Ashford Dunwoody Rd, Atlanta, GA 30346": {
+      "lat": 33.92153658616,
+      "lon": -84.338882595965,
+      "precision": "exact"
+    },
+    "Hotel Alba Tampa, 5303 W Kennedy Blvd, Tampa, FL 33609": {
+      "lat": 27.944926126257,
+      "lon": -82.53252680558,
+      "precision": "exact"
+    },
+    "Huntsville Marriott at the Space & Rocket Center, 5 Tranquility Base, Huntsville, AL 35805": {
+      "lat": 34.71139,
+      "lon": -86.65417,
+      "precision": "exact"
+    },
+    "Rosen Plaza Hotel, 9700 International Dr, Orlando, FL 32819": {
+      "lat": 28.431191719142,
+      "lon": -81.470763935316,
+      "precision": "exact"
+    },
+    "Sheraton Music City Hotel, 777 McGavock Pike, Nashville, TN 37214": {
+      "lat": 36.144992060757,
+      "lon": -86.684626205963,
+      "precision": "exact"
+    },
+    "Hilton Charlotte University Place, 8629 JM Keynes Dr, Charlotte, NC 28262": {
+      "lat": 35.30823579115,
+      "lon": -80.751853291375,
+      "precision": "exact"
+    },
+    "The Florida Hotel & Conference Center, 1500 Sand Lake Rd, Orlando, FL 32809": {
+      "lat": 28.44592,
+      "lon": -81.39554,
+      "precision": "exact"
+    },
+    "Renaissance Atlanta Waverly Hotel & Convention Center, 2450 Galleria Pkwy SE, Atlanta, GA 30339": {
+      "lat": 33.885896908906,
+      "lon": -84.462610048187,
+      "precision": "exact"
+    },
+    "Guilford Grange, 4909 Guilford School Rd, Greensboro, NC 27410": {
+      "lat": 36.08183432744,
+      "lon": -79.893570074586,
+      "precision": "exact"
+    },
+    "Tallahassee Senior Center, 1400 N Monroe St, Tallahassee, FL 32303": {
+      "lat": 30.457902101961,
+      "lon": -84.280822760005,
+      "precision": "exact"
+    },
+    "Keda Danceplex, 3100 S Ridgewood Ave, South Daytona, FL 32119": {
+      "lat": 29.153964883707,
+      "lon": -80.993048766398,
+      "precision": "exact"
+    },
+    "Sunseeker Resort Charlotte Harbor, 5500 Sunseeker Way, Charlotte Harbor, FL 33980": {
+      "lat": 26.958201,
+      "lon": -82.067794,
+      "precision": "exact"
+    },
+    "Crowne Plaza Executive Center Baton Rouge, 4728 Constitution Ave, Baton Rouge, LA 70808": {
+      "lat": 30.422258430538,
+      "lon": -91.136107173958,
+      "precision": "exact"
+    },
+    "Ravenwood Meadery at Lowe Mill ARTS & Entertainment, Railroad Room 7, 2211 Seminole Dr SW, Huntsville, AL 35805": {
+      "lat": 34.716548253699,
+      "lon": -86.598080246405,
+      "precision": "exact"
+    },
+    "The Block, 113 Eglin Pkwy SE, Fort Walton Beach, FL 32548": {
+      "lat": 30.419922957931,
+      "lon": -86.609561886907,
+      "precision": "exact"
+    },
+    "Raleigh Marriott Crabtree Valley, 4500 Marriott Dr, Raleigh, NC": {
+      "lat": 35.841324049917,
+      "lon": -78.678154391406,
+      "precision": "exact"
+    },
+    "Signia by Hilton Orlando, 14100 Bonnet Creek Resort Ln, Orlando, FL": {
+      "lat": 28.357015506118,
+      "lon": -81.535181490462,
+      "precision": "exact"
+    },
+    "Miami Marriott Biscayne Bay, 1633 N Bayshore Dr, Miami, FL": {
+      "lat": 25.790868314695,
+      "lon": -80.187023720075,
+      "precision": "exact"
+    }
   },
   "city_fallbacks": {
-    "Pensacola": { "lat": 30.4213090, "lon": -87.2169149 },
-    "Mobile": { "lat": 30.6913462, "lon": -88.0437509 },
-    "Panama City Beach": { "lat": 30.1765914, "lon": -85.8053860 }
+    "Pensacola": {
+      "lat": 30.421309,
+      "lon": -87.2169149
+    },
+    "Mobile": {
+      "lat": 30.6913462,
+      "lon": -88.0437509
+    },
+    "Panama City Beach": {
+      "lat": 30.1765914,
+      "lon": -85.805386
+    }
   }
 }

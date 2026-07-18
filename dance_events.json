@@ -52,7 +52,10 @@
       "type": "weekly_recurring",
       "day_of_week": "Friday",
       "monthly_rule": null,
-      "exclude_monthly_rules": ["First Friday", "Third Friday"],
+      "exclude_monthly_rules": [
+        "First Friday",
+        "Third Friday"
+      ],
       "start_date": null,
       "end_date": null,
       "start_time": "19:00",
@@ -367,7 +370,7 @@
       "end_date": "2026-07-26",
       "start_time": null,
       "end_time": null,
-      "venue": "Ft. Lauderdale, FL (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Fort Lauderdale Marriott Coral Springs Hotel & Convention Center, 11775 Heron Bay Blvd, Coral Springs, FL 33076",
       "state": "FL",
       "cost": null,
       "source_url": "https://floridadancemagic.com"
@@ -527,7 +530,7 @@
       "end_date": "2026-09-07",
       "start_time": null,
       "end_time": null,
-      "venue": "Jacksonville, FL (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Marriott Jacksonville Downtown, 245 Water St, Jacksonville, FL 32202",
       "state": "FL",
       "cost": null,
       "source_url": "http://www.jaxwestiefest.com"
@@ -543,7 +546,7 @@
       "end_date": "2026-09-13",
       "start_time": null,
       "end_time": null,
-      "venue": "Raleigh, NC (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Hilton Raleigh North Hills, 3415 Wake Forest Rd, Raleigh, NC 27609",
       "state": "NC",
       "cost": null,
       "source_url": "https://trilogywcs.com/"
@@ -655,7 +658,7 @@
       "end_date": "2026-10-04",
       "start_time": null,
       "end_time": null,
-      "venue": "Atlanta, GA (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Crowne Plaza Atlanta Perimeter at Ravinia, 4355 Ashford Dunwoody Rd, Atlanta, GA 30346",
       "state": "GA",
       "cost": null,
       "source_url": "https://www.atlantaswingclassic.com/"
@@ -767,7 +770,7 @@
       "end_date": "2026-11-08",
       "start_time": null,
       "end_time": null,
-      "venue": "Tampa Bay, FL (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Hotel Alba Tampa, 5303 W Kennedy Blvd, Tampa, FL 33609",
       "state": "FL",
       "cost": null,
       "source_url": "http://www.tbcwcs.com"
@@ -847,7 +850,7 @@
       "end_date": "2026-11-22",
       "start_time": null,
       "end_time": null,
-      "venue": "Huntsville, AL (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Huntsville Marriott at the Space & Rocket Center, 5 Tranquility Base, Huntsville, AL 35805",
       "state": "AL",
       "cost": null,
       "source_url": "http://rocketcityswing.com"
@@ -943,7 +946,7 @@
       "end_date": "2027-01-03",
       "start_time": null,
       "end_time": null,
-      "venue": "Orlando, FL (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Rosen Plaza Hotel, 9700 International Dr, Orlando, FL 32819",
       "state": "FL",
       "cost": null,
       "source_url": "http://www.floorplayswingvacation.com"
@@ -959,7 +962,7 @@
       "end_date": "2027-01-03",
       "start_time": null,
       "end_time": null,
-      "venue": "Nashville, TN (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Sheraton Music City Hotel, 777 McGavock Pike, Nashville, TN 37214",
       "state": "TN",
       "cost": null,
       "source_url": "http://www.spotlightnewyears.com"
@@ -1071,7 +1074,7 @@
       "end_date": "2027-02-07",
       "start_time": null,
       "end_time": null,
-      "venue": "Charlotte, NC (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Hilton Charlotte University Place, 8629 JM Keynes Dr, Charlotte, NC 28262",
       "state": "NC",
       "cost": null,
       "source_url": "https://charlottewestiefest.com/"
@@ -1263,7 +1266,7 @@
       "end_date": "2027-04-25",
       "start_time": null,
       "end_time": null,
-      "venue": "Orlando, FL (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "The Florida Hotel & Conference Center, 1500 Sand Lake Rd, Orlando, FL 32809",
       "state": "FL",
       "cost": null,
       "source_url": "http://swingoverevent.com"
@@ -1359,7 +1362,7 @@
       "end_date": "2027-05-31",
       "start_time": null,
       "end_time": null,
-      "venue": "Atlanta, GA (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Renaissance Atlanta Waverly Hotel & Convention Center, 2450 Galleria Pkwy SE, Atlanta, GA 30339",
       "state": "GA",
       "cost": null,
       "source_url": "http://www.usagrandnationals.com"
@@ -1391,7 +1394,7 @@
       "end_date": "2027-10-10",
       "start_time": null,
       "end_time": null,
-      "venue": "Atlanta, GA (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Crowne Plaza Atlanta Perimeter at Ravinia, 4355 Ashford Dunwoody Rd, Atlanta, GA 30346",
       "state": "GA",
       "cost": null,
       "source_url": "https://www.atlantaswingclassic.com/"
@@ -1407,7 +1410,7 @@
       "end_date": "2028-10-01",
       "start_time": null,
       "end_time": null,
-      "venue": "Atlanta, GA (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Crowne Plaza Atlanta Perimeter at Ravinia, 4355 Ashford Dunwoody Rd, Atlanta, GA 30346",
       "state": "GA",
       "cost": null,
       "source_url": "https://www.atlantaswingclassic.com/"
@@ -1423,7 +1426,7 @@
       "end_date": null,
       "start_time": "15:00",
       "end_time": "18:00",
-      "venue": "Greensboro, NC",
+      "venue": "Guilford Grange, 4909 Guilford School Rd, Greensboro, NC 27410",
       "state": "NC",
       "cost": null,
       "source_url": "https://usadance.org/events/event_list.asp?cid=20801"
@@ -1455,7 +1458,7 @@
       "end_date": null,
       "start_time": "18:30",
       "end_time": "22:00",
-      "venue": "Tallahassee, FL",
+      "venue": "Tallahassee Senior Center, 1400 N Monroe St, Tallahassee, FL 32303",
       "state": "FL",
       "cost": null,
       "source_url": "https://usadance.org/events/event_list.asp?cid=20801"
@@ -1519,7 +1522,7 @@
       "end_date": null,
       "start_time": null,
       "end_time": null,
-      "venue": "Daytona, FL area (exact venue not listed)",
+      "venue": "Keda Danceplex, 3100 S Ridgewood Ave, South Daytona, FL 32119",
       "state": "FL",
       "cost": null,
       "source_url": "https://usadance.org/events/event_list.asp?cid=20801"
@@ -1583,7 +1586,7 @@
       "end_date": null,
       "start_time": "15:00",
       "end_time": "18:00",
-      "venue": "Greensboro, NC",
+      "venue": "Guilford Grange, 4909 Guilford School Rd, Greensboro, NC 27410",
       "state": "NC",
       "cost": null,
       "source_url": "https://usadance.org/events/event_list.asp?cid=20801"
@@ -1631,7 +1634,7 @@
       "end_date": null,
       "start_time": null,
       "end_time": null,
-      "venue": "Daytona, FL area (exact venue not listed)",
+      "venue": "Keda Danceplex, 3100 S Ridgewood Ave, South Daytona, FL 32119",
       "state": "FL",
       "cost": null,
       "source_url": "https://usadance.org/events/event_list.asp?cid=20801"
@@ -1711,7 +1714,7 @@
       "end_date": null,
       "start_time": null,
       "end_time": null,
-      "venue": "Daytona, FL area (exact venue not listed)",
+      "venue": "Keda Danceplex, 3100 S Ridgewood Ave, South Daytona, FL 32119",
       "state": "FL",
       "cost": null,
       "source_url": "https://usadance.org/events/EventDetails.aspx?id=2028008&group="
@@ -1743,7 +1746,7 @@
       "end_date": null,
       "start_time": null,
       "end_time": null,
-      "venue": "Daytona, FL area (exact venue not listed)",
+      "venue": "Keda Danceplex, 3100 S Ridgewood Ave, South Daytona, FL 32119",
       "state": "FL",
       "cost": null,
       "source_url": "https://usadance.org/events/EventDetails.aspx?id=2028009&group="
@@ -1839,7 +1842,7 @@
       "end_date": null,
       "start_time": null,
       "end_time": null,
-      "venue": "Daytona, FL area (exact venue not listed)",
+      "venue": "Keda Danceplex, 3100 S Ridgewood Ave, South Daytona, FL 32119",
       "state": "FL",
       "cost": null,
       "source_url": "https://usadance.org/events/EventDetails.aspx?id=2028010&group="
@@ -1935,7 +1938,7 @@
       "end_date": "2026-09-19",
       "start_time": null,
       "end_time": null,
-      "venue": "Sunseeker Resort, Charlotte Harbor, FL",
+      "venue": "Sunseeker Resort Charlotte Harbor, 5500 Sunseeker Way, Charlotte Harbor, FL 33980",
       "state": "FL",
       "cost": null,
       "source_url": "https://www.arthurmurray.com/am-events/flamingo-dance-o-rama/"
@@ -2601,7 +2604,7 @@
       "end_date": "2027-06-20",
       "start_time": null,
       "end_time": null,
-      "venue": "Baton Rouge, LA (exact venue not listed on WSDC's event list -- see event website)",
+      "venue": "Crowne Plaza Executive Center Baton Rouge, 4728 Constitution Ave, Baton Rouge, LA 70808",
       "state": "LA",
       "cost": null,
       "source_url": "http://www.swingapaloozaevent.com/"
