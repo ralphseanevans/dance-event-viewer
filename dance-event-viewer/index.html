@@ -43,10 +43,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260718e">
+  <link rel="stylesheet" href="css/styles.css?v=20260718j">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
-  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260718a">
+  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260718n">
   <script defer src="js/theme-switch.js?v=20260718b"></script>
+  <script defer src="js/club-lights.js?v=20260718i"></script>
 
   <!-- Firebase Realtime Database config used by Activity Pulse and the live viewer count. -->
   <script>
@@ -61,6 +62,14 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
+  <!-- Soft, theme-matched club lighting behind the interface. The beams drift slowly;
+       js/club-lights.js places occasional blooms at random, non-strobing intervals. -->
+  <div id="site-club-lights-layer" aria-hidden="true">
+    <i class="club-beam club-beam-a"></i>
+    <i class="club-beam club-beam-b"></i>
+    <i class="club-beam club-beam-c"></i>
+    <i id="club-light-bloom"></i>
+  </div>
   <!-- Decorative page-wide ash. Styling and reduced-motion behavior live in
        css/moonlit-ember-theme.css; it is intentionally separate from the hero. -->
   <div id="site-ash-layer" aria-hidden="true">
@@ -173,8 +182,6 @@
     <div class="view-tabs-row">
       <div class="view-switch" role="group" aria-label="View mode">
           <button type="button" class="view-btn" data-view="timeline" aria-pressed="true">Timeline</button>
-          <button type="button" class="view-btn" data-view="grid" aria-pressed="false">Grid</button>
-          <button type="button" class="view-btn" data-view="list" aria-pressed="false">List</button>
           <button type="button" class="view-btn" data-view="calendar" aria-pressed="false">Calendar</button>
           <button type="button" class="view-btn" data-view="map" aria-pressed="false">Map</button>
       </div>
@@ -201,20 +208,30 @@
         <span class="qf-label" id="lbl-day">Day</span>
         <div class="chips chips-scroll" data-group="days" role="group" aria-labelledby="lbl-day"></div>
       </div>
-      <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
-        <span class="filters-toggle-label">Filters</span><span id="filters-count" class="filters-count"></span><span class="filters-toggle-icon" aria-hidden="true">›</span>
-      </button>
     </div>
 
     <!-- Active-filter summary chips: visible only while the panel is closed and filters are on. -->
     <div id="active-chips" class="active-chips" hidden></div>
+
+    <!-- A distinct disclosure footer: intentionally not styled like a selectable filter chip. -->
+    <div class="filters-disclosure-row">
+      <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
+        <svg class="filters-toggle-symbol" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 5h16l-6.5 7.3v5.1l-3 1.6v-6.7z"></path>
+        </svg>
+        <span class="filters-toggle-label">Advanced</span>
+        <span id="filters-count" class="filters-count" aria-live="polite"></span>
+        <span class="filters-toggle-icon" aria-hidden="true">⌄</span>
+      </button>
+    </div>
+    </div>
 
     <!-- Backdrop behind the mobile bottom-sheet (2026-07-17): dims the page and closes the
          sheet on tap. Shown by CSS only while body.sheet-open on small screens. -->
     <div id="filter-backdrop" aria-hidden="true"></div>
     <div id="filter-panel" class="filter-panel" hidden>
       <div class="filter-panel-top">
-        <strong class="filter-panel-title">Filters<span id="filters-count-panel" class="filters-count"></span></strong>
+        <strong class="filter-panel-title">More filters<span id="filters-count-panel" class="filters-count"></span></strong>
         <button type="button" id="reset-filters" class="reset-btn">Clear all</button>
         <button type="button" id="filters-close" class="filters-close" aria-label="Close filters">&#10005;</button>
       </div>
@@ -225,8 +242,10 @@
       <div class="filter-group" id="fg-area" role="group" aria-labelledby="fg-area-label">
         <span class="fg-legend" id="fg-area-label">Location</span>
         <div class="location-filter-content">
-          <div class="chips" data-group="areas"></div>
-          <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose another location</button>
+          <div class="location-choice-row">
+            <div class="chips" data-group="areas"></div>
+            <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose location</button>
+          </div>
           <div class="loc-selects" id="loc-selects" hidden>
             <label>State <select id="sel-state"></select></label>
             <label>Town <select id="sel-town" disabled></select></label>
@@ -246,7 +265,6 @@
         <div class="chips" data-group="cats" id="solo-styles-chips"></div>
       </div>
     </div>
-    </div>
   </section>
 
   <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
@@ -263,7 +281,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js?v=20260718k"></script>
+  <script src="js/app.js?v=20260718n"></script>
   <script src="js/activity-pulse.js?v=20260718a"></script>
 </body>
 </html>

@@ -88,7 +88,7 @@ const state = {
   filters: { cats: new Set(), days: new Set(), areas: new Set(DEFAULT_AREAS), kinds: new Set() },
   sel: { country: "", state: "", town: "" },   // "" = Any; derived from venue text only
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
-  showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline/Grid/List
+  showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline
                           // listings only count/show current events unless this is turned on.
   showNational: false,   // "Traveling? Show national events" (2026-07-17, Phase 0) — out-of-region
                          // events hide until this is on. Deliberately NOT persisted: every visit
@@ -305,7 +305,7 @@ function scheduleText(ev) {
 /* An event with a determinable date whose last occurrence is before today. Recurring
    series with no end_date are never "past" (they're ongoing indefinitely); events with
    no date info at all aren't "past" either — they're undetermined (existing behavior:
-   hidden from Timeline/Grid/List, shown under Calendar's "Date not yet announced"). */
+   hidden from Timeline, shown under Calendar's "Date not yet announced"). */
 function isPastEvent(d, today) {
   if (nextOccurrence(d.ev, today)) return false;
   return hasDate(d);
@@ -572,10 +572,10 @@ function updateFilterUI() {
     }
   }
   const act = activeFilterList();
-  for (const id of ["filters-count", "filters-count-panel"]) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = act.length ? ` (${act.length})` : "";
-  }
+  const toggleCount = document.getElementById("filters-count");
+  const panelCount = document.getElementById("filters-count-panel");
+  if (toggleCount) toggleCount.textContent = act.length ? `${act.length} active` : "";
+  if (panelCount) panelCount.textContent = act.length ? `(${act.length})` : "";
   renderActiveChips(act);
   syncUrl();
   savePrefs();
@@ -1860,6 +1860,7 @@ function setStatus(msg, isError) {
   el.classList.toggle("error", !!isError);
 }
 function setView(view) {
+  if (!["timeline", "calendar", "map"].includes(view)) view = "timeline";
   state.view = view;
   for (const b of document.querySelectorAll(".view-btn"))
     b.setAttribute("aria-pressed", String(b.dataset.view === view));
@@ -1880,7 +1881,8 @@ function savePrefs() {
 function loadPrefs() {
   try {
     const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    if (["timeline", "grid", "list", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
+    if (["timeline", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
+    else if (["grid", "list"].includes(p.view)) state.view = "timeline";
     // filtersOpen intentionally NOT restored (Sean, 2026-07-12) — panel starts collapsed.
     if (typeof p.showPast === "boolean") state.showPast = p.showPast;
   } catch (e) { /* ignore bad prefs */ }
