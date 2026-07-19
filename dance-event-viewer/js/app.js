@@ -180,6 +180,17 @@ function ordinal(n) {
    Nth-weekdays is suppressed, so a series that meets "every Friday except the 1st & 3rd" is
    modeled in place without splitting the key (which would orphan its logo/calendar links). */
 function isExcludedOccurrence(ev, dt) {
+  // One-off skips (added 2026-07-18, Sean: "remove the Friday the 24th" — the Salsa Lindy
+  // Crossover Night takes SSO's Jul 24 slot): ev.exclude_dates is an array of "YYYY-MM-DD"
+  // strings naming single dates the series does NOT meet, for date-specific cancellations
+  // that aren't a recurring pattern.
+  const dates = ev && ev.exclude_dates;
+  if (Array.isArray(dates) && dates.length) {
+    const iso = dt.getFullYear() + "-" +
+      String(dt.getMonth() + 1).padStart(2, "0") + "-" +
+      String(dt.getDate()).padStart(2, "0");
+    if (dates.includes(iso)) return true;
+  }
   const rules = ev && ev.exclude_monthly_rules;
   if (!Array.isArray(rules) || !rules.length) return false;
   const dow = dt.getDay();
@@ -1761,9 +1772,15 @@ function render() {
   let shown = 0;
   if (state.view === "calendar") {
     renderCalendar(main, visible);
+    // Calendar/Map return early, so the shared filter chips (quick-filters + Advanced
+    // panel) never had their selected "filled" state synced here the way the timeline
+    // path does at the end of render(). Sync it in these views too so a chosen chip
+    // fills in and reads as active. (Fix 2026-07-19.)
+    updateFilterUI();
     return;
   } else if (state.view === "map") {
     renderMap(main, visible);
+    updateFilterUI();
     return;
   } else {
     const withNext = visible
