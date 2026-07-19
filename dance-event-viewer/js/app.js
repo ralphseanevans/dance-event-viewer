@@ -688,6 +688,11 @@ function buildLocSelects() {
 function matchesCat(d, tag) {
   return d.category === tag;
 }
+/* True when this event belongs to a solo-class category whose chip is NOT currently
+   selected — such events are out of the visible universe entirely (2026-07-18). */
+function soloOptedOut(d, f) {
+  return SOLO_STYLES.includes(d.category) && !(f || state.filters).cats.has(d.category);
+}
 function matchesFilters(d) {
   const f = state.filters;
   // Shared-set landing (2026-07-17): a ?events= link pins the view to exactly those events;
@@ -697,6 +702,14 @@ function matchesFilters(d) {
   // Southeast-8 — includes null/unknown/international) only show while the
   // "Traveling? Show national events" toggle is on. Past-gating is separate (showPast).
   if (!state.showNational && !isRegional(d.ev)) return false;
+  // Solo styles are strictly OPT-IN (2026-07-18, Sean): a solo-class category (Ballet,
+  // Jazz, Hip Hop, Contemporary, Heels, Pom, Musical Theatre, Dance Fit) is shown ONLY
+  // while its own chip is selected — never under the default "All styles" state, and
+  // never dragged in by selecting a partner style. Shared ?events= links still bypass
+  // everything above (deliberate); a shared ?style=<solo> URL selects the chip, which
+  // satisfies this gate. soloOptedOut() must stay in sync with this rule — the status
+  // line's "of N" total uses it so the default view keeps reading "N of N shown".
+  if (soloOptedOut(d, f)) return false;
   if (f.cats.size && ![...f.cats].some(tag => matchesCat(d, tag))) return false;
   if (f.days.size && !f.days.has(d.day)) return false;
   if (f.areas.size && !f.areas.has(d.loc.area)) return false;
@@ -1818,10 +1831,14 @@ function render() {
   // the regional pivot (2026-07-17): RIGHT = total events in the CURRENT SCOPE (Southern by
   // default; everything while "Traveling?" is on) and the line hints how many more wait
   // behind the toggle. Past events stay out of both numbers unless "Show Past Events" is on.
+  // Unselected solo-class categories are outside the visible universe (2026-07-18) —
+  // they stay out of BOTH numbers and the nationwide hint, so the default view still
+  // reads "N of N shown" instead of implying a hidden filter.
   const inScope = d => state.showNational || isRegional(d.ev);
   const notPast = d => state.showPast || !isPastEvent(d, today);
-  const totalHosted = state.events.filter(d => inScope(d) && notPast(d)).length;
-  const moreNational = state.showNational ? 0 : state.events.filter(d => !isRegional(d.ev) && notPast(d)).length;
+  const inUniverse = d => !soloOptedOut(d);
+  const totalHosted = state.events.filter(d => inScope(d) && notPast(d) && inUniverse(d)).length;
+  const moreNational = state.showNational ? 0 : state.events.filter(d => !isRegional(d.ev) && notPast(d) && inUniverse(d)).length;
   const hint = moreNational ? ` · ${moreNational} more nationwide — turn on “Traveling?” to see them` : "";
 
   if (!shown) {
