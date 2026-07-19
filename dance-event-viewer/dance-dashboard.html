@@ -90,7 +90,10 @@
   .badge.hold { background: var(--info); color: #0a1a2b; }
   .badge.approved { background: var(--accent); color: #0b1f17; }
   .badge.rejected, .badge.denied { background: var(--danger); color: #2b0d13; }
-  .badge.published, .badge.applied { background: #2c3a52; color: #a9c4ee; }
+  .badge.published, .badge.publishednew, .badge.applied { background: #2c3a52; color: #a9c4ee; }
+  .badge.archived { background: #333; color: #aaa; }
+  .badge.deleted { background: var(--danger-soft); color: var(--danger); }
+  button.act.confirming { background: var(--danger); color: #2b0d13; border-color: var(--danger); font-weight: 800; }
   .badge.pendingfix { background: var(--info); color: #0a1a2b; }
   .badge.failed, .badge.extractionfailed { background: var(--danger-soft); color: var(--danger); }
   .badge.aidrafted { background: #2c3a52; color: #a9c4ee; }
@@ -199,8 +202,10 @@ const TAB_DEFS = [
   { key: "hold",     label: "Hold",     statuses: ["hold"] },
   { key: "approved", label: "Approved", statuses: ["approved"] },
   { key: "denied",   label: "Denied",   statuses: ["rejected", "denied"] },
-  { key: "replaced", label: "Instantly Replaced", statuses: ["published", "applied", "pending-fix"] },
-  { key: "all",      label: "All",      statuses: null },
+  { key: "replaced", label: "Instantly Replaced", statuses: ["published", "published-new", "applied", "pending-fix"] },
+  { key: "archived", label: "Archived", statuses: ["archived"] },
+  { key: "deleted",  label: "Deleted",  statuses: ["deleted"] },
+  { key: "all",      label: "All posts", statuses: null },
 ];
 
 // Editable event fields (shown in the collapsible "Edit details" section).
@@ -294,7 +299,9 @@ async function loadRows() {
 
 function rowsForTab(key) {
   const def = TAB_DEFS.find(t => t.key === key);
-  if (!def || def.statuses === null) return allRows.slice();
+  if (!def) return allRows.slice();
+  // "All posts" shows every submission except archived/deleted ones (those live in their own tabs).
+  if (def.statuses === null) return allRows.filter(r => r.status !== "archived" && r.status !== "deleted");
   return allRows.filter(r => def.statuses.includes(r.status));
 }
 
@@ -326,8 +333,12 @@ function renderCards() {
 
 function renderCard(row) {
   const isCorrection = String(row.submission_kind) === "correction";
-  const isAutoApplied = ["published", "applied"].includes(row.status);
+  // Trusted-sender pipeline results: already live / already applied. "published" and
+  // "published-new" went straight to the site; "applied" is an applied text fix.
+  const isAutoApplied = ["published", "published-new", "applied"].includes(row.status);
   const isQueuedAuto = row.status === "pending-fix";
+  const isArchived = row.status === "archived";
+  const isDeleted = row.status === "deleted";
 
   const card = document.createElement("div");
   card.className = "card" + (isCorrection ? " correction" : "");
@@ -351,14 +362,24 @@ function renderCard(row) {
   if (isAutoApplied) {
     const n = document.createElement("div");
     n.className = "auto-note";
-    n.textContent = row.status === "published"
-      ? "⚡ Auto-published to the live site (trusted sender). No action needed."
-      : "⚡ Auto-applied to the calendar data (trusted sender). No action needed.";
+    n.textContent = row.status === "applied"
+      ? "⚡ Auto-applied to the calendar data (trusted sender). Already live — no approval needed."
+      : "⚡ Auto-published to the live site (trusted sender). Already live — no approval needed.";
     card.appendChild(n);
   } else if (isQueuedAuto) {
     const n = document.createElement("div");
     n.className = "auto-note";
-    n.textContent = "⏳ Queued for the hourly auto-fix (trusted sender). Will be applied automatically.";
+    n.textContent = "⏳ Queued correction (trusted sender) — still needs to be applied. No approval needed.";
+    card.appendChild(n);
+  } else if (isArchived) {
+    const n = document.createElement("div");
+    n.className = "auto-note";
+    n.textContent = "🗄 Archived. It stays live on the site — this just hides it from the active lists.";
+    card.appendChild(n);
+  } else if (isDeleted) {
+    const n = document.createElement("div");
+    n.className = "auto-note";
+    n.textContent = "🗑 Deleted. Removed from the live site (if it was published there) and hidden here.";
     card.appendChild(n);
   }
 
@@ -381,25 +402,32 @@ function renderCard(row) {
   // "What they submitted" — the info entered at Send time
   card.appendChild(renderSubmitted(row, isCorrection));
 
-  // Editable details (collapsible)
+  // A card only offers editing + the review buttons when there's actually a
+  // decision to make. Trusted-auto results (already live), queued fixes, and
+  // archived rows don't — they get a single lightweight action instead.
+  const canReview = !isAutoApplied && !isQueuedAuto && !isArchived && !isDeleted;
+
+  // Editable details (collapsible) — only where an edit would reach the site.
   const inputs = {};
-  const det = document.createElement("details");
-  det.className = "edit";
-  const sum = document.createElement("summary");
-  sum.textContent = "Edit details";
-  det.appendChild(sum);
-  const grid = document.createElement("div");
-  grid.className = "grid";
-  EDITABLE_FIELDS.forEach(f => {
-    const wrap = document.createElement("div");
-    wrap.className = "field";
-    const lab = document.createElement("label"); lab.textContent = f.label;
-    const inp = document.createElement("input"); inp.type = "text"; inp.value = row[f.key] == null ? "" : row[f.key]; inp.dataset.key = f.key;
-    wrap.appendChild(lab); wrap.appendChild(inp); grid.appendChild(wrap);
-    inputs[f.key] = inp;
-  });
-  det.appendChild(grid);
-  card.appendChild(det);
+  if (canReview) {
+    const det = document.createElement("details");
+    det.className = "edit";
+    const sum = document.createElement("summary");
+    sum.textContent = "Edit details";
+    det.appendChild(sum);
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    EDITABLE_FIELDS.forEach(f => {
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+      const lab = document.createElement("label"); lab.textContent = f.label;
+      const inp = document.createElement("input"); inp.type = "text"; inp.value = row[f.key] == null ? "" : row[f.key]; inp.dataset.key = f.key;
+      wrap.appendChild(lab); wrap.appendChild(inp); grid.appendChild(wrap);
+      inputs[f.key] = inp;
+    });
+    det.appendChild(grid);
+    card.appendChild(det);
+  }
 
   // Contact (internal only)
   if (row.contact_name || row.contact_email || row.contact_phone) {
@@ -413,28 +441,17 @@ function renderCard(row) {
   // Actions
   const actions = document.createElement("div");
   actions.className = "actions";
-  const approveBtn = mkBtn("Approve", "act approve");
-  const denyBtn = mkBtn("Deny", "act deny");
-  const holdBtn = mkBtn("Hold", "act hold");
-  actions.appendChild(approveBtn); actions.appendChild(denyBtn); actions.appendChild(holdBtn);
-  const saveBtn = mkBtn("Save edits", "act ghost wide");
-  actions.appendChild(saveBtn);
-  const backBtn = mkBtn("↩ Back to Pending", "act ghost wide");
-  if (row.status !== "pending") actions.appendChild(backBtn);
-  card.appendChild(actions);
-
   const cardStatus = document.createElement("p");
   cardStatus.className = "card-status";
-  card.appendChild(cardStatus);
 
-  const allBtns = [approveBtn, denyBtn, holdBtn, saveBtn, backBtn];
   function collectFields() {
     const f = {};
     Object.keys(inputs).forEach(k => { f[k] = inputs[k].value; });
     return f;
   }
+  let actionBtns = [];
   async function doUpdate(status, includeFields) {
-    allBtns.forEach(b => b.disabled = true);
+    actionBtns.forEach(b => b.disabled = true);
     cardStatus.textContent = "Saving…"; cardStatus.className = "card-status";
     try {
       const payload = { action: "update", row_id: row.row_id };
@@ -448,14 +465,96 @@ function renderCard(row) {
     } catch (err) {
       cardStatus.textContent = "Couldn't save: " + err.message;
       cardStatus.classList.add("error");
-      allBtns.forEach(b => b.disabled = false);
+      actionBtns.forEach(b => b.disabled = false);
     }
   }
-  approveBtn.addEventListener("click", () => doUpdate("approved", true));
-  denyBtn.addEventListener("click", () => doUpdate("rejected", false));
-  holdBtn.addEventListener("click", () => doUpdate("hold", true));
-  saveBtn.addEventListener("click", () => doUpdate(null, true));
-  backBtn.addEventListener("click", () => doUpdate("pending", false));
+
+  if (isAutoApplied) {
+    // Already live via the trusted pipeline — nothing to approve. Just tidy up.
+    const archiveBtn = mkBtn("🗄 Archive", "act ghost wide");
+    actionBtns = [archiveBtn];
+    archiveBtn.addEventListener("click", () => doUpdate("archived", false));
+    actions.appendChild(archiveBtn);
+  } else if (isQueuedAuto) {
+    // Trusted correction still waiting to be applied — no approval, but let Sean
+    // cancel it if it shouldn't go through. (Not archivable: it's not done yet.)
+    const cancelBtn = mkBtn("Cancel queued fix", "act deny wide");
+    actionBtns = [cancelBtn];
+    cancelBtn.addEventListener("click", () => doUpdate("rejected", false));
+    actions.appendChild(cancelBtn);
+  } else if (isArchived) {
+    // Safety valve for an accidental archive — bring it back into the lists.
+    const restoreBtn = mkBtn("↩ Unarchive", "act ghost wide");
+    actionBtns = [restoreBtn];
+    restoreBtn.addEventListener("click", () => doUpdate("published", false));
+    actions.appendChild(restoreBtn);
+  } else if (isDeleted) {
+    // Deleted rows are terminal — the event has been pulled from the site.
+    // No actions; kept for the record in the Deleted tab.
+  } else {
+    const approveBtn = mkBtn("Approve", "act approve");
+    const denyBtn = mkBtn("Deny", "act deny");
+    const holdBtn = mkBtn("Hold", "act hold");
+    const saveBtn = mkBtn("Save edits", "act ghost wide");
+    const backBtn = mkBtn("↩ Back to Pending", "act ghost wide");
+    actionBtns = [approveBtn, denyBtn, holdBtn, saveBtn, backBtn];
+    actions.appendChild(approveBtn); actions.appendChild(denyBtn); actions.appendChild(holdBtn);
+    actions.appendChild(saveBtn);
+    if (row.status !== "pending") actions.appendChild(backBtn);
+    approveBtn.addEventListener("click", () => doUpdate("approved", true));
+    denyBtn.addEventListener("click", () => doUpdate("rejected", false));
+    holdBtn.addEventListener("click", () => doUpdate("hold", true));
+    saveBtn.addEventListener("click", () => doUpdate(null, true));
+    backBtn.addEventListener("click", () => doUpdate("pending", false));
+  }
+
+  card.appendChild(actions);
+
+  // Delete — on every live post (not on already-deleted rows). Two-tap confirm;
+  // removes the event from the live site (if it was published there) and files
+  // the row under Deleted.
+  if (!isDeleted) {
+    const delRow = document.createElement("div");
+    delRow.className = "actions";
+    const delBtn = mkBtn("🗑 Delete", "act ghost wide");
+    delRow.appendChild(delBtn);
+    card.appendChild(delRow);
+    let armed = false, timer = null;
+    async function doDelete() {
+      delBtn.disabled = true;
+      cardStatus.textContent = "Deleting…"; cardStatus.className = "card-status";
+      try {
+        const data = await apiPost({ action: "delete", row_id: row.row_id });
+        if (!data.ok) throw new Error(data.error || "unknown error");
+        cardStatus.textContent = data.removedFromSite
+          ? "Deleted and removed from the live site."
+          : "Deleted. (Nothing was live on the site to remove.)";
+        cardStatus.classList.add("ok");
+        await loadRows();
+      } catch (err) {
+        cardStatus.textContent = "Couldn't delete: " + err.message;
+        cardStatus.classList.add("error");
+        delBtn.disabled = false;
+      }
+    }
+    delBtn.addEventListener("click", () => {
+      if (!armed) {
+        armed = true;
+        delBtn.classList.add("confirming");
+        delBtn.textContent = "Tap again to delete — removes from the site";
+        timer = setTimeout(() => {
+          armed = false;
+          delBtn.classList.remove("confirming");
+          delBtn.textContent = "🗑 Delete";
+        }, 4000);
+        return;
+      }
+      clearTimeout(timer);
+      doDelete();
+    });
+  }
+
+  card.appendChild(cardStatus);
 
   return card;
 }
@@ -465,6 +564,9 @@ function labelFor(status) {
   if (status === "hold") return "Hold";
   if (status === "approved") return "Approved";
   if (status === "pending") return "Pending";
+  if (status === "archived") return "Archived";
+  if (status === "deleted") return "Deleted";
+  if (status === "published" || status === "published-new") return "restored to Instantly Replaced";
   return status;
 }
 
