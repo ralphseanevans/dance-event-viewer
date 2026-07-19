@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260719a">
+  <link rel="stylesheet" href="css/styles.css?v=20260719b">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260718w">
   <script defer src="js/theme-switch.js?v=20260718b"></script>
@@ -217,7 +217,11 @@
     <!-- Active-filter summary chips: visible only while the panel is closed and filters are on. -->
     <div id="active-chips" class="active-chips" hidden></div>
 
-    <!-- A distinct disclosure footer: intentionally not styled like a selectable filter chip. -->
+    </div>
+
+    <!-- A distinct disclosure control (moved out of the card 2026-07-18 so its open state
+         can attach to the panel below as one continuous folder tab, per the site's
+         folder-tab convention — no chevron; aria-expanded carries the state). -->
     <div class="filters-disclosure-row">
       <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
         <svg class="filters-toggle-symbol" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -225,9 +229,7 @@
         </svg>
         <span class="filters-toggle-label">Advanced</span>
         <span id="filters-count" class="filters-count" aria-live="polite"></span>
-        <span class="filters-toggle-icon" aria-hidden="true">⌄</span>
       </button>
-    </div>
     </div>
 
     <!-- Backdrop behind the mobile bottom-sheet (2026-07-17): dims the page and closes the
@@ -285,7 +287,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js?v=20260718p"></script>
+  <script src="js/app.js?v=20260718q"></script>
   <script src="js/activity-pulse.js?v=20260718a"></script>
 </body>
 </html>

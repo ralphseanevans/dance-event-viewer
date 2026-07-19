@@ -414,7 +414,7 @@ body {
 }
 
 .filters-toggle {
-  display: inline-grid; grid-template-columns: auto auto auto auto;
+  display: inline-grid; grid-template-columns: auto auto auto;
   align-items: center; gap: 8px; width: auto; min-width: 190px; min-height: 40px;
   background: color-mix(in srgb,var(--bg-card) 72%,var(--bg-raised)); color: var(--text);
   border: 1px solid var(--border); border-radius: 11px;
@@ -426,9 +426,43 @@ body {
 .filters-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .filters-toggle-symbol { width: 19px; height: 19px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linejoin: round; }
 .filters-toggle-label { font-weight: 700; line-height: 1.15; }
-.filters-toggle-icon { color: var(--accent); font-size: 1.25rem; line-height: 1; transition: transform .15s ease; }
 .filters-toggle[aria-expanded="true"] { color: var(--accent); border-color: var(--chip-on-border); background: var(--accent-soft); }
-.filters-toggle[aria-expanded="true"] .filters-toggle-icon { transform: rotate(180deg); }
+
+/* Open state ≥641px (2026-07-18): the Advanced button and #filter-panel join into one
+   continuous folder tab, same principle as the view tabs — the ROW supplies the panel's
+   top edge as a 1px gradient line, the active button masks its segment of that line with
+   its own bottom border in the panel background, and the panel below drops its top border.
+   No negative margins/positioning/transforms (folder-tab convention). Mobile keeps the
+   bottom-sheet, where the button stays standalone. */
+@media (min-width: 641px) {
+  body.sheet-open .filters-disclosure-row {
+    margin-left: 0;
+    padding-top: 3px;
+    background: linear-gradient(to bottom, transparent calc(100% - 1px), var(--border) 0);
+  }
+  body.sheet-open .filters-toggle {
+    background: var(--bg-raised);
+    color: color-mix(in srgb, var(--accent) 75%, var(--text));
+    border-color: var(--accent);
+    border-bottom-color: var(--bg-raised);
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 0 12px var(--accent-soft);
+  }
+  body.sheet-open .filters-toggle:hover {
+    background: var(--bg-raised);
+    border-color: var(--accent);
+    border-bottom-color: var(--bg-raised); /* reassert: no dividing line under the active tab */
+  }
+  body.sheet-open .filters-toggle:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+    border-bottom-color: var(--bg-raised);
+  }
+  body.sheet-open #filter-panel {
+    margin-top: 0;
+    border-top: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+}
 
 @keyframes filters-attention {
   0%, 100% { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 10px rgba(76, 194, 255, .45); }
@@ -847,7 +881,7 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .quick-filters { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; min-width: 0; max-width: 100%; }  /* min-width:0 — .controls is a grid on mobile; without this the row can't shrink/scroll */
 .qf-group { display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
 .qf-label { flex: 0 0 auto; color: var(--text-dim); font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; width: 92px; }
-.filters-disclosure-row { display: flex; justify-content: flex-start; margin-top: 12px; margin-left: -2px; }
+.filters-disclosure-row { display: flex; justify-content: flex-start; margin-top: 12px; }
 .filters-count {
   color: var(--accent); font-weight: 700; font-size: .76rem; white-space: nowrap;
   background: var(--accent-soft); border: 1px solid var(--chip-on-border);
