@@ -160,6 +160,10 @@
     {
       "contains": "southern-national",
       "logo": "../graphics/logos/IMG_0017.PNG"
+    },
+    {
+      "contains": "usa-dance",
+      "logo": "../graphics/logos/USA-Dance-National-logo_transparent-BG.png"
     }
   ]
 }
