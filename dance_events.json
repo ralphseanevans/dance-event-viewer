@@ -56,6 +56,9 @@
         "First Friday",
         "Third Friday"
       ],
+      "exclude_dates": [
+        "2026-07-24"
+      ],
       "start_date": null,
       "end_date": null,
       "start_time": "19:00",
