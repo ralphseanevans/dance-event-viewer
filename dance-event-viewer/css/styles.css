@@ -59,6 +59,9 @@ body {
 #viewer-count:empty { display: none; }
 #brand-slot {
   min-width: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--radius) * 1.5);
 }
 #brand-slot img {
   display: block;
@@ -69,6 +72,29 @@ body {
   box-shadow: 0 24px 70px rgba(0, 0, 0, .42),
               0 0 42px rgba(76, 194, 255, .12),
               0 0 54px rgba(255, 95, 162, .1);
+  transform-origin: 50% 50%;
+  animation: banner-drift 12s ease-in-out infinite alternate;
+  will-change: transform, filter;
+}
+#brand-slot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(112deg, transparent 35%, rgba(255,255,255,.12) 48%, transparent 61%);
+  background-size: 220% 100%;
+  mix-blend-mode: screen;
+  opacity: .38;
+  animation: banner-glint 8s ease-in-out infinite;
+}
+@keyframes banner-drift {
+  from { transform: scale(1.005) translate3d(-.35%, .15%, 0); filter: brightness(.98) saturate(1); }
+  to { transform: scale(1.018) translate3d(.35%, -.15%, 0); filter: brightness(1.04) saturate(1.04); }
+}
+@keyframes banner-glint {
+  0%, 35% { background-position: 120% 0; opacity: 0; }
+  52% { opacity: .38; }
+  70%, 100% { background-position: -20% 0; opacity: 0; }
 }
 .visually-hidden {
   position: absolute;
@@ -346,12 +372,13 @@ body {
 
 /* Header actions: Theme and Submit sit together on the row immediately above the hero banner. */
 .site-header { grid-template-columns: auto 1fr; }
+.site-header .anniversary-feature { grid-column: 1 / -1; grid-row: 1; }
 .site-header .theme-switch {
   position: relative; top: auto; left: auto; z-index: 6;
-  grid-column: 1; grid-row: 1; justify-self: start; align-self: center;
+  grid-column: 1; grid-row: 2; justify-self: start; align-self: center;
 }
-.site-header #brand-slot { grid-column: 1 / -1; grid-row: 2; }
-.site-header .title-block { grid-column: 1 / -1; grid-row: 3; }
+.site-header #brand-slot { grid-column: 1 / -1; grid-row: 3; }
+.site-header .title-block { grid-column: 1 / -1; grid-row: 4; }
 .site-header.theme-menu-open {
   /* Lift the header only while the menu is open so the dropdown paints above the
      Timeline/Grid/List/Calendar/Map controls, then returns to normal on close. */
@@ -410,6 +437,7 @@ body {
 .filters-toggle.attention-blink { animation: filters-attention .8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   .filters-toggle.attention-blink { animation: none; }
+  #brand-slot img, #brand-slot::after { animation: none; }
 }
 
 /* Show Past Events toggle (added 2026-07-12, Sean's request) — mirrors .filters-toggle
@@ -811,7 +839,7 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
    ============================================================ */
 .header-submit {
   position: relative; top: auto; right: auto; z-index: 5;
-  grid-column: 2; grid-row: 1; justify-self: end; align-self: center;
+  grid-column: 2; grid-row: 2; justify-self: end; align-self: center;
   white-space: nowrap;
 }
 .site-header { position: relative; }
