@@ -370,12 +370,12 @@ body {
 .theme-option[aria-checked="true"] { font-weight: 600; }
 .theme-option[aria-checked="true"] .theme-check { opacity: 1; }
 
-/* Header actions: Theme and Submit sit together on the row immediately above the hero banner. */
+/* Header actions: Theme and Submit return to the top row of the page. */
 .site-header { grid-template-columns: auto 1fr; }
-.site-header .anniversary-feature { grid-column: 1 / -1; grid-row: 1; }
+.site-header .anniversary-feature { grid-column: 1 / -1; grid-row: 2; }
 .site-header .theme-switch {
   position: relative; top: auto; left: auto; z-index: 6;
-  grid-column: 1; grid-row: 2; justify-self: start; align-self: center;
+  grid-column: 1; grid-row: 1; justify-self: start; align-self: center;
 }
 .site-header #brand-slot { grid-column: 1 / -1; grid-row: 3; }
 .site-header .title-block { grid-column: 1 / -1; grid-row: 4; }
@@ -839,7 +839,7 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
    ============================================================ */
 .header-submit {
   position: relative; top: auto; right: auto; z-index: 5;
-  grid-column: 2; grid-row: 2; justify-self: end; align-self: center;
+  grid-column: 2; grid-row: 1; justify-self: end; align-self: center;
   white-space: nowrap;
 }
 .site-header { position: relative; }
