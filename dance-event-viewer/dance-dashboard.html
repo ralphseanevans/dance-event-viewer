@@ -56,17 +56,15 @@
   header.top h1 { font-size: 1.15rem; margin: 0; letter-spacing: .04em; text-transform: uppercase; }
   header.top .sub { color: var(--text-dim); font-size: .82rem; margin: 4px 0 0; }
 
-  /* Sticky tab bar, horizontally scrollable on narrow screens */
+  /* Sticky tab bar — wraps so every tab stays on screen on narrow phones */
   .tabbar {
     position: sticky; top: 0; z-index: 10; background: var(--bg);
-    display: flex; gap: 8px; overflow-x: auto; padding: 10px 2px; margin: 0 -2px 6px;
-    scrollbar-width: none;
+    display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 2px; margin: 0 -2px 6px;
   }
-  .tabbar::-webkit-scrollbar { display: none; }
   .tab {
     flex: 0 0 auto; background: var(--bg-card); color: var(--text-dim);
-    border: 1px solid var(--border); border-radius: 999px; padding: 9px 15px;
-    font-size: .88rem; cursor: pointer; white-space: nowrap;
+    border: 1px solid var(--border); border-radius: 999px; padding: 8px 13px;
+    font-size: .84rem; cursor: pointer; white-space: nowrap;
   }
   .tab.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
   .tab .count { opacity: .8; margin-left: 5px; }
