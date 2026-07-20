@@ -197,9 +197,10 @@ body {
   100% { transform:translate3d(-9px,108vh,0) rotate(372deg); }
 }
 .controls,.filter-panel,.card,.list-row,.cal-toolbar,.map-popup-card { box-shadow:0 20px 55px rgba(0,0,0,.24); }
-/* Traveling toggle off-state: outline, not fill (2026-07-17). On state = base
-   .past-toggle[aria-pressed="true"], which wins on specificity. --accent-pink recolors per theme. */
-.traveling-toggle[aria-pressed="false"] { background:transparent; color:var(--accent-pink); border-color:var(--accent-pink); }
+/* Traveling toggle off-state: muted like every other toggle, so "off" doesn't read as
+   glowing/on (2026-07-20, Sean — the warm --accent-pink outline looked active when off).
+   On state = base .past-toggle[aria-pressed="true"], which wins on specificity. */
+.traveling-toggle[aria-pressed="false"] { background:transparent; color:var(--text-dim); border-color:var(--border); }
 .activity-msg { color:var(--pulse-color); text-shadow:var(--pulse-shadow); }
 .leaflet-container { background:#10111b; color:var(--text); }
 
