@@ -2075,6 +2075,8 @@ function init() {
     if (searchClear) searchClear.addEventListener("click", () => {
       searchInput.value = ""; clearTimeout(searchTimer); runSearch(); searchInput.focus();
     });
+    const searchApply = document.getElementById("event-search-apply");
+    if (searchApply) searchApply.addEventListener("click", () => { clearTimeout(searchTimer); runSearch(); });
   }
   // "Choose another location…" reveals the cascading dropdowns; back/forward re-applies
   // filters from the URL. Filters take effect immediately, so the panel needs no apply button.
