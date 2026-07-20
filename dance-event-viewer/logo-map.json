@@ -1,173 +1,174 @@
 {
- "_notes": "Maps event keys (from dance_events.json) to logo/flyer images, paths relative to index.html. Exact 'logos' matches win; otherwise the first 'patterns' entry whose 'contains' substring appears in the event key is used — this is what keeps logos attached when a series rolls over to a new key after a crawl (e.g. west-coast-wednesdays-in-august-2026). To link a new logo: drop the image in graphics/logos/ (WITH a file extension) and add an exact line, plus a pattern line if the event recurs under changing keys. Unmapped events show no image. Rebuilt 2026-07-11 (v2: patterns added per Sean; IMG_9893/9897 updated to their .png replacements; extensionless uploads renamed with detected extensions).",
- "logos": {
-  "monday-night-west-coast-swing-dance-party-ragon-hall": "../graphics/logos/IMG_9897.JPG",
-  "kick-it-old-school-2026-08-28": "../graphics/logos/upload-kick-it-old-school-2026-08-28-54979d79.jpg",
-  "first-friday-live-band-dance-night-seaside-swing-outs": "../graphics/logos/IMG_9895.JPG",
-  "west-coast-wednesdays-in-july-2026": "../graphics/logos/way-you-move-wcs-wednesdays-july-2026.jpg",
-  "ragon-hall-first-saturday-monthly-dance": "../graphics/logos/ragon-hall-first-saturday-big-dance-night-2026-07.jpg",
-  "3rd-saturday-west-coast-swing-old-sacred-heart-2026-07-18": "../graphics/logos/upload-3rd-saturday-west-coast-swing-old-sacred-heart-2026-07-18-f5cab632.jpg",
-  "sanders-beach-ballroom-weekly-classes": "../graphics/logos/upload-sanders-beach-ballroom-weekly-classes-9491e9d8.png",
-  "good-ole-social-dance-2026-07-17": "../graphics/logos/upload-good-ole-social-dance-2026-07-17-3099112f.jpg",
-  "mobtown-workshop-and-social-2026-07-11": "../graphics/logos/MobTown_mobileWCS.png",
-  "southern-national-2026-10-15": "../graphics/logos/IMG_0017.PNG",
-  "sensual-sundays-bachata-pensacola-coastals": "../graphics/logos/sensual-sundays-bachata-class.jpg",
-  "north-alabama-tuesday-night-wcs-social-summer-2026": "../graphics/logos/north-alabama-wcs-tuesday-socials-july-2026.jpg",
-  "tango-lab-fridays-july-2026": "../graphics/logos/upload-tango-lab-fridays-july-2026-69bc5397.jpg",
-  "ballroom-lynn-warwick-house-2026-07-29": "../graphics/logos/upload-ballroom-lynn-warwick-house-2026-07-29-c526a261.jpg",
-  "bobe-st-studio-coaching-with-justin-tuesdays": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png",
-  "wcs-garysusandance-thursdays-the-way-you-move": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg",
-  "sso-lindy-and-blues-fridays-the-way-you-move": "../graphics/logos/upload-sso-lindy-and-blues-fridays-the-way-you-move-c3414e8f.jpg",
-  "latin-night-social-dance-2026-09-05": "../graphics/logos/upload-latin-night-social-dance-2026-09-05-dff5f6e1.jpg",
-  "wcs-social-dance-saturday-2026-07-25": "../graphics/logos/upload-wcs-social-dance-saturday-2026-07-25-196dce2a.png",
-  "wcs-lynn-warwick-house-2026-07-22": "../graphics/logos/upload-wcs-lynn-warwick-house-2026-07-22-2ba9b0a3.jpg",
-  "wsdc-florida-dance-magic-2026": "../graphics/logos/upload-wsdc-florida-dance-magic-2026-0a6d884f.png",
-  "wcs-social-dance-saturday-2026-08-22": "../graphics/logos/upload-wcs-social-dance-saturday-2026-08-22-fcb9c4f6.png",
-  "wsdc-trilogy-swing-2026": "../graphics/logos/upload-wsdc-trilogy-swing-2026-4d782890.png",
-  "wsdc-atlanta-swing-classic-2026": "../graphics/logos/upload-wsdc-atlanta-swing-classic-2026-978642d6.png",
-  "wsdc-tampa-bay-classic-2026": "../graphics/logos/upload-wsdc-tampa-bay-classic-2026-17aeea13.png",
-  "wsdc-jax-westie-fest-2026": "../graphics/logos/upload-wsdc-jax-westie-fest-2026-769edd79.png",
-  "flyover-friday-salsa-the-chapel-2026-07-17": "../graphics/logos/upload-flyover-friday-salsa-the-chapel-2026-07-17-1f1df753.jpg",
-  "wsdc-swingapalooza-2027": "../graphics/logos/upload-wsdc-swingapalooza-2027-4c50a7dc.png",
-  "wsdc-usa-grand-national-dance-championships-2027": "../graphics/logos/upload-wsdc-usa-grand-national-dance-championships-2027-fc89b5ff.png",
-  "wsdc-floorplay-swing-vacation-2026": "../graphics/logos/upload-wsdc-floorplay-swing-vacation-2026-42aa9775.png",
-  "arthur-murray-beach-o-rama-2027": "../graphics/logos/web-arthur-murray-beach-o-rama-2027.webp",
-  "arthur-murray-ciao-amore-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-ciao-amore-dance-o-rama-2026.webp",
-  "arthur-murray-flamingo-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-flamingo-dance-o-rama-2026.webp",
-  "arthur-murray-holiday-ball-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-holiday-ball-dance-o-rama-2026.webp",
-  "arthur-murray-northstar-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-northstar-dance-o-rama-2026.webp",
-  "arthur-murray-perfect-10-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-perfect-10-dance-o-rama-2026.webp",
-  "arthur-murray-superama-2026": "../graphics/logos/web-arthur-murray-superama-2026.webp",
-  "arthur-murray-unique-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-unique-dance-o-rama-2026.webp",
-  "fred-astaire-carolina-classic-2026": "../graphics/logos/web-fred-astaire-carolina-classic-2026.webp",
-  "fred-astaire-lonestar-dance-challenge-2026": "../graphics/logos/web-fred-astaire-lonestar-dance-challenge-2026.webp",
-  "fred-astaire-national-dance-championships-2026": "../graphics/logos/web-fred-astaire-national-dance-championships-2026.webp",
-  "fred-astaire-new-jersey-state-showdown-2026": "../graphics/logos/web-fred-astaire-new-jersey-state-showdown-2026.webp",
-  "fred-astaire-south-florida-holiday-ball-2026": "../graphics/logos/web-fred-astaire-south-florida-holiday-ball-2026.webp",
-  "fred-astaire-west-coast-dance-championships-2026": "../graphics/logos/web-fred-astaire-west-coast-dance-championships-2026.webp",
-  "fred-astaire-wisconsin-grand-championships-2026": "../graphics/logos/web-fred-astaire-wisconsin-grand-championships-2026.webp",
-  "fred-astaire-world-championships-2026": "../graphics/logos/web-fred-astaire-world-championships-2026.webp",
-  "usa-dance-ccbd-casual-cotuit-2026-08-08": "../graphics/logos/web-usa-dance-ccbd-casual-cotuit-2026-08-08.jpg",
-  "usa-dance-high-desert-big-band-nm-2026-07-19": "../graphics/logos/web-usa-dance-high-desert-big-band-nm-2026-07-19.png",
-  "usa-dance-ohio-summer-serenade-barberton-2026-07-26": "../graphics/logos/web-usa-dance-ohio-summer-serenade-barberton-2026-07-26.webp",
-  "usa-dance-tallahassee-celebrate-good-times-2026-07-18": "../graphics/logos/web-usa-dance-tallahassee-celebrate-good-times-2026-07-18.png",
-  "wsdc-5280-westival-2027": "../graphics/logos/web-wsdc-5280-westival-2027.png",
-  "wsdc-atlanta-swing-classic-2027": "../graphics/logos/web-wsdc-atlanta-swing-classic-2027.png",
-  "wsdc-austin-swing-dance-championships-2027": "../graphics/logos/web-wsdc-austin-swing-dance-championships-2027.png",
-  "wsdc-boogie-by-the-bay-2026": "../graphics/logos/web-wsdc-boogie-by-the-bay-2026.png",
-  "wsdc-cash-bash-2026": "../graphics/logos/web-wsdc-cash-bash-2026.jpg",
-  "wsdc-charlotte-westiefest-2027": "../graphics/logos/web-wsdc-charlotte-westiefest-2027.png",
-  "wsdc-city-of-angels-wcs-2027": "../graphics/logos/web-wsdc-city-of-angels-wcs-2027.png",
-  "wsdc-countdown-swing-boston-2026": "../graphics/logos/web-wsdc-countdown-swing-boston-2026.png",
-  "wsdc-dc-swing-experience-dcsx-2026": "../graphics/logos/web-wsdc-dc-swing-experience-dcsx-2026.jpg",
-  "wsdc-derby-city-swing-2027": "../graphics/logos/web-wsdc-derby-city-swing-2027.png",
-  "wsdc-desert-city-swing-2026": "../graphics/logos/web-wsdc-desert-city-swing-2026.png",
-  "wsdc-easter-swing-2027": "../graphics/logos/web-wsdc-easter-swing-2027.webp",
-  "wsdc-freedom-swing-dance-challenge-2027": "../graphics/logos/web-wsdc-freedom-swing-dance-challenge-2027.png",
-  "wsdc-gateway-swing-classic-2027": "../graphics/logos/web-wsdc-gateway-swing-classic-2027.png",
-  "wsdc-h-town-throw-down-2027": "../graphics/logos/web-wsdc-h-town-throw-down-2027.png",
-  "wsdc-halloween-swingthing-2026": "../graphics/logos/web-wsdc-halloween-swingthing-2026.jpg",
-  "wsdc-high-desert-dance-classic-2027": "../graphics/logos/web-wsdc-high-desert-dance-classic-2027.png",
-  "wsdc-meet-me-in-st-louis-2026": "../graphics/logos/web-wsdc-meet-me-in-st-louis-2026.jpg",
-  "wsdc-michigan-classic-2027": "../graphics/logos/web-wsdc-michigan-classic-2027.png",
-  "wsdc-midnight-madness-wcs-2026": "../graphics/logos/web-wsdc-midnight-madness-wcs-2026.jpg",
-  "wsdc-midwest-westie-fest-2026": "../graphics/logos/web-wsdc-midwest-westie-fest-2026.png",
-  "wsdc-monterey-swing-fest-2027": "../graphics/logos/web-wsdc-monterey-swing-fest-2027.png",
-  "wsdc-new-england-dance-festival-2026": "../graphics/logos/web-wsdc-new-england-dance-festival-2026.png",
-  "wsdc-philly-swing-classic-2026": "../graphics/logos/web-wsdc-philly-swing-classic-2026.png",
-  "wsdc-retaliation-swing-2026": "../graphics/logos/web-wsdc-retaliation-swing-2026.jpg",
-  "wsdc-rocket-city-swing-2026": "../graphics/logos/web-wsdc-rocket-city-swing-2026.png",
-  "wsdc-rose-city-swing-2027": "../graphics/logos/web-wsdc-rose-city-swing-2027.jpg",
-  "wsdc-sass-spooky-albany-swing-spectacular-2026": "../graphics/logos/web-wsdc-sass-spooky-albany-swing-spectacular-2026.png",
-  "wsdc-soswing-2027": "../graphics/logos/web-wsdc-soswing-2027.jpg",
-  "wsdc-south-bay-dance-fling-2026": "../graphics/logos/web-wsdc-south-bay-dance-fling-2026.png",
-  "wsdc-summer-hummer-2026": "../graphics/logos/web-wsdc-summer-hummer-2026.png",
-  "wsdc-swing-city-chicago-2026": "../graphics/logos/web-wsdc-swing-city-chicago-2026.jpg",
-  "wsdc-swing-crush-2027": "../graphics/logos/web-wsdc-swing-crush-2027.png",
-  "wsdc-swing-fling-2026": "../graphics/logos/web-wsdc-swing-fling-2026.png",
-  "wsdc-swingco-2027": "../graphics/logos/web-wsdc-swingco-2027.png",
-  "wsdc-swingover-2027": "../graphics/logos/web-wsdc-swingover-2027.webp",
-  "wsdc-swingtacular-the-galactic-open-2026": "../graphics/logos/web-wsdc-swingtacular-the-galactic-open-2026.jpg",
-  "wsdc-swingtime-denver-2026": "../graphics/logos/web-wsdc-swingtime-denver-2026.jpg",
-  "wsdc-the-after-party-aka-tap-2026": "../graphics/logos/web-wsdc-the-after-party-aka-tap-2026.png",
-  "wsdc-the-aloha-open-2026": "../graphics/logos/web-wsdc-the-aloha-open-2026.jpg",
-  "wsdc-the-boston-tea-party-2027": "../graphics/logos/web-wsdc-the-boston-tea-party-2027.png",
-  "wsdc-the-chicago-classic-2027": "../graphics/logos/web-wsdc-the-chicago-classic-2027.png",
-  "wsdc-the-open-swing-dance-championships-2026": "../graphics/logos/web-wsdc-the-open-swing-dance-championships-2026.png",
-  "wsdc-tulsa-spring-swing-2027": "../graphics/logos/web-wsdc-tulsa-spring-swing-2027.png",
-  "wsdc-ucwdc-country-dance-world-championships-2026": "../graphics/logos/web-wsdc-ucwdc-country-dance-world-championships-2026.png",
-  "wsdc-westie-weekend-2027": "../graphics/logos/web-wsdc-westie-weekend-2027.jpg",
-  "wsdc-atlanta-swing-classic-2028": "../graphics/logos/web-wsdc-atlanta-swing-classic-2027.png",
-  "usa-dance-belvidere-july-4th-saturday-2026-07-25": "../graphics/logos/upload-usa-dance-belvidere-july-4th-saturday-2026-07-25-3c142e6f.png",
-  "latin-night-social-dance-2026-08-01": "../graphics/logos/upload-latin-night-social-dance-2026-08-01-b4fd4629.jpg",
-  "la-copa-del-ritmo-seville-quarter-2026-09-09": "../graphics/logos/upload-la-copa-del-ritmo-2026-09-2581d7db.jpg",
-  "la-copa-del-ritmo-the-block-2026-09-17": "../graphics/logos/upload-la-copa-del-ritmo-2026-09-2581d7db.jpg",
-  "la-copa-del-ritmo-the-chapel-2026-09-25": "../graphics/logos/upload-la-copa-del-ritmo-2026-09-2581d7db.jpg"
- },
- "patterns": [
-  {
-   "contains": "tango-lab-fridays",
-   "logo": "../graphics/logos/upload-tango-lab-fridays-july-2026-69bc5397.jpg"
+  "_notes": "Maps event keys (from dance_events.json) to logo/flyer images, paths relative to index.html. Exact 'logos' matches win; otherwise the first 'patterns' entry whose 'contains' substring appears in the event key is used — this is what keeps logos attached when a series rolls over to a new key after a crawl (e.g. west-coast-wednesdays-in-august-2026). To link a new logo: drop the image in graphics/logos/ (WITH a file extension) and add an exact line, plus a pattern line if the event recurs under changing keys. Unmapped events show no image. Rebuilt 2026-07-11 (v2: patterns added per Sean; IMG_9893/9897 updated to their .png replacements; extensionless uploads renamed with detected extensions).",
+  "logos": {
+    "monday-night-west-coast-swing-dance-party-ragon-hall": "../graphics/logos/IMG_9897.JPG",
+    "kick-it-old-school-2026-08-28": "../graphics/logos/upload-kick-it-old-school-2026-08-28-54979d79.jpg",
+    "first-friday-live-band-dance-night-seaside-swing-outs": "../graphics/logos/IMG_9895.JPG",
+    "west-coast-wednesdays-in-july-2026": "../graphics/logos/way-you-move-wcs-wednesdays-july-2026.jpg",
+    "ragon-hall-first-saturday-monthly-dance": "../graphics/logos/ragon-hall-first-saturday-big-dance-night-2026-07.jpg",
+    "3rd-saturday-west-coast-swing-old-sacred-heart-2026-07-18": "../graphics/logos/upload-3rd-saturday-west-coast-swing-old-sacred-heart-2026-07-18-f5cab632.jpg",
+    "sanders-beach-ballroom-weekly-classes": "../graphics/logos/upload-sanders-beach-ballroom-weekly-classes-9491e9d8.png",
+    "good-ole-social-dance-2026-07-17": "../graphics/logos/upload-good-ole-social-dance-2026-07-17-3099112f.jpg",
+    "mobtown-workshop-and-social-2026-07-11": "../graphics/logos/MobTown_mobileWCS.png",
+    "southern-national-2026-10-15": "../graphics/logos/IMG_0017.PNG",
+    "sensual-sundays-bachata-pensacola-coastals": "../graphics/logos/sensual-sundays-bachata-class.jpg",
+    "north-alabama-tuesday-night-wcs-social-summer-2026": "../graphics/logos/north-alabama-wcs-tuesday-socials-july-2026.jpg",
+    "tango-lab-fridays-july-2026": "../graphics/logos/upload-tango-lab-fridays-july-2026-69bc5397.jpg",
+    "ballroom-lynn-warwick-house-2026-07-29": "../graphics/logos/upload-ballroom-lynn-warwick-house-2026-07-29-c526a261.jpg",
+    "bobe-st-studio-coaching-with-justin-tuesdays": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png",
+    "wcs-garysusandance-thursdays-the-way-you-move": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg",
+    "sso-lindy-and-blues-fridays-the-way-you-move": "../graphics/logos/upload-sso-lindy-and-blues-fridays-the-way-you-move-c3414e8f.jpg",
+    "latin-night-social-dance-2026-09-05": "../graphics/logos/upload-latin-night-social-dance-2026-09-05-dff5f6e1.jpg",
+    "wcs-social-dance-saturday-2026-07-25": "../graphics/logos/upload-wcs-social-dance-saturday-2026-07-25-196dce2a.png",
+    "wcs-lynn-warwick-house-2026-07-22": "../graphics/logos/upload-wcs-lynn-warwick-house-2026-07-22-2ba9b0a3.jpg",
+    "wsdc-florida-dance-magic-2026": "../graphics/logos/upload-wsdc-florida-dance-magic-2026-0a6d884f.png",
+    "wcs-social-dance-saturday-2026-08-22": "../graphics/logos/upload-wcs-social-dance-saturday-2026-08-22-fcb9c4f6.png",
+    "wsdc-trilogy-swing-2026": "../graphics/logos/upload-wsdc-trilogy-swing-2026-4d782890.png",
+    "wsdc-atlanta-swing-classic-2026": "../graphics/logos/upload-wsdc-atlanta-swing-classic-2026-978642d6.png",
+    "wsdc-tampa-bay-classic-2026": "../graphics/logos/upload-wsdc-tampa-bay-classic-2026-17aeea13.png",
+    "wsdc-jax-westie-fest-2026": "../graphics/logos/upload-wsdc-jax-westie-fest-2026-769edd79.png",
+    "flyover-friday-salsa-the-chapel-2026-07-17": "../graphics/logos/upload-flyover-friday-salsa-the-chapel-2026-07-17-1f1df753.jpg",
+    "wsdc-swingapalooza-2027": "../graphics/logos/upload-wsdc-swingapalooza-2027-4c50a7dc.png",
+    "wsdc-usa-grand-national-dance-championships-2027": "../graphics/logos/upload-wsdc-usa-grand-national-dance-championships-2027-fc89b5ff.png",
+    "wsdc-floorplay-swing-vacation-2026": "../graphics/logos/upload-wsdc-floorplay-swing-vacation-2026-42aa9775.png",
+    "arthur-murray-beach-o-rama-2027": "../graphics/logos/web-arthur-murray-beach-o-rama-2027.webp",
+    "arthur-murray-ciao-amore-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-ciao-amore-dance-o-rama-2026.webp",
+    "arthur-murray-flamingo-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-flamingo-dance-o-rama-2026.webp",
+    "arthur-murray-holiday-ball-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-holiday-ball-dance-o-rama-2026.webp",
+    "arthur-murray-northstar-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-northstar-dance-o-rama-2026.webp",
+    "arthur-murray-perfect-10-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-perfect-10-dance-o-rama-2026.webp",
+    "arthur-murray-superama-2026": "../graphics/logos/web-arthur-murray-superama-2026.webp",
+    "arthur-murray-unique-dance-o-rama-2026": "../graphics/logos/web-arthur-murray-unique-dance-o-rama-2026.webp",
+    "fred-astaire-carolina-classic-2026": "../graphics/logos/web-fred-astaire-carolina-classic-2026.webp",
+    "fred-astaire-lonestar-dance-challenge-2026": "../graphics/logos/web-fred-astaire-lonestar-dance-challenge-2026.webp",
+    "fred-astaire-national-dance-championships-2026": "../graphics/logos/web-fred-astaire-national-dance-championships-2026.webp",
+    "fred-astaire-new-jersey-state-showdown-2026": "../graphics/logos/web-fred-astaire-new-jersey-state-showdown-2026.webp",
+    "fred-astaire-south-florida-holiday-ball-2026": "../graphics/logos/web-fred-astaire-south-florida-holiday-ball-2026.webp",
+    "fred-astaire-west-coast-dance-championships-2026": "../graphics/logos/web-fred-astaire-west-coast-dance-championships-2026.webp",
+    "fred-astaire-wisconsin-grand-championships-2026": "../graphics/logos/web-fred-astaire-wisconsin-grand-championships-2026.webp",
+    "fred-astaire-world-championships-2026": "../graphics/logos/web-fred-astaire-world-championships-2026.webp",
+    "usa-dance-ccbd-casual-cotuit-2026-08-08": "../graphics/logos/web-usa-dance-ccbd-casual-cotuit-2026-08-08.jpg",
+    "usa-dance-high-desert-big-band-nm-2026-07-19": "../graphics/logos/web-usa-dance-high-desert-big-band-nm-2026-07-19.png",
+    "usa-dance-ohio-summer-serenade-barberton-2026-07-26": "../graphics/logos/web-usa-dance-ohio-summer-serenade-barberton-2026-07-26.webp",
+    "usa-dance-tallahassee-celebrate-good-times-2026-07-18": "../graphics/logos/web-usa-dance-tallahassee-celebrate-good-times-2026-07-18.png",
+    "wsdc-5280-westival-2027": "../graphics/logos/web-wsdc-5280-westival-2027.png",
+    "wsdc-atlanta-swing-classic-2027": "../graphics/logos/web-wsdc-atlanta-swing-classic-2027.png",
+    "wsdc-austin-swing-dance-championships-2027": "../graphics/logos/web-wsdc-austin-swing-dance-championships-2027.png",
+    "wsdc-boogie-by-the-bay-2026": "../graphics/logos/web-wsdc-boogie-by-the-bay-2026.png",
+    "wsdc-cash-bash-2026": "../graphics/logos/web-wsdc-cash-bash-2026.jpg",
+    "wsdc-charlotte-westiefest-2027": "../graphics/logos/web-wsdc-charlotte-westiefest-2027.png",
+    "wsdc-city-of-angels-wcs-2027": "../graphics/logos/web-wsdc-city-of-angels-wcs-2027.png",
+    "wsdc-countdown-swing-boston-2026": "../graphics/logos/web-wsdc-countdown-swing-boston-2026.png",
+    "wsdc-dc-swing-experience-dcsx-2026": "../graphics/logos/web-wsdc-dc-swing-experience-dcsx-2026.jpg",
+    "wsdc-derby-city-swing-2027": "../graphics/logos/web-wsdc-derby-city-swing-2027.png",
+    "wsdc-desert-city-swing-2026": "../graphics/logos/web-wsdc-desert-city-swing-2026.png",
+    "wsdc-easter-swing-2027": "../graphics/logos/web-wsdc-easter-swing-2027.webp",
+    "wsdc-freedom-swing-dance-challenge-2027": "../graphics/logos/web-wsdc-freedom-swing-dance-challenge-2027.png",
+    "wsdc-gateway-swing-classic-2027": "../graphics/logos/web-wsdc-gateway-swing-classic-2027.png",
+    "wsdc-h-town-throw-down-2027": "../graphics/logos/web-wsdc-h-town-throw-down-2027.png",
+    "wsdc-halloween-swingthing-2026": "../graphics/logos/web-wsdc-halloween-swingthing-2026.jpg",
+    "wsdc-high-desert-dance-classic-2027": "../graphics/logos/web-wsdc-high-desert-dance-classic-2027.png",
+    "wsdc-meet-me-in-st-louis-2026": "../graphics/logos/web-wsdc-meet-me-in-st-louis-2026.jpg",
+    "wsdc-michigan-classic-2027": "../graphics/logos/web-wsdc-michigan-classic-2027.png",
+    "wsdc-midnight-madness-wcs-2026": "../graphics/logos/web-wsdc-midnight-madness-wcs-2026.jpg",
+    "wsdc-midwest-westie-fest-2026": "../graphics/logos/web-wsdc-midwest-westie-fest-2026.png",
+    "wsdc-monterey-swing-fest-2027": "../graphics/logos/web-wsdc-monterey-swing-fest-2027.png",
+    "wsdc-new-england-dance-festival-2026": "../graphics/logos/web-wsdc-new-england-dance-festival-2026.png",
+    "wsdc-philly-swing-classic-2026": "../graphics/logos/web-wsdc-philly-swing-classic-2026.png",
+    "wsdc-retaliation-swing-2026": "../graphics/logos/web-wsdc-retaliation-swing-2026.jpg",
+    "wsdc-rocket-city-swing-2026": "../graphics/logos/web-wsdc-rocket-city-swing-2026.png",
+    "wsdc-rose-city-swing-2027": "../graphics/logos/web-wsdc-rose-city-swing-2027.jpg",
+    "wsdc-sass-spooky-albany-swing-spectacular-2026": "../graphics/logos/web-wsdc-sass-spooky-albany-swing-spectacular-2026.png",
+    "wsdc-soswing-2027": "../graphics/logos/web-wsdc-soswing-2027.jpg",
+    "wsdc-south-bay-dance-fling-2026": "../graphics/logos/web-wsdc-south-bay-dance-fling-2026.png",
+    "wsdc-summer-hummer-2026": "../graphics/logos/web-wsdc-summer-hummer-2026.png",
+    "wsdc-swing-city-chicago-2026": "../graphics/logos/web-wsdc-swing-city-chicago-2026.jpg",
+    "wsdc-swing-crush-2027": "../graphics/logos/web-wsdc-swing-crush-2027.png",
+    "wsdc-swing-fling-2026": "../graphics/logos/web-wsdc-swing-fling-2026.png",
+    "wsdc-swingco-2027": "../graphics/logos/web-wsdc-swingco-2027.png",
+    "wsdc-swingover-2027": "../graphics/logos/web-wsdc-swingover-2027.webp",
+    "wsdc-swingtacular-the-galactic-open-2026": "../graphics/logos/web-wsdc-swingtacular-the-galactic-open-2026.jpg",
+    "wsdc-swingtime-denver-2026": "../graphics/logos/web-wsdc-swingtime-denver-2026.jpg",
+    "wsdc-the-after-party-aka-tap-2026": "../graphics/logos/web-wsdc-the-after-party-aka-tap-2026.png",
+    "wsdc-the-aloha-open-2026": "../graphics/logos/web-wsdc-the-aloha-open-2026.jpg",
+    "wsdc-the-boston-tea-party-2027": "../graphics/logos/web-wsdc-the-boston-tea-party-2027.png",
+    "wsdc-the-chicago-classic-2027": "../graphics/logos/web-wsdc-the-chicago-classic-2027.png",
+    "wsdc-the-open-swing-dance-championships-2026": "../graphics/logos/web-wsdc-the-open-swing-dance-championships-2026.png",
+    "wsdc-tulsa-spring-swing-2027": "../graphics/logos/web-wsdc-tulsa-spring-swing-2027.png",
+    "wsdc-ucwdc-country-dance-world-championships-2026": "../graphics/logos/web-wsdc-ucwdc-country-dance-world-championships-2026.png",
+    "wsdc-westie-weekend-2027": "../graphics/logos/web-wsdc-westie-weekend-2027.jpg",
+    "wsdc-atlanta-swing-classic-2028": "../graphics/logos/web-wsdc-atlanta-swing-classic-2027.png",
+    "usa-dance-belvidere-july-4th-saturday-2026-07-25": "../graphics/logos/upload-usa-dance-belvidere-july-4th-saturday-2026-07-25-3c142e6f.png",
+    "latin-night-social-dance-2026-08-01": "../graphics/logos/upload-latin-night-social-dance-2026-08-01-b4fd4629.jpg",
+    "la-copa-del-ritmo-seville-quarter-2026-09-09": "../graphics/logos/upload-la-copa-del-ritmo-2026-09-2581d7db.jpg",
+    "la-copa-del-ritmo-the-block-2026-09-17": "../graphics/logos/upload-la-copa-del-ritmo-2026-09-2581d7db.jpg",
+    "la-copa-del-ritmo-the-chapel-2026-09-25": "../graphics/logos/upload-la-copa-del-ritmo-2026-09-2581d7db.jpg",
+    "ritmo-y-mar-2026-08-14": "../graphics/logos/upload-ritmo-y-mar-2026-08-14-1ebb8300.jpg"
   },
-  {
-   "contains": "sso-lindy-and-blues-fridays-the-way-you-move",
-   "logo": "../graphics/logos/upload-sso-lindy-and-blues-fridays-the-way-you-move-c3414e8f.jpg"
-  },
-  {
-   "contains": "wcs-garysusandance-thursdays-the-way-you-move",
-   "logo": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg"
-  },
-  {
-   "contains": "sanders-beach-ballroom-weekly-classes",
-   "logo": "../graphics/logos/upload-sanders-beach-ballroom-weekly-classes-9491e9d8.png"
-  },
-  {
-   "contains": "bobe-st-studio-coaching-with-justin-tuesdays",
-   "logo": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png"
-  },
-  {
-   "contains": "mobtown",
-   "logo": "../graphics/logos/MobTown_mobileWCS.png"
-  },
-  {
-   "contains": "good-ole-social",
-   "logo": "../graphics/logos/good_ole_social.jpg"
-  },
-  {
-   "contains": "sanders-beach",
-   "logo": "../graphics/logos/IMG_0015.JPG"
-  },
-  {
-   "contains": "west-coast-wednesdays",
-   "logo": "../graphics/logos/way-you-move-wcs-wednesdays-july-2026.jpg"
-  },
-  {
-   "contains": "kick-it-old-school",
-   "logo": "../graphics/logos/4D5EB788-2F55-43B3-B7D6-72CF7036D239.png"
-  },
-  {
-   "contains": "first-friday",
-   "logo": "../graphics/logos/IMG_9895.JPG"
-  },
-  {
-   "contains": "first-saturday",
-   "logo": "../graphics/logos/IMG_9893.png"
-  },
-  {
-   "contains": "3rd-saturday",
-   "logo": "../graphics/logos/IMG_9893.png"
-  },
-  {
-   "contains": "monday-night",
-   "logo": "../graphics/logos/IMG_9897.JPG"
-  },
-  {
-   "contains": "southern-national",
-   "logo": "../graphics/logos/IMG_0017.PNG"
-  },
-  {
-   "contains": "usa-dance",
-   "logo": "../graphics/logos/USA-Dance-National-logo_transparent-BG.png"
-  }
- ]
+  "patterns": [
+    {
+      "contains": "tango-lab-fridays",
+      "logo": "../graphics/logos/upload-tango-lab-fridays-july-2026-69bc5397.jpg"
+    },
+    {
+      "contains": "sso-lindy-and-blues-fridays-the-way-you-move",
+      "logo": "../graphics/logos/upload-sso-lindy-and-blues-fridays-the-way-you-move-c3414e8f.jpg"
+    },
+    {
+      "contains": "wcs-garysusandance-thursdays-the-way-you-move",
+      "logo": "../graphics/logos/upload-wcs-garysusandance-thursdays-the-way-you-move-a0870b32.jpg"
+    },
+    {
+      "contains": "sanders-beach-ballroom-weekly-classes",
+      "logo": "../graphics/logos/upload-sanders-beach-ballroom-weekly-classes-9491e9d8.png"
+    },
+    {
+      "contains": "bobe-st-studio-coaching-with-justin-tuesdays",
+      "logo": "../graphics/logos/upload-bobe-st-studio-coaching-with-justin-tuesdays-71866f9e.png"
+    },
+    {
+      "contains": "mobtown",
+      "logo": "../graphics/logos/MobTown_mobileWCS.png"
+    },
+    {
+      "contains": "good-ole-social",
+      "logo": "../graphics/logos/good_ole_social.jpg"
+    },
+    {
+      "contains": "sanders-beach",
+      "logo": "../graphics/logos/IMG_0015.JPG"
+    },
+    {
+      "contains": "west-coast-wednesdays",
+      "logo": "../graphics/logos/way-you-move-wcs-wednesdays-july-2026.jpg"
+    },
+    {
+      "contains": "kick-it-old-school",
+      "logo": "../graphics/logos/4D5EB788-2F55-43B3-B7D6-72CF7036D239.png"
+    },
+    {
+      "contains": "first-friday",
+      "logo": "../graphics/logos/IMG_9895.JPG"
+    },
+    {
+      "contains": "first-saturday",
+      "logo": "../graphics/logos/IMG_9893.png"
+    },
+    {
+      "contains": "3rd-saturday",
+      "logo": "../graphics/logos/IMG_9893.png"
+    },
+    {
+      "contains": "monday-night",
+      "logo": "../graphics/logos/IMG_9897.JPG"
+    },
+    {
+      "contains": "southern-national",
+      "logo": "../graphics/logos/IMG_0017.PNG"
+    },
+    {
+      "contains": "usa-dance",
+      "logo": "../graphics/logos/USA-Dance-National-logo_transparent-BG.png"
+    }
+  ]
 }
