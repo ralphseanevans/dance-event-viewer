@@ -93,6 +93,9 @@ const state = {
   showNational: false,   // "Traveling? Show national events" (2026-07-17, Phase 0) — out-of-region
                          // events hide until this is on. Deliberately NOT persisted: every visit
                          // starts regional. Reset filters does not touch it (scope, not a filter).
+  showUnverified: false, // "Unverified" toggle (2026-07-20, Sean) — events with research_confidence
+                         // "low" (unverified research-batch listings) hide until this is on. Not persisted.
+                         // Treated as scope (like showNational): "Clear all" does not reset it.
   selectMode: false,     // "Share several" multi-select mode (2026-07-17, Sean: "share multiple
                          // dances at one time... make it look good together"). Not persisted.
   eventKeys: new Set(),  // when a shared-set link (?events=k1|k2) is opened, restrict the view to
@@ -638,6 +641,7 @@ function syncUrl() {
   for (const dim of ["country", "state", "town"]) if (state.sel[dim]) p.set(dim, state.sel[dim]);
   if (state.showPast) p.set("past", "1");
   if (state.showNational) p.set("travel", "1");
+  if (state.showUnverified) p.set("unverified", "1");
   if (state.eventKeys.size) p.set("events", [...state.eventKeys].join("|"));   // shared-set landing link
   const qs = p.toString().replace(/%7C/gi, "|").replace(/%20/g, "+");
   const url = location.pathname + (qs ? "?" + qs : "");
@@ -655,6 +659,7 @@ function applyUrl() {
     if (p.has(dim)) { state.sel[dim] = p.get(dim); any = true; }
   if (p.get("past") === "1") { state.showPast = true; any = true; }
   state.showNational = p.get("travel") === "1";
+  state.showUnverified = p.get("unverified") === "1";
   // Shared-set link: show exactly the listed events, regardless of region/past, so the
   // recipient always sees the dances that were shared with them (2026-07-17).
   if (p.has("events")) {
@@ -704,6 +709,12 @@ function matchesCat(d, tag) {
 function soloOptedOut(d, f) {
   return SOLO_STYLES.includes(d.category) && !(f || state.filters).cats.has(d.category);
 }
+function isUnverified(ev) {
+  // Local master marks these with research_confidence "low"; the sanitized public
+  // export (live site) strips internal fields and carries an added `unverified: true`
+  // flag instead. Honor both so the toggle works locally AND on danceeventviewer.net.
+  return !!(ev && (ev.unverified === true || ev.research_confidence === "low"));
+}
 function matchesFilters(d) {
   const f = state.filters;
   // Shared-set landing (2026-07-17): a ?events= link pins the view to exactly those events;
@@ -713,6 +724,8 @@ function matchesFilters(d) {
   // Southeast-8 — includes null/unknown/international) only show while the
   // "Traveling? Show national events" toggle is on. Past-gating is separate (showPast).
   if (!state.showNational && !isRegional(d.ev)) return false;
+  // Unverified events (research_confidence "low") hide until the "Unverified" toggle is on (2026-07-20, Sean).
+  if (!state.showUnverified && isUnverified(d.ev)) return false;
   // Solo styles are strictly OPT-IN (2026-07-18, Sean): a solo-class category (Ballet,
   // Jazz, Hip Hop, Contemporary, Heels, Pom, Musical Theatre, Dance Fit) is shown ONLY
   // while its own chip is selected — never under the default "All styles" state, and
@@ -925,7 +938,7 @@ function setSelectMode(on) {
   const t = document.getElementById("share-several-toggle");
   if (t) {
     t.setAttribute("aria-pressed", String(on));
-    t.textContent = on ? "✕ Done selecting" : "✦ Share several";
+    t.textContent = on ? "✕ Done selecting" : "✦ Share multiple";
   }
   if (!on) shareSelection.clear();
   updateComboBar();
@@ -1228,7 +1241,7 @@ function ensureComboUI() {
       t.className = "past-toggle share-several-toggle";
       t.setAttribute("aria-pressed", "false");
       t.title = "Pick several dances and share them as one lovely post — instead of posting each one separately.";
-      t.textContent = "✦ Share several";
+      t.textContent = "✦ Share multiple";
       t.addEventListener("click", () => setSelectMode(!state.selectMode));
       group.appendChild(t);
     }
@@ -1851,19 +1864,20 @@ function render() {
   // Unselected solo-class categories are outside the visible universe (2026-07-18) —
   // they stay out of BOTH numbers and the nationwide hint, so the default view still
   // reads "N of N shown" instead of implying a hidden filter.
-  const inScope = d => state.showNational || isRegional(d.ev);
+  const isVerifiedShown = d => state.showUnverified || !isUnverified(d.ev);
+  const inScope = d => (state.showNational || isRegional(d.ev)) && isVerifiedShown(d);
   const notPast = d => state.showPast || !isPastEvent(d, today);
   const inUniverse = d => !soloOptedOut(d);
   const totalHosted = state.events.filter(d => inScope(d) && notPast(d) && inUniverse(d)).length;
-  const moreNational = state.showNational ? 0 : state.events.filter(d => !isRegional(d.ev) && notPast(d) && inUniverse(d)).length;
-  const hint = moreNational ? ` · ${moreNational} more nationwide — turn on “Traveling?” to see them` : "";
+  const moreNational = state.showNational ? 0 : state.events.filter(d => !isRegional(d.ev) && notPast(d) && inUniverse(d) && isVerifiedShown(d)).length;
+  const hint = moreNational ? ` · ${moreNational} more nationwide — turn on “National events” to see them` : "";
 
   if (!shown) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
     empty.textContent = state.showPast
       ? "No events match these filters."
-      : "No upcoming events match these filters. Try clearing a filter, turning on “Show Past Events” or “Traveling?”, or open the Calendar to browse by month.";
+      : "No upcoming events match these filters. Try clearing a filter, turning on “Show Past Events” or “National events”, or open the Calendar to browse by month.";
     main.appendChild(empty);
     setStatus(`0 of ${totalHosted} events shown${hint}`, false);
   } else {
@@ -1989,6 +2003,17 @@ function init() {
       render();
     });
   }
+  // "Unverified" toggle — reveals events with research_confidence "low" (2026-07-20, Sean); may
+  // arrive pre-set from a shared ?unverified=1 URL, so aria syncs from state here.
+  const unverifiedToggle = document.getElementById("unverified-toggle");
+  if (unverifiedToggle) {
+    unverifiedToggle.setAttribute("aria-pressed", String(state.showUnverified));
+    unverifiedToggle.addEventListener("click", () => {
+      state.showUnverified = !state.showUnverified;
+      unverifiedToggle.setAttribute("aria-pressed", String(state.showUnverified));
+      render();
+    });
+  }
   // "Choose another location…" reveals the cascading dropdowns; back/forward re-applies
   // filters from the URL. Filters take effect immediately, so the panel needs no apply button.
   // The panel closes through the ✕, the dimmed mobile backdrop, or the Escape key.
@@ -2016,8 +2041,10 @@ function init() {
     for (const set of Object.values(state.filters)) set.clear();
     state.sel = { country: "", state: "", town: "" };
     state.showNational = false;
+    state.showUnverified = false;
     applyUrl();
     document.getElementById("traveling-toggle")?.setAttribute("aria-pressed", String(state.showNational));
+    document.getElementById("unverified-toggle")?.setAttribute("aria-pressed", String(state.showUnverified));
     document.getElementById("past-toggle")?.setAttribute("aria-pressed", String(state.showPast));
     buildLocSelects();
     render();
