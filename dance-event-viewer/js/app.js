@@ -581,7 +581,9 @@ function updateFilterUI() {
       const on = chip.dataset.all ? set.size === 0 : set.has(chip.dataset.value);
       chip.setAttribute("aria-pressed", String(on));
       const cEl = chip.querySelector(".chip-count");
-      if (chip.dataset.all) { if (cEl) cEl.textContent = ""; continue; }
+      // "Anywhere" (areas all-option) shows the unfiltered location count (2026-07-20, Sean);
+      // other groups' all-options stay countless.
+      if (chip.dataset.all) { if (cEl) cEl.textContent = group === "areas" ? ` (${facetCount(group, null)})` : ""; continue; }
       const n = facetCount(group, chip.dataset.value);
       if (cEl) cEl.textContent = ` (${n})`;
       chip.classList.toggle("chip-dim", n === 0 && !on);
