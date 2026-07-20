@@ -561,6 +561,17 @@ main { max-width: var(--maxw); margin: 0 auto; }
   text-transform: uppercase; letter-spacing: .1em;
   border-bottom: 1px solid var(--border); padding-bottom: 6px;
 }
+/* First timeline heading row (e.g. TODAY) carries the "Share multiple" button on its
+   right side (2026-07-20, Sean). The label span keeps the heading's uppercase styling;
+   the button opts back out of the inherited transform/tracking. */
+.bucket-heading--action {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+}
+.bucket-heading--action .bucket-heading-label { min-width: 0; }
+.bucket-heading--action .share-several-toggle {
+  flex: none; align-self: center;
+  text-transform: none; letter-spacing: normal; color: var(--text-dim);
+}
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--gap); }
 

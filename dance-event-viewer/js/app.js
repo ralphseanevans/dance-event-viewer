@@ -932,6 +932,35 @@ function buildComboText(items, headline, url) {
   return lines.join("\n");
 }
 
+let _comboPlaced = false;
+function makeShareMultipleBtn() {
+  const t = document.createElement("button");
+  t.type = "button";
+  t.id = "share-several-toggle";
+  t.className = "past-toggle share-several-toggle";
+  t.setAttribute("aria-pressed", String(state.selectMode));
+  t.title = "Pick several dances and share them as one lovely post — instead of posting each one separately.";
+  t.textContent = state.selectMode ? "✕ Done selecting" : "✦ Share multiple";
+  t.addEventListener("click", () => setSelectMode(!state.selectMode));
+  return t;
+}
+/* First timeline bucket heading (currently "TODAY") carries the Share-multiple button on
+   its right side (2026-07-20, Sean); reset _comboPlaced each render() so it lands once. */
+function bucketHeadingEl(label) {
+  const h = document.createElement("h2");
+  h.className = "bucket-heading";
+  if (!_comboPlaced && label !== "Past") {
+    _comboPlaced = true;
+    h.classList.add("bucket-heading--action");
+    const span = document.createElement("span");
+    span.className = "bucket-heading-label";
+    span.textContent = label;
+    h.append(span, makeShareMultipleBtn());
+  } else {
+    h.textContent = label;
+  }
+  return h;
+}
 function setSelectMode(on) {
   state.selectMode = on;
   document.body.classList.toggle("selecting", on);
@@ -1232,20 +1261,8 @@ async function handleComboShareImage(items, btn) {
    index.html) so this feature stays self-contained and independent of other in-flight
    edits to the page markup. */
 function ensureComboUI() {
-  if (!document.getElementById("share-several-toggle")) {
-    const group = document.querySelector(".view-group");
-    if (group) {
-      const t = document.createElement("button");
-      t.type = "button";
-      t.id = "share-several-toggle";
-      t.className = "past-toggle share-several-toggle";
-      t.setAttribute("aria-pressed", "false");
-      t.title = "Pick several dances and share them as one lovely post — instead of posting each one separately.";
-      t.textContent = "✦ Share multiple";
-      t.addEventListener("click", () => setSelectMode(!state.selectMode));
-      group.appendChild(t);
-    }
-  }
+  // "Share multiple" now renders on the first timeline heading row — see
+  // makeShareMultipleBtn() / bucketHeadingEl() (relocated 2026-07-20, Sean).
   if (!document.getElementById("combo-bar")) {
     const bar = document.createElement("div");
     bar.id = "combo-bar"; bar.className = "combo-bar"; bar.hidden = true;
@@ -1771,6 +1788,7 @@ function feedbackWidget(ev) {
 function render() {
   const main = document.getElementById("results");
   main.textContent = "";
+  _comboPlaced = false;
   ensureSharedSetBanner();   // shows/hides the "someone shared these with you" strip
   const today = new Date();
   const visible = state.events.filter(matchesFilters);
@@ -1832,8 +1850,7 @@ function render() {
       for (const [label, items] of buckets) {
         if (!items.length) continue;
         const isPast = label === "Past";
-        const h = document.createElement("h2");
-        h.className = "bucket-heading"; h.textContent = label;
+        const h = bucketHeadingEl(label);
         main.appendChild(h);
         const ul = document.createElement("ul");
         ul.className = "list-rows";
@@ -1846,8 +1863,7 @@ function render() {
       for (const [label, items] of buckets) {
         if (!items.length) continue;
         const isPast = label === "Past";
-        const h = document.createElement("h2");
-        h.className = "bucket-heading"; h.textContent = label;
+        const h = bucketHeadingEl(label);
         main.appendChild(h);
         const grid = document.createElement("div");
         grid.className = "cards";
