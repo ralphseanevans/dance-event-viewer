@@ -900,6 +900,28 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 }
 .site-header { position: relative; }
 
+/* Event search box (2026-07-20, Sean) — one quiet field above the quick filters; theme-
+   driven colors so it matches every palette. Kept low-contrast so it doesn't shout. */
+.search-row { margin: 2px 0 4px; min-width: 0; }
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 12px; max-width: 420px;
+}
+.search-box:focus-within { border-color: var(--accent); }
+.search-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--text-dim); stroke-width: 2; stroke-linecap: round; }
+.search-input {
+  flex: 1 1 auto; min-width: 0; border: none; background: transparent;
+  color: var(--text); font: inherit; font-size: .9rem; padding: 2px 0; outline: none;
+}
+.search-input::placeholder { color: var(--text-dim); }
+.search-input::-webkit-search-cancel-button { display: none; }  /* we provide our own ✕ */
+.search-clear {
+  flex: none; border: none; background: transparent; cursor: pointer;
+  color: var(--text-dim); font-size: .95rem; line-height: 1; padding: 2px 4px; border-radius: 50%;
+}
+.search-clear:hover { color: var(--text); }
+
 .quick-filters { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; min-width: 0; max-width: 100%; }  /* min-width:0 — .controls is a grid on mobile; without this the row can't shrink/scroll */
 .qf-group { display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
 .qf-label { flex: 0 0 auto; color: var(--text-dim); font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; width: 92px; }

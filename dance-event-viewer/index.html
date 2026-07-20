@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260720a">
+  <link rel="stylesheet" href="css/styles.css?v=20260720b">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260720a">
   <script defer src="js/theme-switch.js?v=20260718b"></script>
@@ -192,6 +192,19 @@
     </div>
 
     <div class="controls-panel-inner">
+      <!-- Event search (2026-07-20, Sean): a single quiet box that matches event name,
+           venue, or city. Kept deliberately minimal so it doesn't crowd the filters. -->
+      <div class="search-row">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+          </svg>
+          <input type="search" id="event-search" class="search-input" autocomplete="off"
+            enterkeyhint="search" placeholder="Search by name, venue, or city…"
+            aria-label="Search events by name, venue, or city">
+          <button type="button" id="event-search-clear" class="search-clear" aria-label="Clear search" hidden>&#10005;</button>
+        </div>
+      </div>
       <div class="control-row">
         <div class="view-group">
         <button type="button" id="traveling-toggle" class="past-toggle traveling-toggle" aria-pressed="false"
@@ -295,7 +308,7 @@
     </p>
   </footer>
 
-  <script src="js/app.js?v=20260720a"></script>
+  <script src="js/app.js?v=20260720b"></script>
   <script src="js/activity-pulse.js?v=20260718a"></script>
 </body>
 </html>

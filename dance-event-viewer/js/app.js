@@ -77,6 +77,8 @@ const state = {
   sourceId: SOURCES[0].id,
   events: [],            // decorated events, rebuilt from JSON on every load
   view: "timeline",
+  search: "",            // free-text search (2026-07-20, Sean) — matches name/venue/city/style,
+                         // narrows within the current scope. Stored lowercased. Not persisted, not in URL.
   logos: {},             // from logo-map.json — purely decorative, optional
   logoPatterns: [],      // fallback substring rules so rolled-over series keep their logo
   webEvents: [],         // from web-events.json — optional overlay of trusted flyer auto-publishes,
@@ -628,8 +630,18 @@ function clearAllFilters() {
   for (const set of Object.values(state.filters)) set.clear();
   state.filters.areas = new Set(DEFAULT_AREAS);
   state.sel = { country: "", state: "", town: "" };
+  state.search = "";
+  syncSearchInput();
   buildLocSelects();
   render();
+}
+/* Keep the search box + its clear button in sync with state.search (called on clear-all
+   and whenever search changes programmatically). */
+function syncSearchInput() {
+  const input = document.getElementById("event-search");
+  if (input && input.value !== state.search) input.value = state.search;
+  const clearBtn = document.getElementById("event-search-clear");
+  if (clearBtn) clearBtn.hidden = !state.search;
 }
 /* ---------- URL state (2026-07-17): active filters live in the query string, so filtered
    views are shareable links and back/forward work. localStorage keeps only view/showPast. */
@@ -740,6 +752,16 @@ function matchesFilters(d) {
   for (const dim of ["country", "state", "town"])
     if (state.sel[dim] && d.loc[dim] !== state.sel[dim]) return false;
   if (f.kinds.size && !f.kinds.has(d.kind)) return false;
+  // Free-text search (2026-07-20, Sean): every whitespace-separated term must appear somewhere
+  // in the event's name, venue, style, or derived city/state/area. Case-insensitive; narrows
+  // within the current scope (does not override the National/Unverified/Past gates above).
+  if (state.search) {
+    const ev = d.ev || {};
+    const hay = [ev.name, ev.venue, ev.style, d.loc && d.loc.town, d.loc && d.loc.state, d.loc && d.loc.area]
+      .filter(Boolean).join(" ").toLowerCase();
+    for (const term of state.search.split(/\s+/))
+      if (term && !hay.includes(term)) return false;
+  }
   return true;
 }
 
@@ -2028,6 +2050,30 @@ function init() {
       state.showUnverified = !state.showUnverified;
       unverifiedToggle.setAttribute("aria-pressed", String(state.showUnverified));
       render();
+    });
+  }
+  // Event search (2026-07-20, Sean): one box that matches name / venue / city. Debounced so we
+  // don't re-render on every keystroke; the ✕ button (and Clear all) reset it.
+  const searchInput = document.getElementById("event-search");
+  if (searchInput) {
+    let searchTimer = null;
+    const runSearch = () => {
+      state.search = searchInput.value.trim().toLowerCase();
+      const clearBtn = document.getElementById("event-search-clear");
+      if (clearBtn) clearBtn.hidden = !state.search;
+      render();
+    };
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(runSearch, 140);
+    });
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); clearTimeout(searchTimer); runSearch(); }
+      if (e.key === "Escape" && searchInput.value) { e.preventDefault(); searchInput.value = ""; clearTimeout(searchTimer); runSearch(); }
+    });
+    const searchClear = document.getElementById("event-search-clear");
+    if (searchClear) searchClear.addEventListener("click", () => {
+      searchInput.value = ""; clearTimeout(searchTimer); runSearch(); searchInput.focus();
     });
   }
   // "Choose another location…" reveals the cascading dropdowns; back/forward re-applies
