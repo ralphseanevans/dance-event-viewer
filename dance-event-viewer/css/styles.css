@@ -567,7 +567,8 @@ main { max-width: var(--maxw); margin: 0 auto; }
 .bucket-heading--action {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
 }
-.bucket-heading--action .bucket-heading-label { min-width: 0; }
+/* TODAY heading enlarged 50% vs other bucket headings (1.05rem base -> 1.575rem), Sean 2026-07-20 */
+.bucket-heading--action .bucket-heading-label { min-width: 0; font-size: 1.575rem; line-height: 1.1; }
 .bucket-heading--action .share-several-toggle {
   flex: none; align-self: center;
   text-transform: none; letter-spacing: normal; color: var(--text-dim);
