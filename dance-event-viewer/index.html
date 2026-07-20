@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260720c">
+  <link rel="stylesheet" href="css/styles.css?v=20260720d">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260720a">
   <script defer src="js/theme-switch.js?v=20260718b"></script>
@@ -231,6 +231,22 @@
         <span class="qf-label" id="lbl-day">Day</span>
         <div class="chips chips-scroll" data-group="days" role="group" aria-labelledby="lbl-day"></div>
       </div>
+      <!-- Location moved up out of the Advanced panel into the always-visible quick filters
+           (2026-07-20, Sean). Same controls (area chips + "Choose location" State/Town dropdowns);
+           JS finds them by id/data-group, so relocating the markup needs no logic change. -->
+      <div class="qf-group qf-location" id="fg-area" role="group" aria-labelledby="lbl-loc">
+        <span class="qf-label" id="lbl-loc">Location</span>
+        <div class="location-filter-content">
+          <div class="location-choice-row">
+            <div class="chips" data-group="areas"></div>
+            <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose location</button>
+          </div>
+          <div class="loc-selects" id="loc-selects" hidden>
+            <label>State <select id="sel-state"></select></label>
+            <label>Town <select id="sel-town" disabled></select></label>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Active-filter summary chips: visible only while the panel is closed and filters are on. -->
@@ -264,19 +280,6 @@
            is unreliable on several mobile browsers (contents rendered stacked/overlapping on
            Sean's phone), so these are plain divs now — grouping semantics kept via
            role="group" + aria-labelledby. -->
-      <div class="filter-group" id="fg-area" role="group" aria-labelledby="fg-area-label">
-        <span class="fg-legend" id="fg-area-label">Location</span>
-        <div class="location-filter-content">
-          <div class="location-choice-row">
-            <div class="chips" data-group="areas"></div>
-            <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose location</button>
-          </div>
-          <div class="loc-selects" id="loc-selects" hidden>
-            <label>State <select id="sel-state"></select></label>
-            <label>Town <select id="sel-town" disabled></select></label>
-          </div>
-        </div>
-      </div>
       <div class="filter-group" id="fg-kind" role="group" aria-labelledby="fg-kind-label">
         <span class="fg-legend" id="fg-kind-label">Event type</span>
         <div class="chips chips-radio" data-group="kinds"></div>

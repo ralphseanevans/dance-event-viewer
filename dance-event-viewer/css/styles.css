@@ -932,6 +932,9 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 
 .quick-filters { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; min-width: 0; max-width: 100%; }  /* min-width:0 — .controls is a grid on mobile; without this the row can't shrink/scroll */
 .qf-group { display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
+/* Location row can grow to a second line when the State/Town dropdowns open — keep its
+   label aligned to the top instead of vertically centered against the taller content. */
+.qf-group.qf-location { align-items: baseline; }
 .qf-label { flex: 0 0 auto; color: var(--text-dim); font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; width: 92px; }
 .filters-disclosure-row { display: flex; justify-content: flex-start; margin-top: 12px; }
 .filters-count {
