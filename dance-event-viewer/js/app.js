@@ -33,7 +33,7 @@ function isRegional(ev) { return SOUTHEAST.includes(ev.state); }
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
-const DEFAULT_AREAS = [];   // 2026-07-17 (Phase 0): default widened from Pensacola+Mobile to the whole Southeast-8 — the regional gate in matchesFilters() now defines default scope; Location chips/dropdowns narrow it. (PREFS_KEY bumped v3->v4 so returning visitors pick up the new default once.)
+const DEFAULT_AREAS = ["Pensacola area", "Mobile area"];   // 2026-07-20 (Sean): default location scope back to Pensacola + Mobile selected on load (and on "Clear all"). Anywhere/other chips still available to widen. Areas aren't persisted, so every fresh visit starts here.
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
 const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map view (optional; page works without it)
 const MAP_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";  // free, no API key
