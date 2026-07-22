@@ -77,9 +77,9 @@
     background: var(--panel-2); cursor: pointer; font-weight: 750; }
   .refresh:hover { border-color: #405374; background: var(--panel-3); }
   .cards { display: grid; gap: 16px; }
-  .card { position: relative; overflow: hidden; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); padding: 20px;
+  .card { position: relative; overflow: visible; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); padding: 20px;
     background: linear-gradient(145deg, rgba(19,26,41,.98), rgba(13,18,30,.98)); box-shadow: 0 14px 45px rgba(0,0,0,.18); }
-  .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent); opacity: .5; }
+  .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; border-radius: var(--radius-lg) 0 0 var(--radius-lg); background: var(--accent); opacity: .5; }
   .card.correction::before { background: var(--warn); opacity: 1; }
   .card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
   .badges { display: flex; gap: 7px; flex-wrap: wrap; }
