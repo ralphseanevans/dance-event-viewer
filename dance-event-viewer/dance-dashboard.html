@@ -11,10 +11,10 @@
   Talks to the same Apps Script web app the public form posts to:
     - POST {action:"list", password}                 -> all submission rows
     - POST {action:"update", password, row_id, ...}  -> Approve / Deny / Hold / edit
+    - POST {action:"delete", password, row_id}       -> guarded row-linked artifact removal
 
-  Requires the 2026-07-13 backend update (password auth + "hold" status +
-  action:"list") — see Dashboard_Deploy_Instructions.md. Until Sean redeploys
-  the .gs and adds the DASHBOARD_PASSWORD property, this page can't log in.
+  Requires the current backend in Submission_AppsScript_Code.gs. The password/list
+  path is live; the final New Version redeploy activates the latest delete support.
 
   Run-the-skills buttons are NOT here — they live in the Cowork artifact
   (they need to trigger Claude scheduled tasks, which a web page can't do).
@@ -23,143 +23,153 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0f16">
+<meta name="theme-color" content="#070910">
 <title>Dance Review Dashboard</title>
 <style>
   :root {
-    --bg: #0b0f16;
-    --bg-raised: #131a24;
-    --bg-card: #171f2b;
-    --border: #29323f;
-    --text: #e7ecf3;
-    --text-dim: #93a0b3;
-    --accent: #7fd1ae;
-    --accent-soft: #16332a;
-    --danger: #e8768a;
-    --danger-soft: #3a1e24;
-    --warn: #e8c27a;
-    --warn-soft: #332a12;
-    --info: #7fb2e8;
-    --radius: 12px;
+    --bg: #070910; --panel: #0e1320; --panel-2: #131a29; --panel-3: #182235;
+    --line: #26334a; --line-soft: #1d283b; --text: #f4f7fb; --muted: #91a0b8;
+    --accent: #70e1bd; --accent-strong: #2ecb98; --accent-soft: rgba(112,225,189,.12);
+    --danger: #ff758c; --danger-soft: rgba(255,117,140,.12); --warn: #f6c76e;
+    --warn-soft: rgba(246,199,110,.12); --info: #78b8ff; --info-soft: rgba(120,184,255,.12);
+    --shadow: 0 24px 70px rgba(0,0,0,.28); --radius-lg: 22px; --radius: 14px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; }
+  html, body { margin: 0; min-height: 100%; }
   body {
-    background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding: env(safe-area-inset-top) 12px calc(40px + env(safe-area-inset-bottom));
+    color: var(--text); font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(71,88,255,.15), transparent 32rem),
+      radial-gradient(circle at 92% 8%, rgba(46,203,152,.11), transparent 30rem), var(--bg);
+    padding: max(18px, env(safe-area-inset-top)) 18px max(42px, env(safe-area-inset-bottom));
     -webkit-text-size-adjust: 100%;
   }
-  .wrap { max-width: 720px; margin: 0 auto; }
+  button, input { font: inherit; }
+  button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--info); outline-offset: 3px; }
+  .wrap { width: min(1180px, 100%); margin: 0 auto; }
+  .app-shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .sidebar { position: sticky; top: 18px; min-width: 0; }
+  .brand { display: flex; gap: 12px; align-items: center; padding: 6px 8px 24px; }
+  .brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: #071510;
+    font-weight: 900; background: linear-gradient(135deg, var(--accent), #8ac7ff); box-shadow: 0 12px 35px rgba(112,225,189,.24); }
+  .brand h1 { margin: 0; font-size: 1rem; letter-spacing: -.01em; }
+  .brand p { margin: 3px 0 0; color: var(--muted); font-size: .76rem; }
+  .tabbar { display: flex; flex-direction: column; gap: 5px; padding: 8px; border: 1px solid var(--line-soft);
+    background: rgba(14,19,32,.74); backdrop-filter: blur(18px); border-radius: 18px; box-shadow: var(--shadow); }
+  .tab { width: 100%; min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    border: 0; border-radius: 12px; padding: 10px 12px; color: var(--muted); background: transparent; cursor: pointer; text-align: left; }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,.045); }
+  .tab.active { color: var(--text); background: linear-gradient(100deg, var(--accent-soft), rgba(120,184,255,.08)); box-shadow: inset 3px 0 var(--accent); }
+  .tab .count { min-width: 27px; height: 25px; display: grid; place-items: center; padding: 0 7px; border-radius: 999px;
+    color: var(--muted); background: rgba(255,255,255,.055); font-size: .75rem; font-weight: 800; }
+  .tab.active .count { color: var(--accent); background: rgba(112,225,189,.13); }
+  .sidebar-note { margin: 14px 10px 0; color: #66748b; font-size: .72rem; line-height: 1.45; }
 
-  header.top { text-align: center; padding: 18px 0 8px; }
-  header.top h1 { font-size: 1.15rem; margin: 0; letter-spacing: .04em; text-transform: uppercase; }
-  header.top .sub { color: var(--text-dim); font-size: .82rem; margin: 4px 0 0; }
-
-  /* Sticky tab bar — wraps so every tab stays on screen on narrow phones */
-  .tabbar {
-    position: sticky; top: 0; z-index: 10; background: var(--bg);
-    display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 2px; margin: 0 -2px 6px;
-  }
-  .tab {
-    flex: 0 0 auto; background: var(--bg-card); color: var(--text-dim);
-    border: 1px solid var(--border); border-radius: 999px; padding: 8px 13px;
-    font-size: .84rem; cursor: pointer; white-space: nowrap;
-  }
-  .tab.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
-  .tab .count { opacity: .8; margin-left: 5px; }
-
-  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .status-line { color: var(--text-dim); font-size: .82rem; min-height: 1.1em; flex: 1; }
+  .workspace { min-width: 0; }
+  .workspace-head { min-height: 116px; display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; padding: 8px 4px 22px; }
+  .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .14em; font-size: .68rem; font-weight: 850; }
+  .workspace-head h2 { margin: 7px 0 6px; font-size: clamp(1.6rem, 3vw, 2.3rem); letter-spacing: -.045em; }
+  .workspace-head p { margin: 0; max-width: 620px; color: var(--muted); line-height: 1.5; font-size: .9rem; }
+  .toolbar { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .status-line { color: var(--muted); font-size: .78rem; white-space: nowrap; }
   .status-line.error { color: var(--danger); }
-  .refresh { background: var(--bg-card); color: var(--text-dim); border: 1px solid var(--border);
-    border-radius: 8px; padding: 7px 12px; font: inherit; font-size: .82rem; cursor: pointer; }
-
-  .card {
-    background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 15px; margin-bottom: 14px;
-  }
-  .card.correction { border-left: 3px solid var(--warn); }
-  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-  .badges { display: flex; gap: 6px; flex-wrap: wrap; }
-  .badge { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: .74rem; font-weight: 700; letter-spacing: .02em; }
-  .badge.pending { background: var(--warn); color: #24210b; }
-  .badge.pendingflyer { background: var(--warn); color: #24210b; }
-  .badge.hold { background: var(--info); color: #0a1a2b; }
-  .badge.approved { background: var(--accent); color: #0b1f17; }
-  .badge.rejected, .badge.denied { background: var(--danger); color: #2b0d13; }
-  .badge.published, .badge.publishednew, .badge.applied { background: #2c3a52; color: #a9c4ee; }
-  .badge.archived { background: #333; color: #aaa; }
+  .refresh { min-height: 42px; border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; color: var(--text);
+    background: var(--panel-2); cursor: pointer; font-weight: 750; }
+  .refresh:hover { border-color: #405374; background: var(--panel-3); }
+  .cards { display: grid; gap: 16px; }
+  .card { position: relative; overflow: hidden; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); padding: 20px;
+    background: linear-gradient(145deg, rgba(19,26,41,.98), rgba(13,18,30,.98)); box-shadow: 0 14px 45px rgba(0,0,0,.18); }
+  .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent); opacity: .5; }
+  .card.correction::before { background: var(--warn); opacity: 1; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .badges { display: flex; gap: 7px; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; min-height: 27px; border-radius: 999px; padding: 4px 10px; font-size: .69rem; font-weight: 850; letter-spacing: .025em; }
+  .badge.pending, .badge.pendingflyer { background: var(--warn-soft); color: var(--warn); }
+  .badge.hold, .badge.pendingfix { background: var(--info-soft); color: var(--info); }
+  .badge.approved { background: var(--accent-soft); color: var(--accent); }
+  .badge.rejected, .badge.denied, .badge.failed, .badge.extractionfailed { background: var(--danger-soft); color: var(--danger); }
+  .badge.published, .badge.publishednew, .badge.applied, .badge.aidrafted { background: rgba(142,164,255,.12); color: #aebdff; }
+  .badge.archived { background: rgba(255,255,255,.07); color: #aab3c2; }
   .badge.deleted { background: var(--danger-soft); color: var(--danger); }
-  button.act.confirming { background: var(--danger); color: #2b0d13; border-color: var(--danger); font-weight: 800; }
-  .badge.pendingfix { background: var(--info); color: #0a1a2b; }
-  .badge.failed, .badge.extractionfailed { background: var(--danger-soft); color: var(--danger); }
-  .badge.aidrafted { background: #2c3a52; color: #a9c4ee; }
-  .badge.kind { background: var(--warn-soft); color: var(--warn); }
-  .meta { color: var(--text-dim); font-size: .76rem; }
-
-  /* "What they submitted" — the info entered at Send time */
-  .submitted {
-    background: var(--bg-card); border: 1px solid #45391c; border-radius: 10px;
-    padding: 11px 13px; margin-bottom: 12px; font-size: .88rem;
-  }
-  .submitted .label { color: var(--warn); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; font-weight: 700; }
-  .submitted .row { display: flex; gap: 8px; padding: 3px 0; }
-  .submitted .row .k { color: var(--text-dim); flex: 0 0 92px; }
-  .submitted .row .v { color: var(--text); word-break: break-word; }
+  .badge.kind { background: rgba(255,255,255,.05); color: #bdc7d7; }
+  .meta { color: #718098; font-size: .73rem; }
+  .state-note { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 16px; padding: 12px 14px; border: 1px solid rgba(120,184,255,.18);
+    border-radius: 12px; color: #b9d9ff; background: rgba(120,184,255,.07); font-size: .82rem; line-height: 1.45; }
+  .state-note strong { color: var(--text); }
+  .flyer-row { display: grid; grid-template-columns: 112px 1fr; gap: 14px; align-items: start; margin-bottom: 16px; }
+  .flyer-thumb { width: 112px; height: 112px; object-fit: cover; border-radius: 13px; border: 1px solid var(--line); background: var(--panel); }
+  .flyer-link { align-self: center; color: var(--accent); font-size: .84rem; font-weight: 750; text-decoration: none; }
+  .submitted { margin-bottom: 14px; padding: 14px 15px; border: 1px solid var(--line-soft); border-radius: 14px; background: rgba(7,9,16,.46); font-size: .86rem; }
+  .submitted .label { margin-bottom: 9px; color: var(--warn); font-size: .67rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 850; }
+  .submitted .row { display: grid; grid-template-columns: 100px minmax(0,1fr); gap: 10px; padding: 4px 0; }
+  .submitted .row .k { color: var(--muted); }
+  .submitted .row .v { word-break: break-word; }
   .submitted .row .v a { color: var(--accent); }
-  .submitted .note { margin-top: 6px; padding: 8px 10px; background: var(--bg); border-radius: 8px; white-space: pre-wrap; line-height: 1.45; }
-
-  .flyer-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
-  .flyer-thumb { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); flex: 0 0 auto; }
-  .flyer-link { color: var(--accent); font-size: .84rem; text-decoration: none; }
-
-  details.edit { margin-bottom: 10px; }
-  details.edit > summary { color: var(--text-dim); font-size: .82rem; cursor: pointer; padding: 6px 0; list-style: none; }
-  details.edit > summary::-webkit-details-marker { display: none; }
-  details.edit > summary::before { content: "▸ "; }
-  details.edit[open] > summary::before { content: "▾ "; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin: 8px 0 4px; }
-  @media (max-width: 500px) { .grid { grid-template-columns: 1fr; } }
-  .field { display: flex; flex-direction: column; gap: 3px; }
-  .field label { color: var(--text-dim); font-size: .7rem; text-transform: uppercase; letter-spacing: .03em; }
-  .field input {
-    background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px;
-    padding: 8px 9px; font: inherit; font-size: .9rem; width: 100%;
-  }
-  .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-  .contact-block { background: var(--bg-card); border: 1px solid #3a4a3f; border-radius: 8px; padding: 9px 11px; margin-bottom: 10px; font-size: .84rem; }
-  .contact-block .label { color: var(--accent); font-size: .7rem; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 3px; }
-
-  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
-  .actions .wide { grid-column: 1 / -1; }
-  button.act {
-    font: inherit; font-size: .92rem; font-weight: 700; padding: 12px 10px; border-radius: 10px;
-    border: 1px solid var(--border); cursor: pointer; background: var(--bg-card); color: var(--text);
-  }
-  button.act:disabled { opacity: .5; cursor: not-allowed; }
-  button.approve { background: var(--accent); color: #0b1f17; border-color: var(--accent); }
-  button.deny { background: var(--danger); color: #2b0d13; border-color: var(--danger); }
-  button.hold { background: var(--info); color: #0a1a2b; border-color: var(--info); }
-  button.ghost { background: transparent; color: var(--text-dim); font-weight: 500; }
-  .card-status { font-size: .82rem; margin-top: 8px; min-height: 1em; text-align: center; }
-  .card-status.error { color: var(--danger); }
-  .card-status.ok { color: var(--accent); }
-  .auto-note { color: var(--info); font-size: .8rem; margin-bottom: 6px; }
-
-  .empty { text-align: center; color: var(--text-dim); padding: 44px 0; }
-
-  /* Password gate */
-  .gate { max-width: 360px; margin: 12vh auto 0; text-align: center; }
-  .gate h2 { font-size: 1.05rem; margin: 0 0 6px; }
-  .gate p { color: var(--text-dim); font-size: .86rem; margin: 0 0 16px; }
-  .gate input { width: 100%; background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
-    border-radius: 10px; padding: 13px; font: inherit; font-size: 1rem; margin-bottom: 10px; }
-  .gate button { width: 100%; background: var(--accent); color: #0b1f17; border: none; border-radius: 10px;
-    padding: 13px; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
-  .gate .err { color: var(--danger); font-size: .82rem; min-height: 1.1em; margin-top: 8px; }
+  .submitted .note { margin-top: 9px; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.22); white-space: pre-wrap; line-height: 1.5; }
+  details.edit, details.danger-zone { margin: 0 0 14px; border: 1px solid var(--line-soft); border-radius: 13px; background: rgba(255,255,255,.018); }
+  details.edit > summary, details.danger-zone > summary { min-height: 44px; display: flex; align-items: center; padding: 0 13px; color: var(--muted); cursor: pointer; list-style: none; font-size: .8rem; font-weight: 750; }
+  details.edit > summary::-webkit-details-marker, details.danger-zone > summary::-webkit-details-marker { display: none; }
+  details.edit > summary::before, details.danger-zone > summary::before { content: "+"; width: 22px; color: var(--accent); font-size: 1rem; }
+  details.edit[open] > summary::before, details.danger-zone[open] > summary::before { content: "−"; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; padding: 0 13px 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { color: var(--muted); font-size: .65rem; text-transform: uppercase; letter-spacing: .07em; }
+  .field input { width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); background: var(--bg); }
+  .contact-block { margin-bottom: 14px; padding: 11px 13px; border: 1px solid rgba(112,225,189,.15); border-radius: 11px; color: #d1d8e3; background: rgba(112,225,189,.045); font-size: .8rem; }
+  .contact-block .label { margin-bottom: 4px; color: var(--accent); font-size: .64rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 850; }
+  .action-panel { padding-top: 16px; border-top: 1px solid var(--line-soft); }
+  .action-label { margin-bottom: 10px; color: var(--muted); font-size: .73rem; line-height: 1.4; }
+  .actions { display: flex; flex-wrap: wrap; gap: 9px; }
+  button.act { min-height: 46px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; color: var(--text); background: var(--panel-3); cursor: pointer; font-size: .85rem; font-weight: 800; }
+  button.act:hover { transform: translateY(-1px); border-color: #476080; }
+  button.act:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  button.act.primary, button.approve { color: #052018; border-color: var(--accent); background: linear-gradient(135deg, var(--accent), var(--accent-strong)); }
+  button.deny { color: var(--danger); border-color: rgba(255,117,140,.3); background: var(--danger-soft); }
+  button.hold { color: var(--info); border-color: rgba(120,184,255,.28); background: var(--info-soft); }
+  button.ghost { color: #b2bdce; background: transparent; }
+  button.act.confirming { color: #24070d; border-color: var(--danger); background: var(--danger); }
+  .danger-zone { margin-top: 14px !important; border-color: rgba(255,117,140,.11) !important; }
+  .danger-zone > summary { color: #8e6770 !important; }
+  .danger-zone .actions { padding: 0 13px 13px; }
+  .card-status { min-height: 1em; margin: 10px 0 0; color: var(--muted); font-size: .78rem; }
+  .card-status.error { color: var(--danger); } .card-status.ok { color: var(--accent); }
+  .empty { display: grid; place-items: center; min-height: 280px; margin: 0; border: 1px dashed var(--line); border-radius: var(--radius-lg); color: var(--muted); background: rgba(14,19,32,.5); text-align: center; }
+  .gate { max-width: 390px; margin: 12vh auto 0; padding: 28px; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); box-shadow: var(--shadow); text-align: center; }
+  .gate h2 { margin: 0 0 7px; font-size: 1.3rem; } .gate p { margin: 0 0 18px; color: var(--muted); font-size: .86rem; }
+  .gate input { width: 100%; min-height: 48px; margin-bottom: 10px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--bg); }
+  .gate button { width: 100%; min-height: 48px; border: 0; border-radius: 11px; color: #052018; background: var(--accent); font-weight: 850; cursor: pointer; }
+  .gate .err { min-height: 1.1em; margin-top: 9px; color: var(--danger); font-size: .8rem; }
   .hidden { display: none !important; }
+  @media (max-width: 820px) {
+    body { padding-left: 12px; padding-right: 12px; }
+    .app-shell { display: block; }
+    .sidebar { position: static; }
+    .brand { padding: 5px 3px 14px; }
+    .brand-mark { width: 38px; height: 38px; }
+    .sidebar-note { display: none; }
+    .tabbar { position: sticky; top: 0; z-index: 20; flex-direction: row; overflow-x: auto; margin: 0 -12px; padding: 9px 12px; border-width: 1px 0; border-radius: 0; scrollbar-width: none; }
+    .tabbar::-webkit-scrollbar { display: none; }
+    .tab { width: auto; min-height: 42px; flex: 0 0 auto; padding: 8px 11px; }
+    .tab.active { box-shadow: inset 0 -3px var(--accent); }
+    .workspace-head { min-height: 0; padding: 20px 2px 16px; align-items: flex-end; }
+    .workspace-head h2 { font-size: 1.7rem; }
+    .workspace-head p { font-size: .82rem; }
+    .toolbar { flex-direction: column-reverse; align-items: flex-end; gap: 6px; }
+    .card { padding: 15px; border-radius: 18px; }
+  }
+  @media (max-width: 520px) {
+    .brand p { display: none; }
+    .workspace-head { display: block; }
+    .toolbar { margin-top: 14px; flex-direction: row; justify-content: space-between; align-items: center; }
+    .grid { grid-template-columns: 1fr; }
+    .flyer-row { grid-template-columns: 88px 1fr; }
+    .flyer-thumb { width: 88px; height: 88px; }
+    .submitted .row { grid-template-columns: 82px minmax(0,1fr); }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; }
+    button.act { width: 100%; padding: 0 12px; }
+    button.act.primary, button.act.full { grid-column: 1 / -1; }
+    .meta { width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -174,17 +184,29 @@
     </div>
 
     <!-- Dashboard -->
-    <div id="app" class="hidden">
-      <header class="top">
-        <h1>Review Dashboard</h1>
-        <p class="sub">Approve · Deny · Hold — flyers &amp; info changes</p>
-      </header>
-      <div class="tabbar" id="tabs"></div>
-      <div class="toolbar">
-        <span class="status-line" id="status-line"></span>
-        <button class="refresh" id="refresh">↻ Refresh</button>
-      </div>
-      <div id="cards"></div>
+    <div id="app" class="app-shell hidden">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">DR</div>
+          <div><h1>Dance Review</h1><p>Submission control room</p></div>
+        </div>
+        <nav class="tabbar" id="tabs" aria-label="Submission status"></nav>
+        <p class="sidebar-note">Actions change with each status. Destructive controls stay tucked away until you intentionally open them.</p>
+      </aside>
+      <main class="workspace">
+        <header class="workspace-head">
+          <div>
+            <div class="eyebrow">Review queue</div>
+            <h2 id="view-title">Pending decisions</h2>
+            <p id="view-description">New submissions waiting for a decision.</p>
+          </div>
+          <div class="toolbar">
+            <span class="status-line" id="status-line"></span>
+            <button class="refresh" id="refresh">↻ Refresh</button>
+          </div>
+        </header>
+        <div class="cards" id="cards"></div>
+      </main>
     </div>
   </div>
 
@@ -196,14 +218,14 @@ const PW_KEY = "dosDashPw";
 
 // Which raw statuses fall under each tab.
 const TAB_DEFS = [
-  { key: "pending",  label: "Pending",  statuses: ["pending", "pending-flyer", "fix-failed"] },
-  { key: "hold",     label: "Hold",     statuses: ["hold"] },
-  { key: "approved", label: "Approved", statuses: ["approved"] },
-  { key: "denied",   label: "Denied",   statuses: ["rejected", "denied"] },
-  { key: "replaced", label: "Instantly Replaced", statuses: ["published", "published-new", "applied", "pending-fix"] },
-  { key: "archived", label: "Archived", statuses: ["archived"] },
-  { key: "deleted",  label: "Deleted",  statuses: ["deleted"] },
-  { key: "all",      label: "All posts", statuses: null },
+  { key: "pending", label: "Pending", title: "Pending decisions", description: "Review new submissions, make corrections, then approve, hold, or deny.", statuses: ["pending", "pending-flyer", "fix-failed"] },
+  { key: "hold", label: "On hold", title: "Held for later", description: "Items paused for more information or a second look.", statuses: ["hold"] },
+  { key: "approved", label: "Approved", title: "Approved submissions", description: "Completed decisions. Reopen only when the approval needs to change.", statuses: ["approved"] },
+  { key: "denied", label: "Denied", title: "Denied submissions", description: "Rejected items kept for reference. Reopen if the decision changes.", statuses: ["rejected", "denied"] },
+  { key: "replaced", label: "Live updates", title: "Instantly replaced", description: "Trusted updates already published or queued outside the approval flow.", statuses: ["published", "published-new", "applied", "pending-fix"] },
+  { key: "archived", label: "Archived", title: "Archived records", description: "Tidied-away live updates. Archiving never removes them from the site.", statuses: ["archived"] },
+  { key: "deleted", label: "Deleted", title: "Deleted records", description: "Audit-only history. Deleted records have no further dashboard actions.", statuses: ["deleted"] },
+  { key: "all", label: "All active", title: "All active submissions", description: "Every non-archived, non-deleted item with actions matched to its current status.", statuses: null },
 ];
 
 // Editable event fields (shown in the collapsible "Edit details" section).
@@ -311,6 +333,7 @@ function renderTabs() {
     const btn = document.createElement("button");
     btn.className = "tab" + (currentTab === def.key ? " active" : "");
     btn.innerHTML = escapeHtml(def.label) + `<span class="count">${count}</span>`;
+    btn.setAttribute("aria-current", currentTab === def.key ? "page" : "false");
     btn.addEventListener("click", () => { currentTab = def.key; renderTabs(); renderCards(); });
     el.appendChild(btn);
   });
@@ -319,11 +342,13 @@ function renderTabs() {
 function renderCards() {
   const cardsEl = $("#cards");
   cardsEl.innerHTML = "";
+  const view = TAB_DEFS.find(t => t.key === currentTab) || TAB_DEFS[0];
+  $("#view-title").textContent = view.title;
+  $("#view-description").textContent = view.description;
   const rows = rowsForTab(currentTab);
   rows.sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
   if (rows.length === 0) {
-    const label = TAB_DEFS.find(t => t.key === currentTab).label.toLowerCase();
-    cardsEl.innerHTML = `<p class="empty">Nothing in ${escapeHtml(label)}.</p>`;
+    cardsEl.innerHTML = `<p class="empty">Nothing in ${escapeHtml(view.label.toLowerCase())}.</p>`;
     return;
   }
   rows.forEach(row => cardsEl.appendChild(renderCard(row)));
@@ -359,25 +384,25 @@ function renderCard(row) {
 
   if (isAutoApplied) {
     const n = document.createElement("div");
-    n.className = "auto-note";
-    n.textContent = row.status === "applied"
-      ? "⚡ Auto-applied to the calendar data (trusted sender). Already live — no approval needed."
-      : "⚡ Auto-published to the live site (trusted sender). Already live — no approval needed.";
+    n.className = "state-note";
+    n.innerHTML = row.status === "applied"
+      ? "<span>✓</span><div><strong>Already applied.</strong> This trusted correction is live and needs no approval.</div>"
+      : "<span>⚡</span><div><strong>Already published.</strong> This trusted submission is live and needs no approval.</div>";
     card.appendChild(n);
   } else if (isQueuedAuto) {
     const n = document.createElement("div");
-    n.className = "auto-note";
-    n.textContent = "⏳ Queued correction (trusted sender) — still needs to be applied. No approval needed.";
+    n.className = "state-note";
+    n.innerHTML = "<span>◷</span><div><strong>Queued correction.</strong> It still needs to be applied outside this approval panel.</div>";
     card.appendChild(n);
   } else if (isArchived) {
     const n = document.createElement("div");
-    n.className = "auto-note";
-    n.textContent = "🗄 Archived. It stays live on the site — this just hides it from the active lists.";
+    n.className = "state-note";
+    n.innerHTML = "<span>◇</span><div><strong>Archived, not removed.</strong> It stays live on the site and can be restored here.</div>";
     card.appendChild(n);
   } else if (isDeleted) {
     const n = document.createElement("div");
-    n.className = "auto-note";
-    n.textContent = "🗑 Deleted. Removed from the live site (if it was published there) and hidden here.";
+    n.className = "state-note";
+    n.innerHTML = "<span>×</span><div><strong>Deleted record.</strong> Any row-linked live artifact was removed; this card remains for audit history.</div>";
     card.appendChild(n);
   }
 
@@ -400,10 +425,9 @@ function renderCard(row) {
   // "What they submitted" — the info entered at Send time
   card.appendChild(renderSubmitted(row, isCorrection));
 
-  // A card only offers editing + the review buttons when there's actually a
-  // decision to make. Trusted-auto results (already live), queued fixes, and
-  // archived rows don't — they get a single lightweight action instead.
-  const canReview = !isAutoApplied && !isQueuedAuto && !isArchived && !isDeleted;
+  // Only active review states expose editable fields. Completed decisions remain
+  // read-only until deliberately reopened, so their buttons match their tab.
+  const canReview = ["pending", "pending-flyer", "fix-failed", "hold"].includes(row.status);
 
   // Editable details (collapsible) — only where an edit would reach the site.
   const inputs = {};
@@ -436,7 +460,11 @@ function renderCard(row) {
     card.appendChild(c);
   }
 
-  // Actions
+  // Contextual actions — never repeat the state the card is already in.
+  const actionPanel = document.createElement("div");
+  actionPanel.className = "action-panel";
+  const actionLabel = document.createElement("div");
+  actionLabel.className = "action-label";
   const actions = document.createElement("div");
   actions.className = "actions";
   const cardStatus = document.createElement("p");
@@ -468,55 +496,85 @@ function renderCard(row) {
   }
 
   if (isAutoApplied) {
-    // Already live via the trusted pipeline — nothing to approve. Just tidy up.
-    const archiveBtn = mkBtn("🗄 Archive", "act ghost wide");
+    actionLabel.textContent = "This is already live. Archive it when you no longer need it in the active queue.";
+    const archiveBtn = mkBtn("Archive record", "act ghost full");
     actionBtns = [archiveBtn];
     archiveBtn.addEventListener("click", () => doUpdate("archived", false));
     actions.appendChild(archiveBtn);
   } else if (isQueuedAuto) {
-    // Trusted correction still waiting to be applied — no approval, but let Sean
-    // cancel it if it shouldn't go through. (Not archivable: it's not done yet.)
-    const cancelBtn = mkBtn("Cancel queued fix", "act deny wide");
+    actionLabel.textContent = "This fix is waiting for the separate apply workflow. You can only cancel it here.";
+    const cancelBtn = mkBtn("Cancel queued fix", "act deny full");
     actionBtns = [cancelBtn];
     cancelBtn.addEventListener("click", () => doUpdate("rejected", false));
     actions.appendChild(cancelBtn);
   } else if (isArchived) {
-    // Safety valve for an accidental archive — bring it back into the lists.
-    const restoreBtn = mkBtn("↩ Unarchive", "act ghost wide");
+    actionLabel.textContent = "Restore this record to Instantly Replaced. Its live site content is unchanged.";
+    const restoreBtn = mkBtn("Restore to live updates", "act primary full");
     actionBtns = [restoreBtn];
     restoreBtn.addEventListener("click", () => doUpdate("published", false));
     actions.appendChild(restoreBtn);
   } else if (isDeleted) {
-    // Deleted rows are terminal — the event has been pulled from the site.
-    // No actions; kept for the record in the Deleted tab.
-  } else {
+    actionLabel.textContent = "No actions are available for deleted records.";
+  } else if (["pending", "pending-flyer", "fix-failed"].includes(row.status)) {
+    actionLabel.textContent = "Make the decision for this submission. Edited fields are saved with Approve or Hold.";
     const approveBtn = mkBtn("Approve", "act approve");
     const denyBtn = mkBtn("Deny", "act deny");
     const holdBtn = mkBtn("Hold", "act hold");
-    const saveBtn = mkBtn("Save edits", "act ghost wide");
-    const backBtn = mkBtn("↩ Back to Pending", "act ghost wide");
-    actionBtns = [approveBtn, denyBtn, holdBtn, saveBtn, backBtn];
+    const saveBtn = mkBtn("Save edits", "act ghost");
+    actionBtns = [approveBtn, denyBtn, holdBtn, saveBtn];
     actions.appendChild(approveBtn); actions.appendChild(denyBtn); actions.appendChild(holdBtn);
     actions.appendChild(saveBtn);
-    if (row.status !== "pending") actions.appendChild(backBtn);
     approveBtn.addEventListener("click", () => doUpdate("approved", true));
     denyBtn.addEventListener("click", () => doUpdate("rejected", false));
     holdBtn.addEventListener("click", () => doUpdate("hold", true));
     saveBtn.addEventListener("click", () => doUpdate(null, true));
-    backBtn.addEventListener("click", () => doUpdate("pending", false));
+  } else if (row.status === "hold") {
+    actionLabel.textContent = "Resolve the hold, return it to the review queue, or deny it.";
+    const approveBtn = mkBtn("Approve now", "act approve");
+    const returnBtn = mkBtn("Return to Pending", "act hold");
+    const denyBtn = mkBtn("Deny", "act deny");
+    const saveBtn = mkBtn("Save edits", "act ghost");
+    actionBtns = [approveBtn, returnBtn, denyBtn, saveBtn];
+    actions.appendChild(approveBtn); actions.appendChild(returnBtn); actions.appendChild(denyBtn); actions.appendChild(saveBtn);
+    approveBtn.addEventListener("click", () => doUpdate("approved", true));
+    returnBtn.addEventListener("click", () => doUpdate("pending", true));
+    denyBtn.addEventListener("click", () => doUpdate("rejected", false));
+    saveBtn.addEventListener("click", () => doUpdate(null, true));
+  } else if (row.status === "approved") {
+    actionLabel.textContent = "This decision is complete. Reopen it only if the approval needs to change.";
+    const reopenBtn = mkBtn("Reopen for review", "act primary");
+    const denyBtn = mkBtn("Change to Denied", "act deny");
+    actionBtns = [reopenBtn, denyBtn];
+    actions.appendChild(reopenBtn); actions.appendChild(denyBtn);
+    reopenBtn.addEventListener("click", () => doUpdate("pending", false));
+    denyBtn.addEventListener("click", () => doUpdate("rejected", false));
+  } else if (["rejected", "denied"].includes(row.status)) {
+    actionLabel.textContent = "This submission was denied. Reopen it only when the decision should be reconsidered.";
+    const reopenBtn = mkBtn("Reopen for review", "act primary full");
+    actionBtns = [reopenBtn];
+    actions.appendChild(reopenBtn);
+    reopenBtn.addEventListener("click", () => doUpdate("pending", false));
   }
 
-  card.appendChild(actions);
+  actionPanel.appendChild(actionLabel);
+  if (actionBtns.length) actionPanel.appendChild(actions);
+  card.appendChild(actionPanel);
 
   // Delete — on every live post (not on already-deleted rows). Two-tap confirm;
   // removes the event from the live site (if it was published there) and files
   // the row under Deleted.
   if (!isDeleted) {
+    const danger = document.createElement("details");
+    danger.className = "danger-zone";
+    const dangerSummary = document.createElement("summary");
+    dangerSummary.textContent = "Danger zone";
+    danger.appendChild(dangerSummary);
     const delRow = document.createElement("div");
     delRow.className = "actions";
-    const delBtn = mkBtn("🗑 Delete", "act ghost wide");
+    const delBtn = mkBtn("Delete this record", "act deny full");
     delRow.appendChild(delBtn);
-    card.appendChild(delRow);
+    danger.appendChild(delRow);
+    card.appendChild(danger);
     let armed = false, timer = null;
     async function doDelete() {
       delBtn.disabled = true;
@@ -539,11 +597,11 @@ function renderCard(row) {
       if (!armed) {
         armed = true;
         delBtn.classList.add("confirming");
-        delBtn.textContent = "Tap again to delete — removes from the site";
+        delBtn.textContent = "Tap again to permanently delete";
         timer = setTimeout(() => {
           armed = false;
           delBtn.classList.remove("confirming");
-          delBtn.textContent = "🗑 Delete";
+          delBtn.textContent = "Delete this record";
         }, 4000);
         return;
       }
