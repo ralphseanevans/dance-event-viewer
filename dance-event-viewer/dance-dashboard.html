@@ -139,6 +139,25 @@
   .gate input { width: 100%; min-height: 48px; margin-bottom: 10px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--bg); }
   .gate button { width: 100%; min-height: 48px; border: 0; border-radius: 11px; color: #052018; background: var(--accent); font-weight: 850; cursor: pointer; }
   .gate .err { min-height: 1.1em; margin-top: 9px; color: var(--danger); font-size: .8rem; }
+  [data-tooltip] { position: relative; }
+  [data-tooltip]::after {
+    content: attr(data-tooltip); position: absolute; z-index: 100; left: 50%; bottom: calc(100% + 10px); width: max-content;
+    max-width: min(320px, 78vw); padding: 10px 12px; border: 1px solid #40506a; border-radius: 10px;
+    color: #eef4ff; background: #101827; box-shadow: 0 14px 38px rgba(0,0,0,.42); font-size: .75rem;
+    font-weight: 500; line-height: 1.45; letter-spacing: 0; text-align: left; text-transform: none; white-space: normal;
+    opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, 5px); transition: opacity .14s ease, transform .14s ease, visibility .14s;
+  }
+  [data-tooltip]::before {
+    content: ""; position: absolute; z-index: 101; left: 50%; bottom: calc(100% + 5px); width: 9px; height: 9px;
+    border: solid #40506a; border-width: 0 1px 1px 0; background: #101827; opacity: 0; visibility: hidden;
+    pointer-events: none; transform: translateX(-50%) rotate(45deg); transition: opacity .14s ease, visibility .14s;
+  }
+  [data-tooltip]:hover::after, [data-tooltip]:focus-visible::after, [data-tooltip]:hover::before, [data-tooltip]:focus-visible::before { opacity: 1; visibility: visible; }
+  [data-tooltip]:hover::after, [data-tooltip]:focus-visible::after { transform: translate(-50%, 0); }
+  .tab[data-tooltip]::after { left: 10px; bottom: auto; top: calc(100% + 8px); transform: translateY(-4px); }
+  .tab[data-tooltip]::before { display: none; }
+  .tab[data-tooltip]:hover::after, .tab[data-tooltip]:focus-visible::after { transform: translateY(0); }
+  .badge[data-tooltip] { cursor: help; }
   .hidden { display: none !important; }
   @media (max-width: 820px) {
     body { padding-left: 12px; padding-right: 12px; }
@@ -151,6 +170,7 @@
     .tabbar::-webkit-scrollbar { display: none; }
     .tab { width: auto; min-height: 42px; flex: 0 0 auto; padding: 8px 11px; }
     .tab.active { box-shadow: inset 0 -3px var(--accent); }
+    .tab[data-tooltip]::after { position: fixed; left: 12px; right: 12px; top: 78px; bottom: auto; width: auto; max-width: none; }
     .workspace-head { min-height: 0; padding: 20px 2px 16px; align-items: flex-end; }
     .workspace-head h2 { font-size: 1.7rem; }
     .workspace-head p { font-size: .82rem; }
@@ -228,6 +248,48 @@ const TAB_DEFS = [
   { key: "all", label: "All active", title: "All active submissions", description: "Every non-archived, non-deleted item with actions matched to its current status.", statuses: null },
 ];
 
+const TAB_TOOLTIPS = {
+  pending: "New submissions and failed extractions that still need a decision. Review the details, correct anything needed, then Approve, Hold, or Deny.",
+  hold: "Submissions intentionally paused for missing information or a later decision. Nothing is approved or published simply because it is on hold.",
+  approved: "Submissions you approved. Approval records the decision in the Submissions Sheet; transferring an approved item into the canonical calendars remains a separate workflow.",
+  denied: "Submissions you rejected. They stay here as history and can be reopened if the decision changes.",
+  replaced: "Trusted-sender automation: published = a flyer replacement went live; published-new = a new event went to the temporary web overlay; applied = a text correction was completed; pending-fix = a correction is still waiting for the separate apply workflow.",
+  archived: "Completed live-update records hidden from active views. Archiving does not remove anything from the live site.",
+  deleted: "Audit history for records deleted through the dashboard. Any row-linked temporary overlay or uploaded logo was removed first; canonical calendar data is never deleted here.",
+  all: "Every active record except Archived and Deleted. Each card keeps the actions appropriate to its own status.",
+};
+
+const STATUS_TOOLTIPS = {
+  pending: "Waiting for your review and decision.",
+  "pending-flyer": "A new event with a flyer is waiting for review. Approving it uses the current Apps Script publishing workflow.",
+  "fix-failed": "A correction attempt failed and needs manual review before anything else happens.",
+  hold: "Paused without approval or denial.",
+  approved: "You approved this submission. Canonical calendar transfer is still a separate step.",
+  rejected: "You denied this submission; it remains as review history.",
+  denied: "You denied this submission; it remains as review history.",
+  published: "A trusted flyer or image update was published immediately to the live site.",
+  "published-new": "A trusted new event was published immediately to the temporary web-events overlay, not directly into canonical calendar JSON.",
+  applied: "A trusted text correction was already applied and is complete.",
+  "pending-fix": "A trusted correction is queued but has not been applied yet. It still needs the separate interactive apply workflow.",
+  archived: "Hidden from active dashboard views while its live site content remains unchanged.",
+  deleted: "Terminal dashboard record retained for audit history.",
+};
+
+const ACTION_TOOLTIPS = {
+  "Approve": "Approve this submission and save any edited fields. Approval does not directly edit canonical calendar JSON.",
+  "Approve now": "Resolve the hold by approving this submission and saving any edited fields.",
+  "Deny": "Reject this submission. It moves to Denied and remains available for review history.",
+  "Change to Denied": "Reverse the completed approval and move this record to Denied.",
+  "Hold": "Pause this submission for later and save any edited fields without approving it.",
+  "Return to Pending": "Remove the hold and send this item back to the Pending review queue.",
+  "Save edits": "Save field corrections without changing the current review status.",
+  "Reopen for review": "Move this completed decision back to Pending so it can be reviewed again.",
+  "Archive record": "Hide this completed live-update record from active views. Its live content stays unchanged.",
+  "Restore to live updates": "Unarchive this record and return it to Live updates. Nothing new is published by this action.",
+  "Cancel queued fix": "Stop this pending correction and move the record to Denied. The correction will not be applied.",
+  "Delete this record": "Open the two-step delete safeguard. A confirmed delete only removes temporary web/logo artifacts explicitly linked to this row; it never deletes canonical calendar data.",
+};
+
 // Editable event fields (shown in the collapsible "Edit details" section).
 const EDITABLE_FIELDS = [
   { key: "name", label: "Event name" },
@@ -249,6 +311,22 @@ let currentTab = "pending";
 let password = localStorage.getItem(PW_KEY) || "";
 
 function $(sel, root) { return (root || document).querySelector(sel); }
+
+function setTooltip(el, text, accessibleName) {
+  if (!el || !text) return el;
+  el.dataset.tooltip = text;
+  if (accessibleName) el.setAttribute("aria-label", accessibleName + ". " + text);
+  return el;
+}
+
+function makeBadge(text, cls, tooltip) {
+  const badge = document.createElement("span");
+  badge.className = "badge " + cls;
+  badge.textContent = text;
+  badge.tabIndex = 0;
+  setTooltip(badge, tooltip, text);
+  return badge;
+}
 
 function driveFileId(url) {
   const m = /\/d\/([a-zA-Z0-9_-]+)/.exec(url || "");
@@ -334,6 +412,7 @@ function renderTabs() {
     btn.className = "tab" + (currentTab === def.key ? " active" : "");
     btn.innerHTML = escapeHtml(def.label) + `<span class="count">${count}</span>`;
     btn.setAttribute("aria-current", currentTab === def.key ? "page" : "false");
+    setTooltip(btn, TAB_TOOLTIPS[def.key]);
     btn.addEventListener("click", () => { currentTab = def.key; renderTabs(); renderCards(); });
     el.appendChild(btn);
   });
@@ -371,10 +450,15 @@ function renderCard(row) {
   head.className = "card-head";
   const badges = document.createElement("div");
   badges.className = "badges";
-  badges.innerHTML = `<span class="badge ${statusClass(row.status)}">${escapeHtml(row.status || "?")}</span>`;
-  badges.innerHTML += `<span class="badge kind">${isCorrection ? "Wrong info? / Add info" : "New event"}</span>`;
+  badges.appendChild(makeBadge(row.status || "?", statusClass(row.status), STATUS_TOOLTIPS[row.status] || "Backend status for this submission."));
+  badges.appendChild(makeBadge(isCorrection ? "Wrong info? / Add info" : "New event", "kind",
+    isCorrection ? "A correction submitted from the site's Wrong info / Add info form." : "A proposed new event submission, not a correction to an existing listing."));
   if (row.intake_method === "flyer" && row.extraction_status && !["none", ""].includes(row.extraction_status)) {
-    badges.innerHTML += `<span class="badge ${statusClass(row.extraction_status)}">${row.extraction_status === "ai-drafted" ? "AI drafted" : "extraction failed"}</span>`;
+    const extractionText = row.extraction_status === "ai-drafted" ? "AI drafted" : "extraction failed";
+    const extractionTip = row.extraction_status === "ai-drafted"
+      ? "AI read the flyer and drafted the event fields. Review them carefully before approval."
+      : "The flyer was saved, but AI could not confidently read its event details. Open the flyer and enter or verify the fields manually before approval.";
+    badges.appendChild(makeBadge(extractionText, statusClass(row.extraction_status), extractionTip));
   }
   const meta = document.createElement("span");
   meta.className = "meta";
@@ -418,6 +502,7 @@ function renderCard(row) {
     const link = document.createElement("a");
     link.className = "flyer-link"; link.href = row.flyer_url; link.target = "_blank"; link.rel = "noopener noreferrer";
     link.textContent = "Open full-size flyer ↗";
+    setTooltip(link, "Open the original uploaded flyer in Google Drive for a full-resolution manual review.");
     fr.appendChild(img); fr.appendChild(link);
     card.appendChild(fr);
   }
@@ -436,6 +521,7 @@ function renderCard(row) {
     det.className = "edit";
     const sum = document.createElement("summary");
     sum.textContent = "Edit details";
+    setTooltip(sum, "Open the fields drafted or submitted for this event. Changes are saved with Save edits, Approve, or Hold.");
     det.appendChild(sum);
     const grid = document.createElement("div");
     grid.className = "grid";
@@ -457,6 +543,8 @@ function renderCard(row) {
     c.className = "contact-block";
     const parts = [row.contact_name, row.contact_email, row.contact_phone].filter(Boolean).map(escapeHtml);
     c.innerHTML = `<div class="label">Contact (internal only)</div>${parts.join(" · ")}`;
+    c.tabIndex = 0;
+    setTooltip(c, "Private submitter contact information. It is shown only in this authenticated dashboard and must never be published.");
     card.appendChild(c);
   }
 
@@ -568,6 +656,7 @@ function renderCard(row) {
     danger.className = "danger-zone";
     const dangerSummary = document.createElement("summary");
     dangerSummary.textContent = "Danger zone";
+    setTooltip(dangerSummary, "Contains the delete control. Delete remains behind this disclosure to prevent accidental destructive actions.");
     danger.appendChild(dangerSummary);
     const delRow = document.createElement("div");
     delRow.className = "actions";
@@ -598,10 +687,12 @@ function renderCard(row) {
         armed = true;
         delBtn.classList.add("confirming");
         delBtn.textContent = "Tap again to permanently delete";
+        setTooltip(delBtn, "Second and final confirmation. This marks the Sheet row deleted and removes only temporary web overlay or uploaded-logo artifacts explicitly linked to this submission. Canonical calendar JSON is never deleted here.");
         timer = setTimeout(() => {
           armed = false;
           delBtn.classList.remove("confirming");
           delBtn.textContent = "Delete this record";
+          setTooltip(delBtn, ACTION_TOOLTIPS["Delete this record"]);
         }, 4000);
         return;
       }
@@ -629,6 +720,7 @@ function labelFor(status) {
 function mkBtn(text, cls) {
   const b = document.createElement("button");
   b.className = cls; b.textContent = text;
+  setTooltip(b, ACTION_TOOLTIPS[text]);
   return b;
 }
 
@@ -664,6 +756,9 @@ function renderSubmitted(row, isCorrection) {
 }
 
 /* ---------- Boot ---------- */
+setTooltip($("#gate-btn"), "Check the dashboard password and load the private submission queue. The password is stored only in this browser's local storage for future visits.");
+setTooltip($("#refresh"), "Reload every submission from the Apps Script backend and update all status counts. This does not change any records.");
+setTooltip($("#gate-input"), "Enter the separate DASHBOARD_PASSWORD. This public page never contains or requests the master REVIEW_TOKEN.");
 $("#gate-btn").addEventListener("click", submitGate);
 $("#gate-input").addEventListener("keydown", e => { if (e.key === "Enter") submitGate(); });
 $("#refresh").addEventListener("click", loadRows);
