@@ -496,6 +496,8 @@ async function loadCalendarEvents() {
 
 function renderCalendarManager() {
   const cardsEl = $("#cards");
+  $("#view-title").textContent = "Manage calendar listings";
+  $("#view-description").textContent = "Add events or file protected exact-key edit and removal requests without leaving this tab.";
   cardsEl.innerHTML = "";
   const tools = document.createElement("div");
   tools.className = "manage-tools";
