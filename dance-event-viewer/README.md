@@ -119,10 +119,12 @@ domain as a GitHub Pages custom domain (repo `ralphseanevans/dance-event-viewer`
 account; a `CNAME` file at the repo root makes the domain work and must never be removed).
 The old https://ralphseanevans.github.io/dance-event-viewer/ URLs auto-redirect. The repo mirrors this
 folder's layout, with one deliberate difference: its `dance_events.json` is a
-SANITIZED export — only the 15 fields the cards/recurrence engine need (`state` added
+SANITIZED export — only the 16 fields the cards/recurrence engine need (`state` added
 2026-07-17 for the regional pivot; `exclude_monthly_rules` added 2026-07-17 so a weekly
 series can skip specific Nth-weekdays, e.g. SSO Lindy & Blues meets every Friday EXCEPT the
-1st & 3rd — see `isExcludedOccurrence()` in `js/app.js`); internal pipeline fields are
+1st & 3rd; `exclude_dates` added 2026-07-18 for one-off skips by exact ISO date, e.g. SSO
+skips 2026-07-24 because the Salsa Lindy Crossover Night takes that slot — both handled by
+`isExcludedOccurrence()` in `js/app.js`); internal pipeline fields are
 stripped and must never be pushed. (Two former differences no longer apply: (a)
 `dance-calendar.html` was decommissioned and removed entirely 2026-07-12, so it's just
 gone, not merely kept off the repo; (b) the old claim that the published `index.html`
@@ -209,6 +211,28 @@ the event + flyer live immediately via the `web-events.json` overlay + logo laye
 while anyone else's is held — Sean's email Approve link publishes the **event and
 flyer together** (not just the image). Backend spec-of-record:
 `Daily Operating System/Submission_AppsScript_Code.gs`.
+
+## Dashboard calendar management (2026-07-22)
+
+The authenticated `dance-dashboard.html` includes a **Manage calendar** tab. It reads
+the published sanitized `dance_events.json`, provides search across event name, venue,
+style, and key, opens the same `submit-event.html` Add Event experience inside a
+responsive side panel, and provides a prefilled side-panel editor for existing entries.
+Additions and edits are submitted through the existing intake/correction queue; the
+user never has to leave the Manage calendar tab.
+
+The removal control deliberately says **Request removal from calendar JSON**. Its
+two-step confirmation creates a trusted text-correction row (`pending-fix`) naming the
+exact event key; it does not directly modify either canonical JSON file. Applying that
+request remains an interactive local operation using the required backup → edit master
+→ derive WCS → validate → atomic replace → tests → publish pipeline.
+
+Dashboard record cleanup is separate. **Delete submission record** moves a Submissions
+Sheet row to Deleted and may remove only that row's temporary `web-events.json` entry
+or uploaded flyer/logo mapping. **Archive submission record** only moves the dashboard
+row to Archived. Neither action changes canonical `dance_events.json` or
+`wcs_events.json`. Buttons, tooltips, confirmation text, and completion messages all
+state these boundaries explicitly.
 
 ## Views & filters
 

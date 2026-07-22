@@ -134,6 +134,26 @@
   .card-status { min-height: 1em; margin: 10px 0 0; color: var(--muted); font-size: .78rem; }
   .card-status.error { color: var(--danger); } .card-status.ok { color: var(--accent); }
   .empty { display: grid; place-items: center; min-height: 280px; margin: 0; border: 1px dashed var(--line); border-radius: var(--radius-lg); color: var(--muted); background: rgba(14,19,32,.5); text-align: center; }
+  .manage-tools { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; margin-bottom: 16px; padding: 16px;
+    border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: rgba(14,19,32,.72); }
+  .manage-search { min-height: 46px; width: 100%; padding: 10px 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--text); background: var(--bg); }
+  .manage-add { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; border-radius: 12px;
+    border: 0; color: #052018; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); font-size: .85rem; font-weight: 850; cursor: pointer; }
+  .manage-note { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
+  .calendar-card h3 { margin: 0 0 7px; font-size: 1.05rem; }
+  .calendar-card .calendar-meta { margin: 0 0 14px; color: var(--muted); font-size: .8rem; line-height: 1.5; }
+  .calendar-card .calendar-key { display: block; margin-top: 5px; color: #687892; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .68rem; word-break: break-all; }
+  .manage-drawer-backdrop { position: fixed; z-index: 300; inset: 0; display: flex; justify-content: flex-end; background: rgba(0,0,0,.62); backdrop-filter: blur(4px); }
+  .manage-drawer { width: min(580px, 92vw); height: 100%; display: flex; flex-direction: column; border-left: 1px solid var(--line); background: var(--panel); box-shadow: -24px 0 70px rgba(0,0,0,.42); }
+  .manage-drawer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line-soft); }
+  .manage-drawer-head h3 { margin: 0 0 5px; font-size: 1.2rem; }
+  .manage-drawer-head p { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.45; }
+  .drawer-close { min-width: 42px; min-height: 42px; border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--panel-2); cursor: pointer; }
+  .manage-drawer-body { min-height: 0; flex: 1; overflow: auto; padding: 18px 20px 30px; }
+  .manage-drawer iframe { width: 100%; height: 100%; min-height: 720px; border: 0; border-radius: 12px; background: #fff; }
+  .manage-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .manage-edit-grid .field.wide { grid-column: 1 / -1; }
+  .drawer-actions { display: flex; gap: 10px; margin-top: 18px; }
   .gate { max-width: 390px; margin: 12vh auto 0; padding: 28px; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); box-shadow: var(--shadow); text-align: center; }
   .gate h2 { margin: 0 0 7px; font-size: 1.3rem; } .gate p { margin: 0 0 18px; color: var(--muted); font-size: .86rem; }
   .gate input { width: 100%; min-height: 48px; margin-bottom: 10px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--bg); }
@@ -189,6 +209,12 @@
     button.act { width: 100%; padding: 0 12px; }
     button.act.primary, button.act.full { grid-column: 1 / -1; }
     .meta { width: 100%; }
+    .manage-tools { grid-template-columns: 1fr; }
+    .manage-note { grid-column: auto; }
+    .manage-drawer { width: 100vw; }
+    .manage-drawer-head, .manage-drawer-body { padding-left: 14px; padding-right: 14px; }
+    .manage-edit-grid { grid-template-columns: 1fr; }
+    .manage-edit-grid .field.wide { grid-column: auto; }
   }
 </style>
 </head>
@@ -238,6 +264,7 @@ const PW_KEY = "dosDashPw";
 
 // Which raw statuses fall under each tab.
 const TAB_DEFS = [
+  { key: "manage", label: "Manage calendar", title: "Manage calendar listings", description: "Add events or request protected removal from the canonical calendar JSON.", statuses: [] },
   { key: "pending", label: "Pending", title: "Pending decisions", description: "Review new submissions, make corrections, then approve, hold, or deny.", statuses: ["pending", "pending-flyer", "fix-failed"] },
   { key: "hold", label: "On hold", title: "Held for later", description: "Items paused for more information or a second look.", statuses: ["hold"] },
   { key: "approved", label: "Approved", title: "Approved submissions", description: "Completed decisions. Reopen only when the approval needs to change.", statuses: ["approved"] },
@@ -249,6 +276,7 @@ const TAB_DEFS = [
 ];
 
 const TAB_TOOLTIPS = {
+  manage: "Browse the public calendar, open the existing Add Event page, or file a protected request to remove an event from canonical dance_events.json. Requests do not edit JSON directly.",
   pending: "New submissions and failed extractions that still need a decision. Review the details, correct anything needed, then Approve, Hold, or Deny.",
   hold: "Submissions intentionally paused for missing information or a later decision. Nothing is approved or published simply because it is on hold.",
   approved: "Submissions you approved. Approval records the decision in the Submissions Sheet; transferring an approved item into the canonical calendars remains a separate workflow.",
@@ -284,10 +312,13 @@ const ACTION_TOOLTIPS = {
   "Return to Pending": "Remove the hold and send this item back to the Pending review queue.",
   "Save edits": "Save field corrections without changing the current review status.",
   "Reopen for review": "Move this completed decision back to Pending so it can be reviewed again.",
-  "Archive record": "Hide this completed live-update record from active views. Its live content stays unchanged.",
+  "Archive submission record": "Move this dashboard submission record to Archived. It does not remove an event from the website and does not change dance_events.json or wcs_events.json.",
   "Restore to live updates": "Unarchive this record and return it to Live updates. Nothing new is published by this action.",
   "Cancel queued fix": "Stop this pending correction and move the record to Denied. The correction will not be applied.",
-  "Delete this record": "Open the two-step delete safeguard. A confirmed delete only removes temporary web/logo artifacts explicitly linked to this row; it never deletes canonical calendar data.",
+  "Delete submission record": "Move this submission record to the Deleted tab. It may also remove a temporary web-events.json listing and a flyer/logo uploaded by this submission. It never changes dance_events.json or wcs_events.json.",
+  "Request removal from calendar JSON": "File a correction request asking for this event to be removed from canonical dance_events.json. This button does not edit JSON immediately; the protected local workflow must back up, regenerate WCS, test, and publish the removal.",
+  "Edit calendar entry": "Open a side panel prefilled from this published listing. Submitting creates an exact-key correction request; it does not directly edit canonical JSON.",
+  "Submit calendar edit request": "File the edited fields as an exact-key correction request. The canonical JSON remains unchanged until the protected local workflow applies, validates, tests, and publishes it.",
 };
 
 // Editable event fields (shown in the collapsible "Edit details" section).
@@ -307,6 +338,8 @@ const EDITABLE_FIELDS = [
 ];
 
 let allRows = [];
+let calendarEvents = [];
+let calendarLoaded = false;
 let currentTab = "pending";
 let password = localStorage.getItem(PW_KEY) || "";
 
@@ -396,6 +429,7 @@ async function loadRows() {
 }
 
 function rowsForTab(key) {
+  if (key === "manage") return [];
   const def = TAB_DEFS.find(t => t.key === key);
   if (!def) return allRows.slice();
   // "All posts" shows every submission except archived/deleted ones (those live in their own tabs).
@@ -407,13 +441,18 @@ function renderTabs() {
   const el = $("#tabs");
   el.innerHTML = "";
   TAB_DEFS.forEach(def => {
-    const count = rowsForTab(def.key).length;
+    const count = def.key === "manage" ? (calendarLoaded ? calendarEvents.length : "JSON") : rowsForTab(def.key).length;
     const btn = document.createElement("button");
     btn.className = "tab" + (currentTab === def.key ? " active" : "");
     btn.innerHTML = escapeHtml(def.label) + `<span class="count">${count}</span>`;
     btn.setAttribute("aria-current", currentTab === def.key ? "page" : "false");
     setTooltip(btn, TAB_TOOLTIPS[def.key]);
-    btn.addEventListener("click", () => { currentTab = def.key; renderTabs(); renderCards(); });
+    btn.addEventListener("click", () => {
+      currentTab = def.key;
+      renderTabs();
+      if (def.key === "manage" && !calendarLoaded) loadCalendarEvents();
+      else renderCards();
+    });
     el.appendChild(btn);
   });
 }
@@ -424,6 +463,10 @@ function renderCards() {
   const view = TAB_DEFS.find(t => t.key === currentTab) || TAB_DEFS[0];
   $("#view-title").textContent = view.title;
   $("#view-description").textContent = view.description;
+  if (currentTab === "manage") {
+    renderCalendarManager();
+    return;
+  }
   const rows = rowsForTab(currentTab);
   rows.sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
   if (rows.length === 0) {
@@ -431,6 +474,254 @@ function renderCards() {
     return;
   }
   rows.forEach(row => cardsEl.appendChild(renderCard(row)));
+}
+
+async function loadCalendarEvents() {
+  const cardsEl = $("#cards");
+  cardsEl.innerHTML = `<p class="empty">Loading canonical calendar listings…</p>`;
+  try {
+    const res = await fetch("../dance_events.json?dashboard=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("calendar returned HTTP " + res.status);
+    const data = await res.json();
+    const events = Array.isArray(data) ? data : (data && Array.isArray(data.events) ? data.events : null);
+    if (!events) throw new Error("calendar JSON does not contain an event list");
+    calendarEvents = events.filter(event => event && event.key && event.name);
+    calendarLoaded = true;
+    renderTabs();
+    renderCalendarManager();
+  } catch (err) {
+    cardsEl.innerHTML = `<p class="empty">Could not load the calendar: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderCalendarManager() {
+  const cardsEl = $("#cards");
+  cardsEl.innerHTML = "";
+  const tools = document.createElement("div");
+  tools.className = "manage-tools";
+  const search = document.createElement("input");
+  search.className = "manage-search";
+  search.type = "search";
+  search.placeholder = "Search event name, venue, style, or key";
+  search.setAttribute("aria-label", "Search calendar listings");
+  setTooltip(search, "Filter the calendar listings shown below. Searching does not change any event data.");
+  const add = document.createElement("button");
+  add.className = "manage-add";
+  add.type = "button";
+  add.textContent = "Add a new event";
+  setTooltip(add, "Open the complete Add Event form inside this dashboard tab. Submitting uses the existing intake workflow; it does not directly edit canonical JSON.");
+  add.addEventListener("click", openAddPanel);
+  const note = document.createElement("p");
+  note.className = "manage-note";
+  note.textContent = "Removal buttons create protected correction requests. They do not directly edit dance_events.json or wcs_events.json. Canonical removal happens later through backup, WCS regeneration, validation, tests, and publish.";
+  tools.appendChild(search); tools.appendChild(add); tools.appendChild(note);
+  cardsEl.appendChild(tools);
+  const list = document.createElement("div");
+  list.className = "cards";
+  cardsEl.appendChild(list);
+
+  function draw() {
+    const q = search.value.trim().toLowerCase();
+    const shown = calendarEvents.filter(event => !q || [event.name, event.venue, event.style, event.key].some(value => String(value || "").toLowerCase().includes(q)));
+    list.innerHTML = "";
+    if (!shown.length) {
+      list.innerHTML = `<p class="empty">No calendar listings match that search.</p>`;
+      return;
+    }
+    shown.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    shown.forEach(event => list.appendChild(renderCalendarCard(event)));
+  }
+  search.addEventListener("input", draw);
+  draw();
+}
+
+function renderCalendarCard(event) {
+  const card = document.createElement("article");
+  card.className = "card calendar-card";
+  const heading = document.createElement("h3");
+  heading.textContent = event.name;
+  const meta = document.createElement("p");
+  meta.className = "calendar-meta";
+  meta.textContent = [event.style, event.venue, event.start_date || event.day_of_week || event.monthly_rule].filter(Boolean).join(" · ");
+  const key = document.createElement("span");
+  key.className = "calendar-key";
+  key.textContent = "JSON key: " + event.key;
+  meta.appendChild(key);
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  const editBtn = mkBtn("Edit calendar entry", "act primary");
+  const requestBtn = mkBtn("Request removal from calendar JSON", "act deny full");
+  const status = document.createElement("p");
+  status.className = "card-status";
+  let armed = false;
+  let timer = null;
+  requestBtn.addEventListener("click", async () => {
+    if (!armed) {
+      armed = true;
+      requestBtn.classList.add("confirming");
+      requestBtn.textContent = "Confirm removal request";
+      setTooltip(requestBtn, `Confirm a request to remove “${event.name}” (${event.key}) from canonical dance_events.json. This still does not edit JSON immediately.`);
+      timer = setTimeout(() => {
+        armed = false;
+        requestBtn.classList.remove("confirming");
+        requestBtn.textContent = "Request removal from calendar JSON";
+        setTooltip(requestBtn, ACTION_TOOLTIPS["Request removal from calendar JSON"]);
+      }, 6000);
+      return;
+    }
+    clearTimeout(timer);
+    requestBtn.disabled = true;
+    status.textContent = "Filing protected removal request…";
+    try {
+      const data = await apiPost({
+        action: "submit",
+        submission_kind: "correction",
+        intake_method: "dashboard-removal-request",
+        event_key: event.key,
+        source_note: `REMOVE FROM CANONICAL CALENDAR JSON. Dashboard request for “${event.name}” (${event.key}). Do not change the key. Apply only through the local backup → derive WCS → validate → atomic replace → test → publish workflow.`,
+        contact_name: "Ralph (authenticated dashboard)",
+      });
+      if (!data.ok) throw new Error(data.error || "unknown error");
+      status.textContent = "Removal request filed. The event remains in calendar JSON until the protected local workflow applies it.";
+      status.classList.add("ok");
+      requestBtn.textContent = "Removal request filed";
+    } catch (err) {
+      status.textContent = "Could not file request: " + err.message;
+      status.classList.add("error");
+      requestBtn.disabled = false;
+      armed = false;
+      requestBtn.classList.remove("confirming");
+      requestBtn.textContent = "Request removal from calendar JSON";
+    }
+  });
+  editBtn.addEventListener("click", () => openEditPanel(event));
+  actions.appendChild(editBtn);
+  actions.appendChild(requestBtn);
+  card.appendChild(heading); card.appendChild(meta); card.appendChild(actions); card.appendChild(status);
+  return card;
+}
+
+function openManageDrawer(title, description) {
+  closeManageDrawer();
+  const backdrop = document.createElement("div");
+  backdrop.className = "manage-drawer-backdrop";
+  backdrop.id = "manage-drawer-backdrop";
+  const drawer = document.createElement("aside");
+  drawer.className = "manage-drawer";
+  drawer.setAttribute("role", "dialog");
+  drawer.setAttribute("aria-modal", "true");
+  drawer.setAttribute("aria-labelledby", "manage-drawer-title");
+  const head = document.createElement("header");
+  head.className = "manage-drawer-head";
+  const copy = document.createElement("div");
+  const heading = document.createElement("h3");
+  heading.id = "manage-drawer-title";
+  heading.textContent = title;
+  const desc = document.createElement("p");
+  desc.textContent = description;
+  copy.appendChild(heading); copy.appendChild(desc);
+  const close = document.createElement("button");
+  close.className = "drawer-close";
+  close.type = "button";
+  close.textContent = "×";
+  close.setAttribute("aria-label", "Close side panel");
+  setTooltip(close, "Close this side panel without submitting a request.");
+  const body = document.createElement("div");
+  body.className = "manage-drawer-body";
+  head.appendChild(copy); head.appendChild(close);
+  drawer.appendChild(head); drawer.appendChild(body); backdrop.appendChild(drawer);
+  document.body.appendChild(backdrop);
+  close.addEventListener("click", closeManageDrawer);
+  backdrop.addEventListener("click", event => { if (event.target === backdrop) closeManageDrawer(); });
+  close.focus();
+  return body;
+}
+
+function closeManageDrawer() {
+  const existing = $("#manage-drawer-backdrop");
+  if (existing) existing.remove();
+}
+
+function openAddPanel() {
+  const body = openManageDrawer(
+    "Add a new event",
+    "Complete the same Add Event form used on the public site without leaving Manage calendar. This submits through intake; it does not directly edit canonical JSON."
+  );
+  const frame = document.createElement("iframe");
+  frame.src = "submit-event.html?embedded=dashboard";
+  frame.title = "Add a new event form";
+  body.appendChild(frame);
+}
+
+function openEditPanel(event) {
+  const body = openManageDrawer(
+    "Edit calendar entry",
+    `Editing “${event.name}” (${event.key}). Submitting files an exact-key correction request; canonical JSON is not changed immediately.`
+  );
+  const form = document.createElement("form");
+  const grid = document.createElement("div");
+  grid.className = "manage-edit-grid";
+  const fields = {};
+  EDITABLE_FIELDS.forEach(def => {
+    const wrap = document.createElement("div");
+    wrap.className = "field" + (["name", "venue"].includes(def.key) ? " wide" : "");
+    const label = document.createElement("label");
+    label.textContent = def.label;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = event[def.key] == null ? "" : event[def.key];
+    input.name = def.key;
+    wrap.appendChild(label); wrap.appendChild(input); grid.appendChild(wrap);
+    fields[def.key] = input;
+  });
+  const explanation = document.createElement("p");
+  explanation.className = "manage-note";
+  explanation.textContent = "Only changed fields are included in the request. The event key is locked so its Calendar event and logo cannot be orphaned.";
+  const actionRow = document.createElement("div");
+  actionRow.className = "drawer-actions";
+  const submit = mkBtn("Submit calendar edit request", "act primary full");
+  submit.type = "submit";
+  const status = document.createElement("p");
+  status.className = "card-status";
+  actionRow.appendChild(submit);
+  form.appendChild(grid); form.appendChild(explanation); form.appendChild(actionRow); form.appendChild(status);
+  body.appendChild(form);
+  form.addEventListener("submit", async submitEvent => {
+    submitEvent.preventDefault();
+    const changed = {};
+    EDITABLE_FIELDS.forEach(def => {
+      const before = String(event[def.key] == null ? "" : event[def.key]);
+      const after = fields[def.key].value.trim();
+      if (after !== before) changed[def.key] = after;
+    });
+    if (!Object.keys(changed).length) {
+      status.textContent = "Nothing changed, so no request was filed.";
+      status.className = "card-status error";
+      return;
+    }
+    submit.disabled = true;
+    status.textContent = "Filing protected edit request…";
+    status.className = "card-status";
+    try {
+      const summary = Object.keys(changed).map(key => `${key}: ${JSON.stringify(event[key] == null ? "" : event[key])} → ${JSON.stringify(changed[key])}`).join("\n");
+      const data = await apiPost(Object.assign({
+        action: "submit",
+        submission_kind: "correction",
+        intake_method: "dashboard-edit-request",
+        event_key: event.key,
+        source_note: `EDIT CANONICAL CALENDAR JSON ENTRY. Dashboard request for “${event.name}” (${event.key}). Preserve this exact key. Apply only through the local backup → derive WCS → validate → atomic replace → test → publish workflow.\n\nRequested field changes:\n${summary}`,
+        contact_name: "Ralph (authenticated dashboard)",
+      }, changed));
+      if (!data.ok) throw new Error(data.error || "unknown error");
+      status.textContent = "Edit request filed. The live calendar remains unchanged until the protected local workflow applies it.";
+      status.className = "card-status ok";
+      submit.textContent = "Edit request filed";
+    } catch (err) {
+      status.textContent = "Could not file edit request: " + err.message;
+      status.className = "card-status error";
+      submit.disabled = false;
+    }
+  });
 }
 
 function renderCard(row) {
@@ -585,7 +876,7 @@ function renderCard(row) {
 
   if (isAutoApplied) {
     actionLabel.textContent = "This is already live. Archive it when you no longer need it in the active queue.";
-    const archiveBtn = mkBtn("Archive record", "act ghost full");
+    const archiveBtn = mkBtn("Archive submission record", "act ghost full");
     actionBtns = [archiveBtn];
     archiveBtn.addEventListener("click", () => doUpdate("archived", false));
     actions.appendChild(archiveBtn);
@@ -655,12 +946,12 @@ function renderCard(row) {
     const danger = document.createElement("details");
     danger.className = "danger-zone";
     const dangerSummary = document.createElement("summary");
-    dangerSummary.textContent = "Danger zone";
-    setTooltip(dangerSummary, "Contains the delete control. Delete remains behind this disclosure to prevent accidental destructive actions.");
+    dangerSummary.textContent = "Submission record actions";
+    setTooltip(dangerSummary, "Contains the control that deletes this dashboard submission record and its row-linked temporary artifacts. It does not delete canonical calendar JSON.");
     danger.appendChild(dangerSummary);
     const delRow = document.createElement("div");
     delRow.className = "actions";
-    const delBtn = mkBtn("Delete this record", "act deny full");
+    const delBtn = mkBtn("Delete submission record", "act deny full");
     delRow.appendChild(delBtn);
     danger.appendChild(delRow);
     card.appendChild(danger);
@@ -672,8 +963,8 @@ function renderCard(row) {
         const data = await apiPost({ action: "delete", row_id: row.row_id });
         if (!data.ok) throw new Error(data.error || "unknown error");
         cardStatus.textContent = data.removedFromSite
-          ? "Deleted and removed from the live site."
-          : "Deleted. (Nothing was live on the site to remove.)";
+          ? "Submission record deleted. Its row-linked temporary site artifact was also removed. Canonical calendar JSON was not changed."
+          : "Submission record deleted. No temporary site artifact existed. Canonical calendar JSON was not changed.";
         cardStatus.classList.add("ok");
         await loadRows();
       } catch (err) {
@@ -686,13 +977,13 @@ function renderCard(row) {
       if (!armed) {
         armed = true;
         delBtn.classList.add("confirming");
-        delBtn.textContent = "Tap again to permanently delete";
+        delBtn.textContent = "Confirm deletion of submission record";
         setTooltip(delBtn, "Second and final confirmation. This marks the Sheet row deleted and removes only temporary web overlay or uploaded-logo artifacts explicitly linked to this submission. Canonical calendar JSON is never deleted here.");
         timer = setTimeout(() => {
           armed = false;
           delBtn.classList.remove("confirming");
-          delBtn.textContent = "Delete this record";
-          setTooltip(delBtn, ACTION_TOOLTIPS["Delete this record"]);
+          delBtn.textContent = "Delete submission record";
+          setTooltip(delBtn, ACTION_TOOLTIPS["Delete submission record"]);
         }, 4000);
         return;
       }
@@ -759,6 +1050,7 @@ function renderSubmitted(row, isCorrection) {
 setTooltip($("#gate-btn"), "Check the dashboard password and load the private submission queue. The password is stored only in this browser's local storage for future visits.");
 setTooltip($("#refresh"), "Reload every submission from the Apps Script backend and update all status counts. This does not change any records.");
 setTooltip($("#gate-input"), "Enter the separate DASHBOARD_PASSWORD. This public page never contains or requests the master REVIEW_TOKEN.");
+document.addEventListener("keydown", event => { if (event.key === "Escape") closeManageDrawer(); });
 $("#gate-btn").addEventListener("click", submitGate);
 $("#gate-input").addEventListener("keydown", e => { if (e.key === "Enter") submitGate(); });
 $("#refresh").addEventListener("click", loadRows);
