@@ -30,6 +30,11 @@ const CATEGORY_WHITELIST = [...CORE_CATEGORIES, ...SOLO_STYLES];
 // (2-letter US state; null = unknown/international -> treated as non-regional).
 const SOUTHEAST = ["FL", "GA", "AL", "MS", "LA", "TN", "SC", "NC"];
 function isRegional(ev) { return SOUTHEAST.includes(ev.state); }
+/* True when the visitor has explicitly picked a place in the Country/State/Town panel.
+   An explicit location choice is a deliberate request to see that place, so it widens the
+   scope past the Southeast-only default — otherwise choosing "California" would match the
+   filter yet still show nothing (2026-07-23, Sean). */
+function locScopeActive() { return !!(state.sel.country || state.sel.state || state.sel.town); }
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
@@ -114,17 +119,39 @@ function normCategory(style) {
   if (s === "unspecified") return OTHER;
   return OTHER;                                                     // genuine but unrecognized style
 }
-/* Location is derived ONLY from explicit text in the venue field — never guessed. */
-function locationOf(venue) {
-  const v = typeof venue === "string" ? venue : "";
+/* 2-letter USPS code -> full state name. The published data carries a `state` field on
+   every event (FL, AL, KS, AZ, CA, …); the location filter reads it directly. Before
+   2026-07-23 the filter only recognized FL/AL from venue TEXT, so every other state fell
+   through as "Unlisted" and could never be chosen (Sean: "I can't even choose the states
+   that are listed in the JSON"). */
+const US_STATES = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California", CO: "Colorado",
+  CT: "Connecticut", DE: "Delaware", DC: "District of Columbia", FL: "Florida", GA: "Georgia",
+  HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky",
+  LA: "Louisiana", ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan", MN: "Minnesota",
+  MS: "Mississippi", MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire",
+  NJ: "New Jersey", NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota",
+  OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+  SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont", VA: "Virginia",
+  WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming", PR: "Puerto Rico"
+};
+/* Location for the filter cascade. State comes from the authoritative 2-letter `state`
+   field (falling back to a "…, City, ST" tail in the venue when that field is blank);
+   town is parsed from that same venue tail; area keeps the local Pensacola/Mobile
+   attribution the area chips rely on. Never invents data — anything unknown stays
+   "Unlisted". */
+function locationOf(ev) {
+  const v = typeof ev?.venue === "string" ? ev.venue : "";
   const loc = { area: "Elsewhere / unlisted", country: "Unlisted", state: "Unlisted", town: "Unlisted" };
-  if (/pensacola/i.test(v)) Object.assign(loc, { area: "Pensacola area", country: "USA", state: "Florida", town: "Pensacola" });
-  else if (/mobile/i.test(v)) Object.assign(loc, { area: "Mobile area", country: "USA", state: "Alabama", town: "Mobile" });
-  else if (/panama city beach/i.test(v)) Object.assign(loc, { country: "USA", state: "Florida", town: "Panama City Beach" });
-  else {
-    const st = /,\s*(fl|florida)\b/i.test(v) ? "Florida" : /,\s*(al|alabama)\b/i.test(v) ? "Alabama" : null;
-    if (st) Object.assign(loc, { country: "USA", state: st });
-  }
+  // City + state code from the venue's trailing "…, City, ST[ ZIP]".
+  const m = v.match(/(?:^|,)\s*([A-Za-z][A-Za-z .'\-]*?),\s*([A-Za-z]{2})\b(?:\s+\d{5})?/);
+  const code = (typeof ev?.state === "string" && ev.state.trim()) ? ev.state.trim().toUpperCase()
+    : (m ? m[2].toUpperCase() : "");
+  if (US_STATES[code]) { loc.state = US_STATES[code]; loc.country = "USA"; }
+  if (m && m[1].trim()) loc.town = m[1].trim();
+  // Local hubs the area chips depend on (also backfill town when the venue had no parseable tail).
+  if (/pensacola/i.test(v)) { loc.area = "Pensacola area"; if (loc.town === "Unlisted") loc.town = "Pensacola"; }
+  else if (/mobile/i.test(v)) { loc.area = "Mobile area"; if (loc.town === "Unlisted") loc.town = "Mobile"; }
   return loc;
 }
 function kindOf(ev) {
@@ -460,7 +487,7 @@ async function loadData() {
     .map(ev => ({
       ev,
       category: normCategory(ev.style),
-      loc: locationOf(ev.venue),
+      loc: locationOf(ev),
       kind: kindOf(ev),
       day: dayOf(ev),
     }));
@@ -737,7 +764,7 @@ function matchesFilters(d) {
   // Regional default (Phase 0, 2026-07-17): out-of-region events (state not in the
   // Southeast-8 — includes null/unknown/international) only show while the
   // "Traveling? Show national events" toggle is on. Past-gating is separate (showPast).
-  if (!state.showNational && !isRegional(d.ev)) return false;
+  if (!state.showNational && !isRegional(d.ev) && !locScopeActive()) return false;
   // Unverified events (research_confidence "low") hide until the "Unverified" toggle is on (2026-07-20, Sean).
   if (!state.showUnverified && isUnverified(d.ev)) return false;
   // Solo styles are strictly OPT-IN (2026-07-18, Sean): a solo-class category (Ballet,
@@ -750,7 +777,11 @@ function matchesFilters(d) {
   if (soloOptedOut(d, f)) return false;
   if (f.cats.size && ![...f.cats].some(tag => matchesCat(d, tag))) return false;
   if (f.days.size && !f.days.has(d.day)) return false;
-  if (f.areas.size && !f.areas.has(d.loc.area)) return false;
+  // The area chips (default Pensacola + Mobile) are the coarse LOCAL scope. An explicit
+  // State/Town pick is a finer, deliberate location choice, so it overrides the area
+  // chips rather than AND-ing with them — otherwise picking "California" matches the
+  // cascade yet the Pensacola/Mobile area default hides every result (2026-07-23, Sean).
+  if (f.areas.size && !locScopeActive() && !f.areas.has(d.loc.area)) return false;
   for (const dim of ["country", "state", "town"])
     if (state.sel[dim] && d.loc[dim] !== state.sel[dim]) return false;
   if (f.kinds.size && !f.kinds.has(d.kind)) return false;
@@ -848,7 +879,7 @@ function numberWord(n) { return (n >= 1 && n <= 12) ? NUMBER_WORDS[n] : String(n
    is checked before the generic "this week"; "tomorrow" is kept separate so a weekday
    next-day reads as "tomorrow" rather than a flat "this week". (2026-07-17) */
 function comboBucket(next, t0) {
-  if (!next) return "later";
+  if (!next) return "undated";
   const ahead = Math.round((new Date(next.getFullYear(), next.getMonth(), next.getDate()) - t0) / 86400000);
   if (ahead < 0) return "later";
   if (ahead === 0) return "today";
@@ -869,20 +900,92 @@ function comboTodayWord(its) {
   });
   return daytime ? "today" : "tonight";
 }
-const COMBO_PHRASES = { tomorrow: "tomorrow", weekend: "this weekend", thisweek: "this week", nextweek: "next week", later: "coming up" };
-function comboPhrase(key, its) { return key === "today" ? comboTodayWord(its) : COMBO_PHRASES[key]; }
+/* ---------------------------------------------------------------------------
+   Headline engine (rebuilt 2026-07-23, Sean: "make it so no matter how somebody
+   changes it up it says it in a well-thought-out looking way").
+
+   Design: every selected dance lands in one chronological WINDOW. The headline
+   then adapts to how many distinct windows are in play:
+     • 1 window   → one specific, warm phrase ("...this Monday!", "...on Sat, Aug 9!")
+     • 2–3 windows → a compound line, chronological, first segment carries the noun
+     • 4+ windows  → collapse to an accurate span summary instead of a run-on
+   Within any window, if every dance shares one weekday we NAME it (Sean's rule),
+   if they share one date we name the date, if one month we name the month —
+   otherwise we fall back to the warm bucket phrase. Nothing here can produce a
+   broken or run-on line for any selection, dated or undated.
+   --------------------------------------------------------------------------- */
+const COMBO_PHRASES = { today: "today", tomorrow: "tomorrow", thisweek: "this week", weekend: "this weekend", nextweek: "next week", later: "later", undated: "coming up" };
+// Chronological window order (this-week weekdays precede the weekend they lead into).
+const COMBO_ORDER = ["today", "tomorrow", "thisweek", "weekend", "nextweek", "later", "undated"];
+
+function comboShortDate(dt) { return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+function comboLongDate(dt) { return dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); }
+function comboMonthName(dt) { return dt.toLocaleDateString(undefined, { month: "long" }); }
+
+// If every dated dance in a group shares ONE weekday, return that weekday index (else null).
+function comboSoleWeekday(its) {
+  const days = its.filter(it => it && it.next).map(it => it.next.getDay());
+  return (days.length && days.every(d => d === days[0])) ? days[0] : null;
+}
+// If every dated dance shares ONE calendar date, return that Date (else null).
+function comboSoleDate(its) {
+  const ds = its.filter(it => it && it.next).map(it => it.next);
+  const key = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  return (ds.length && ds.every(d => key(d) === key(ds[0]))) ? ds[0] : null;
+}
+// If every dated dance shares ONE calendar month, return a representative Date (else null).
+function comboSoleMonth(its) {
+  const ds = its.filter(it => it && it.next).map(it => it.next);
+  const key = d => `${d.getFullYear()}-${d.getMonth()}`;
+  return (ds.length && ds.every(d => key(d) === key(ds[0]))) ? ds[0] : null;
+}
+
+// Short phrase for a window group — kept brief because it sits inside a compound line.
+function comboPhrase(key, its) {
+  if (key === "today") return comboTodayWord(its);
+  if (key === "thisweek") { const wd = comboSoleWeekday(its); return wd === null ? "this week" : DAY_ORDER[wd]; }
+  if (key === "nextweek") { const wd = comboSoleWeekday(its); return wd === null ? "next week" : `next ${DAY_ORDER[wd]}`; }
+  if (key === "later") {
+    const d = comboSoleDate(its); if (d) return `on ${comboShortDate(d)}`;
+    const m = comboSoleMonth(its); if (m) return `in ${comboMonthName(m)}`;
+    return "later";
+  }
+  return COMBO_PHRASES[key];
+}
+// Richer phrase for when the ENTIRE headline is a single window — a touch more specific.
+function comboPhraseSolo(key, its) {
+  if (key === "thisweek") { const wd = comboSoleWeekday(its); if (wd !== null) return `this ${DAY_ORDER[wd]}`; }
+  if (key === "later") {
+    const d = comboSoleDate(its); if (d) return `on ${comboLongDate(d)}`;
+    const m = comboSoleMonth(its); if (m) return `in ${comboMonthName(m)}`;
+    return "in the weeks ahead";
+  }
+  return comboPhrase(key, its);
+}
+
+/* For 4+ distinct windows, a compound line would run on — so summarize the whole set as an
+   accurate span. Purely dated sets get a bounded phrase ("this week", "this week & next",
+   "over the next three weeks"); anything open-ended reads "in the weeks ahead". */
+function comboSpanPhrase(items, t0) {
+  const dated = items.filter(it => it && it.next);
+  if (!dated.length) return "coming up";
+  if (dated.length < items.length) return "in the weeks ahead"; // some undated → open-ended
+  const aheads = dated.map(it => Math.round((new Date(it.next.getFullYear(), it.next.getMonth(), it.next.getDate()) - t0) / 86400000));
+  const latest = Math.max(...aheads);
+  const untilSun = (6 - t0.getDay()) + 1; // days remaining until end of this weekend
+  if (latest <= untilSun) return "this week";
+  if (latest <= untilSun + 7) return "this week & next";
+  const weeks = Math.ceil((latest + 1) / 7);
+  return weeks <= 4 ? `over the next ${numberWord(weeks).toLowerCase()} weeks` : "in the weeks ahead";
+}
 
 /* The headline: the hook that makes people click. "dance chances" (not "dances") because a
-   listing is sometimes a class or workshop, not a social — Sean, 2026-07-17. One window →
-   "Three dance chances this weekend!"; a split set → a compound line spanning up to THREE
-   days → "Three dance chances tonight, two tomorrow & one this weekend!" (a dance weekend
-   runs Fri–Sun, so three days matters). Four-plus windows fall back to "N dance chances
-   coming up!" rather than an unwieldy run-on. */
+   listing is sometimes a class or workshop, not a social — Sean, 2026-07-17. */
 function comboNoun(count) { return `dance chance${count === 1 ? "" : "s"}`; }
 function comboHeadline(items, today) {
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const n = items.length;
-  const order = ["today", "tomorrow", "weekend", "thisweek", "nextweek", "later"];
+  if (!n) return "";
   const groups = new Map();
   for (const it of items) {
     const b = comboBucket(it.next, t0);
@@ -896,23 +999,26 @@ function comboHeadline(items, today) {
     groups.get("weekend").unshift(...groups.get("tomorrow"));
     groups.delete("tomorrow");
   }
-  const present = order.filter(k => groups.has(k));
+  const present = COMBO_ORDER.filter(k => groups.has(k));
+
+  // 1 window → one specific, warm phrase.
   if (present.length === 1) {
     const k = present[0];
-    return `${numberWord(n)} ${comboNoun(n)} ${comboPhrase(k, groups.get(k))}${k === "later" ? "" : "!"}`;
+    return `${numberWord(n)} ${comboNoun(n)} ${comboPhraseSolo(k, groups.get(k))}!`;
   }
-  if (present.length >= 2 && present.length <= 3) {
-    // First segment carries the "dance chances" noun; the rest are just "<n> <phrase>".
-    const segs = present.map(k => ({ n: groups.get(k).length, phrase: comboPhrase(k, groups.get(k)), key: k }));
+  // 2–3 windows → chronological compound line; first segment carries the noun.
+  if (present.length <= 3) {
+    const segs = present.map(k => ({ n: groups.get(k).length, phrase: comboPhrase(k, groups.get(k)) }));
     const parts = segs.map((s, i) => i === 0
       ? `${numberWord(s.n)} ${comboNoun(s.n)} ${s.phrase}`
       : `${numberWord(s.n).toLowerCase()} ${s.phrase}`);
     const body = parts.length === 2
       ? parts.join(" & ")
       : `${parts.slice(0, -1).join(", ")} & ${parts[parts.length - 1]}`;
-    return body + (segs[segs.length - 1].key === "later" ? "" : "!");
+    return body + "!";
   }
-  return `${numberWord(n)} ${comboNoun(n)} coming up!`;
+  // 4+ windows → an accurate span summary rather than an unwieldy run-on.
+  return `${numberWord(n)} ${comboNoun(n)} ${comboSpanPhrase(items, t0)}!`;
 }
 /* One display date/time line per event — prefers the concrete next occurrence, falls
    back to the recurrence text so multi-day / undated events still read cleanly. */
@@ -1905,11 +2011,11 @@ function render() {
   // they stay out of BOTH numbers and the nationwide hint, so the default view still
   // reads "N of N shown" instead of implying a hidden filter.
   const isVerifiedShown = d => state.showUnverified || !isUnverified(d.ev);
-  const inScope = d => (state.showNational || isRegional(d.ev)) && isVerifiedShown(d);
+  const inScope = d => (state.showNational || isRegional(d.ev) || locScopeActive()) && isVerifiedShown(d);
   const notPast = d => state.showPast || !isPastEvent(d, today);
   const inUniverse = d => !soloOptedOut(d);
   const totalHosted = state.events.filter(d => inScope(d) && notPast(d) && inUniverse(d)).length;
-  const moreNational = state.showNational ? 0 : state.events.filter(d => !isRegional(d.ev) && notPast(d) && inUniverse(d) && isVerifiedShown(d)).length;
+  const moreNational = (state.showNational || locScopeActive()) ? 0 : state.events.filter(d => !isRegional(d.ev) && notPast(d) && inUniverse(d) && isVerifiedShown(d)).length;
   const hint = moreNational ? ` · ${moreNational} more nationwide — turn on “National events” to see them` : "";
 
   if (!shown) {
