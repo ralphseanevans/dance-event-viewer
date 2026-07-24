@@ -137,6 +137,11 @@
   .manage-tools { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; margin-bottom: 16px; padding: 16px;
     border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: rgba(14,19,32,.72); }
   .manage-search { min-height: 46px; width: 100%; padding: 10px 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--text); background: var(--bg); }
+  .history-filters { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .history-filters .manage-search { grid-column: 1 / -1; }
+  .history-select, .history-date { min-height: 46px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--text); background: var(--bg); font: inherit; }
+  .history-card .calendar-key { display: block; color: #687892; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .68rem; word-break: break-all; }
+  .calendar-card .open-request { margin-left: 8px; }
   .manage-add { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; border-radius: 12px;
     border: 0; color: #052018; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); font-size: .85rem; font-weight: 850; cursor: pointer; }
   .manage-note { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
@@ -265,6 +270,28 @@
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbwtL7anIfkIv7XBkR7AwDKKc13DBPrEghmcEEZiURWR_NLZI3s8CdayU6VQzelK9VMn6w/exec";
 const PW_KEY = "dosDashPw";
 
+// Registered Manage-calendar actions (2026-07-23). The frontend only ever files
+// requests through this registry — one entry per button, fixed intake_method and
+// note template. The backend whitelists these intake_method values too.
+const MANAGE_ACTIONS = {
+  "remove-calendar-event": {
+    intake_method: "dashboard-removal-request",
+    openLabel: "removal requested",
+    note: event => `REMOVE FROM CANONICAL CALENDAR JSON. Dashboard request for “${event.name}” (${event.key}). Do not change the key. Apply only through the local backup → derive WCS → validate → atomic replace → test → publish workflow.`,
+  },
+  "edit-calendar-event": {
+    intake_method: "dashboard-edit-request",
+    openLabel: "edit pending",
+    note: (event, prev, summary) => `EDIT CANONICAL CALENDAR JSON ENTRY. Dashboard request for “${event.name}” (${event.key}). Preserve this exact key. [prev ${JSON.stringify(prev)}]\nRequested field changes:\n${summary}`,
+  },
+};
+const DASHBOARD_INTAKES = Object.values(MANAGE_ACTIONS).map(a => a.intake_method);
+
+// An open (not yet applied/failed) dashboard request for this event key, if any.
+function openRequestFor(eventKey) {
+  return allRows.find(r => r.event_key === eventKey && r.status === "pending-fix" && DASHBOARD_INTAKES.includes(r.intake_method)) || null;
+}
+
 // Which raw statuses fall under each tab.
 const TAB_DEFS = [
   { key: "manage", label: "Manage calendar", title: "Manage calendar listings", description: "Add events or request protected removal from the canonical calendar JSON.", statuses: [] },
@@ -276,6 +303,7 @@ const TAB_DEFS = [
   { key: "archived", label: "Archived", title: "Archived records", description: "Tidied-away live updates. Archiving never removes them from the site.", statuses: ["archived"] },
   { key: "deleted", label: "Deleted", title: "Deleted records", description: "Audit-only history. Deleted records have no further dashboard actions.", statuses: ["deleted"] },
   { key: "all", label: "All active", title: "All active submissions", description: "Every non-archived, non-deleted item with actions matched to its current status.", statuses: null },
+  { key: "history", label: "History", title: "Request history", description: "Filterable audit of every request and its outcome. Read-only.", statuses: null },
 ];
 
 const TAB_TOOLTIPS = {
@@ -288,6 +316,7 @@ const TAB_TOOLTIPS = {
   archived: "Completed live-update records hidden from active views. Archiving does not remove anything from the live site.",
   deleted: "Audit history for records deleted through the dashboard. Any row-linked temporary overlay or uploaded logo was removed first; canonical calendar data is never deleted here.",
   all: "Every active record except Archived and Deleted. Each card keeps the actions appropriate to its own status.",
+  history: "Every submission and dashboard request, newest first, with filters for action type, outcome, date range, and free-text search. Read-only — nothing here changes any data.",
 };
 
 const STATUS_TOOLTIPS = {
@@ -433,6 +462,7 @@ async function loadRows() {
 
 function rowsForTab(key) {
   if (key === "manage") return [];
+  if (key === "history") return allRows.slice();
   const def = TAB_DEFS.find(t => t.key === key);
   if (!def) return allRows.slice();
   // "All posts" shows every submission except archived/deleted ones (those live in their own tabs).
@@ -468,6 +498,10 @@ function renderCards() {
   $("#view-description").textContent = view.description;
   if (currentTab === "manage") {
     renderCalendarManager();
+    return;
+  }
+  if (currentTab === "history") {
+    renderHistory();
     return;
   }
   const rows = rowsForTab(currentTab);
@@ -540,6 +574,121 @@ function renderCalendarManager() {
   draw();
 }
 
+/* ---------- History tab (2026-07-23): read-only, filterable audit ---------- */
+const HISTORY_ACTION_FILTERS = [
+  { key: "", label: "All actions" },
+  { key: "dashboard-removal-request", label: "Removal requests" },
+  { key: "dashboard-edit-request", label: "Edit requests" },
+  { key: "flyer", label: "Flyer submissions" },
+  { key: "form", label: "Form submissions" },
+  { key: "link", label: "Link submissions" },
+];
+const HISTORY_OUTCOME_FILTERS = [
+  { key: "", label: "All outcomes" },
+  { key: "applied", label: "Applied" },
+  { key: "fix-failed", label: "Failed" },
+  { key: "pending-fix", label: "Still pending" },
+  { key: "published", label: "Published" },
+  { key: "published-new", label: "Published (overlay)" },
+  { key: "approved", label: "Approved" },
+  { key: "rejected", label: "Denied" },
+  { key: "archived", label: "Archived" },
+  { key: "deleted", label: "Deleted" },
+];
+
+function renderHistory() {
+  const cardsEl = $("#cards");
+  cardsEl.innerHTML = "";
+  const tools = document.createElement("div");
+  tools.className = "manage-tools history-filters";
+  const mkSelect = (options, label) => {
+    const sel = document.createElement("select");
+    sel.className = "history-select";
+    sel.setAttribute("aria-label", label);
+    options.forEach(o => {
+      const opt = document.createElement("option");
+      opt.value = o.key; opt.textContent = o.label;
+      sel.appendChild(opt);
+    });
+    return sel;
+  };
+  const actionSel = mkSelect(HISTORY_ACTION_FILTERS, "Filter by action type");
+  const outcomeSel = mkSelect(HISTORY_OUTCOME_FILTERS, "Filter by outcome");
+  const fromDate = document.createElement("input");
+  fromDate.type = "date"; fromDate.className = "history-date";
+  fromDate.setAttribute("aria-label", "From date");
+  const toDate = document.createElement("input");
+  toDate.type = "date"; toDate.className = "history-date";
+  toDate.setAttribute("aria-label", "To date");
+  const search = document.createElement("input");
+  search.className = "manage-search";
+  search.type = "search";
+  search.placeholder = "Search name, key, venue, or result";
+  search.setAttribute("aria-label", "Search history");
+  tools.appendChild(actionSel); tools.appendChild(outcomeSel);
+  tools.appendChild(fromDate); tools.appendChild(toDate); tools.appendChild(search);
+  cardsEl.appendChild(tools);
+  const list = document.createElement("div");
+  list.className = "cards";
+  cardsEl.appendChild(list);
+
+  function draw() {
+    const q = search.value.trim().toLowerCase();
+    let rows = allRows.slice();
+    if (actionSel.value) rows = rows.filter(r => r.intake_method === actionSel.value);
+    if (outcomeSel.value) rows = rows.filter(r => r.status === outcomeSel.value);
+    if (fromDate.value) rows = rows.filter(r => String(r.timestamp || "").slice(0, 10) >= fromDate.value);
+    if (toDate.value) rows = rows.filter(r => String(r.timestamp || "").slice(0, 10) <= toDate.value);
+    if (q) rows = rows.filter(r => [r.name, r.event_key, r.venue, r.result_note, r.source_note].some(v => String(v || "").toLowerCase().includes(q)));
+    rows.sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
+    list.innerHTML = "";
+    if (!rows.length) {
+      list.innerHTML = `<p class="empty">No history matches those filters.</p>`;
+      return;
+    }
+    rows.forEach(row => {
+      const card = document.createElement("article");
+      card.className = "card history-card";
+      const head = document.createElement("div");
+      head.className = "card-head";
+      const badges = document.createElement("div");
+      badges.className = "badges";
+      badges.appendChild(makeBadge(row.status || "?", statusClass(row.status), STATUS_TOOLTIPS[row.status] || "Backend status."));
+      if (DASHBOARD_INTAKES.includes(row.intake_method)) {
+        badges.appendChild(makeBadge(row.intake_method === "dashboard-removal-request" ? "removal" : "edit", "correction", "Filed from the authenticated Manage-calendar tab."));
+      }
+      head.appendChild(badges);
+      const title = document.createElement("h3");
+      title.textContent = row.name || row.event_key || "(no name)";
+      const meta = document.createElement("p");
+      meta.className = "calendar-meta";
+      meta.textContent = [
+        row.intake_method || "form",
+        "requested " + fmtTimestamp(row.timestamp),
+        row.reviewed_at ? "resolved " + fmtTimestamp(row.reviewed_at) : "",
+        row.row_id ? "id " + String(row.row_id).slice(0, 8) : "",
+      ].filter(Boolean).join(" · ");
+      card.appendChild(head); card.appendChild(title); card.appendChild(meta);
+      if (row.event_key) {
+        const key = document.createElement("p");
+        key.className = "calendar-key";
+        key.textContent = "JSON key: " + row.event_key;
+        card.appendChild(key);
+      }
+      if (row.result_note) {
+        const note = document.createElement("p");
+        note.className = "card-status " + (row.status === "fix-failed" ? "error" : "ok");
+        note.textContent = row.result_note;
+        card.appendChild(note);
+      }
+      list.appendChild(card);
+    });
+  }
+  [actionSel, outcomeSel, fromDate, toDate].forEach(el => el.addEventListener("change", draw));
+  search.addEventListener("input", draw);
+  draw();
+}
+
 function renderCalendarCard(event) {
   const card = document.createElement("article");
   card.className = "card calendar-card";
@@ -558,6 +707,17 @@ function renderCalendarCard(event) {
   const requestBtn = mkBtn("Request removal from calendar JSON", "act deny full");
   const status = document.createElement("p");
   status.className = "card-status";
+
+  // Idempotency (2026-07-23): while this event already has an open dashboard
+  // request, badge it and block filing a duplicate of the same kind.
+  const open = openRequestFor(event.key);
+  if (open) {
+    const kind = Object.values(MANAGE_ACTIONS).find(a => a.intake_method === open.intake_method);
+    meta.appendChild(makeBadge(kind ? kind.openLabel : "request pending", "pendingfix open-request",
+      "An open request for this event is already in the queue (filed " + fmtTimestamp(open.timestamp) + "). The local workflow applies it within about 30 minutes."));
+    if (open.intake_method === "dashboard-removal-request") { requestBtn.disabled = true; editBtn.disabled = true; }
+    if (open.intake_method === "dashboard-edit-request") editBtn.disabled = true;
+  }
   let armed = false;
   let timer = null;
   requestBtn.addEventListener("click", async () => {
@@ -578,12 +738,13 @@ function renderCalendarCard(event) {
     requestBtn.disabled = true;
     status.textContent = "Filing protected removal request…";
     try {
+      const act = MANAGE_ACTIONS["remove-calendar-event"];
       const data = await apiPost({
         action: "submit",
         submission_kind: "correction",
-        intake_method: "dashboard-removal-request",
+        intake_method: act.intake_method,
         event_key: event.key,
-        source_note: `REMOVE FROM CANONICAL CALENDAR JSON. Dashboard request for “${event.name}” (${event.key}). Do not change the key. Apply only through the local backup → derive WCS → validate → atomic replace → test → publish workflow.`,
+        source_note: act.note(event),
         contact_name: "Ralph (authenticated dashboard)",
       });
       if (!data.ok) throw new Error(data.error || "unknown error");
@@ -704,17 +865,45 @@ function openEditPanel(event) {
       status.className = "card-status error";
       return;
     }
+    // Validate formats before filing (matches canonical JSON conventions).
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+    for (const key of ["start_date", "end_date"]) {
+      if (changed[key] && !DATE_RE.test(changed[key])) {
+        status.textContent = `${key} must be YYYY-MM-DD (got “${changed[key]}”). Nothing was filed.`;
+        status.className = "card-status error";
+        return;
+      }
+    }
+    for (const key of ["start_time", "end_time"]) {
+      if (changed[key] && !TIME_RE.test(changed[key])) {
+        status.textContent = `${key} must be 24-hour HH:MM (got “${changed[key]}”). Nothing was filed.`;
+        status.className = "card-status error";
+        return;
+      }
+    }
+    if (changed.name === "") {
+      status.textContent = "Event name can't be empty. Nothing was filed.";
+      status.className = "card-status error";
+      return;
+    }
     submit.disabled = true;
     status.textContent = "Filing protected edit request…";
     status.className = "card-status";
     try {
       const summary = Object.keys(changed).map(key => `${key}: ${JSON.stringify(event[key] == null ? "" : event[key])} → ${JSON.stringify(changed[key])}`).join("\n");
+      // prev = each edited field's value when the form opened, for stale-edit
+      // detection in the local apply workflow. Kept early in source_note so the
+      // backend's 500-char cap truncates the summary, not the [prev] block.
+      const prev = {};
+      Object.keys(changed).forEach(key => { prev[key] = String(event[key] == null ? "" : event[key]); });
+      const act = MANAGE_ACTIONS["edit-calendar-event"];
       const data = await apiPost(Object.assign({
         action: "submit",
         submission_kind: "correction",
-        intake_method: "dashboard-edit-request",
+        intake_method: act.intake_method,
         event_key: event.key,
-        source_note: `EDIT CANONICAL CALENDAR JSON ENTRY. Dashboard request for “${event.name}” (${event.key}). Preserve this exact key. Apply only through the local backup → derive WCS → validate → atomic replace → test → publish workflow.\n\nRequested field changes:\n${summary}`,
+        source_note: act.note(event, prev, summary),
         contact_name: "Ralph (authenticated dashboard)",
       }, changed));
       if (!data.ok) throw new Error(data.error || "unknown error");
