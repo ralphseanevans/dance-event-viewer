@@ -1167,8 +1167,9 @@ function flashComboBtn(btn, label) {
   }, 1800);
 }
 
-/* The "lovely share" preview — a warm, gradient-headed card that shows exactly how the
-   combined post reads, then hands off to the native share sheet / clipboard / image. */
+/* The "lovely share" preview — renders the ACTUAL poster image (js/dance-poster.js) scaled
+   to fit the phone viewport (no scrolling to find the point), then hands off to the native
+   share sheet / clipboard. What you see in the preview is exactly what gets shared. */
 function openComboShareModal(items) {
   if (!items.length) return;
   const today = new Date();
@@ -1186,61 +1187,28 @@ function openComboShareModal(items) {
   close.setAttribute("aria-label", "Close");
   pop.appendChild(close);
 
-  // The visual poster (also the exact thing rendered to an image on "Save image").
-  const poster = document.createElement("div");
-  poster.className = "combo-poster";
-  const head = document.createElement("div");
-  head.className = "combo-poster-head";
-  const hEl = document.createElement("p");
-  hEl.className = "combo-headline"; hEl.textContent = headline;
-  const subEl = document.createElement("p");
-  subEl.className = "combo-sub"; subEl.textContent = "Dance Event Viewer · all in one place";
-  head.append(hEl, subEl);
-  poster.appendChild(head);
+  // The poster preview — the exact PNG that will be shared/saved, fit to the viewport.
+  const stage = document.createElement("div");
+  stage.className = "combo-poster-stage";
+  const loading = document.createElement("p");
+  loading.className = "combo-poster-loading"; loading.textContent = "Building your poster…";
+  stage.appendChild(loading);
+  pop.appendChild(stage);
+  renderComboPoster(items, headline).then(canvas => {
+    const img = new Image();
+    img.className = "combo-poster-img";
+    img.alt = "Share poster preview: " + headline;
+    img.src = canvas.toDataURL("image/png");
+    stage.replaceChildren(img);
+  }).catch(() => { loading.textContent = "Couldn't build the poster preview."; });
 
-  const list = document.createElement("ul");
-  list.className = "combo-list";
-  for (const d of items) {
-    const ev = d.ev;
-    const li = document.createElement("li");
-    li.className = "combo-item";
-    const dot = document.createElement("span");
-    dot.className = "combo-dot"; dot.setAttribute("aria-hidden", "true"); dot.textContent = "💃";
-    const body = document.createElement("div");
-    body.className = "combo-item-body";
-    const nm = document.createElement("p");
-    nm.className = "combo-item-name"; nm.textContent = ev.name.trim();
-    body.appendChild(nm);
-    const when = comboWhenLine(d);
-    if (when) {
-      const w = document.createElement("p");
-      w.className = "combo-item-when"; w.textContent = when;
-      body.appendChild(w);
-    }
-    const meta = [];
-    if (typeof ev.venue === "string" && ev.venue.trim()) meta.push(ev.venue.trim());
-    if (typeof ev.cost === "string" && ev.cost.trim()) meta.push(ev.cost.trim());
-    if (meta.length) {
-      const m = document.createElement("p");
-      m.className = "combo-item-meta"; m.textContent = meta.join("  ·  ");
-      body.appendChild(m);
-    }
-    li.append(dot, body);
-    list.appendChild(li);
-  }
-  poster.appendChild(list);
-  const foot = document.createElement("p");
-  foot.className = "combo-poster-foot"; foot.textContent = "danceeventviewer.net ✨";
-  poster.appendChild(foot);
-  pop.appendChild(poster);
-
-  // Actions
+  // Actions — sharing the IMAGE is the point (one lovely graphic into a chat).
   const actions = document.createElement("div");
   actions.className = "combo-actions";
-  const shareBtn = document.createElement("button");
-  shareBtn.type = "button"; shareBtn.className = "combo-btn combo-btn-primary";
-  shareBtn.textContent = navigator.share ? "Share these dances" : "Copy to share";
-  shareBtn.addEventListener("click", () => handleComboShare(items, shareBtn));
+  const imgBtn = document.createElement("button");
+  imgBtn.type = "button"; imgBtn.className = "combo-btn combo-btn-primary";
+  imgBtn.textContent = navigator.canShare ? "Share poster" : "Save poster image";
+  imgBtn.addEventListener("click", () => handleComboShareImage(items, imgBtn));
   const copyBtn = document.createElement("button");
   copyBtn.type = "button"; copyBtn.className = "combo-btn";
   copyBtn.textContent = "Copy text";
@@ -1249,11 +1217,11 @@ function openComboShareModal(items) {
     const ok = await copyText(buildComboText(items, headline, url));
     if (ok) flashComboBtn(copyBtn, "Copied ✓");
   });
-  const imgBtn = document.createElement("button");
-  imgBtn.type = "button"; imgBtn.className = "combo-btn";
-  imgBtn.textContent = "Save image";
-  imgBtn.addEventListener("click", () => handleComboShareImage(items, imgBtn));
-  actions.append(shareBtn, copyBtn, imgBtn);
+  const linkBtn = document.createElement("button");
+  linkBtn.type = "button"; linkBtn.className = "combo-btn";
+  linkBtn.textContent = navigator.share ? "Share link" : "Copy link";
+  linkBtn.addEventListener("click", () => handleComboShare(items, linkBtn));
+  actions.append(imgBtn, copyBtn, linkBtn);
   pop.appendChild(actions);
 
   backdrop.appendChild(pop);
@@ -1266,107 +1234,48 @@ function openComboShareModal(items) {
   close.focus();
 }
 
-/* Render the same design to a PNG so a whole weekend of dances can go into a chat as ONE
-   image. Reads the live theme colors so it always matches the site. Pure canvas — no
-   external libs, no tainting (all text). Shares the file where supported, else downloads. */
-function renderComboPoster(items, headline) {
-  const cs = getComputedStyle(document.documentElement);
-  const v = (name, fallback) => { const s = cs.getPropertyValue(name).trim(); return s || fallback; };
-  const bg = v("--bg", "#0b0c15");
-  const bgCard = v("--bg-card", "#1b1822");
-  const text = v("--text", "#f6eadf");
-  const textDim = v("--text-dim", "#a99ca5");
-  const accent = v("--accent", "#e8785b");
-  const accentPink = v("--accent-pink", "#db8d85");
-
-  const W = 1080, PAD = 72, scale = 2;   // scale for crisp output
-  // Measure to compute height first (two passes: measure, then draw).
-  const measure = document.createElement("canvas").getContext("2d");
-  const contentW = W - PAD * 2;
-  const wrap = (ctx, str, font, maxW) => {
-    ctx.font = font;
-    const words = String(str).split(/\s+/);
-    const out = []; let line = "";
-    for (const word of words) {
-      const test = line ? line + " " + word : word;
-      if (ctx.measureText(test).width > maxW && line) { out.push(line); line = word; }
-      else line = test;
-    }
-    if (line) out.push(line);
-    return out;
-  };
-  const F_HEAD = "700 58px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-  const F_SUB = "500 26px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-  const F_NAME = "700 38px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-  const F_WHEN = "500 30px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-  const F_META = "400 27px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-  const F_FOOT = "600 27px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-
-  const headLines = wrap(measure, headline, F_HEAD, contentW - 40);
-  const headBand = 60 + headLines.length * 66 + 44;   // top pad + lines + subtitle
-  const blocks = items.map(d => {
-    const nameLines = wrap(measure, d.ev.name.trim(), F_NAME, contentW - 70);
-    const when = comboWhenLine(d);
-    const meta = [];
-    if (typeof d.ev.venue === "string" && d.ev.venue.trim()) meta.push(d.ev.venue.trim());
-    if (typeof d.ev.cost === "string" && d.ev.cost.trim()) meta.push(d.ev.cost.trim());
-    const metaLine = meta.join("   ·   ");
-    const metaLines = metaLine ? wrap(measure, metaLine, F_META, contentW - 70) : [];
-    let h = 22 + nameLines.length * 46;
-    if (when) h += 40;
-    h += metaLines.length * 36;
-    h += 22;
-    return { nameLines, when, metaLines, h };
+/* Build the poster ENTRIES from the selected events — the shape the shared renderer
+   (js/dance-poster.js) expects. Each entry carries the event's logo (if one is mapped),
+   its next-occurrence when-line, venue and cost. */
+function comboPosterEntries(items) {
+  return items.map(d => {
+    const ev = d.ev;
+    return {
+      name: (ev && typeof ev.name === "string" ? ev.name : "").trim(),
+      whenLine: comboWhenLine(d),
+      venue: (ev && typeof ev.venue === "string") ? ev.venue.trim() : "",
+      cost: (ev && typeof ev.cost === "string") ? ev.cost.trim() : "",
+      logoSrc: logoFor(ev && ev.key) || null
+    };
   });
-  const listH = blocks.reduce((s, b) => s + b.h, 0) + (blocks.length - 1) * 14;
-  const footH = 90;
-  const H = headBand + 40 + listH + footH + PAD * 0.4;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = W * scale; canvas.height = Math.round(H) * scale;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(scale, scale);
-  ctx.textBaseline = "top";
-
-  // Background
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  // Header gradient band
-  const grad = ctx.createLinearGradient(0, 0, W, headBand);
-  grad.addColorStop(0, accent); grad.addColorStop(1, accentPink);
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, headBand);
-  // Headline (dark ink on the warm band for contrast)
-  ctx.fillStyle = "#1a1119";
-  ctx.font = F_HEAD;
-  let y = 56;
-  for (const ln of headLines) { ctx.fillText(ln, PAD, y); y += 66; }
-  ctx.font = F_SUB; ctx.fillStyle = "rgba(26,17,25,.82)";
-  ctx.fillText("Dance Event Viewer · all in one place", PAD, y + 4);
-
-  // Event list
-  y = headBand + 40;
-  ctx.textAlign = "left";
-  for (const b of blocks) {
-    // accent tick
-    ctx.fillStyle = accent;
-    ctx.beginPath(); ctx.roundRect(PAD, y + 6, 8, b.h - 18, 4); ctx.fill();
-    const tx = PAD + 34;
-    let ly = y + 6;
-    ctx.fillStyle = text; ctx.font = F_NAME;
-    for (const ln of b.nameLines) { ctx.fillText(ln, tx, ly); ly += 46; }
-    if (b.when) { ctx.fillStyle = accentPink; ctx.font = F_WHEN; ctx.fillText(b.when, tx, ly + 2); ly += 40; }
-    ctx.fillStyle = textDim; ctx.font = F_META;
-    for (const ln of b.metaLines) { ctx.fillText(ln, tx, ly + 2); ly += 36; }
-    y += b.h + 14;
-  }
-  // Footer
-  ctx.fillStyle = accent; ctx.font = F_FOOT;
-  ctx.fillText("danceeventviewer.net  ✨", PAD, H - footH + 18);
-
-  return canvas;
+}
+/* The season (month) that colours the poster background — the soonest selected dance's
+   month, so an August set gets August's palette. Falls back to the current month. */
+function comboSeasonDate(items) {
+  const d0 = items.find(d => d && d.next);
+  return (d0 && d0.next) ? d0.next : new Date();
+}
+/* Optional per-month background image drop-in: if dance-event-viewer/backgrounds/YYYY-MM.jpg
+   exists it becomes the full-bleed poster background; otherwise the renderer falls back to
+   its code-drawn seasonal gradient (a missing file just fails to load — no error). */
+function comboPosterBgSrc(items) {
+  const dt = comboSeasonDate(items);
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  return `backgrounds/${dt.getFullYear()}-${mm}.jpg`;
+}
+/* Render the combined post to a 4:5 (1080×1350) social-friendly PNG so a whole weekend of
+   dances goes into a chat as ONE lovely image. Delegates to the shared renderer, which reads
+   the live theme colors (ember / classic / …) and applies the month's seasonal palette.
+   Returns a Promise<canvas>. */
+function renderComboPoster(items, headline) {
+  return renderDancePoster(comboPosterEntries(items), headline, {
+    month: comboSeasonDate(items).getMonth(),
+    bgImageSrc: comboPosterBgSrc(items)
+  });
 }
 async function handleComboShareImage(items, btn) {
   let canvas;
-  try { canvas = renderComboPoster(items, comboHeadline(items, new Date())); }
+  try { canvas = await renderComboPoster(items, comboHeadline(items, new Date())); }
   catch (e) { if (btn) flashComboBtn(btn, "Couldn't build image"); return; }
   const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
   if (!blob) { if (btn) flashComboBtn(btn, "Couldn't build image"); return; }
