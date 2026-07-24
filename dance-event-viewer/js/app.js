@@ -1094,8 +1094,8 @@ function makeShareMultipleBtn() {
   t.id = "share-several-toggle";
   t.className = "past-toggle share-several-toggle";
   t.setAttribute("aria-pressed", String(state.selectMode));
-  t.title = "Pick several dances and share them as one lovely post — instead of posting each one separately.";
-  t.textContent = state.selectMode ? "✕ Done selecting" : "✦ Share multiple";
+  t.title = "Pick several dances and turn them into one lovely Dance Card to share — instead of posting each one separately.";
+  t.textContent = state.selectMode ? "✕ Done selecting" : "✦ Make a Dance Card";
   t.addEventListener("click", () => setSelectMode(!state.selectMode));
   return t;
 }
@@ -1122,7 +1122,7 @@ function setSelectMode(on) {
   const t = document.getElementById("share-several-toggle");
   if (t) {
     t.setAttribute("aria-pressed", String(on));
-    t.textContent = on ? "✕ Done selecting" : "✦ Share multiple";
+    t.textContent = on ? "✕ Done selecting" : "✦ Make a Dance Card";
   }
   if (!on) shareSelection.clear();
   updateComboBar();
@@ -1200,7 +1200,7 @@ function openComboShareModal(items) {
   pop.className = "combo-pop";
   pop.setAttribute("role", "dialog");
   pop.setAttribute("aria-modal", "true");
-  pop.setAttribute("aria-label", "Share these dances");
+  pop.setAttribute("aria-label", "Your Dance Card");
 
   const close = document.createElement("button");
   close.type = "button"; close.className = "pop-close"; close.textContent = "×";
@@ -1210,24 +1210,54 @@ function openComboShareModal(items) {
   // The poster preview — the exact PNG that will be shared/saved, fit to the viewport.
   const stage = document.createElement("div");
   stage.className = "combo-poster-stage";
-  const loading = document.createElement("p");
-  loading.className = "combo-poster-loading"; loading.textContent = "Building your poster…";
-  stage.appendChild(loading);
   pop.appendChild(stage);
-  renderComboPoster(items, headline).then(canvas => {
-    const img = new Image();
-    img.className = "combo-poster-img";
-    img.alt = "Share poster preview: " + headline;
-    img.src = canvas.toDataURL("image/png");
-    stage.replaceChildren(img);
-  }).catch(() => { loading.textContent = "Couldn't build the poster preview."; });
+  const loadingEl = () => {
+    const p = document.createElement("p");
+    p.className = "combo-poster-loading"; p.textContent = "Building your Dance Card…";
+    return p;
+  };
+
+  // Look picker — pick a style; the choice is remembered and used for share/save too.
+  const styleRow = document.createElement("div");
+  styleRow.className = "combo-style-row";
+  const styleLabel = document.createElement("span");
+  styleLabel.className = "combo-style-label"; styleLabel.textContent = "Look";
+  styleRow.appendChild(styleLabel);
+  const styleDefs = window.DANCE_POSTER_STYLES || [{ id: "seasonal", label: "Seasonal" }];
+  const chipEls = {};
+  const renderPreview = () => {
+    stage.replaceChildren(loadingEl());
+    const active = getPosterStyle();
+    for (const id in chipEls) chipEls[id].setAttribute("aria-pressed", String(id === active));
+    renderComboPoster(items, headline).then(canvas => {
+      const img = new Image();
+      img.className = "combo-poster-img";
+      img.alt = "Dance Card preview: " + headline;
+      img.src = canvas.toDataURL("image/png");
+      stage.replaceChildren(img);
+    }).catch(() => {
+      const p = loadingEl(); p.textContent = "Couldn't build the Dance Card preview.";
+      stage.replaceChildren(p);
+    });
+  };
+  styleDefs.forEach(st => {
+    const chip = document.createElement("button");
+    chip.type = "button"; chip.className = "combo-style-chip";
+    chip.textContent = st.label;
+    chip.setAttribute("aria-pressed", String(getPosterStyle() === st.id));
+    chip.addEventListener("click", () => { setPosterStyle(st.id); renderPreview(); });
+    chipEls[st.id] = chip;
+    styleRow.appendChild(chip);
+  });
+  pop.appendChild(styleRow);
+  renderPreview();
 
   // Actions — sharing the IMAGE is the point (one lovely graphic into a chat).
   const actions = document.createElement("div");
   actions.className = "combo-actions";
   const imgBtn = document.createElement("button");
   imgBtn.type = "button"; imgBtn.className = "combo-btn combo-btn-primary";
-  imgBtn.textContent = navigator.canShare ? "Share poster" : "Save poster image";
+  imgBtn.textContent = navigator.canShare ? "Share Dance Card" : "Save Dance Card";
   imgBtn.addEventListener("click", () => handleComboShareImage(items, imgBtn));
   const copyBtn = document.createElement("button");
   copyBtn.type = "button"; copyBtn.className = "combo-btn";
@@ -1283,14 +1313,24 @@ function comboPosterBgSrc(items) {
   const mm = String(dt.getMonth() + 1).padStart(2, "0");
   return `backgrounds/${dt.getFullYear()}-${mm}.jpg`;
 }
+/* The chosen Dance Card "look" (seasonal / midnight / bold / paper), remembered across
+   sessions. Falls back to seasonal for an unknown/stored-bad value. */
+function getPosterStyle() {
+  const valid = { seasonal: 1, midnight: 1, bold: 1, paper: 1 };
+  try { const s = localStorage.getItem("dev-poster-style"); if (valid[s]) return s; } catch (e) {}
+  return "seasonal";
+}
+function setPosterStyle(s) { try { localStorage.setItem("dev-poster-style", s); } catch (e) {} }
+
 /* Render the combined post to a 4:5 (1080×1350) social-friendly PNG so a whole weekend of
-   dances goes into a chat as ONE lovely image. Delegates to the shared renderer, which reads
-   the live theme colors (ember / classic / …) and applies the month's seasonal palette.
+   dances goes into a chat as ONE lovely "Dance Card" image. Delegates to the shared renderer,
+   which reads the live theme colors (ember / classic / …) and the chosen look.
    Returns a Promise<canvas>. */
 function renderComboPoster(items, headline) {
   return renderDancePoster(comboPosterEntries(items), headline, {
     month: comboSeasonDate(items).getMonth(),
-    bgImageSrc: comboPosterBgSrc(items)
+    bgImageSrc: comboPosterBgSrc(items),
+    style: getPosterStyle()
   });
 }
 async function handleComboShareImage(items, btn) {
@@ -1354,7 +1394,7 @@ function ensureComboUI() {
     });
     const shareBtn = document.createElement("button");
     shareBtn.type = "button"; shareBtn.id = "combo-share-btn"; shareBtn.className = "combo-bar-btn combo-bar-share";
-    shareBtn.textContent = "Share these"; shareBtn.disabled = true;
+    shareBtn.textContent = "Make Dance Card"; shareBtn.disabled = true;
     shareBtn.addEventListener("click", () => {
       const items = selectedShareItems();
       if (items.length) openComboShareModal(items);
