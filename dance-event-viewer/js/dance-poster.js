@@ -42,6 +42,18 @@
   ];
   var STYLE_IDS = { seasonal: 1, midnight: 1, bold: 1, paper: 1 };
 
+  // Layout presets (how the events are arranged). "list" = event cards; "calendar" = a
+  // partial month grid with the event days highlighted + a compact agenda.
+  var LAYOUTS = [
+    { id: "list", label: "List" },
+    { id: "calendar", label: "Calendar" }
+  ];
+  var LAYOUT_IDS = { list: 1, calendar: 1 };
+  var MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+  var DOW1 = ["S", "M", "T", "W", "T", "F", "S"];
+  var DOW3 = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
   function mulberry32(seed) {
     return function () {
       var t = (seed += 0x6D2B79F5);
@@ -77,6 +89,7 @@
     var month = (typeof opts.month === "number") ? opts.month : new Date().getMonth();
     var season = SEASONS[((month % 12) + 12) % 12];
     var style = STYLE_IDS[opts.style] ? opts.style : "seasonal";
+    var layoutMode = LAYOUT_IDS[opts.layout] ? opts.layout : "list";
     var cs = getComputedStyle(document.documentElement);
     function V(n, f) { var s = cs.getPropertyValue(n).trim(); return s || f; };
     var theme = {
@@ -277,85 +290,196 @@
         var listTop = headerBottom + 34, listBottom = footerTop - 24;
         var availList = listBottom - listTop;
 
-        function layout(s) {
-          var padY = Math.round(26 * s), padX = Math.round(30 * s);
-          var Lsz = Math.round(126 * s), lgap = Math.round(26 * s);
-          var nameF = FONT("800", Math.round(40 * s)), nameLH = Math.round(46 * s);
-          var whenF = FONT("600", Math.round(30 * s)), metaF = FONT("500", Math.round(27 * s));
-          var whenH = Math.round(30 * s), whenGap = Math.round(10 * s), metaH = Math.round(27 * s), metaGap = Math.round(6 * s);
-          var textX0 = padX + Lsz + lgap, textW = contentW - textX0 - padX;
-          var blocks = entries.map(function (e, i) {
-            var nameLines = wrap(e.name, nameF, textW, 2);
-            var meta = [e.venue, e.cost].filter(function (v) { return typeof v === "string" && v.trim(); })
-              .map(function (v) { return v.trim(); }).join("   ·   ");
-            var th = nameLines.length * nameLH;
-            if (e.whenLine) th += whenGap + whenH;
-            if (meta) th += metaGap + metaH;
-            var contentH = Math.max(Lsz, th);
-            return { nameLines: nameLines, meta: meta, whenLine: e.whenLine, logo: logos[i],
-              h: contentH + padY * 2, padY: padY, padX: padX, Lsz: Lsz, lgap: lgap,
-              nameF: nameF, nameLH: nameLH, whenF: whenF, metaF: metaF, textX0: textX0,
-              whenH: whenH, whenGap: whenGap, metaH: metaH, metaGap: metaGap };
+        /* ============ LIST layout — the event cards ============ */
+        function drawList() {
+          function layout(s) {
+            var padY = Math.round(26 * s), padX = Math.round(30 * s);
+            var Lsz = Math.round(126 * s), lgap = Math.round(26 * s);
+            var nameF = FONT("800", Math.round(40 * s)), nameLH = Math.round(46 * s);
+            var whenF = FONT("600", Math.round(30 * s)), metaF = FONT("500", Math.round(27 * s));
+            var whenH = Math.round(30 * s), whenGap = Math.round(10 * s), metaH = Math.round(27 * s), metaGap = Math.round(6 * s);
+            var textX0 = padX + Lsz + lgap, textW = contentW - textX0 - padX;
+            var blocks = entries.map(function (e, i) {
+              var nameLines = wrap(e.name, nameF, textW, 2);
+              var meta = [e.venue, e.cost].filter(function (v) { return typeof v === "string" && v.trim(); })
+                .map(function (v) { return v.trim(); }).join("   ·   ");
+              var th = nameLines.length * nameLH;
+              if (e.whenLine) th += whenGap + whenH;
+              if (meta) th += metaGap + metaH;
+              var contentH = Math.max(Lsz, th);
+              return { nameLines: nameLines, meta: meta, whenLine: e.whenLine, logo: logos[i],
+                h: contentH + padY * 2, padY: padY, padX: padX, Lsz: Lsz, lgap: lgap,
+                nameF: nameF, nameLH: nameLH, whenF: whenF, metaF: metaF, textX0: textX0,
+                whenH: whenH, whenGap: whenGap, metaH: metaH, metaGap: metaGap };
+            });
+            var gap0 = Math.round(20 * s);
+            var naturalH = blocks.reduce(function (a, b) { return a + b.h; }, 0) + gap0 * (entries.length - 1);
+            return { blocks: blocks, gap0: gap0, naturalH: naturalH };
+          }
+          var steps = [1.30, 1.22, 1.14, 1.07, 1.0, 0.94, 0.88, 0.82, 0.76, 0.70, 0.64], chosen = null, si;
+          for (si = 0; si < steps.length; si++) {
+            chosen = layout(steps[si]);
+            if (chosen.naturalH <= availList) break;
+          }
+          var N = entries.length, extra = availList - chosen.naturalH, gap = chosen.gap0;
+          if (extra > 0 && N > 1) gap += Math.min(extra / (N + 1), 80);
+          var usedH = chosen.blocks.reduce(function (a, b) { return a + b.h; }, 0) + gap * (N - 1);
+          var cy = listTop + Math.max(0, (availList - usedH) / 2);
+
+          chosen.blocks.forEach(function (b) {
+            var cardX = M, cardW = contentW, cardH = b.h;
+            if (look.cardShadow) { ctx.save(); ctx.shadowColor = "rgba(0,0,0,0.16)"; ctx.shadowBlur = 26; ctx.shadowOffsetY = 10; }
+            rr(cardX, cy, cardW, cardH, 26); ctx.fillStyle = rgba(look.cardFill, look.cardAlpha); ctx.fill();
+            if (look.cardShadow) ctx.restore();
+            rr(cardX, cy, cardW, cardH, 26); ctx.lineWidth = 1.5; ctx.strokeStyle = look.cardBorder; ctx.stroke();
+            rr(cardX, cy + cardH * 0.18, 5, cardH * 0.64, 3); ctx.fillStyle = look.leftBar; ctx.fill();
+
+            var lx = cardX + b.padX, ly = cy + (cardH - b.Lsz) / 2;
+            ctx.save(); rr(lx, ly, b.Lsz, b.Lsz, 20); ctx.clip();
+            if (b.logo) {
+              var cov = Math.max(b.Lsz / b.logo.width, b.Lsz / b.logo.height);
+              var lw = b.logo.width * cov, lh2 = b.logo.height * cov;
+              ctx.drawImage(b.logo, lx + (b.Lsz - lw) / 2, ly + (b.Lsz - lh2) / 2, lw, lh2);
+            } else {
+              var bg2 = ctx.createLinearGradient(lx, ly, lx + b.Lsz, ly + b.Lsz);
+              bg2.addColorStop(0, look.badgeA); bg2.addColorStop(1, look.badgeB);
+              ctx.fillStyle = bg2; ctx.fillRect(lx, ly, b.Lsz, b.Lsz);
+              ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.font = FONT("400", Math.round(b.Lsz * 0.5));
+              ctx.textAlign = "center"; ctx.fillText("💃", lx + b.Lsz / 2, ly + b.Lsz * 0.24); ctx.textAlign = "left";
+            }
+            ctx.restore();
+            rr(lx, ly, b.Lsz, b.Lsz, 20); ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(look.text, 0.12); ctx.stroke();
+
+            var textX = cardX + b.textX0, textW = cardW - b.textX0 - b.padX;
+            var stackH = b.nameLines.length * b.nameLH;
+            if (b.whenLine) stackH += b.whenGap + b.whenH;
+            if (b.meta) stackH += b.metaGap + b.metaH;
+            var ty = cy + (cardH - stackH) / 2;
+            ctx.fillStyle = look.text; ctx.font = b.nameF;
+            b.nameLines.forEach(function (ln) { ctx.fillText(ln, textX, ty); ty += b.nameLH; });
+            if (b.whenLine) {
+              ty += b.whenGap;
+              ctx.fillStyle = look.accent; ctx.beginPath(); ctx.arc(textX + 5, ty + b.whenH * 0.5, 4.5, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = look.when; ctx.font = b.whenF;
+              ctx.fillText(ellipsize(b.whenLine, b.whenF, textW - 18), textX + 18, ty);
+              ty += b.whenH;
+            }
+            if (b.meta) {
+              ty += b.metaGap;
+              ctx.fillStyle = look.dim; ctx.font = b.metaF;
+              ctx.fillText(ellipsize(b.meta, b.metaF, textW), textX, ty);
+            }
+            cy += cardH + gap;
           });
-          var gap0 = Math.round(20 * s);
-          var naturalH = blocks.reduce(function (a, b) { return a + b.h; }, 0) + gap0 * (entries.length - 1);
-          return { blocks: blocks, gap0: gap0, naturalH: naturalH };
         }
-        var steps = [1.30, 1.22, 1.14, 1.07, 1.0, 0.94, 0.88, 0.82, 0.76, 0.70, 0.64], chosen = null, si;
-        for (si = 0; si < steps.length; si++) {
-          chosen = layout(steps[si]);
-          if (chosen.naturalH <= availList) break;
+
+        /* ============ CALENDAR layout — partial month grid + agenda ============ */
+        function drawCalendar() {
+          var floorD = function (d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
+          var keyD = function (d) { return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); };
+          var dated = entries.filter(function (e) { return e.date instanceof Date && !isNaN(e.date); });
+          if (!dated.length) { drawList(); return; }   // nothing to place → fall back
+
+          var times = dated.map(function (e) { return floorD(e.date).getTime(); });
+          var minD = new Date(Math.min.apply(null, times)), maxD = new Date(Math.max.apply(null, times));
+          var start = floorD(minD); start.setDate(start.getDate() - start.getDay());   // Sunday of first week
+          var end = floorD(maxD); end.setDate(end.getDate() + (6 - end.getDay()));      // Saturday of last week
+          var diffDays = Math.round((end.getTime() - start.getTime()) / 86400000);
+          var weeks = Math.floor(diffDays / 7) + 1;
+          if (weeks > 4) weeks = 4;
+          if (weeks < 1) weeks = 1;
+
+          var dayCount = {};
+          dated.forEach(function (e) { var k = keyD(floorD(e.date)); dayCount[k] = (dayCount[k] || 0) + 1; });
+
+          var monthLabel = (minD.getMonth() === maxD.getMonth() && minD.getFullYear() === maxD.getFullYear())
+            ? (MONTH_NAMES[minD.getMonth()] + " " + minD.getFullYear())
+            : (MONTH_NAMES[minD.getMonth()] + " – " + MONTH_NAMES[maxD.getMonth()] + " " + maxD.getFullYear());
+
+          var agenda = entries.slice().sort(function (a, b) {
+            var at = (a.date instanceof Date && !isNaN(a.date)) ? a.date.getTime() : Infinity;
+            var bt = (b.date instanceof Date && !isNaN(b.date)) ? b.date.getTime() : Infinity;
+            return at - bt;
+          });
+          var n2 = agenda.length;
+
+          // Size the grid cells + agenda rows to fill the space, then centre the whole block
+          // vertically so a sparse 1-week card doesn't float at the top.
+          var cellW = contentW / 7, dowH = 34, labelH = 46, gapAg = 26, rowGap = 12;
+          var cellH = 96, rowH = 84;
+          var totalH = function (cH, rH) { return labelH + (dowH + weeks * cH) + gapAg + (n2 * rH + (n2 - 1) * rowGap); };
+          while (totalH(cellH, rowH) > availList && (cellH > 60 || rowH > 50)) { if (cellH > 60) cellH -= 2; if (rowH > 50) rowH -= 2; }
+          while (totalH(cellH + 2, rowH + 2) <= availList && cellH < 150 && rowH < 118) { cellH += 2; rowH += 2; }
+          var startY = listTop + Math.max(0, (availList - totalH(cellH, rowH)) * 0.4);
+
+          // month label
+          ctx.fillStyle = look.accent; ctx.font = FONT("700", 26); track(2);
+          ctx.fillText(monthLabel.toUpperCase(), M, startY); track(0);
+          var calTop = startY + labelH, gridH = dowH + weeks * cellH;
+
+          // weekday header
+          ctx.font = FONT("700", 20); track(1.5); ctx.textAlign = "center"; ctx.fillStyle = look.dim;
+          for (var c = 0; c < 7; c++) ctx.fillText(DOW1[c], M + cellW * c + cellW / 2, calTop);
+          track(0);
+
+          // day cells
+          var cur = new Date(start);
+          for (var wk = 0; wk < weeks; wk++) {
+            for (var col = 0; col < 7; col++) {
+              var cxC = M + cellW * col + cellW / 2, cyC = calTop + dowH + wk * cellH + cellH / 2;
+              var cnt = dayCount[keyD(cur)] || 0;
+              var inMonth = (cur.getMonth() === minD.getMonth() || cur.getMonth() === maxD.getMonth());
+              if (cnt > 0) {
+                var r = Math.min(cellW * 0.92, cellH) * 0.4;
+                ctx.beginPath(); ctx.arc(cxC, cyC, r, 0, Math.PI * 2); ctx.fillStyle = look.accent; ctx.fill();
+                ctx.fillStyle = "#15100f"; ctx.font = FONT("800", Math.round(r * 0.9)); ctx.textBaseline = "middle";
+                ctx.fillText(String(cur.getDate()), cxC, cyC + 1); ctx.textBaseline = "top";
+                if (cnt > 1) {
+                  var bx = cxC + r * 0.78, by = cyC - r * 0.78;
+                  ctx.beginPath(); ctx.arc(bx, by, 13, 0, Math.PI * 2); ctx.fillStyle = look.when; ctx.fill();
+                  ctx.fillStyle = "#fff"; ctx.font = FONT("700", 16); ctx.textBaseline = "middle";
+                  ctx.fillText(String(cnt), bx, by + 1); ctx.textBaseline = "top";
+                }
+              } else {
+                ctx.fillStyle = rgba(look.text, inMonth ? 0.5 : 0.22);
+                ctx.font = FONT("600", 26); ctx.textBaseline = "middle";
+                ctx.fillText(String(cur.getDate()), cxC, cyC + 1); ctx.textBaseline = "top";
+              }
+              cur.setDate(cur.getDate() + 1);
+            }
+          }
+          ctx.textAlign = "left";
+
+          // agenda
+          var ay = calTop + gridH + gapAg;
+          agenda.forEach(function (e) {
+            var hasDate = e.date instanceof Date && !isNaN(e.date);
+            var chipW = 94, chipH = Math.min(rowH - 8, 74), chY = ay + (rowH - chipH) / 2;
+            rr(M, chY, chipW, chipH, 14); ctx.fillStyle = rgba(look.accent, 0.15); ctx.fill();
+            rr(M, chY, chipW, chipH, 14); ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(look.accent, 0.4); ctx.stroke();
+            ctx.textAlign = "center"; ctx.fillStyle = look.accent;
+            if (hasDate) {
+              ctx.font = FONT("700", 19); ctx.fillText(DOW3[e.date.getDay()], M + chipW / 2, chY + 11);
+              ctx.font = FONT("800", 33); ctx.fillText(String(e.date.getDate()), M + chipW / 2, chY + 30);
+            } else {
+              ctx.font = FONT("700", 20); ctx.fillText("TBA", M + chipW / 2, chY + chipH / 2 - 12);
+            }
+            ctx.textAlign = "left";
+            var tx = M + chipW + 22, tw = contentW - chipW - 22;
+            var nameF = FONT("800", 32), subF = FONT("500", 25);
+            var sub = [e.timeText || (hasDate ? "" : e.whenLine), e.venue].filter(function (v) { return v && String(v).trim(); }).join("   ·   ");
+            var nmY = ay + (rowH - (sub ? (34 + 8 + 27) : 34)) / 2;
+            ctx.fillStyle = look.text; ctx.font = nameF;
+            ctx.fillText(ellipsize(e.name, nameF, tw), tx, nmY);
+            if (sub) {
+              ctx.fillStyle = look.dim; ctx.font = subF;
+              ctx.fillText(ellipsize(sub, subF, tw), tx, nmY + 34 + 8);
+            }
+            ay += rowH + rowGap;
+          });
         }
-        var N = entries.length, extra = availList - chosen.naturalH, gap = chosen.gap0;
-        if (extra > 0 && N > 1) gap += Math.min(extra / (N + 1), 80);
-        var usedH = chosen.blocks.reduce(function (a, b) { return a + b.h; }, 0) + gap * (N - 1);
-        var cy = listTop + Math.max(0, (availList - usedH) / 2);
 
-        chosen.blocks.forEach(function (b) {
-          var cardX = M, cardW = contentW, cardH = b.h;
-          if (look.cardShadow) { ctx.save(); ctx.shadowColor = "rgba(0,0,0,0.16)"; ctx.shadowBlur = 26; ctx.shadowOffsetY = 10; }
-          rr(cardX, cy, cardW, cardH, 26); ctx.fillStyle = rgba(look.cardFill, look.cardAlpha); ctx.fill();
-          if (look.cardShadow) ctx.restore();
-          rr(cardX, cy, cardW, cardH, 26); ctx.lineWidth = 1.5; ctx.strokeStyle = look.cardBorder; ctx.stroke();
-          rr(cardX, cy + cardH * 0.18, 5, cardH * 0.64, 3); ctx.fillStyle = look.leftBar; ctx.fill();
-
-          var lx = cardX + b.padX, ly = cy + (cardH - b.Lsz) / 2;
-          ctx.save(); rr(lx, ly, b.Lsz, b.Lsz, 20); ctx.clip();
-          if (b.logo) {
-            var cov = Math.max(b.Lsz / b.logo.width, b.Lsz / b.logo.height);
-            var lw = b.logo.width * cov, lh2 = b.logo.height * cov;
-            ctx.drawImage(b.logo, lx + (b.Lsz - lw) / 2, ly + (b.Lsz - lh2) / 2, lw, lh2);
-          } else {
-            var bg2 = ctx.createLinearGradient(lx, ly, lx + b.Lsz, ly + b.Lsz);
-            bg2.addColorStop(0, look.badgeA); bg2.addColorStop(1, look.badgeB);
-            ctx.fillStyle = bg2; ctx.fillRect(lx, ly, b.Lsz, b.Lsz);
-            ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.font = FONT("400", Math.round(b.Lsz * 0.5));
-            ctx.textAlign = "center"; ctx.fillText("💃", lx + b.Lsz / 2, ly + b.Lsz * 0.24); ctx.textAlign = "left";
-          }
-          ctx.restore();
-          rr(lx, ly, b.Lsz, b.Lsz, 20); ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(look.text, 0.12); ctx.stroke();
-
-          var textX = cardX + b.textX0, textW = cardW - b.textX0 - b.padX;
-          var stackH = b.nameLines.length * b.nameLH;
-          if (b.whenLine) stackH += b.whenGap + b.whenH;
-          if (b.meta) stackH += b.metaGap + b.metaH;
-          var ty = cy + (cardH - stackH) / 2;
-          ctx.fillStyle = look.text; ctx.font = b.nameF;
-          b.nameLines.forEach(function (ln) { ctx.fillText(ln, textX, ty); ty += b.nameLH; });
-          if (b.whenLine) {
-            ty += b.whenGap;
-            ctx.fillStyle = look.accent; ctx.beginPath(); ctx.arc(textX + 5, ty + b.whenH * 0.5, 4.5, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = look.when; ctx.font = b.whenF;
-            ctx.fillText(ellipsize(b.whenLine, b.whenF, textW - 18), textX + 18, ty);
-            ty += b.whenH;
-          }
-          if (b.meta) {
-            ty += b.metaGap;
-            ctx.fillStyle = look.dim; ctx.font = b.metaF;
-            ctx.fillText(ellipsize(b.meta, b.metaF, textW), textX, ty);
-          }
-          cy += cardH + gap;
-        });
+        if (layoutMode === "calendar") drawCalendar(); else drawList();
 
         /* ---------- footer ---------- */
         ctx.fillStyle = look.footDiv; ctx.fillRect(M, footerTop, contentW, 1.5);
@@ -380,4 +504,5 @@
   global.renderDancePoster = renderDancePoster;
   global.DANCE_POSTER_SEASONS = SEASONS;
   global.DANCE_POSTER_STYLES = STYLES;
+  global.DANCE_POSTER_LAYOUTS = LAYOUTS;
 })(window);
