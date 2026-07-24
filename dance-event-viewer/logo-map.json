@@ -124,9 +124,14 @@
     "se-orlando-otown-meltdown-wcs-2026-07-31": "../graphics/logos/web-se-orlando-otown-meltdown-wcs-2026-07-31.webp",
     "pensacola-latin-salsa-festival-2026-09-26": "../graphics/logos/upload-pensacola-latin-salsa-festival-2026-09-26-7b6741c5.png",
     "wcs-social-dance-saturday-2026-09-26": "../graphics/logos/upload-wcs-social-dance-saturday-2026-09-26-b1300ef6.jpg",
-    "latin-night-social-dance-2026-10-03": "../graphics/logos/upload-latin-night-social-dance-2026-10-03-20f0c16c.jpg"
+    "latin-night-social-dance-2026-10-03": "../graphics/logos/upload-latin-night-social-dance-2026-10-03-20f0c16c.jpg",
+    "country-swing-lesson-social-thursday": "../graphics/logos/upload-country-swing-lesson-social-thursday-009d8ff9.jpg"
   },
   "patterns": [
+    {
+      "contains": "country-swing-lesson-social-thursday",
+      "logo": "../graphics/logos/upload-country-swing-lesson-social-thursday-009d8ff9.jpg"
+    },
     {
       "contains": "tango-lab-fridays",
       "logo": "../graphics/logos/upload-tango-lab-fridays-july-2026-69bc5397.jpg"
