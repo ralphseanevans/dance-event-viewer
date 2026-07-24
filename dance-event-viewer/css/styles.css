@@ -1102,7 +1102,7 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
 
 /* The "lovely share" preview modal — reuses .cal-pop-backdrop for the scrim. */
 .combo-pop {
-  max-width: 460px; width: 100%; max-height: 88vh; overflow: auto;
+  max-width: 460px; width: 100%; max-height: 94vh; overflow: auto;
   background: var(--bg-raised); border: 1px solid var(--border);
   border-radius: 18px; position: relative;
   box-shadow: 0 28px 80px rgba(0, 0, 0, .6);
@@ -1114,7 +1114,20 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
 }
 .combo-pop .pop-close:hover { background: rgba(0, 0, 0, .45); }
 
-/* The poster (also the layout mirrored onto the saved PNG). */
+/* The poster preview — shows the ACTUAL rendered 4:5 PNG, scaled so the whole thing reads
+   at a glance on a phone (no scrolling to find the point). */
+.combo-poster-stage {
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px 16px 4px; min-height: 220px;
+}
+.combo-poster-img {
+  width: 100%; max-width: 384px; max-height: 66vh; height: auto;
+  object-fit: contain; border-radius: 16px; display: block;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .5);
+}
+.combo-poster-loading { margin: 0; padding: 80px 0; color: var(--text-dim); font-size: .95rem; }
+
+/* Legacy DOM-poster styles (kept harmless; the preview is now the rendered image above). */
 .combo-poster { border-radius: 18px 18px 0 0; overflow: hidden; }
 .combo-poster-head {
   padding: 26px 24px 20px;
