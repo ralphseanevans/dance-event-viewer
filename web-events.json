@@ -15,6 +15,22 @@
       "state": "FL",
       "cost": "$12/person",
       "source_url": ""
+    },
+    {
+      "key": "country-swing-dance-lessons-friday",
+      "name": "Country Swing Dance Lessons",
+      "style": "Mixed",
+      "type": "weekly_recurring",
+      "day_of_week": "Friday",
+      "monthly_rule": "",
+      "start_date": null,
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "21:00",
+      "venue": "Wild Greg's Saloon, Pensacola",
+      "state": null,
+      "cost": "",
+      "source_url": ""
     }
   ]
 }
