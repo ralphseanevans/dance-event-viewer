@@ -1225,10 +1225,12 @@ function openComboShareModal(items) {
   styleRow.appendChild(styleLabel);
   const styleDefs = window.DANCE_POSTER_STYLES || [{ id: "seasonal", label: "Seasonal" }];
   const chipEls = {};
+  const layoutChipEls = {};
   const renderPreview = () => {
     stage.replaceChildren(loadingEl());
-    const active = getPosterStyle();
-    for (const id in chipEls) chipEls[id].setAttribute("aria-pressed", String(id === active));
+    const activeStyle = getPosterStyle(), activeLayout = getPosterLayout();
+    for (const id in chipEls) chipEls[id].setAttribute("aria-pressed", String(id === activeStyle));
+    for (const id in layoutChipEls) layoutChipEls[id].setAttribute("aria-pressed", String(id === activeLayout));
     renderComboPoster(items, headline).then(canvas => {
       const img = new Image();
       img.className = "combo-poster-img";
@@ -1250,6 +1252,24 @@ function openComboShareModal(items) {
     styleRow.appendChild(chip);
   });
   pop.appendChild(styleRow);
+
+  // Layout picker — List (event cards) vs Calendar (a partial month grid + agenda).
+  const layoutRow = document.createElement("div");
+  layoutRow.className = "combo-style-row";
+  const layoutLabel = document.createElement("span");
+  layoutLabel.className = "combo-style-label"; layoutLabel.textContent = "Layout";
+  layoutRow.appendChild(layoutLabel);
+  const layoutDefs = window.DANCE_POSTER_LAYOUTS || [{ id: "list", label: "List" }];
+  layoutDefs.forEach(lo => {
+    const chip = document.createElement("button");
+    chip.type = "button"; chip.className = "combo-style-chip";
+    chip.textContent = lo.label;
+    chip.setAttribute("aria-pressed", String(getPosterLayout() === lo.id));
+    chip.addEventListener("click", () => { setPosterLayout(lo.id); renderPreview(); });
+    layoutChipEls[lo.id] = chip;
+    layoutRow.appendChild(chip);
+  });
+  pop.appendChild(layoutRow);
   renderPreview();
 
   // Actions — sharing the IMAGE is the point (one lovely graphic into a chat).
@@ -1293,6 +1313,8 @@ function comboPosterEntries(items) {
     return {
       name: (ev && typeof ev.name === "string" ? ev.name : "").trim(),
       whenLine: comboWhenLine(d),
+      timeText: (ev ? (timeRange(ev) || "") : ""),   // time-only, for the Calendar agenda
+      date: (d.next instanceof Date && !isNaN(d.next)) ? d.next : null,
       venue: (ev && typeof ev.venue === "string") ? ev.venue.trim() : "",
       cost: (ev && typeof ev.cost === "string") ? ev.cost.trim() : "",
       logoSrc: logoFor(ev && ev.key) || null
@@ -1322,15 +1344,24 @@ function getPosterStyle() {
 }
 function setPosterStyle(s) { try { localStorage.setItem("dev-poster-style", s); } catch (e) {} }
 
+/* The chosen Dance Card layout (list / calendar), remembered across sessions. */
+function getPosterLayout() {
+  const valid = { list: 1, calendar: 1 };
+  try { const s = localStorage.getItem("dev-poster-layout"); if (valid[s]) return s; } catch (e) {}
+  return "list";
+}
+function setPosterLayout(s) { try { localStorage.setItem("dev-poster-layout", s); } catch (e) {} }
+
 /* Render the combined post to a 4:5 (1080×1350) social-friendly PNG so a whole weekend of
    dances goes into a chat as ONE lovely "Dance Card" image. Delegates to the shared renderer,
-   which reads the live theme colors (ember / classic / …) and the chosen look.
+   which reads the live theme colors (ember / classic / …), the chosen look and layout.
    Returns a Promise<canvas>. */
 function renderComboPoster(items, headline) {
   return renderDancePoster(comboPosterEntries(items), headline, {
     month: comboSeasonDate(items).getMonth(),
     bgImageSrc: comboPosterBgSrc(items),
-    style: getPosterStyle()
+    style: getPosterStyle(),
+    layout: getPosterLayout()
   });
 }
 async function handleComboShareImage(items, btn) {
