@@ -125,9 +125,14 @@
     "pensacola-latin-salsa-festival-2026-09-26": "../graphics/logos/upload-pensacola-latin-salsa-festival-2026-09-26-7b6741c5.png",
     "wcs-social-dance-saturday-2026-09-26": "../graphics/logos/upload-wcs-social-dance-saturday-2026-09-26-b1300ef6.jpg",
     "latin-night-social-dance-2026-10-03": "../graphics/logos/upload-latin-night-social-dance-2026-10-03-20f0c16c.jpg",
-    "country-swing-lesson-social-thursday": "../graphics/logos/upload-country-swing-lesson-social-thursday-009d8ff9.jpg"
+    "country-swing-lesson-social-thursday": "../graphics/logos/upload-country-swing-lesson-social-thursday-009d8ff9.jpg",
+    "country-swing-dance-lessons-friday": "../graphics/logos/upload-country-swing-dance-lessons-friday-25e511b4.jpg"
   },
   "patterns": [
+    {
+      "contains": "country-swing-dance-lessons-friday",
+      "logo": "../graphics/logos/upload-country-swing-dance-lessons-friday-25e511b4.jpg"
+    },
     {
       "contains": "country-swing-lesson-social-thursday",
       "logo": "../graphics/logos/upload-country-swing-lesson-social-thursday-009d8ff9.jpg"
