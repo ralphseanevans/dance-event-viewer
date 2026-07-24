@@ -1,0 +1,20 @@
+{
+  "events": [
+    {
+      "key": "country-swing-lesson-social-thursday",
+      "name": "Country Swing Lesson & Social",
+      "style": "Mixed",
+      "type": "weekly_recurring",
+      "day_of_week": "Thursday",
+      "monthly_rule": "",
+      "start_date": null,
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "21:00",
+      "venue": "Flying With Ease Training Center, 1507 Marcus Pointe, Pensacola, FL.",
+      "state": "FL",
+      "cost": "$12/person",
+      "source_url": ""
+    }
+  ]
+}
