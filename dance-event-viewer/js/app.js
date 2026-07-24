@@ -12,7 +12,12 @@
 const SOURCES = [
   { id: "dance", label: "All Dance Events", file: "../dance_events.json" },
 ];
-const CORE_CATEGORIES = ["West Coast Swing", "Mixed", "Latin", "Argentine Tango"];
+// Country Swing (added 2026-07-24, Sean): its own distinct dance/category — deliberately NOT
+// a bucket for Country/Western, two-step, or line-dance styles (Sean: "any country dancing is
+// completely different than Country Swing. Don't group any country dances in with it.").
+// Only events whose style is exactly "Country Swing" land here; everything else country-ish
+// stays in "Other" via normCategory's exact-match rule.
+const CORE_CATEGORIES = ["West Coast Swing", "Country Swing", "Mixed", "Latin", "Argentine Tango"];
 // Solo Dance Styles (added 2026-07-13, Sean) — Pensacola Coastals Dance Studio's class schedule.
 // These render in their own collapsed "Solo Dance Styles" group in the Style filter (see
 // #solo-styles-chips in the Filters panel, 2026-07-17 redesign) rather than the main Style row, but they
@@ -44,7 +49,7 @@ const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map 
 const MAP_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";  // free, no API key
 const MAP_TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 const MAP_MARKER_COLORS = {
-  "West Coast Swing": "#4cc2ff", "Mixed": "#7fe0a7", "Latin": "#ffc27d",
+  "West Coast Swing": "#4cc2ff", "Country Swing": "#d78f4f", "Mixed": "#7fe0a7", "Latin": "#ffc27d",
   "Argentine Tango": "#ff5fa2", "Other": "#9fadc4",
   // Solo Dance Styles (2026-07-13) — see SOLO_STYLES above.
   "Ballet": "#a78bfa", "Jazz": "#fde047", "Hip Hop": "#f87171", "Contemporary": "#2dd4bf",
