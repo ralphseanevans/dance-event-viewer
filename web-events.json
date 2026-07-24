@@ -7,7 +7,7 @@
       "type": "weekly_recurring",
       "day_of_week": "Thursday",
       "monthly_rule": "",
-      "start_date": null,
+      "start_date": "2026-08-06",
       "end_date": null,
       "start_time": "19:00",
       "end_time": "21:00",
