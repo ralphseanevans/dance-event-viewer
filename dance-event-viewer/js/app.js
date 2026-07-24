@@ -604,6 +604,20 @@ function activeFilterList() {
     if (state.sel[dim]) out.push({ group: "sel", v: dim, label: state.sel[dim] });
   return out;
 }
+/* The Advanced-panel badge ("N active" on the toggle, "(N)" in the panel title) must count
+   ONLY the filters that actually live inside the Advanced panel — Event type, Solo dance
+   styles, and the Past-events toggle. Dance style, Day and Location are always-visible quick
+   filters, so they must not inflate this badge (Sean, 2026-07-24: the badge "should only
+   represent what's active inside of the Advanced tab. Should not trigger when 'All types' is
+   selected"). Solo styles share state.filters.cats with the main Style row, so they're picked
+   out by SOLO_STYLES membership. The closed-panel summary chips (renderActiveChips) still
+   reflect ALL active filters — only this Advanced badge is scoped. */
+function advancedFilterCount() {
+  let n = state.filters.kinds.size;                                      // Event type
+  for (const v of state.filters.cats) if (SOLO_STYLES.includes(v)) n++;  // Solo dance styles
+  if (state.showPast) n++;                                               // Past events toggle
+  return n;
+}
 function updateFilterUI() {
   for (const holder of document.querySelectorAll(".chips[data-group]")) {
     const group = holder.dataset.group;
@@ -618,14 +632,20 @@ function updateFilterUI() {
       if (chip.dataset.all) { if (cEl) cEl.textContent = group === "areas" ? ` (${facetCount(group, null)})` : ""; continue; }
       const n = facetCount(group, chip.dataset.value);
       if (cEl) cEl.textContent = ` (${n})`;
-      chip.classList.toggle("chip-dim", n === 0 && !on);
+      // No zero-count dimming: a chip's shade now reflects only its selected state, so every
+      // chip in a group reads at the same brightness regardless of its count (Sean, 2026-07-24:
+      // "'One-time' and 'Past events' shouldn't be a different shade as recurring and ballet").
+      // The "(0)" count still signals an empty facet. remove() (not a false toggle) also clears
+      // the class off any chip that was dimmed earlier this session.
+      chip.classList.remove("chip-dim");
     }
   }
   const act = activeFilterList();
+  const advN = advancedFilterCount();
   const toggleCount = document.getElementById("filters-count");
   const panelCount = document.getElementById("filters-count-panel");
-  if (toggleCount) toggleCount.textContent = act.length ? `${act.length} active` : "";
-  if (panelCount) panelCount.textContent = act.length ? `(${act.length})` : "";
+  if (toggleCount) toggleCount.textContent = advN ? `${advN} active` : "";
+  if (panelCount) panelCount.textContent = advN ? `(${advN})` : "";
   renderActiveChips(act);
   syncUrl();
   savePrefs();
