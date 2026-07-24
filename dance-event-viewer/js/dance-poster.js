@@ -1,19 +1,19 @@
 /* ============================================================================
-   Dance Event Viewer — share poster renderer (2026-07-24 redesign, Sean:
-   "portioned very badly… scroll way down… no visual appeal"). Draws a phone/
-   social-friendly 4:5 poster (1080×1350) for the "Share several" feature.
+   Dance Event Viewer — "Dance Card" share poster renderer (2026-07-24 redesign;
+   style options added 2026-07-24b, Sean: "options for different looks").
+   Draws a phone/social-friendly 4:5 poster (1080×1350) for the multi-select share.
 
    • renderDancePoster(entries, headline, opts) -> Promise<HTMLCanvasElement>
        entries: [{ name, whenLine, venue, cost, logoSrc }]
-       opts:    { W, H, scale, month (0-11), bgImageSrc, footerUrl }
+       opts:    { W, H, scale, month (0-11), bgImageSrc, footerUrl, style }
    • Reads the LIVE theme CSS vars off <html>, so it always matches the active
      site theme (ember / classic / …). Pure canvas — no external libs, no
      network at draw time except same-origin logos / optional seasonal image,
      so toBlob()/toDataURL() never taint.
-   • Seasonal look: each month gets its own accent gradient + motif on the
-     background. A pre-made image can be dropped in later at
-     dance-event-viewer/backgrounds/YYYY-MM.jpg — when present it is used as the
-     full-bleed background instead of the code gradient (see comboPosterBgSrc).
+   • style (window.DANCE_POSTER_STYLES): "seasonal" (per-month palette + motif),
+     "midnight" (clean dark minimal), "bold" (vivid accent→pink), "paper" (light
+     editorial). A pre-made image dropped at backgrounds/YYYY-MM.jpg overrides the
+     background for the "seasonal" look only.
    ============================================================================ */
 (function (global) {
   "use strict";
@@ -32,6 +32,15 @@
     { name: "November",  a: "#2a1608", b: "#120905", glow: "#d98a3c", motif: "leaf",  glyph: "☘" },
     { name: "December",  a: "#0e2a24", b: "#07130e", glow: "#7fdca0", motif: "snow",  glyph: "❄" }
   ];
+
+  // User-facing style presets (order = display order in the picker).
+  var STYLES = [
+    { id: "seasonal", label: "Seasonal" },
+    { id: "midnight", label: "Midnight" },
+    { id: "bold",     label: "Bold" },
+    { id: "paper",    label: "Paper" }
+  ];
+  var STYLE_IDS = { seasonal: 1, midnight: 1, bold: 1, paper: 1 };
 
   function mulberry32(seed) {
     return function () {
@@ -67,8 +76,9 @@
     var W = opts.W || 1080, H = opts.H || 1350, scale = opts.scale || 2;
     var month = (typeof opts.month === "number") ? opts.month : new Date().getMonth();
     var season = SEASONS[((month % 12) + 12) % 12];
+    var style = STYLE_IDS[opts.style] ? opts.style : "seasonal";
     var cs = getComputedStyle(document.documentElement);
-    function V(n, f) { var s = cs.getPropertyValue(n).trim(); return s || f; }
+    function V(n, f) { var s = cs.getPropertyValue(n).trim(); return s || f; };
     var theme = {
       text:   V("--text", "#f6eadf"),
       dim:    V("--text-dim", "#a99ca5"),
@@ -79,9 +89,12 @@
       border: V("--border", "#3d2b37")
     };
 
+    // Only the "seasonal" look honours a dropped-in background image.
+    var wantBg = (style === "seasonal") ? opts.bgImageSrc : null;
+
     return Promise.all(entries.map(function (e) { return loadImage(e.logoSrc); }))
       .then(function (logos) {
-        return Promise.all([logos, opts.bgImageSrc ? loadImage(opts.bgImageSrc) : Promise.resolve(null)]);
+        return Promise.all([logos, wantBg ? loadImage(wantBg) : Promise.resolve(null)]);
       })
       .then(function (pair) {
         var logos = pair[0], bgImg = pair[1];
@@ -121,12 +134,39 @@
           return s + "…";
         }
 
-        /* ---------------- background ---------------- */
+        /* ---------- the "look" (colors) for the chosen style ---------- */
+        var accent = theme.accent, pink = theme.pink;
+        var look = {
+          text: theme.text, dim: theme.dim,
+          cardFill: theme.card, cardAlpha: 0.76, cardBorder: rgba(accent, 0.18), cardShadow: 0,
+          leftBar: rgba(accent, 0.85), accent: accent, when: pink, headline: theme.text,
+          frame: rgba(theme.text, 0.10), footDiv: rgba(theme.text, 0.12), chipFill: rgba(accent, 0.14),
+          badgeA: accent, badgeB: pink
+        };
+        if (style === "paper") {
+          var ink = "#2a2026", inkDim = "#6f6068";
+          look.text = ink; look.dim = inkDim;
+          look.cardFill = "#ffffff"; look.cardAlpha = 0.92; look.cardBorder = "rgba(0,0,0,0.08)"; look.cardShadow = 1;
+          look.leftBar = rgba(accent, 0.9); look.headline = "#241a1f";
+          look.frame = "rgba(0,0,0,0.08)"; look.footDiv = "rgba(0,0,0,0.10)"; look.chipFill = rgba(accent, 0.12);
+          look.when = mix(accent, "#000000", 0.15);
+        } else if (style === "bold") {
+          // Fixed festival gradient + gold accents so it's reliably punchy regardless of
+          // how close the active theme's accent/pink hues happen to be.
+          var gold = "#ffd15c";
+          look.headline = "#ffffff"; look.accent = gold; look.when = "#ffb0d4";
+          look.cardFill = "#140d20"; look.cardAlpha = 0.82; look.cardBorder = rgba(gold, 0.22); look.cardShadow = 1;
+          look.leftBar = rgba(gold, 0.9); look.frame = "rgba(255,255,255,0.16)"; look.footDiv = "rgba(255,255,255,0.16)";
+          look.chipFill = rgba(gold, 0.16); look.badgeA = "#ff7a4d"; look.badgeB = "#c9297f";
+        }
+
+        /* ---------- background per style ---------- */
         function glow(cx, cy, r, col, a) {
           var rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
           rg.addColorStop(0, rgba(col, a)); rg.addColorStop(1, rgba(col, 0));
           ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
         }
+        function vgrad(top, bot) { var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, top); g.addColorStop(1, bot); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
         function drawMotif() {
           var rnd = mulberry32(month * 97 + 13), i;
           ctx.save();
@@ -153,6 +193,27 @@
           }
           ctx.restore(); ctx.globalAlpha = 1;
         }
+        function beams(col) {
+          ctx.save();
+          for (var i = 0; i < 7; i++) {
+            var x = W * (0.08 + 0.14 * i);
+            ctx.fillStyle = rgba(col, 0.05 + 0.02 * ((i * 7) % 3));
+            ctx.beginPath(); ctx.moveTo(W * 0.5, -60);
+            ctx.lineTo(x - 70, H); ctx.lineTo(x + 70, H); ctx.closePath(); ctx.fill();
+          }
+          ctx.restore();
+        }
+        function scatterDots(col, alpha) {
+          var rnd = mulberry32(7), i;
+          for (i = 0; i < 26; i++) {
+            ctx.globalAlpha = alpha * (0.5 + rnd());
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, 2 + rnd() * 6, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
+        function vignette() { var rg = ctx.createRadialGradient(W / 2, H * 0.42, H * 0.2, W / 2, H * 0.5, H * 0.75); rg.addColorStop(0, "rgba(0,0,0,0)"); rg.addColorStop(1, "rgba(0,0,0,0.42)"); ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H); }
+
         if (bgImg) {
           var cover = Math.max(W / bgImg.width, H / bgImg.height);
           var dw = bgImg.width * cover, dh = bgImg.height * cover;
@@ -161,39 +222,57 @@
           sc.addColorStop(0, rgba(season.b, 0.45)); sc.addColorStop(0.45, rgba(season.b, 0.15)); sc.addColorStop(1, rgba(season.b, 0.85));
           ctx.fillStyle = sc; ctx.fillRect(0, 0, W, H);
           ctx.fillStyle = rgba("#05060a", 0.30); ctx.fillRect(0, 0, W, H);
-        } else {
-          var g = ctx.createLinearGradient(0, 0, 0, H);
-          g.addColorStop(0, season.a); g.addColorStop(1, season.b);
+        } else if (style === "midnight") {
+          vgrad(mix(theme.raised, "#05060b", 0.35), "#05060b");
+          glow(W * 0.5, -H * 0.05, 900, accent, 0.16);
+          glow(W * 0.85, H * 0.9, 620, pink, 0.10);
+          vignette();
+        } else if (style === "bold") {
+          var g = ctx.createLinearGradient(0, 0, W * 0.4, H);
+          g.addColorStop(0, "#ff7a4d"); g.addColorStop(0.5, "#c9297f"); g.addColorStop(1, "#2b1152");
           ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+          glow(W * 0.18, H * 0.05, 620, "#ffffff", 0.14);          // sheen
+          glow(W * 0.9, H * 0.4, 560, "#ff4d6d", 0.20);
+          var bs = ctx.createLinearGradient(0, H * 0.5, 0, H);
+          bs.addColorStop(0, "rgba(9,4,18,0)"); bs.addColorStop(1, "rgba(9,4,18,0.55)");
+          ctx.fillStyle = bs; ctx.fillRect(0, 0, W, H);
+        } else if (style === "paper") {
+          vgrad("#faf6f0", "#efe4d7");
+          glow(W * 0.85, H * 0.06, 680, accent, 0.10);
+          glow(W * 0.1, H * 0.95, 620, pink, 0.07);
+          scatterDots(rgba(accent, 1), 0.05);
+        } else {
+          // seasonal
+          vgrad(season.a, season.b);
           ctx.fillStyle = rgba(theme.raised, 0.34); ctx.fillRect(0, 0, W, H);
           glow(W * 0.82, H * 0.05, 760, season.glow, 0.30);
-          glow(W * 0.10, H * 0.60, 720, theme.accent, 0.20);
+          glow(W * 0.10, H * 0.60, 720, accent, 0.20);
           glow(W * 0.50, H * 1.02, 700, season.glow, 0.16);
           drawMotif();
         }
 
-        /* ---------------- frame ---------------- */
+        /* ---------- frame ---------- */
         var M = 54, frameInset = 22;
-        ctx.strokeStyle = rgba(theme.text, 0.10); ctx.lineWidth = 1.5;
+        ctx.strokeStyle = look.frame; ctx.lineWidth = 1.5;
         rr(frameInset, frameInset, W - frameInset * 2, H - frameInset * 2, 40); ctx.stroke();
         var contentW = W - M * 2;
 
-        /* ---------------- header ---------------- */
+        /* ---------- header ---------- */
         var y = M + 8;
-        ctx.fillStyle = theme.accent; ctx.font = FONT("700", 25); track(3.5);
+        ctx.fillStyle = look.accent; ctx.font = FONT("700", 25); track(3.5);
         ctx.fillText("◆ DANCE EVENT VIEWER", M, y); track(0);
         y += 25 + 22;
         var hl = String(headline), L = hl.length, fH = 74;
         if (L > 20) fH = 64; if (L > 30) fH = 56; if (L > 42) fH = 49; if (L > 56) fH = 43;
         var hlLines = wrap(hl, FONT("800", fH), contentW, 3), hLH = Math.round(fH * 1.04);
-        ctx.fillStyle = theme.text; ctx.font = FONT("800", fH);
+        ctx.fillStyle = look.headline; ctx.font = FONT("800", fH);
         for (var hi = 0; hi < hlLines.length; hi++) { ctx.fillText(hlLines[hi], M, y); y += hLH; }
         y += 14;
-        ctx.fillStyle = theme.accent; rr(M, y, 92, 6, 3); ctx.fill();
+        ctx.fillStyle = look.accent; rr(M, y, 92, 6, 3); ctx.fill();
         y += 6;
         var headerBottom = y;
 
-        /* ---------------- geometry ---------------- */
+        /* ---------- geometry ---------- */
         var footerH = 120, footerTop = H - footerH;
         var listTop = headerBottom + 34, listBottom = footerTop - 24;
         var availList = listBottom - listTop;
@@ -222,9 +301,6 @@
           var naturalH = blocks.reduce(function (a, b) { return a + b.h; }, 0) + gap0 * (entries.length - 1);
           return { blocks: blocks, gap0: gap0, naturalH: naturalH };
         }
-        // Pick the LARGEST scale that still fits — so a 2-event poster grows to fill the
-        // frame with big roomy cards, while a 5-event poster tightens down. Never leaves the
-        // cards marooned in empty space.
         var steps = [1.30, 1.22, 1.14, 1.07, 1.0, 0.94, 0.88, 0.82, 0.76, 0.70, 0.64], chosen = null, si;
         for (si = 0; si < steps.length; si++) {
           chosen = layout(steps[si]);
@@ -237,9 +313,11 @@
 
         chosen.blocks.forEach(function (b) {
           var cardX = M, cardW = contentW, cardH = b.h;
-          rr(cardX, cy, cardW, cardH, 26); ctx.fillStyle = rgba(theme.card, 0.76); ctx.fill();
-          rr(cardX, cy, cardW, cardH, 26); ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(theme.accent, 0.18); ctx.stroke();
-          rr(cardX, cy + cardH * 0.18, 5, cardH * 0.64, 3); ctx.fillStyle = rgba(theme.accent, 0.85); ctx.fill();
+          if (look.cardShadow) { ctx.save(); ctx.shadowColor = "rgba(0,0,0,0.16)"; ctx.shadowBlur = 26; ctx.shadowOffsetY = 10; }
+          rr(cardX, cy, cardW, cardH, 26); ctx.fillStyle = rgba(look.cardFill, look.cardAlpha); ctx.fill();
+          if (look.cardShadow) ctx.restore();
+          rr(cardX, cy, cardW, cardH, 26); ctx.lineWidth = 1.5; ctx.strokeStyle = look.cardBorder; ctx.stroke();
+          rr(cardX, cy + cardH * 0.18, 5, cardH * 0.64, 3); ctx.fillStyle = look.leftBar; ctx.fill();
 
           var lx = cardX + b.padX, ly = cy + (cardH - b.Lsz) / 2;
           ctx.save(); rr(lx, ly, b.Lsz, b.Lsz, 20); ctx.clip();
@@ -249,50 +327,50 @@
             ctx.drawImage(b.logo, lx + (b.Lsz - lw) / 2, ly + (b.Lsz - lh2) / 2, lw, lh2);
           } else {
             var bg2 = ctx.createLinearGradient(lx, ly, lx + b.Lsz, ly + b.Lsz);
-            bg2.addColorStop(0, theme.accent); bg2.addColorStop(1, theme.pink);
+            bg2.addColorStop(0, look.badgeA); bg2.addColorStop(1, look.badgeB);
             ctx.fillStyle = bg2; ctx.fillRect(lx, ly, b.Lsz, b.Lsz);
             ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.font = FONT("400", Math.round(b.Lsz * 0.5));
             ctx.textAlign = "center"; ctx.fillText("💃", lx + b.Lsz / 2, ly + b.Lsz * 0.24); ctx.textAlign = "left";
           }
           ctx.restore();
-          rr(lx, ly, b.Lsz, b.Lsz, 20); ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(theme.text, 0.12); ctx.stroke();
+          rr(lx, ly, b.Lsz, b.Lsz, 20); ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(look.text, 0.12); ctx.stroke();
 
           var textX = cardX + b.textX0, textW = cardW - b.textX0 - b.padX;
           var stackH = b.nameLines.length * b.nameLH;
           if (b.whenLine) stackH += b.whenGap + b.whenH;
           if (b.meta) stackH += b.metaGap + b.metaH;
           var ty = cy + (cardH - stackH) / 2;
-          ctx.fillStyle = theme.text; ctx.font = b.nameF;
+          ctx.fillStyle = look.text; ctx.font = b.nameF;
           b.nameLines.forEach(function (ln) { ctx.fillText(ln, textX, ty); ty += b.nameLH; });
           if (b.whenLine) {
             ty += b.whenGap;
-            ctx.fillStyle = theme.accent; ctx.beginPath(); ctx.arc(textX + 5, ty + b.whenH * 0.5, 4.5, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = theme.pink; ctx.font = b.whenF;
+            ctx.fillStyle = look.accent; ctx.beginPath(); ctx.arc(textX + 5, ty + b.whenH * 0.5, 4.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = look.when; ctx.font = b.whenF;
             ctx.fillText(ellipsize(b.whenLine, b.whenF, textW - 18), textX + 18, ty);
             ty += b.whenH;
           }
           if (b.meta) {
             ty += b.metaGap;
-            ctx.fillStyle = theme.dim; ctx.font = b.metaF;
+            ctx.fillStyle = look.dim; ctx.font = b.metaF;
             ctx.fillText(ellipsize(b.meta, b.metaF, textW), textX, ty);
           }
           cy += cardH + gap;
         });
 
-        /* ---------------- footer ---------------- */
-        ctx.fillStyle = rgba(theme.text, 0.12); ctx.fillRect(M, footerTop, contentW, 1.5);
+        /* ---------- footer ---------- */
+        ctx.fillStyle = look.footDiv; ctx.fillRect(M, footerTop, contentW, 1.5);
         var fy = footerTop + 30;
-        ctx.fillStyle = theme.accent; ctx.font = FONT("800", 30);
+        ctx.fillStyle = look.accent; ctx.font = FONT("800", 30);
         ctx.fillText(opts.footerUrl || "danceeventviewer.net", M, fy);
-        ctx.fillStyle = theme.dim; ctx.font = FONT("500", 22);
+        ctx.fillStyle = look.dim; ctx.font = FONT("500", 22);
         ctx.fillText("Find every dance in one place", M, fy + 38);
         var chip = season.glyph + "  " + season.name;
         ctx.font = FONT("600", 24); track(0.5);
         var cw = ctx.measureText(chip).width + 40;
         var chx = W - M - cw, chy = footerTop + 34, chh = 44;
-        rr(chx, chy, cw, chh, 22); ctx.fillStyle = rgba(theme.accent, 0.14); ctx.fill();
-        rr(chx, chy, cw, chh, 22); ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(theme.accent, 0.45); ctx.stroke();
-        ctx.fillStyle = theme.accent; ctx.textBaseline = "middle";
+        rr(chx, chy, cw, chh, 22); ctx.fillStyle = look.chipFill; ctx.fill();
+        rr(chx, chy, cw, chh, 22); ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(look.accent, 0.45); ctx.stroke();
+        ctx.fillStyle = look.accent; ctx.textBaseline = "middle";
         ctx.fillText(chip, chx + 20, chy + chh / 2 + 1); ctx.textBaseline = "top"; track(0);
 
         return canvas;
@@ -301,4 +379,5 @@
 
   global.renderDancePoster = renderDancePoster;
   global.DANCE_POSTER_SEASONS = SEASONS;
+  global.DANCE_POSTER_STYLES = STYLES;
 })(window);
