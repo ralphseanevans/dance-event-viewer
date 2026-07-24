@@ -19,7 +19,7 @@
     {
       "key": "country-swing-dance-lessons-friday",
       "name": "Country Swing Dance Lessons",
-      "style": "Mixed",
+      "style": "Country Swing",
       "type": "weekly_recurring",
       "day_of_week": "Friday",
       "monthly_rule": "",
