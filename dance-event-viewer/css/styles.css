@@ -1214,6 +1214,14 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
 .combo-email-status { margin: 0; min-height: 1.1em; font-size: .88rem; color: var(--text-dim); }
 .combo-email-status.is-err { color: var(--accent); }
 .combo-email-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+/* 90-second "designing your Dance Card" countdown (2026-07-24). */
+.combo-countdown {
+  margin: 2px 0 0; text-align: center; font-size: 2.4rem; font-weight: 800;
+  letter-spacing: .02em; line-height: 1.1; font-variant-numeric: tabular-nums;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.combo-countdown.is-done { font-size: 2rem; }
 
 /* Recipient banner for a shared-set (?events=) link. */
 .shared-set-banner {

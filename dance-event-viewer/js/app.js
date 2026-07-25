@@ -1429,17 +1429,52 @@ function openPosterEmailPanel(items, headline, pop, actions) {
       });
       const data = await res.json().catch(() => null);
       if (data && data.ok) {
+        // 2026-07-24 (Sean): a 90-second countdown while the graphic is being designed,
+        // then "check your email" - so the visitor knows to wait rather than wandering off.
         panel.replaceChildren();
         const ok = document.createElement("p");
         ok.className = "combo-email-lead combo-email-ok";
-        ok.textContent = data.message || ("On its way! Check " + email + " in a few minutes.");
+        ok.textContent = "Designing your Dance Card\u2026";
+        const clock = document.createElement("p");
+        clock.className = "combo-countdown";
+        clock.setAttribute("role", "timer");
+        clock.setAttribute("aria-live", "off");
+        const note = document.createElement("p");
+        note.className = "combo-email-lead";
+        note.textContent = "Hang tight \u2014 it's on its way to " + email + ".";
         const doneBtn = document.createElement("button");
         doneBtn.type = "button"; doneBtn.className = "combo-btn combo-btn-primary";
         doneBtn.textContent = "Done";
         doneBtn.addEventListener("click", () => {
           const bd = pop.closest(".cal-pop-backdrop"); if (bd) bd.remove();
         });
-        panel.append(ok, doneBtn);
+        panel.append(ok, clock, note, doneBtn);
+
+        let left = 90;
+        const paint = () => {
+          const mm = Math.floor(left / 60);
+          const ss = String(left % 60).padStart(2, "0");
+          clock.textContent = mm + ":" + ss;
+        };
+        paint();
+        const tick = setInterval(() => {
+          left -= 1;
+          if (left > 0) { paint(); return; }
+          clearInterval(tick);
+          clock.textContent = "\u2709";
+          clock.classList.add("is-done");
+          clock.setAttribute("aria-live", "polite");
+          ok.textContent = "Check your email for your Dance Card!";
+          note.textContent = "Sent to " + email + ". If it's not there, give it another minute or two \u2014 and check spam.";
+        }, 1000);
+        // Stop the timer if the modal closes first (it lives inside the backdrop).
+        const bd = pop.closest(".cal-pop-backdrop");
+        if (bd && window.MutationObserver) {
+          const mo = new MutationObserver(() => {
+            if (!document.body.contains(bd)) { clearInterval(tick); mo.disconnect(); }
+          });
+          mo.observe(document.body, { childList: true });
+        }
       } else {
         send.disabled = false; back.disabled = false;
         status.className = "combo-email-status is-err";
