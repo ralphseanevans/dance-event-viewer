@@ -1180,6 +1180,28 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
 }
 .combo-btn-primary.copied { color: #fff; background: linear-gradient(92deg, var(--accent-pink), var(--accent)); }
 
+/* "Email me a designed graphic" (2026-07-24) — full-width, its own offer, tinted so it
+   reads as the richer option without competing with the primary Share button. */
+.combo-btn-email {
+  flex-basis: 100%; color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.combo-btn-email:hover { color: var(--text); border-color: var(--accent); }
+/* The inline email-capture panel that replaces the action row when opened. */
+.combo-email-panel { display: flex; flex-direction: column; gap: 12px; padding: 8px 20px 22px; }
+.combo-email-lead { margin: 0; color: var(--text-dim); font-size: .95rem; line-height: 1.4; }
+.combo-email-ok { color: var(--text); font-weight: 600; }
+.combo-email-label { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--text-dim); }
+.combo-email-input {
+  width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 14px; font-size: 1rem; background: var(--bg); color: var(--text);
+}
+.combo-email-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.combo-email-status { margin: 0; min-height: 1.1em; font-size: .88rem; color: var(--text-dim); }
+.combo-email-status.is-err { color: var(--accent); }
+.combo-email-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
 /* Recipient banner for a shared-set (?events=) link. */
 .shared-set-banner {
   display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
