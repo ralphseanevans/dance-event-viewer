@@ -1291,7 +1291,13 @@ function openComboShareModal(items) {
   linkBtn.type = "button"; linkBtn.className = "combo-btn";
   linkBtn.textContent = navigator.share ? "Share link" : "Copy link";
   linkBtn.addEventListener("click", () => handleComboShare(items, linkBtn));
-  actions.append(imgBtn, copyBtn, linkBtn);
+  // "Email me a designed graphic" (2026-07-24) — a richer, AI-designed seasonal poster
+  // is generated server-side and emailed a few minutes later. Full-width, its own offer.
+  const emailBtn = document.createElement("button");
+  emailBtn.type = "button"; emailBtn.className = "combo-btn combo-btn-email";
+  emailBtn.textContent = "✨ Email me a designed graphic";
+  emailBtn.addEventListener("click", () => openPosterEmailPanel(items, headline, pop, actions));
+  actions.append(imgBtn, copyBtn, linkBtn, emailBtn);
   pop.appendChild(actions);
 
   backdrop.appendChild(pop);
@@ -1302,6 +1308,119 @@ function openComboShareModal(items) {
   document.addEventListener("keydown", esc);
   document.body.appendChild(backdrop);
   close.focus();
+}
+
+/* "Email me a designed graphic" (2026-07-24, Sean). The instant PNG above is client-side;
+   THIS asks the backend (SUBMIT_ENDPOINT, action:"poster_request") to generate a richer
+   AI-designed seasonal poster and email it a few minutes later. Email-only on purpose so
+   Sean can see who's using it. Reuses the exact text the visitor sees, so the emailed
+   graphic and the selection agree. */
+const POSTER_EMAIL_LS_KEY = "dev_poster_email";
+function buildPosterEventsPayload(items) {
+  return items.map(d => {
+    const ev = d.ev || {};
+    return {
+      name: (typeof ev.name === "string" ? ev.name : "").trim(),
+      day: d.next ? d.next.toLocaleDateString(undefined, { weekday: "long" }) : "",
+      date: d.next ? fmtDate(d.next) : "",
+      when: comboWhenLine(d),
+      time: (typeof timeRange === "function" ? (timeRange(ev) || "") : ""),
+      venue: (typeof ev.venue === "string" ? ev.venue.trim() : ""),
+      cost: (typeof ev.cost === "string" ? ev.cost.trim() : "")
+    };
+  }).filter(e => e.name);
+}
+function openPosterEmailPanel(items, headline, pop, actions) {
+  const existing = pop.querySelector(".combo-email-panel");
+  if (existing) { const i = existing.querySelector("input"); if (i) i.focus(); return; }
+  if (actions) actions.hidden = true;
+
+  const panel = document.createElement("form");
+  panel.className = "combo-email-panel";
+  panel.noValidate = true;
+
+  const lead = document.createElement("p");
+  lead.className = "combo-email-lead";
+  lead.textContent = "We'll design a graphic of these " + items.length +
+    " dance" + (items.length === 1 ? "" : "s") + " and email it to you in a few minutes.";
+
+  const label = document.createElement("label");
+  label.className = "combo-email-label";
+  label.textContent = "Your email";
+  const input = document.createElement("input");
+  input.type = "email"; input.className = "combo-email-input";
+  input.placeholder = "you@example.com"; input.required = true;
+  input.autocomplete = "email"; input.inputMode = "email";
+  try { input.value = localStorage.getItem(POSTER_EMAIL_LS_KEY) || ""; } catch (e) {}
+  label.appendChild(input);
+
+  const status = document.createElement("p");
+  status.className = "combo-email-status"; status.setAttribute("aria-live", "polite");
+
+  const row = document.createElement("div");
+  row.className = "combo-email-actions";
+  const send = document.createElement("button");
+  send.type = "submit"; send.className = "combo-btn combo-btn-primary";
+  send.textContent = "Send it to me";
+  const back = document.createElement("button");
+  back.type = "button"; back.className = "combo-btn";
+  back.textContent = "Back";
+  back.addEventListener("click", () => { panel.remove(); if (actions) actions.hidden = false; });
+  row.append(send, back);
+
+  panel.append(lead, label, status, row);
+  pop.appendChild(panel);
+  input.focus();
+
+  panel.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = input.value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      status.className = "combo-email-status is-err";
+      status.textContent = "Please enter a valid email address.";
+      input.focus(); return;
+    }
+    send.disabled = true; back.disabled = true;
+    status.className = "combo-email-status"; status.textContent = "Sending…";
+    try { localStorage.setItem(POSTER_EMAIL_LS_KEY, email); } catch (e2) {}
+    const payload = {
+      action: "poster_request",
+      email: email,
+      headline: headline,
+      requested_date: new Date().toISOString().slice(0, 10),
+      events: buildPosterEventsPayload(items)
+    };
+    try {
+      if (!SUBMIT_ENDPOINT) throw new Error("no endpoint configured");
+      const res = await fetch(SUBMIT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => null);
+      if (data && data.ok) {
+        panel.replaceChildren();
+        const ok = document.createElement("p");
+        ok.className = "combo-email-lead combo-email-ok";
+        ok.textContent = data.message || ("On its way! Check " + email + " in a few minutes.");
+        const doneBtn = document.createElement("button");
+        doneBtn.type = "button"; doneBtn.className = "combo-btn combo-btn-primary";
+        doneBtn.textContent = "Done";
+        doneBtn.addEventListener("click", () => {
+          const bd = pop.closest(".cal-pop-backdrop"); if (bd) bd.remove();
+        });
+        panel.append(ok, doneBtn);
+      } else {
+        send.disabled = false; back.disabled = false;
+        status.className = "combo-email-status is-err";
+        status.textContent = (data && data.error) || "Couldn't send — please try again, or email ralphseanevans@gmail.com.";
+      }
+    } catch (err) {
+      send.disabled = false; back.disabled = false;
+      status.className = "combo-email-status is-err";
+      status.textContent = "Couldn't send — please try again in a moment.";
+    }
+  });
 }
 
 /* Build the poster ENTRIES from the selected events — the shape the shared renderer
