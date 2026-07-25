@@ -1194,6 +1194,11 @@ function openComboShareModal(items) {
   if (!items.length) return;
   const today = new Date();
   const headline = comboHeadline(items, today);
+  // Hide the floating select bar while the Dance Card modal is open — it's a fixed
+  // bottom bar that otherwise overlaps the modal's buttons (incl. "✨ Email me a designed
+  // graphic") and steals taps (Sean, 2026-07-24). Restored on close if still selecting.
+  const comboBar = document.getElementById("combo-bar");
+  if (comboBar) comboBar.hidden = true;
   const backdrop = document.createElement("div");
   backdrop.className = "cal-pop-backdrop";
   const pop = document.createElement("div");
@@ -1301,7 +1306,7 @@ function openComboShareModal(items) {
   pop.appendChild(actions);
 
   backdrop.appendChild(pop);
-  const done = () => { backdrop.remove(); document.removeEventListener("keydown", esc); };
+  const done = () => { backdrop.remove(); document.removeEventListener("keydown", esc); if (comboBar && state.selectMode) comboBar.hidden = false; };
   const esc = (e) => { if (e.key === "Escape") done(); };
   close.addEventListener("click", done);
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) done(); });
