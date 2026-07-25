@@ -969,6 +969,15 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .active-clear { background: none; border: none; color: var(--accent); cursor: pointer;
   font-size: .85rem; text-decoration: underline; padding: 4px 6px; }
 
+/* Top-right "Clear all" (2026-07-24, Sean) — replaces the removed active-chip strip's
+   clear. Lives at the right end of .control-row (which is flex + space-between). */
+.clear-all-top { margin-left: auto; background: none; border: 1px solid var(--border);
+  border-radius: 999px; color: var(--accent); cursor: pointer; font: inherit;
+  font-size: .85rem; font-weight: 600; padding: 6px 14px; white-space: nowrap; }
+.clear-all-top:hover { color: var(--text); border-color: var(--accent); }
+.clear-all-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.clear-all-top[hidden] { display: none; }
+
 /* panel top row */
 .filter-panel-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .filter-panel-title { font-size: 1rem; }
