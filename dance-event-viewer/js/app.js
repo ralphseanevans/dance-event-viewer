@@ -1086,8 +1086,8 @@ function makeShareMultipleBtn() {
   t.id = "share-several-toggle";
   t.className = "past-toggle share-several-toggle";
   t.setAttribute("aria-pressed", String(state.selectMode));
-  t.title = "Pick several dances and turn them into one lovely Dance Card to share — instead of posting each one separately.";
-  t.textContent = state.selectMode ? "✕ Done selecting" : "✦ Make a Dance Card";
+  t.title = "Step 1: start a Dance Card, then tap the dances you want on it — one graphic instead of posting each dance separately.";
+  t.textContent = state.selectMode ? "✕ Done selecting" : "✦ Create Multiple Event Dance Card";
   t.addEventListener("click", () => setSelectMode(!state.selectMode));
   return t;
 }
@@ -1114,7 +1114,7 @@ function setSelectMode(on) {
   const t = document.getElementById("share-several-toggle");
   if (t) {
     t.setAttribute("aria-pressed", String(on));
-    t.textContent = on ? "✕ Done selecting" : "✦ Make a Dance Card";
+    t.textContent = on ? "✕ Done selecting" : "✦ Create Multiple Event Dance Card";
   }
   if (!on) shareSelection.clear();
   updateComboBar();
@@ -1126,7 +1126,7 @@ function updateComboBar() {
   const n = shareSelection.size;
   bar.hidden = !state.selectMode;
   const count = bar.querySelector("#combo-bar-count");
-  if (count) count.textContent = n === 0 ? "Tap dances to add them" : `${n} dance${n === 1 ? "" : "s"} selected`;
+  if (count) count.textContent = n === 0 ? "Step 2 — tap the dances you want" : `${n} dance${n === 1 ? "" : "s"} selected`;
   const shareBtn = bar.querySelector("#combo-share-btn");
   if (shareBtn) shareBtn.disabled = n < 1;
   const clearBtn = bar.querySelector("#combo-clear-btn");
@@ -1248,7 +1248,6 @@ function openComboShareModal(items) {
     chipEls[st.id] = chip;
     styleRow.appendChild(chip);
   });
-  pop.appendChild(styleRow);
 
   // Layout picker — List (event cards) vs Calendar (a partial month grid + agenda).
   const layoutRow = document.createElement("div");
@@ -1266,7 +1265,12 @@ function openComboShareModal(items) {
     layoutChipEls[lo.id] = chip;
     layoutRow.appendChild(chip);
   });
-  pop.appendChild(layoutRow);
+  // Layout (the bigger, structural choice) first, then Look. A single line of guidance
+  // above them so the modal reads as one short flow (Sean, 2026-07-24: "make it clearer").
+  const hint = document.createElement("p");
+  hint.className = "combo-pop-hint";
+  hint.textContent = "Step 3 \u2014 pick a layout and a look. The preview is exactly what gets shared.";
+  pop.append(hint, layoutRow, styleRow);
   renderPreview();
 
   // Actions — sharing the IMAGE is the point (one lovely graphic into a chat).
@@ -1336,10 +1340,15 @@ function openPosterEmailPanel(items, headline, pop, actions) {
   panel.className = "combo-email-panel";
   panel.noValidate = true;
 
+  const layout = getPosterLayout();
+  const look = getPosterStyle();
   const lead = document.createElement("p");
   lead.className = "combo-email-lead";
   lead.textContent = "We'll design a graphic of these " + items.length +
-    " dance" + (items.length === 1 ? "" : "s") + " and email it to you in a few minutes.";
+    " dance" + (items.length === 1 ? "" : "s") + " and email it to you in a few minutes." +
+    (layout === "calendar"
+      ? " Because you picked the Calendar layout, it'll come back as a month grid with your dances marked in the squares \u2014 unless you ask for something else below."
+      : "");
 
   const label = document.createElement("label");
   label.className = "combo-email-label";
@@ -1350,6 +1359,21 @@ function openPosterEmailPanel(items, headline, pop, actions) {
   input.autocomplete = "email"; input.inputMode = "email";
   try { input.value = localStorage.getItem(POSTER_EMAIL_LS_KEY) || ""; } catch (e) {}
   label.appendChild(input);
+
+  // Free-text styling request (Sean, 2026-07-24) \u2014 whatever the visitor types here is
+  // passed straight through to the designer and OVERRIDES the defaults implied by the
+  // Layout/Look chips.
+  const wishLabel = document.createElement("label");
+  wishLabel.className = "combo-email-label";
+  wishLabel.textContent = "Any styling requests? (optional)";
+  const wish = document.createElement("textarea");
+  wish.className = "combo-email-input combo-email-textarea";
+  wish.rows = 3;
+  wish.maxLength = 400;
+  wish.placeholder = layout === "calendar"
+    ? "e.g. calendar squares in black and gold, big bold dance names, no photos"
+    : "e.g. vintage neon look, big bold dance names, purple and gold, no photos";
+  wishLabel.appendChild(wish);
 
   const status = document.createElement("p");
   status.className = "combo-email-status"; status.setAttribute("aria-live", "polite");
@@ -1365,7 +1389,7 @@ function openPosterEmailPanel(items, headline, pop, actions) {
   back.addEventListener("click", () => { panel.remove(); if (actions) actions.hidden = false; });
   row.append(send, back);
 
-  panel.append(lead, label, status, row);
+  panel.append(lead, label, wishLabel, status, row);
   pop.appendChild(panel);
   input.focus();
 
@@ -1380,11 +1404,20 @@ function openPosterEmailPanel(items, headline, pop, actions) {
     send.disabled = true; back.disabled = true;
     status.className = "combo-email-status"; status.textContent = "Sending…";
     try { localStorage.setItem(POSTER_EMAIL_LS_KEY, email); } catch (e2) {}
+    const styleRequest = wish.value.trim().slice(0, 400);
+    // Default design brief from the chips; a typed request wins over it.
+    const defaultBrief = layout === "calendar"
+      ? "Month calendar grid: draw the days as squares and mark each selected dance clearly and artistically inside its own day square. Keep every date, time and venue readable."
+      : "Vertical list poster: one clearly separated block per dance, with date, time and venue readable at a glance.";
     const payload = {
       action: "poster_request",
       email: email,
       headline: headline,
       requested_date: new Date().toISOString().slice(0, 10),
+      layout: layout,                 // "list" | "calendar" \u2014 chosen in the modal
+      look: look,                     // seasonal | midnight | bold | paper
+      style_request: styleRequest,    // visitor's own words; overrides design_brief
+      design_brief: styleRequest || defaultBrief,
       events: buildPosterEventsPayload(items)
     };
     try {
