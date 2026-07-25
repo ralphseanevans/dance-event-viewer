@@ -33,6 +33,8 @@
     --danger: #ff758c; --danger-soft: rgba(255,117,140,.12); --warn: #f6c76e;
     --warn-soft: rgba(246,199,110,.12); --info: #78b8ff; --info-soft: rgba(120,184,255,.12);
     --shadow: 0 24px 70px rgba(0,0,0,.28); --radius-lg: 22px; --radius: 14px;
+    --text-dim: #8b97ab; /* referenced further down but never defined until 2026-07-24 */
+    --log-bg: #000; --log-line: rgba(255,255,255,.055); --log-time: #7d879a;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; min-height: 100%; }
@@ -46,9 +48,13 @@
   }
   button, input { font: inherit; }
   button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--info); outline-offset: 3px; }
-  .wrap { width: min(1180px, 100%); margin: 0 auto; }
-  .app-shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start; }
-  .sidebar { position: sticky; top: 18px; min-width: 0; }
+  .wrap { width: min(1520px, 100%); margin: 0 auto; }
+  .app-shell { display: grid; grid-template-columns: clamp(260px, 24vw, 330px) minmax(0, 1fr); gap: 24px; align-items: start; }
+  /* The sidebar is bounded to the viewport and made a flex column so the Site log below the tabs is
+     the ONLY thing that scrolls. Without this, a sticky sidebar taller than the viewport pins its
+     top and its bottom becomes permanently unreachable. 100vh first as the fallback for 100dvh. */
+  .sidebar { position: sticky; top: 18px; min-width: 0; max-height: calc(100vh - 36px); max-height: calc(100dvh - 36px); display: flex; flex-direction: column; }
+  .tabbar, .sidebar-note, .brand { flex: 0 0 auto; }
   .brand { display: flex; gap: 12px; align-items: center; padding: 6px 8px 24px; }
   .brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: #071510;
     font-weight: 900; background: linear-gradient(135deg, var(--accent), #8ac7ff); box-shadow: 0 12px 35px rgba(112,225,189,.24); }
@@ -92,6 +98,8 @@
   .badge.archived { background: rgba(255,255,255,.07); color: #aab3c2; }
   .badge.deleted { background: var(--danger-soft); color: var(--danger); }
   .badge.kind { background: rgba(255,255,255,.05); color: #bdc7d7; }
+  .badge.discovered { background: var(--info-soft); color: var(--info); }
+  .badge.flyercaptured { background: var(--warn-soft); color: var(--warn); }
   .meta { color: #718098; font-size: .73rem; }
   .state-note { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 16px; padding: 12px 14px; border: 1px solid rgba(120,184,255,.18);
     border-radius: 12px; color: #b9d9ff; background: rgba(120,184,255,.07); font-size: .82rem; line-height: 1.45; }
@@ -141,7 +149,67 @@
   .history-filters .manage-search { grid-column: 1 / -1; }
   .history-select, .history-date { min-height: 46px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--text); background: var(--bg); font: inherit; }
   .history-card .calendar-key { display: block; color: #687892; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .68rem; word-break: break-all; }
+  .history-card-synth::before { background: var(--info); opacity: 1; }
   .calendar-card .open-request { margin-left: 8px; }
+
+  /* ---------------- Site log (2026-07-24): black one-line-per-happening panel under the tabs ----
+     Deliberately true #000 on a #0e1320 page, per Sean's ask. What keeps it from reading as a hole
+     rather than a panel: the 1px --line border, the same 18px radius as .tabbar, the inset top
+     highlight, and the header strip. Not to be confused with the public viewer's Activity Pulse. */
+  .site-log { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin: 14px 0 0;
+    border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--log-bg);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 14px 40px rgba(0,0,0,.5); }
+  .site-log-toggle { flex: 0 0 auto; width: 100%; min-height: 40px; display: flex; align-items: center; gap: 8px;
+    padding: 0 12px; border: 0; border-bottom: 1px solid var(--log-line); color: #fff;
+    background: rgba(255,255,255,.035); cursor: pointer; text-align: left;
+    font-size: .7rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+  .site-log-toggle::before { content: "\25BE"; width: 12px; color: var(--accent); font-size: .8rem; }
+  .site-log.collapsed .site-log-toggle::before { content: "\25B8"; }
+  .site-log.collapsed .site-log-toggle { border-bottom: 0; }
+  .site-log.collapsed .site-log-chips, .site-log.collapsed .site-log-scroll, .site-log.collapsed .site-log-status { display: none; }
+  .site-log.collapsed { flex: 0 0 auto; }
+  .site-log-toggle > span:first-of-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site-log-count { flex: 0 0 auto; margin-left: auto; padding-left: 8px; color: var(--log-time); font-weight: 700; letter-spacing: 0; text-transform: none; }
+  .site-log-chips { flex: 0 0 auto; display: flex; gap: 5px; padding: 8px 10px; overflow-x: auto;
+    border-bottom: 1px solid var(--log-line); scrollbar-width: none; }
+  .site-log-chips::-webkit-scrollbar { display: none; }
+  .log-chip { flex: 0 0 auto; min-height: 26px; padding: 0 9px; border: 1px solid rgba(255,255,255,.11);
+    border-radius: 999px; color: #b9c3d4; background: transparent; cursor: pointer; font-size: .66rem; font-weight: 800; white-space: nowrap; }
+  .log-chip:hover { color: #fff; border-color: rgba(255,255,255,.25); }
+  .log-chip[aria-pressed="true"] { color: #052018; border-color: var(--accent); background: var(--accent); }
+  .site-log-scroll { flex: 1 1 auto; min-height: 120px; margin: 0; padding: 0; list-style: none;
+    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #2b2f38 var(--log-bg); }
+  .site-log-scroll::-webkit-scrollbar { width: 9px; }
+  .site-log-scroll::-webkit-scrollbar-track { background: var(--log-bg); }
+  .site-log-scroll::-webkit-scrollbar-thumb { border: 2px solid var(--log-bg); border-radius: 999px; background: #2b2f38; }
+  .log-row { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: baseline;
+    padding: 6px 11px 6px 9px; border: 0; border-left: 2px solid transparent; border-bottom: 1px solid var(--log-line);
+    color: inherit; background: transparent; cursor: pointer; text-align: left; font: inherit; }
+  .site-log-scroll li:last-child .log-row { border-bottom: 0; }
+  .log-row:hover { background: rgba(255,255,255,.045); }
+  .log-time { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .64rem;
+    color: var(--log-time); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  /* min-width:0 is load-bearing: a grid item's automatic minimum size is auto, so without it the
+     track refuses to shrink below the text's content width and ellipsis never fires. */
+  .log-text { min-width: 0; color: #fff; font-size: .735rem; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .log-row[aria-expanded="true"] .log-text { white-space: normal; overflow: visible; text-overflow: clip; }
+  .log-row[aria-expanded="true"] { background: rgba(255,255,255,.03); }
+  .log-detail { display: block; margin-top: 4px; color: #9aa6ba; font-size: .69rem; line-height: 1.4; }
+  .log-detail a { color: var(--accent); }
+  .log-row[data-kind="event_discovered"] { border-left-color: var(--info); }
+  .log-row[data-kind="flyer_captured"] { border-left-color: var(--warn); }
+  .log-row[data-kind="submission"] { border-left-color: #8ea4ff; }
+  .log-row[data-kind="deploy"] { border-left-color: var(--accent-strong); }
+  .site-log-status { flex: 0 0 auto; min-height: 1em; margin: 0; padding: 7px 11px 9px; border-top: 1px solid var(--log-line);
+    color: var(--log-time); font-size: .66rem; line-height: 1.4; }
+  .site-log-empty { padding: 16px 12px; color: var(--log-time); font-size: .72rem; text-align: center; }
+  @media (prefers-contrast: more) { :root { --log-line: rgba(255,255,255,.22); } }
+  /* Reclaims ~120px on a short window, where the brand + 10 tabs + note leave the log nothing. */
+  @media (max-height: 780px) {
+    .sidebar-note { display: none; }
+    .tab { min-height: 40px; }
+    .brand { padding-bottom: 14px; }
+  }
   .manage-add { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; border-radius: 12px;
     border: 0; color: #052018; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); font-size: .85rem; font-weight: 850; cursor: pointer; }
   .manage-note { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
@@ -187,7 +255,11 @@
   @media (max-width: 820px) {
     body { padding-left: 12px; padding-right: 12px; }
     .app-shell { display: block; }
-    .sidebar { position: static; }
+    /* Sidebar renders ABOVE the workspace here, so an expanded log would push every card down the
+       page. JS collapses it at this breakpoint (see syncLogCollapse). */
+    .sidebar { position: static; max-height: none; display: block; }
+    .site-log { margin-top: 12px; }
+    .site-log-scroll { max-height: 40vh; }
     .brand { padding: 5px 3px 14px; }
     .brand-mark { width: 38px; height: 38px; }
     .sidebar-note { display: none; }
@@ -223,6 +295,8 @@
     .manage-drawer-head, .manage-drawer-body { padding-left: 14px; padding-right: 14px; }
     .manage-edit-grid { grid-template-columns: 1fr; }
     .manage-edit-grid .field.wide { grid-column: auto; }
+    .log-text { font-size: .7rem; }
+    .site-log-scroll { max-height: 34vh; }
   }
 </style>
 </head>
@@ -246,6 +320,18 @@
         </div>
         <nav class="tabbar" id="tabs" aria-label="Submission status"></nav>
         <p class="sidebar-note">Actions change with each status. Destructive controls stay tucked away until you intentionally open them.</p>
+        <!-- Site log: one line per happening. Deliberately NOT role="log"/aria-live on the list —
+             that implies aria-relevant="additions" and the whole initial paint would be announced.
+             The single status line below carries the change announcement instead. -->
+        <section class="site-log" id="site-log" aria-labelledby="site-log-title">
+          <button class="site-log-toggle" id="site-log-toggle" type="button" aria-expanded="true" aria-controls="site-log-list">
+            <span id="site-log-title">Site log</span>
+            <span class="site-log-count" id="site-log-count"></span>
+          </button>
+          <div class="site-log-chips" id="site-log-chips" role="group" aria-label="Filter the site log"></div>
+          <ul class="site-log-scroll" id="site-log-list" aria-labelledby="site-log-title"></ul>
+          <p class="site-log-status" id="site-log-status" aria-live="polite"></p>
+        </section>
       </aside>
       <main class="workspace">
         <header class="workspace-head">
@@ -316,7 +402,7 @@ const TAB_TOOLTIPS = {
   archived: "Completed live-update records hidden from active views. Archiving does not remove anything from the live site.",
   deleted: "Audit history for records deleted through the dashboard. Any row-linked temporary overlay or uploaded logo was removed first; canonical calendar data is never deleted here.",
   all: "Every active record except Archived and Deleted. Each card keeps the actions appropriate to its own status.",
-  history: "Every submission and dashboard request, newest first, with filters for action type, outcome, date range, and free-text search. Read-only — nothing here changes any data.",
+  history: "Every submission and dashboard request, plus the events and flyers the crawls and scans bring in (filter: Crawls & scans), newest first. Filters for action type, outcome, date range, and free-text search. Read-only — nothing here changes any data.",
 };
 
 const STATUS_TOOLTIPS = {
@@ -333,6 +419,8 @@ const STATUS_TOOLTIPS = {
   "pending-fix": "A trusted correction is queued but has not been applied yet. It still needs the separate interactive apply workflow.",
   archived: "Hidden from active dashboard views while its live site content remains unchanged.",
   deleted: "Terminal dashboard record retained for audit history.",
+  discovered: "Found by a scanner crawl and written straight into canonical dance_events.json. It never passed through the Submissions Sheet, so there is nothing here to approve or deny — this row is a record, not a request.",
+  "flyer-captured": "A scanner crawl picked up a flyer image alongside the event. Recorded for history only; no dashboard action applies.",
 };
 
 const ACTION_TOOLTIPS = {
@@ -369,6 +457,8 @@ const EDITABLE_FIELDS = [
   { key: "cost", label: "Cost" },
 ];
 
+// allRows is the ONLY actionable row set — every mutation/apiPost path keys off it. The synthetic
+// crawl/scan rows for the Site log live in logRows and are merged ONLY into the History view.
 let allRows = [];
 let calendarEvents = [];
 let calendarLoaded = false;
@@ -452,6 +542,8 @@ async function loadRows() {
     }
     allRows = data.rows || [];
     statusLine.textContent = "Updated " + new Date().toLocaleTimeString(undefined, { timeStyle: "short" });
+    mergeLog();              // paint the submission lines immediately, from what's already in memory
+    refreshSiteLog(false);   // deliberately NOT awaited — see refreshSiteLog
     renderTabs();
     renderCards();
   } catch (err) {
@@ -462,7 +554,10 @@ async function loadRows() {
 
 function rowsForTab(key) {
   if (key === "manage") return [];
-  if (key === "history") return allRows.slice();
+  // History is the only tab that sees the synthetic crawl/scan rows. Safe by construction: the
+  // other rowsForTab consumer is renderCards(), which early-returns for "history" before reaching
+  // this call, and every actionable path reads allRows directly.
+  if (key === "history") return allRows.concat(logRows);
   const def = TAB_DEFS.find(t => t.key === key);
   if (!def) return allRows.slice();
   // "All posts" shows every submission except archived/deleted ones (those live in their own tabs).
@@ -582,9 +677,14 @@ const HISTORY_ACTION_FILTERS = [
   { key: "flyer", label: "Flyer submissions" },
   { key: "form", label: "Form submissions" },
   { key: "link", label: "Link submissions" },
+  // Synthetic rows carry intake_method "crawl-scan", so every filter above already excludes them
+  // and this one selects them alone — no negative filtering needed anywhere.
+  { key: "crawl-scan", label: "Crawls & scans" },
 ];
 const HISTORY_OUTCOME_FILTERS = [
   { key: "", label: "All outcomes" },
+  { key: "discovered", label: "Discovered by crawl" },
+  { key: "flyer-captured", label: "Flyer captured" },
   { key: "applied", label: "Applied" },
   { key: "fix-failed", label: "Failed" },
   { key: "pending-fix", label: "Still pending" },
@@ -634,7 +734,7 @@ function renderHistory() {
 
   function draw() {
     const q = search.value.trim().toLowerCase();
-    let rows = allRows.slice();
+    let rows = rowsForTab("history");
     if (actionSel.value) rows = rows.filter(r => r.intake_method === actionSel.value);
     if (outcomeSel.value) rows = rows.filter(r => r.status === outcomeSel.value);
     if (fromDate.value) rows = rows.filter(r => String(r.timestamp || "").slice(0, 10) >= fromDate.value);
@@ -648,7 +748,7 @@ function renderHistory() {
     }
     rows.forEach(row => {
       const card = document.createElement("article");
-      card.className = "card history-card";
+      card.className = "card history-card" + (row.__synthetic ? " history-card-synth" : "");
       const head = document.createElement("div");
       head.className = "card-head";
       const badges = document.createElement("div");
@@ -664,9 +764,10 @@ function renderHistory() {
       meta.className = "calendar-meta";
       meta.textContent = [
         row.intake_method || "form",
-        "requested " + fmtTimestamp(row.timestamp),
-        row.reviewed_at ? "resolved " + fmtTimestamp(row.reviewed_at) : "",
-        row.row_id ? "id " + String(row.row_id).slice(0, 8) : "",
+        (row.__verb || "requested") + " " +
+          (row.__synthetic ? fmtLogStamp(row.timestamp, row.__tsPrecision) : fmtTimestamp(row.timestamp)),
+        !row.__synthetic && row.reviewed_at ? "resolved " + fmtTimestamp(row.reviewed_at) : "",
+        !row.__synthetic && row.row_id ? "id " + String(row.row_id).slice(0, 8) : "",
       ].filter(Boolean).join(" · ");
       card.appendChild(head); card.appendChild(title); card.appendChild(meta);
       if (row.event_key) {
@@ -687,6 +788,334 @@ function renderHistory() {
   [actionSel, outcomeSel, fromDate, toDate].forEach(el => el.addEventListener("change", draw));
   search.addEventListener("input", draw);
   draw();
+}
+
+/* ================================================================================================
+   Site log (2026-07-24) — the black panel under the tabs. One line per happening, newest first.
+   Three sources, all normalized to the same shape before anything is rendered:
+     1. submissions  — the rows already in memory from action:"list". No extra request.
+     2. site-log.json — crawl/scan discoveries, published at the repo root by
+        Daily Operating System\Tools\build_site_log.ps1. Source-obfuscated on purpose.
+     3. deploys      — content commits from the public GitHub API (no auth, ETag-cached).
+   Display text is ALWAYS built here from structured fields and written with textContent — nothing
+   fetched is ever trusted as markup or as a ready-made sentence. Unknown kinds are dropped.
+   NOT the same feature as the public viewer's Activity Pulse (that one shows visitor behavior).
+   ============================================================================================== */
+const SITE_LOG_URL   = "../site-log.json";
+const COMMITS_URL    = "https://api.github.com/repos/ralphseanevans/dance-event-viewer/commits?per_page=30";
+const COMMITS_CACHE  = "dosDashCommits";
+const COMMITS_MAX_AGE_MS = 15 * 60 * 1000;
+const LOG_CAP        = 300;
+const LOG_FILTER_KEY = "dosDashLogFilter";
+// One switch per source, so any one of them can be turned off without touching the render path.
+const LOG_SOURCES = { submissions: true, siteFile: true, commits: true };
+
+// Drives both the filter chips and each row's data-kind (which sets its left edge color).
+const LOG_KINDS = [
+  { key: "", label: "All" },
+  { key: "submission", label: "Requests" },
+  { key: "event_discovered", label: "New events" },
+  { key: "flyer_captured", label: "Flyers" },
+  { key: "deploy", label: "Deploys" },
+];
+const LOG_KIND_SET = LOG_KINDS.filter(k => k.key).map(k => k.key);
+
+let logAll = [];          // normalized entries, sorted desc, capped
+let logRows = [];         // synthetic History pseudo-rows derived from logAll
+let siteLogRaw = null;    // cached parse of ../site-log.json
+let commitsRaw = null;    // cached parse of the GitHub commits response
+let logNotes = [];        // per-source status messages for the panel's bottom line
+let logFilter = localStorage.getItem(LOG_FILTER_KEY) || "";
+
+// "07-24 21:41" when we have a real instant; bare "07-20" when the source only knew the date.
+// Never synthesize 00:00 — a fake clock reading is worse than no clock reading.
+function fmtLogStamp(iso, precision) {
+  const s = String(iso || "");
+  if (!/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  // Date-only source: show the raw date, with no timezone conversion at all — the value never was
+  // an instant, so shifting it by an offset would move a discovery onto the wrong day.
+  if (precision === "date") return s.slice(5, 10);
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s.slice(5, 10);
+  // Both halves come from the LOCAL date object. Taking the date from the UTC string and the clock
+  // from local time disagrees whenever the two fall on different days (an 02:11Z stamp displayed as
+  // "07-24 21:11" while actually sorting as the 23rd — caught in review).
+  const pad = n => String(n).padStart(2, "0");
+  return pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+
+function logFromRows(rows) {
+  const VERB = {
+    flyer: "Flyer submitted",
+    form: "Event submitted",
+    link: "Link submitted",
+    "dashboard-removal-request": "Removal requested",
+    "dashboard-edit-request": "Edit requested",
+  };
+  return (rows || []).filter(r => r && r.timestamp).map(r => {
+    const verb = VERB[r.intake_method] || "Submission";
+    const who = r.name || r.event_key || "(no name)";
+    const outcome = r.status && r.status !== "pending" ? " · " + r.status : "";
+    return {
+      id: "row:" + (r.row_id || r.timestamp),
+      ts: r.timestamp,
+      tsPrecision: "exact",
+      kind: "submission",
+      text: verb + outcome + " — " + who,
+      detail: r.result_note || r.source_note || "",
+      key: r.event_key || "",
+      url: "",
+    };
+  });
+}
+
+function logFromSiteFile(json) {
+  if (!json || json.schema !== 1 || !Array.isArray(json.entries)) return [];
+  const out = [];
+  json.entries.forEach(e => {
+    if (!e || LOG_KIND_SET.indexOf(e.kind) < 0) return;                    // unknown kind: drop
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(String(e.ts || ""))) return;
+    const name = String(e.name || e.key || "").trim();
+    if (!name) return;
+    let text;
+    if (e.kind === "event_discovered") {
+      const where = String(e.venue || "").trim();
+      text = "New event found by crawl — " + name + (where ? " (" + where + ")" : "");
+    } else if (e.kind === "flyer_captured") {
+      text = "Flyer picked up by crawl — " + name;
+    } else {
+      return;
+    }
+    out.push({
+      id: String(e.id || e.kind + ":" + e.key),
+      ts: String(e.ts),
+      tsPrecision: e.ts_precision === "exact" ? "exact" : "date",
+      kind: e.kind,
+      text: text,
+      detail: [String(e.style || "").trim(), String(e.state || "").trim()].filter(Boolean).join(" · "),
+      key: String(e.key || ""),
+      url: "",
+      // Kept structured (not re-parsed out of `text`) so the History rows below get clean fields.
+      name: name,
+      venue: String(e.venue || "").trim(),
+    });
+  });
+  return out;
+}
+
+// Content pushes only. An ALLOWLIST, not a blocklist, so tomorrow's new flavor of dev-noise commit
+// ("Cache-bump app.js", "Tweak…", "WIP") is excluded by default rather than needing a new rule.
+const COMMIT_KEEP_RE = /^(web-events:|publish |logo-map|add "|remove ")/i;
+function logFromCommits(list) {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  list.forEach(c => {
+    const commit = c && c.commit;
+    if (!commit || !commit.committer || !commit.committer.date) return;
+    const first = String(commit.message || "").split("\n")[0].trim();
+    if (!first) return;
+    if (!COMMIT_KEEP_RE.test(first) && !/trusted flyer auto-publish/i.test(first)) return;
+    out.push({
+      id: "commit:" + String(c.sha || first),
+      ts: String(commit.committer.date),
+      tsPrecision: "exact",
+      kind: "deploy",
+      text: "Live site — " + first.slice(0, 120),
+      detail: "",
+      key: "",
+      url: String(c.html_url || ""),
+    });
+  });
+  return out;
+}
+
+async function loadSiteLogFile(force) {
+  if (siteLogRaw && !force) return;
+  const res = await fetch(SITE_LOG_URL + "?dashboard=" + Date.now(), { cache: "no-store" });
+  if (res.status === 404) { siteLogRaw = { schema: 1, entries: [], __missing: true }; return; }
+  if (!res.ok) throw new Error("site-log.json returned HTTP " + res.status);
+  siteLogRaw = await res.json();
+}
+
+async function loadCommits(force) {
+  let cached = null;
+  try { cached = JSON.parse(sessionStorage.getItem(COMMITS_CACHE) || "null"); } catch (e) { cached = null; }
+  if (cached && cached.list) commitsRaw = cached.list;
+  const fresh = cached && cached.at && (Date.now() - cached.at) < COMMITS_MAX_AGE_MS;
+  if (fresh && !force) return;
+  const headers = {};
+  // A 304 costs zero rate-limit budget, so idle refreshes are free against the 60/hr unauth cap.
+  if (cached && cached.etag) headers["If-None-Match"] = cached.etag;
+  const res = await fetch(COMMITS_URL, { headers: headers });
+  if (res.status === 304) {
+    if (cached) { cached.at = Date.now(); try { sessionStorage.setItem(COMMITS_CACHE, JSON.stringify(cached)); } catch (e) {} }
+    return;
+  }
+  if (res.status === 403 && res.headers.get("X-RateLimit-Remaining") === "0") {
+    throw new Error("GitHub rate limit reached");   // reported once, never retried in a loop
+  }
+  if (!res.ok) throw new Error("GitHub returned HTTP " + res.status);
+  const list = await res.json();
+  commitsRaw = list;
+  try {
+    sessionStorage.setItem(COMMITS_CACHE, JSON.stringify({ etag: res.headers.get("ETag") || "", at: Date.now(), list: list }));
+  } catch (e) { /* sessionStorage full or blocked — the in-memory copy still works */ }
+}
+
+// The History tab's crawl/scan rows. Field NAMES match what renderHistory()'s draw() already reads,
+// so its existing filter/sort/search logic needs no changes. __synthetic marks them non-actionable.
+function syntheticHistoryRows() {
+  return logAll.filter(e => e.kind === "event_discovered" || e.kind === "flyer_captured").map(e => ({
+    __synthetic: true,
+    __verb: e.kind === "flyer_captured" ? "flyer captured" : "discovered",
+    __tsPrecision: e.tsPrecision,
+    row_id: e.id,
+    timestamp: e.ts,
+    reviewed_at: "",
+    status: e.kind === "flyer_captured" ? "flyer-captured" : "discovered",
+    intake_method: "crawl-scan",
+    name: e.name || e.key,
+    event_key: e.key,
+    venue: e.venue || "",
+    result_note: e.detail || "",
+    source_note: "",
+  }));
+}
+
+function mergeLog() {
+  const parts = [];
+  if (LOG_SOURCES.submissions) parts.push(logFromRows(allRows));
+  if (LOG_SOURCES.siteFile) parts.push(logFromSiteFile(siteLogRaw));
+  if (LOG_SOURCES.commits) parts.push(logFromCommits(commitsRaw));
+  const seen = Object.create(null);
+  const merged = [];
+  parts.forEach(list => list.forEach(e => {
+    if (seen[e.id]) return;
+    seen[e.id] = true;
+    merged.push(e);
+  }));
+  merged.sort((a, b) => {
+    const c = String(b.ts).localeCompare(String(a.ts));
+    return c !== 0 ? c : String(a.id).localeCompare(String(b.id));
+  });
+  logAll = merged.slice(0, LOG_CAP);
+  logRows = syntheticHistoryRows();
+  renderSiteLog();
+  renderTabs();                                   // the History count moves when crawl rows arrive
+  if (currentTab === "history") renderCards();    // and an open History tab picks them up
+}
+
+function renderSiteLog() {
+  const list = $("#site-log-list");
+  const chipBox = $("#site-log-chips");
+  if (!list || !chipBox) return;
+
+  if (!chipBox.childElementCount) {
+    LOG_KINDS.forEach(k => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "log-chip";
+      chip.textContent = k.label;
+      chip.dataset.kind = k.key;
+      chip.addEventListener("click", () => {
+        logFilter = k.key;
+        try { localStorage.setItem(LOG_FILTER_KEY, logFilter); } catch (e) {}
+        renderSiteLog();
+      });
+      chipBox.appendChild(chip);
+    });
+  }
+  Array.prototype.forEach.call(chipBox.children, chip => {
+    chip.setAttribute("aria-pressed", chip.dataset.kind === logFilter ? "true" : "false");
+  });
+
+  const shown = logFilter ? logAll.filter(e => e.kind === logFilter) : logAll;
+  $("#site-log-count").textContent = String(shown.length);
+  list.innerHTML = "";
+  if (!shown.length) {
+    const li = document.createElement("li");
+    li.className = "site-log-empty";
+    li.textContent = logAll.length ? "Nothing of that kind yet." : "Nothing logged yet.";
+    list.appendChild(li);
+  } else {
+    shown.forEach(e => {
+      const li = document.createElement("li");
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "log-row";
+      row.dataset.kind = e.kind;
+      row.setAttribute("aria-expanded", "false");
+      // Native title, not the [data-tooltip] system: those are absolutely positioned above their
+      // element and would be clipped by this list's own overflow-y scroller.
+      row.title = fmtTimestamp(e.ts) + "\n" + e.text + (e.detail ? "\n" + e.detail : "");
+      const time = document.createElement("span");
+      time.className = "log-time";
+      time.textContent = fmtLogStamp(e.ts, e.tsPrecision);
+      const text = document.createElement("span");
+      text.className = "log-text";
+      text.textContent = e.text;
+      row.appendChild(time); row.appendChild(text);
+      row.addEventListener("click", () => {
+        const open = row.getAttribute("aria-expanded") === "true";
+        row.setAttribute("aria-expanded", open ? "false" : "true");
+        const existing = text.querySelector(".log-detail");
+        if (open) { if (existing) existing.remove(); return; }
+        if (existing || (!e.detail && !e.url)) return;
+        const det = document.createElement("span");
+        det.className = "log-detail";
+        if (e.detail) det.appendChild(document.createTextNode(e.detail));
+        if (e.url) {
+          if (e.detail) det.appendChild(document.createTextNode(" · "));
+          const a = document.createElement("a");
+          a.href = e.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+          a.textContent = "view commit";
+          det.appendChild(a);
+        }
+        text.appendChild(det);
+      });
+      li.appendChild(row);
+      list.appendChild(li);
+    });
+  }
+  const status = $("#site-log-status");
+  const bits = ["Updated " + new Date().toLocaleTimeString(undefined, { timeStyle: "short" })];
+  status.textContent = logNotes.concat(bits).join(" · ");
+  syncLogCollapse();
+}
+
+// Never awaited by loadRows(): a slow or missing site-log.json must not delay the review queue.
+// Nothing in here throws — each source's failure becomes one line of status text instead.
+async function refreshSiteLog(force) {
+  logNotes = [];
+  const jobs = [];
+  if (LOG_SOURCES.siteFile) jobs.push({ name: "file", p: loadSiteLogFile(force) });
+  if (LOG_SOURCES.commits) jobs.push({ name: "commits", p: loadCommits(force) });
+  const results = await Promise.allSettled(jobs.map(j => j.p));
+  results.forEach((r, i) => {
+    if (r.status === "rejected") {
+      logNotes.push(jobs[i].name === "commits" ? "Deploy list unavailable" : "Couldn't load the crawl log");
+    }
+  });
+  if (siteLogRaw && siteLogRaw.__missing) logNotes.push("Crawl log not published yet");
+  mergeLog();
+}
+
+function setLogCollapsed(collapsed) {
+  const box = $("#site-log");
+  const btn = $("#site-log-toggle");
+  if (!box || !btn) return;
+  box.classList.toggle("collapsed", !!collapsed);
+  btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+}
+
+// Default state follows the <=820px breakpoint (where the sidebar sits ABOVE the workspace, so an
+// expanded log would push every card down the page). Checked on each render rather than only from a
+// media-query event, because those events are not always delivered. An explicit toggle wins after.
+const logNarrow = window.matchMedia("(max-width: 820px)");
+let logUserToggled = false;
+function syncLogCollapse() {
+  if (logUserToggled) return;
+  setLogCollapsed(logNarrow.matches);
 }
 
 function renderCalendarCard(event) {
@@ -919,6 +1348,9 @@ function openEditPanel(event) {
 }
 
 function renderCard(row) {
+  // Should be structurally unreachable (synthetic rows only ever reach renderHistory) — this makes
+  // it structurally harmless too, so no Site log row can ever grow an action button.
+  if (row.__synthetic) return document.createComment("synthetic site-log row - not actionable");
   const isCorrection = String(row.submission_kind) === "correction";
   // Trusted-sender pipeline results: already live / already applied. "published" and
   // "published-new" went straight to the site; "applied" is an applied text fix.
@@ -1247,7 +1679,17 @@ setTooltip($("#gate-input"), "Enter the separate DASHBOARD_PASSWORD. This public
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeManageDrawer(); });
 $("#gate-btn").addEventListener("click", submitGate);
 $("#gate-input").addEventListener("keydown", e => { if (e.key === "Enter") submitGate(); });
-$("#refresh").addEventListener("click", loadRows);
+$("#refresh").addEventListener("click", () => { loadRows(); refreshSiteLog(true); });
+
+/* ---------- Site log wiring ---------- */
+setTooltip($("#site-log-toggle"), "Everything that has happened to this site, newest first: requests filed here, events and flyers the crawls bring in, and content pushed live. One line each. Read-only.");
+$("#site-log-toggle").addEventListener("click", () => {
+  logUserToggled = true;   // from here on, Sean's choice beats the breakpoint default
+  setLogCollapsed(!$("#site-log").classList.contains("collapsed"));
+});
+if (logNarrow.addEventListener) logNarrow.addEventListener("change", syncLogCollapse);
+else if (logNarrow.addListener) logNarrow.addListener(syncLogCollapse);
+renderSiteLog();   // also applies the breakpoint default via syncLogCollapse
 
 if (password) { hideGate(); loadRows(); } else { showGate(); }
 </script>
