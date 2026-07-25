@@ -650,35 +650,27 @@ function updateFilterUI() {
   syncUrl();
   savePrefs();
 }
+/* The active-filter chip strip (#active-chips) was disabled 2026-07-24 (Sean): it just
+   duplicated the \u2713 selections + counts already shown in the quick-filter buttons above it,
+   so it was redundant clutter. Its element stays hidden/empty. In its place, a single
+   "Clear all" button lives at the top-right of the control row (injected once), shown
+   whenever any filter is active. */
 function renderActiveChips(act) {
-  const row = document.getElementById("active-chips");
-  if (!row) return;
   act = act || activeFilterList();
-  row.textContent = "";
-  if (state.view === "timeline" || state.filtersOpen || !act.length) { row.hidden = true; return; }
-  row.hidden = false;
-  for (const a of act) {
-    const chip = document.createElement("button");
-    chip.type = "button"; chip.className = "active-chip";
-    chip.setAttribute("aria-label", `Remove filter ${a.label}`);
-    chip.append(a.label + " ");
-    const x = document.createElement("span"); x.className = "active-chip-x"; x.setAttribute("aria-hidden", "true"); x.textContent = "\u00d7";
-    chip.appendChild(x);
-    chip.addEventListener("click", () => {
-      if (a.group === "sel") {
-        state.sel[a.v] = "";
-        if (a.v === "country") { state.sel.state = ""; state.sel.town = ""; }
-        if (a.v === "state") state.sel.town = "";
-        buildLocSelects();
-      } else state.filters[a.group].delete(a.v);
-      render();
-    });
-    row.appendChild(chip);
+  const row = document.getElementById("active-chips");
+  if (row) { row.hidden = true; row.textContent = ""; }
+  const controlRow = document.querySelector(".control-row");
+  if (controlRow) {
+    let cab = document.getElementById("clear-all-filters");
+    if (!cab) {
+      cab = document.createElement("button");
+      cab.type = "button"; cab.id = "clear-all-filters"; cab.className = "clear-all-top";
+      cab.textContent = "Clear all";
+      cab.addEventListener("click", clearAllFilters);
+      controlRow.appendChild(cab);
+    }
+    cab.hidden = !act.length;
   }
-  const clear = document.createElement("button");
-  clear.type = "button"; clear.className = "active-clear"; clear.textContent = "Clear all";
-  clear.addEventListener("click", clearAllFilters);
-  row.appendChild(clear);
 }
 function clearAllFilters() {
   for (const set of Object.values(state.filters)) set.clear();
