@@ -1,0 +1,7 @@
+{
+  "_meta": {
+    "purpose": "Periodic snapshot/archive of the live Dance Whispers feed. Firebase Realtime Database is the live source of truth (see js/whispers.js) — this file is not read by the page. Refresh it by running scripts/export-whispers.mjs, which pulls the most recent 30 whispers and overwrites this file.",
+    "last_synced": null
+  },
+  "whispers": []
+}

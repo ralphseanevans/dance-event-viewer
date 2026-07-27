@@ -1,0 +1,243 @@
+/* Submit an Event — reuses styles.css's custom properties for a consistent dark theme. */
+
+.submit-wrap {
+  max-width: 640px;
+  margin: 20px auto 60px;
+  padding: 0 4px;
+}
+.submit-back {
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: .92rem;
+  margin-bottom: 18px;
+}
+.submit-back:hover { text-decoration: underline; }
+.submit-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.submit-intro {
+  color: var(--text-dim);
+  font-size: .95rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.submit-section {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  display: grid;
+  gap: 10px;
+}
+.submit-section legend {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0 4px;
+}
+.submit-section[hidden] {
+  display: none;
+}
+.req { color: var(--accent); font-weight: 500; font-size: .82rem; }
+
+.field-label {
+  color: var(--text-dim);
+  font-size: .88rem;
+  margin-top: 4px;
+}
+.field-hint {
+  color: var(--text-dim);
+  font-size: .82rem;
+  line-height: 1.4;
+  margin: 2px 0 0;
+}
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="url"],
+input[type="date"], input[type="time"], input[type="file"], select, textarea {
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 12px; font: inherit; font-size: .95rem; width: 100%;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+textarea { resize: vertical; }
+
+/* Intake method as physical folder tabs joined to the active content panel. The tabs
+   remain in normal flow; the panel begins beneath them, and only the active tab masks
+   its lower seam. `.is-active` keeps this independent of :has() support. */
+.method-picker { margin-bottom: 16px; min-width: 0; }
+.method-picker-title {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.method-tabs-wrap {
+  position: relative;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 3px 0 0;
+  background: linear-gradient(to bottom, transparent calc(100% - 1px), var(--border) 0);
+}
+.method-tabs-wrap::-webkit-scrollbar { display: none; }
+.method-tabs {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  min-width: 100%;
+  flex-wrap: nowrap;
+}
+.method-tab {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  flex: 0 0 auto;
+  padding: 8px 15px 7px;
+  background: color-mix(in srgb, var(--bg-card) 45%, var(--bg-raised));
+  color: color-mix(in srgb, var(--text-dim) 65%, var(--text));
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 2px 2px;
+  cursor: pointer;
+  font-size: .92rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.method-tab input { position: absolute; opacity: 0; width: 0; height: 0; }
+.method-tab:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+.method-tab:has(input:checked), .method-tab.is-active {
+  z-index: 2;
+  background: var(--bg-raised);
+  color: color-mix(in srgb, var(--accent) 75%, var(--text));
+  border-color: var(--accent);
+  border-bottom-color: var(--bg-raised);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 12px var(--accent-soft);
+}
+.method-tab:has(input:focus-visible), .method-tab:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.method-tab:has(input:checked):focus-within, .method-tab.is-active:focus-within {
+  border-bottom-color: var(--bg-raised);
+}
+.method-panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 16px 18px;
+}
+.method-content-section {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.method-content-section legend {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0 4px;
+}
+.method-content-section[hidden] { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .method-tab {
+    transition: color .15s ease, border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+}
+@media (max-width: 420px) {
+  .method-tab { padding-inline: 10px; font-size: .82rem; gap: 4px; }
+  .method-panel { padding-inline: 14px; }
+}
+
+#flyer-preview, .flyer-preview-img {
+  max-width: 100%; max-height: 260px; border-radius: 8px;
+  border: 1px solid var(--border); object-fit: contain;
+}
+
+/* Multi-photo previews for the flyer path (several photos of the same flyer). */
+.flyer-previews {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+}
+.flyer-previews img {
+  width: 104px; height: 104px; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--border);
+}
+
+/* iOS-friendly upload control: hide the raw file input (its only tappable region
+   is the small native button — a dead zone when the input is stretched full-width)
+   and make the full-width label the tap target. Specificity (input.visually-...)
+   is kept a hair above the shared `input[type="file"]` rule above so width wins. */
+input.visually-hidden-file {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.file-button {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 16px 18px; cursor: pointer;
+  background: var(--bg); color: var(--text);
+  border: 1px dashed var(--border); border-radius: 8px;
+  font-size: 1rem; text-align: center; -webkit-tap-highlight-color: transparent;
+  transition: border-color .15s, background .15s;
+}
+.file-button:hover { border-color: var(--accent); }
+.file-button:active { background: var(--accent-soft); border-color: var(--accent); }
+.file-button.has-file { border-style: solid; border-color: var(--chip-on-border); color: var(--accent); }
+.file-button-icon { font-size: 1.25rem; line-height: 1; }
+.file-button-text { font-weight: 500; word-break: break-word; }
+input.visually-hidden-file:focus-visible + .file-button {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+.schedule-toggle, .schedule-sub-toggle {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  color: var(--text); font-size: .92rem;
+}
+.schedule-toggle label, .schedule-sub-toggle label {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+}
+
+.monthly-rule-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  color: var(--text-dim); font-size: .9rem;
+}
+.monthly-rule-row select { width: auto; }
+
+.time-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.time-row input { width: auto; flex: 1; min-width: 120px; }
+
+.submit-actions {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  margin-top: 4px;
+}
+#submit-btn {
+  font-size: 1rem; padding: 5px 28px;
+}
+#submit-btn[disabled] { opacity: .6; cursor: not-allowed; }
+.submit-status {
+  color: var(--text-dim); font-size: .9rem; min-height: 1.2em; margin: 0;
+}
+.submit-status.error { color: var(--danger); }
+.submit-status.success { color: var(--accent); }
+
+@media (max-width: 640px) {
+  .submit-wrap { margin-top: 10px; }
+}
