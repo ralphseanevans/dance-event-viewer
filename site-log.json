@@ -1,7 +1,0 @@
-{
-  "schema": 1,
-  "generated_at": "2026-07-25T03:56:56Z",
-  "since": "2026-07-22",
-  "_notes": "Derived, public-safe site activity log for the authenticated dashboard Site log panel. Built by Daily Operating System\\Tools\\build_site_log.ps1 from the local master dance_events.json. Source-obfuscated on purpose: no scanner names, source types, source details, flyer/source URLs, notes, or contact fields. Entries begin at \"since\" and accumulate. Not the same thing as the public viewer Activity Pulse (visitor behavior).",
-  "entries": []
-}
