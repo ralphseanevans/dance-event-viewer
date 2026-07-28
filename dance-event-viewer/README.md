@@ -56,7 +56,7 @@ preferences for either retired view safely fall back to Timeline.
 
 ### Compact Location disclosure (2026-07-18)
 
-The filter panel keeps Anywhere, Pensacola, Mobile, Elsewhere, and the link-styled
+The filter panel keeps Everywhere, Pensacola, Mobile, Elsewhere, and the link-styled
 **Choose location** disclosure on the same row beside the Location label. State and
 Town live in `#loc-selects` beneath `#loc-more`. The container must remain `hidden` and `display:none`
 on initial load so it contributes zero height; opening it places both selects back in

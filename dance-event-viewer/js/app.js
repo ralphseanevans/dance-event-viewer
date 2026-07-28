@@ -43,7 +43,7 @@ function locScopeActive() { return !!(state.sel.country || state.sel.state || st
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
-const DEFAULT_AREAS = ["Pensacola area", "Mobile area"];   // 2026-07-20 (Sean): default location scope back to Pensacola + Mobile selected on load (and on "Clear all"). Anywhere/other chips still available to widen. Areas aren't persisted, so every fresh visit starts here.
+const DEFAULT_AREAS = ["Pensacola area", "Mobile area"];   // 2026-07-20 (Sean): default location scope back to Pensacola + Mobile selected on load (and on "Clear all"). Everywhere/other chips still available to widen. Areas aren't persisted, so every fresh visit starts here.
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
 const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map view (optional; page works without it)
 const MAP_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";  // free, no API key
@@ -555,7 +555,7 @@ function buildFilterChips() {
   const groups = {
     cats:  { holder: document.getElementById("main-style-chips"), values: presentValues(d => d.category, [...CORE_CATEGORIES, OTHER]), all: "All styles" },
     days:  { holder: document.querySelector('.chips[data-group="days"]'), values: presentValues(d => d.day, DAY_ORDER), all: "Any day" },
-    areas: { holder: document.querySelector('.chips[data-group="areas"]'), values: presentValues(d => d.loc.area, ["Pensacola area", "Mobile area"]), all: "Anywhere" },   // "Elsewhere / unlisted" chip removed 2026-07-20 (Sean); those events still show under "Anywhere"
+    areas: { holder: document.querySelector('.chips[data-group="areas"]'), values: presentValues(d => d.loc.area, ["Pensacola area", "Mobile area"]), all: "Everywhere" },   // "Elsewhere / unlisted" chip removed 2026-07-20 (Sean); those events still show under "Everywhere"
     kinds: { holder: document.querySelector('.chips[data-group="kinds"]'), values: presentValues(d => d.kind, ["Recurring", "One-time"]), all: "All types" },
   };
   buildLocSelects();
@@ -627,7 +627,7 @@ function updateFilterUI() {
       const on = chip.dataset.all ? set.size === 0 : set.has(chip.dataset.value);
       chip.setAttribute("aria-pressed", String(on));
       const cEl = chip.querySelector(".chip-count");
-      // "Anywhere" (areas all-option) shows the unfiltered location count (2026-07-20, Sean);
+      // "Everywhere" (areas all-option) shows the unfiltered location count (2026-07-20, Sean);
       // other groups' all-options stay countless.
       if (chip.dataset.all) { if (cEl) cEl.textContent = group === "areas" ? ` (${facetCount(group, null)})` : ""; continue; }
       const n = facetCount(group, chip.dataset.value);
