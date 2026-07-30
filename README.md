@@ -8,8 +8,14 @@ Southern United States. Live site: https://danceeventviewer.net/dance-event-view
 - `graphics/logos/` — event logos/flyers
 
 The event data here is a sanitized export of a private master list; internal
-pipeline fields are stripped before publishing. To update the live site,
-replace `dance_events.json` (and any new logos) and commit.
+pipeline fields are stripped before publishing. The durable clone at
+`C:\Users\sean\Projects\dance-event-viewer` is the sole editable frontend and
+logo-map home. Do not maintain a second viewer copy.
+
+Publishing is owned by Daily Operating System's `Tools\publish_site.ps1`. It
+defaults to a no-write dry run; `-Publish` builds the exact 18-field export,
+source-obfuscated site log, event-key share pages, and map-referenced logo set,
+then commits, pushes without force, and verifies the live site.
 
 Spot a wrong listing? Use the "Wrong info?" link on any event card.
 
