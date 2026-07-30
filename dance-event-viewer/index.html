@@ -45,7 +45,7 @@
 
   <link rel="stylesheet" href="css/styles.css?v=20260724h">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
-  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260720a">
+  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260729b">
   <script defer src="js/theme-switch.js?v=20260718b"></script>
   <script defer src="js/club-lights.js?v=20260718j"></script>
 
@@ -207,19 +207,6 @@
           </button>
         </div>
       </div>
-      <div class="control-row">
-        <div class="view-group">
-        <button type="button" id="traveling-toggle" class="past-toggle traveling-toggle" aria-pressed="false"
-          title="By default this calendar shows events across the South (FL, GA, AL, MS, LA, TN, SC, NC). Turn this on to also browse national conventions and competitions — handy when you're traveling.">
-          National events
-        </button>
-        <button type="button" id="unverified-toggle" class="past-toggle unverified-toggle" aria-pressed="false"
-          title="Some listings — mostly newly-researched national events — haven't been confirmed yet. Turn this on to also show those unverified events.">
-          Unverified
-        </button>
-      </div>
-    </div>
-
     <!-- Always-visible quick filters (redesign 2026-07-17): Dance style + Day pill rows;
          everything else lives in the collapsible Filters panel below. -->
     <div class="quick-filters">
@@ -282,10 +269,23 @@
            role="group" + aria-labelledby. -->
       <div class="filter-group" id="fg-kind" role="group" aria-labelledby="fg-kind-label">
         <span class="fg-legend" id="fg-kind-label">Event type</span>
-        <div class="chips chips-radio" data-group="kinds"></div>
-        <button type="button" id="past-toggle" class="chip chip-radio" aria-pressed="false"
+        <!-- Multi-select as of 2026-07-29 (Sean) — the chips-radio/chip-radio ○● styling is
+             gone with it; "All types" now paints every sibling chip on. -->
+        <div class="chips" data-group="kinds"></div>
+        <button type="button" id="past-toggle" class="chip" aria-pressed="false"
           title="Past events are hidden by default to keep this list current. Turn this on to see recently-ended events too (shown greyed out).">
-          Past events
+          <span class="chip-label">Past events</span><span class="chip-count"></span>
+        </button>
+        <!-- National events + Unverified moved here from the always-visible control row
+             (2026-07-29, Sean) and restyled as plain .chip pills so they match the shade,
+             shape, and size of the other Event type chips. IDs unchanged. -->
+        <button type="button" id="traveling-toggle" class="chip traveling-toggle" aria-pressed="false"
+          title="By default this calendar shows events across the South (FL, GA, AL, MS, LA, TN, SC, NC). Turn this on to also browse national conventions and competitions — handy when you're traveling.">
+          <span class="chip-label">National events</span><span class="chip-count"></span>
+        </button>
+        <button type="button" id="unverified-toggle" class="chip unverified-toggle" aria-pressed="false"
+          title="Some listings — mostly newly-researched national events — haven't been confirmed yet. Turn this on to also show those unverified events.">
+          <span class="chip-label">Unverified</span><span class="chip-count"></span>
         </button>
       </div>
       <div class="filter-group" id="fg-solo" role="group" aria-labelledby="fg-solo-label">
@@ -314,7 +314,7 @@
   </footer>
 
   <script src="js/dance-poster.js?v=20260724c"></script>
-  <script src="js/app.js?v=20260728a"></script>
+  <script src="js/app.js?v=20260729b"></script>
   <script src="js/activity-pulse.js?v=20260718a"></script>
 </body>
 </html>

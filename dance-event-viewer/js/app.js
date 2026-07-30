@@ -527,11 +527,25 @@ function filterSnapshotDetail() {
 /* ---------- Filter UI (redesigned 2026-07-17 per Sean's spec) ----------
    Always-visible "Dance style" + "Day" pill rows; Location / Event type / Solo styles /
    Country-State-Town live in the collapsible panel. Facet counts on every option, dimmed
-   (never hidden) at zero. Event type is SINGLE-select (radio-style); style/day/location are
-   multi-select (checkbox-style). Active filters echo as removable summary chips while the
+   (never hidden) at zero. Event type, style, day, and location are multi-select
+   (checkbox-style). Active filters echo as removable summary chips while the
    panel is closed, and the whole filter state round-trips through the URL query string. */
 const AREA_LABELS = { "Pensacola area": "Pensacola", "Mobile area": "Mobile", "Elsewhere / unlisted": "Elsewhere" };
-const SINGLE_SELECT_GROUPS = ["kinds"];
+/* "kinds" left this list 2026-07-29 (Sean): Event type is multi-select now. Kept as the
+   generic hook in case a future group needs radio behaviour. */
+const SINGLE_SELECT_GROUPS = [];
+/* Groups whose "All …" chip reads as "every value selected" rather than "nothing selected"
+   (2026-07-29, Sean). The stored state is still the empty Set — that's what the filter
+   predicate and URL already treat as unfiltered — the difference is how chips paint and how
+   the first click behaves. */
+const ALL_MEANS_EVERY_GROUPS = ["kinds"];
+const GROUP_VALUES = {};
+function allMeansEvery(group) { return ALL_MEANS_EVERY_GROUPS.includes(group); }
+function chipIsOn(group, v) {
+  const set = state.filters[group];
+  if (!set) return false;
+  return (allMeansEvery(group) && set.size === 0) ? true : set.has(v);
+}
 function chipLabel(group, v) { return group === "areas" ? (AREA_LABELS[v] || v) : v; }
 
 function makeChip(label, onClick, single) {
@@ -545,8 +559,21 @@ function makeChip(label, onClick, single) {
 }
 function toggleValue(group, v) {
   const set = state.filters[group];
-  const wasSelected = set.has(v);
+  const wasSelected = chipIsOn(group, v);
   if (SINGLE_SELECT_GROUPS.includes(group)) { set.clear(); if (!wasSelected) set.add(v); }
+  else if (allMeansEvery(group)) {
+    const vals = GROUP_VALUES[group] || [];
+    if (set.size === 0) {
+      // Un-pressing one chip out of the implicit "all" state keeps every other type selected.
+      for (const x of vals) if (x !== v) set.add(x);
+    } else if (wasSelected) {
+      set.delete(v);
+    } else {
+      set.add(v);
+      // Selecting every value again collapses to the clean, unfiltered empty-Set state.
+      if (vals.length && vals.every(x => set.has(x))) set.clear();
+    }
+  }
   else { wasSelected ? set.delete(v) : set.add(v); }
   render();
   if (!wasSelected) window.dispatchEvent(new CustomEvent("activity-signal", { detail: filterSnapshotDetail() }));
@@ -562,6 +589,7 @@ function buildFilterChips() {
   for (const [group, cfg] of Object.entries(groups)) {
     if (!cfg.holder) continue;
     cfg.holder.textContent = "";
+    GROUP_VALUES[group] = [...cfg.values];
     const single = SINGLE_SELECT_GROUPS.includes(group);
     const all = makeChip(cfg.all, () => { state.filters[group].clear(); render(); }, single);
     all.dataset.all = "1";
@@ -605,17 +633,20 @@ function activeFilterList() {
   return out;
 }
 /* The Advanced-panel badge ("N active" on the toggle, "(N)" in the panel title) must count
-   ONLY the filters that actually live inside the Advanced panel — Event type, Solo dance
-   styles, and the Past-events toggle. Dance style, Day and Location are always-visible quick
+   ONLY controls that actually live inside the Advanced panel — Event type, Solo dance
+   styles, Past events, National events, and Unverified. Dance style, Day and Location are quick
    filters, so they must not inflate this badge (Sean, 2026-07-24: the badge "should only
    represent what's active inside of the Advanced tab. Should not trigger when 'All types' is
    selected"). Solo styles share state.filters.cats with the main Style row, so they're picked
    out by SOLO_STYLES membership. The closed-panel summary chips (renderActiveChips) still
    reflect ALL active filters — only this Advanced badge is scoped. */
 function advancedFilterCount() {
-  let n = state.filters.kinds.size;                                      // Event type
+  // Event type counts as one active filter even when several types are selected.
+  let n = state.filters.kinds.size ? 1 : 0;                              // Event type
   for (const v of state.filters.cats) if (SOLO_STYLES.includes(v)) n++;  // Solo dance styles
   if (state.showPast) n++;                                               // Past events toggle
+  if (state.showNational) n++;                                           // National events toggle
+  if (state.showUnverified) n++;                                         // Unverified toggle
   return n;
 }
 function updateFilterUI() {
@@ -624,7 +655,7 @@ function updateFilterUI() {
     const set = state.filters[group];
     if (!set) continue;
     for (const chip of holder.querySelectorAll(".chip")) {
-      const on = chip.dataset.all ? set.size === 0 : set.has(chip.dataset.value);
+      const on = chip.dataset.all ? set.size === 0 : chipIsOn(group, chip.dataset.value);
       chip.setAttribute("aria-pressed", String(on));
       const cEl = chip.querySelector(".chip-count");
       // "Everywhere" (areas all-option) shows the unfiltered location count (2026-07-20, Sean);
