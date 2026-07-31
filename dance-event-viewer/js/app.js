@@ -581,7 +581,7 @@ function toggleValue(group, v) {
 function buildFilterChips() {
   const groups = {
     cats:  { holder: document.getElementById("main-style-chips"), values: presentValues(d => d.category, [...CORE_CATEGORIES, OTHER]), all: "All styles" },
-    days:  { holder: document.querySelector('.chips[data-group="days"]'), values: presentValues(d => d.day, DAY_ORDER), all: "Any day" },
+    days:  { holder: document.querySelector('.chips[data-group="days"]'), values: presentValues(d => d.day, DAY_ORDER), all: "Everyday" },
     areas: { holder: document.querySelector('.chips[data-group="areas"]'), values: presentValues(d => d.loc.area, ["Pensacola area", "Mobile area"]), all: "Everywhere" },   // "Elsewhere / unlisted" chip removed 2026-07-20 (Sean); those events still show under "Everywhere"
     kinds: { holder: document.querySelector('.chips[data-group="kinds"]'), values: presentValues(d => d.kind, ["Recurring", "One-time"]), all: "All types" },
   };
