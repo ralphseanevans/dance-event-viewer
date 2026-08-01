@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <!--
   Dance Event Viewer — "Submit an Event" intake form.
-  Local dev copy. Serve from the "Dance Website" folder (one level up):
-      python -m http.server 8000
-  then open: http://localhost:8000/dance-event-viewer/submit-event.html
-  (Or double-click serve.cmd / run serve.ps1 in this folder.)
+  Local dev copy. Serve the public Git checkout root (the parent of this folder),
+  then open:
+      http://localhost:<port>/dance-event-viewer/submit-event.html
+  Do not serve the private "Dance Website" child.
 
   Nothing here writes to dance_events.json/wcs_events.json. Submissions go to
   a private "Submissions" Google Sheet via an Apps Script web app and sit

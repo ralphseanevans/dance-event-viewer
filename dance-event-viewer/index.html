@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <!--
   Dance Event Viewer — reads ../dance_events.json live on every load.
-  Browsers block fetch() from file:// pages, so run a tiny local server
-  FROM THE "Dance Website" FOLDER (one level up from this file):
+  Browsers block fetch() from file:// pages. For local development, serve the
+  PUBLIC GIT CHECKOUT ROOT (the parent of this folder), then open:
 
-      python -m http.server 8000
+      http://localhost:<port>/dance-event-viewer/
 
-  then open:  http://localhost:8000/dance-event-viewer/
-  (Or double-click serve.cmd in this folder.)
+  Do not serve the private "Dance Website" child; this page reads the sanitized
+  ../dance_events.json from the public checkout root.
 -->
 <html lang="en">
 <head>

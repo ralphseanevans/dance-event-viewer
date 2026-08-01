@@ -9,8 +9,9 @@ Southern United States. Live site: https://danceeventviewer.net/dance-event-view
 
 The event data here is a sanitized export of a private master list; internal
 pipeline fields are stripped before publishing. The durable clone at
-`C:\Users\sean\Projects\dance-event-viewer` is the sole editable frontend and
-logo-map home. Do not maintain a second viewer copy.
+`C:\Users\sean\AI\Projects\DanceEventViewerProject\dance-event-viewer` is the sole
+editable frontend and logo-map home. Its sibling `Dance Website` child under
+`DanceEventViewerProject` is private input storage, not a second viewer.
 
 Publishing is owned by Daily Operating System's `Tools\publish_site.ps1`. It
 defaults to a no-write dry run; `-Publish` builds the exact 18-field export,
