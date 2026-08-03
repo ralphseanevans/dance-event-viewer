@@ -1334,7 +1334,7 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
 .loc-map-svg { width: 100%; height: auto; display: block; }
 .state-shape { fill: var(--bg-card); stroke: var(--border); stroke-width: 1.1px; cursor: pointer; }
 .state-shape:hover { fill: var(--accent-soft); stroke: var(--text-dim); }
-.state-shape:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; stroke: var(--accent); stroke-width: 2px; }
+.state-shape:focus-visible { outline: none; stroke: var(--accent); stroke-width: 2.4px; }
 .state-shape[aria-pressed="true"] { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6px; }
 /* Per-state event-count labels (2026-08-03) — sit on top of the shapes, so
    pointer-events:none is required or clicking a number would miss the state
