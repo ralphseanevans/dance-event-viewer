@@ -127,35 +127,12 @@ body {
 .title-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end; /* nudged right (2026-08-03, Sean's ask) — was centered */
   gap: 14px;
   flex-wrap: wrap;
 }
-
-/* Timeline/Calendar/Map tabs share this row with the tagline (moved up from .controls,
-   2026-08-03, Sean's ask): tabs fill the space on the left, tagline sits to the right. */
-.title-block {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.title-block .view-tabs-row {
-  flex: 1 1 auto;
-  min-width: 0;
-  /* No panel sits directly below this anymore, so drop the folder-tab bottom
-     border/background this row used when it lived atop .controls-panel-inner. */
-  background: none;
-  padding: 3px 0 0;
-}
-.title-block .title-row {
-  flex: 0 0 auto;
-  justify-content: flex-end;
-}
 @media (max-width: 640px) {
-  .title-block { flex-direction: column; align-items: stretch; gap: 8px; }
-  .title-block .title-row { justify-content: center; }
+  .title-row { justify-content: center; } /* not enough width to read right-aligned on small screens */
 }
 
 .sean-note, .beta-note {
@@ -253,7 +230,8 @@ body {
 .controls-panel-inner {
   background: var(--bg-raised);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
   padding: 8px 16px;
   display: grid;
   gap: 10px;
@@ -328,6 +306,7 @@ body {
   }
 }
 @media (max-width: 480px) {
+  .view-tabs-row { padding-inline: 8px; }
   .view-btn { padding-inline: 12px; font-size: .88rem; }
 }
 .chip:focus-visible, .reset-btn:focus-visible, .source-tabs button:focus-visible {

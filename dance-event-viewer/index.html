@@ -52,7 +52,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <link rel="stylesheet" href="css/styles.css?v=20260803b">
+  <link rel="stylesheet" href="css/styles.css?v=20260803c">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260713k">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260803a">
   <script defer src="js/theme-switch.js?v=20260803a"></script>
@@ -170,16 +170,6 @@
     </div>
     <div class="title-block">
       <h1 class="visually-hidden">Dance Event Viewer</h1>
-      <!-- Timeline/Calendar/Map tabs (moved up from .controls, 2026-08-03) sit to the
-           left of the tagline on this same row; .controls-panel-inner below now stands
-           on its own (see the border/radius fix in styles.css). -->
-      <div class="view-tabs-row">
-        <div class="view-switch" role="group" aria-label="View mode">
-            <button type="button" class="view-btn" data-view="timeline" aria-pressed="true">Timeline</button>
-            <button type="button" class="view-btn" data-view="calendar" aria-pressed="false">Calendar</button>
-            <button type="button" class="view-btn" data-view="map" aria-pressed="false">Map</button>
-        </div>
-      </div>
       <div class="title-row">
         <p class="tagline">Connecting Dancers in the South! &middot; good music &middot; great people</p>
       </div>
@@ -198,6 +188,14 @@
   <nav id="source-tabs" class="source-tabs" aria-label="Event lists" hidden></nav>
 
   <section class="controls" aria-label="View and filters">
+    <div class="view-tabs-row">
+      <div class="view-switch" role="group" aria-label="View mode">
+          <button type="button" class="view-btn" data-view="timeline" aria-pressed="true">Timeline</button>
+          <button type="button" class="view-btn" data-view="calendar" aria-pressed="false">Calendar</button>
+          <button type="button" class="view-btn" data-view="map" aria-pressed="false">Map</button>
+      </div>
+    </div>
+
     <div class="controls-panel-inner">
       <!-- Event search (2026-07-20, Sean): a single quiet box that matches event name,
            venue, or city. Kept deliberately minimal so it doesn't crowd the filters. -->
