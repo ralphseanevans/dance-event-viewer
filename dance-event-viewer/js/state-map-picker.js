@@ -1,0 +1,232 @@
+/* Choose-location state map (2026-08-03): renders a clickable US map inside the
+ * "Choose location" reveal, wired into the SAME state.sel.state the existing
+ * State/Town selects use (js/app.js) — pick a state on the map or from the
+ * dropdown, they stay in sync either way. The dropdowns stay in place as the
+ * typing-friendly / screen-reader-friendly fallback; the map is additive.
+ *
+ * Data (js/us-states-map-data.js, ~145KB of SVG path data — 50 states + DC,
+ * pre-projected Albers USA so Alaska/Hawaii already sit in their conventional
+ * inset spot) is lazy-loaded the first time the panel opens, so a visitor who
+ * never opens "Choose location" never downloads it. No external map API, no
+ * fetch to anywhere but this site's own files.
+ *
+ * Depends on globals defined by js/app.js (loaded earlier in the page, same
+ * global scope): `state` (shared filter state), `US_STATES` (code -> full
+ * name), `buildLocSelects()`, `render()`. Guarded below in case a future
+ * refactor changes how those are exposed.
+ */
+"use strict";
+(function () {
+  var DATA_SRC = "js/us-states-map-data.js?v=20260803a";
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  var loaded = false, loading = false;
+  var mapHost = null, statusEl = null, svgEl = null;
+
+  function appReady() {
+    return typeof state === "object" && state && state.sel
+      && typeof US_STATES === "object"
+      && typeof buildLocSelects === "function"
+      && typeof render === "function";
+  }
+
+  function nameToCode(name) {
+    for (var code in US_STATES) if (US_STATES[code] === name) return code;
+    return null;
+  }
+
+  // Label-placement centroid (2026-08-03): a bounding-box center lands OUTSIDE the
+  // landmass for concave/elongated shapes (Florida's peninsula, Louisiana's boot) and
+  // in open water for multi-island states (Hawaii, Alaska, Michigan's two peninsulas).
+  // Parse the path's rings directly, take the area-weighted (shoelace) centroid of
+  // each, and use the LARGEST ring's centroid — puts the number on the main landmass
+  // instead of a blended point between islands. Pure math on the path data already in
+  // hand, so it works before the element is even in the document (no getBBox needed).
+  function parseRings(d) {
+    var rings = [], cur = null;
+    var tokens = d.match(/[MLZ]|-?\d+\.?\d*/g) || [];
+    var i = 0;
+    while (i < tokens.length) {
+      var t = tokens[i];
+      if (t === "M") { cur = []; rings.push(cur); cur.push([+tokens[i + 1], +tokens[i + 2]]); i += 3; }
+      else if (t === "L") { cur.push([+tokens[i + 1], +tokens[i + 2]]); i += 3; }
+      else { i += 1; } // "Z"
+    }
+    return rings;
+  }
+  function ringCentroid(pts) {
+    var a = 0, cx = 0, cy = 0, n = pts.length;
+    for (var i = 0; i < n; i++) {
+      var p0 = pts[i], p1 = pts[(i + 1) % n];
+      var cross = p0[0] * p1[1] - p1[0] * p0[1];
+      a += cross; cx += (p0[0] + p1[0]) * cross; cy += (p0[1] + p1[1]) * cross;
+    }
+    a *= 0.5;
+    if (Math.abs(a) < 1e-9) {
+      var sx = 0, sy = 0;
+      for (var j = 0; j < n; j++) { sx += pts[j][0]; sy += pts[j][1]; }
+      return { area: 0, x: sx / (n || 1), y: sy / (n || 1) };
+    }
+    return { area: Math.abs(a), x: cx / (6 * a), y: cy / (6 * a) };
+  }
+  function labelPoint(d) {
+    var rings = parseRings(d), best = null;
+    for (var i = 0; i < rings.length; i++) {
+      if (rings[i].length < 3) continue;
+      var c = ringCentroid(rings[i]);
+      if (!best || c.area > best.area) best = c;
+    }
+    return best;
+  }
+
+  function ensureLoaded(cb) {
+    if (loaded) { cb(); return; }
+    if (loading) { document.addEventListener("dev-state-map-loaded", cb, { once: true }); return; }
+    loading = true;
+    var s = document.createElement("script");
+    s.src = DATA_SRC;
+    s.onload = function () {
+      loading = false;
+      if (!window.US_STATES_MAP) {
+        if (statusEl) statusEl.textContent = "Map unavailable right now \u2014 use the State dropdown above.";
+        return;
+      }
+      loaded = true;
+      buildSvg();
+      document.dispatchEvent(new Event("dev-state-map-loaded"));
+      cb();
+    };
+    s.onerror = function () {
+      loading = false;
+      if (statusEl) statusEl.textContent = "Map unavailable right now \u2014 use the State dropdown above.";
+    };
+    document.head.appendChild(s);
+  }
+
+  // Total events per state (2026-08-03: "put the number in the middle of each
+  // state"). Deliberately NOT filtered by the other active filters (style/day/
+  // national toggle/etc.) — same "any event anywhere" universe the State select's
+  // own option list already uses (see buildLocSelects), so the two agree.
+  function countsByCode() {
+    var counts = {};
+    if (!appReady() || !Array.isArray(state.events)) return counts;
+    state.events.forEach(function (d) {
+      var name = d && d.loc && d.loc.state;
+      if (!name) return;
+      var code = nameToCode(name);
+      if (!code) return;
+      counts[code] = (counts[code] || 0) + 1;
+    });
+    return counts;
+  }
+
+  function buildSvg() {
+    if (!mapHost || !window.US_STATES_MAP) return;
+    var data = window.US_STATES_MAP;
+    var counts = countsByCode();
+    var svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", data.viewBox);
+    svg.setAttribute("class", "loc-map-svg");
+    svg.setAttribute("role", "group");
+    svg.setAttribute("aria-label", "Choose a state on the map");
+    data.states.forEach(function (st) {
+      var n = counts[st.code] || 0;
+      var p = document.createElementNS(SVG_NS, "path");
+      p.setAttribute("d", st.d);
+      p.setAttribute("class", "state-shape");
+      p.setAttribute("data-code", st.code);
+      p.setAttribute("data-name", st.name);
+      p.setAttribute("role", "button");
+      p.setAttribute("tabindex", "0");
+      p.setAttribute("aria-label", st.name + (n ? ", " + n + (n === 1 ? " event" : " events") : ", no events yet"));
+      p.setAttribute("aria-pressed", "false");
+      p.addEventListener("click", function () { selectState(st.code, st.name); });
+      p.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        selectState(st.code, st.name);
+      });
+      svg.appendChild(p);
+    });
+    mapHost.appendChild(svg);
+    svgEl = svg;
+    // Count labels — computed straight from each state's own path data (see
+    // labelPoint above), not the rendered box, so peninsula/multi-island states
+    // place the number on the actual landmass instead of open water.
+    data.states.forEach(function (st) {
+      var pt = labelPoint(st.d);
+      if (!pt) return;
+      var n = counts[st.code] || 0;
+      var label = document.createElementNS(SVG_NS, "text");
+      label.setAttribute("x", pt.x);
+      label.setAttribute("y", pt.y);
+      label.setAttribute("dy", "0.32em"); // vertical centering that doesn't depend on dominant-baseline support
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("class", "state-count" + (n ? "" : " state-count-zero"));
+      label.setAttribute("aria-hidden", "true"); // count is already folded into the path's aria-label above
+      label.textContent = String(n);
+      svg.appendChild(label);
+    });
+    if (statusEl) statusEl.hidden = true;
+    refreshHighlight();
+  }
+
+  // Discrete, addressable selection function + a matching DOM event — so a later
+  // feature (e.g. zooming the existing Map view to the chosen state's venue-coords)
+  // can hook in without touching this file. Clicking an already-selected state
+  // deselects it (mirrors picking "Any" in the dropdown).
+  function selectState(code, name) {
+    if (!appReady()) return;
+    var wasSelected = state.sel.state === name;
+    state.sel.state = wasSelected ? "" : name;
+    state.sel.town = "";
+    buildLocSelects();
+    render();
+    refreshHighlight();
+    document.dispatchEvent(new CustomEvent("dev-state-selected", {
+      detail: { code: code, name: name, selected: !wasSelected }
+    }));
+  }
+
+  function refreshHighlight() {
+    if (!svgEl || !appReady()) return;
+    var shapes = svgEl.querySelectorAll(".state-shape");
+    for (var i = 0; i < shapes.length; i++) {
+      var p = shapes[i];
+      var isSel = !!state.sel.state && p.getAttribute("data-name") === state.sel.state;
+      p.setAttribute("aria-pressed", isSel ? "true" : "false");
+    }
+  }
+
+  function init() {
+    if (!appReady()) return; // app.js not present/changed shape — fail quiet, dropdowns still work
+    mapHost = document.getElementById("loc-map");
+    statusEl = document.getElementById("loc-map-status");
+    var locSelects = document.getElementById("loc-selects");
+    if (!mapHost || !locSelects) return;
+    // Watch the SAME hidden toggle app.js already drives on #loc-more, so this needs
+    // no changes to app.js and works no matter how the panel gets opened (click,
+    // keyboard, or any future entry point).
+    var mo = new MutationObserver(function () {
+      if (!locSelects.hidden) ensureLoaded(function () {});
+    });
+    mo.observe(locSelects, { attributes: true, attributeFilter: ["hidden"] });
+    if (!locSelects.hidden) ensureLoaded(function () {}); // panel already open (e.g. shared/back-nav state)
+    // Keep the map in sync when the visitor uses the dropdown directly. Deferred one tick:
+    // app.js assigns sel.onchange lazily (inside buildLocSelects(), after data loads), so
+    // depending on load timing it can end up registered AFTER this listener — without the
+    // defer, refreshHighlight() could read state.sel.state before app.js's own handler has
+    // updated it. setTimeout(…, 0) guarantees this runs after that handler either way.
+    var selState = document.getElementById("sel-state");
+    if (selState) selState.addEventListener("change", function () { setTimeout(refreshHighlight, 0); });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+
+  // Small public hook, matching the window.DEV_ADD_TO_CAL convention already used
+  // by js/add-to-calendar.js — lets a future feature reuse these without a rewrite.
+  window.DEV_STATE_MAP = { selectState: selectState, refreshHighlight: refreshHighlight, nameToCode: nameToCode };
+})();
