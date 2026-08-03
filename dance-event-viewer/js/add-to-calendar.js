@@ -647,11 +647,9 @@
     host.appendChild(btn);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", ensureBulkButton);
-  } else {
-    ensureBulkButton();
-  }
+  // Bulk "Export these (.ics)" button disabled for now (2026-08-03, Sean's call).
+  // ensureBulkButton()/bulkExport() left intact below — re-enable by restoring the
+  // DOMContentLoaded/else block that used to call ensureBulkButton() here.
 
   window.DEV_ADD_TO_CAL = { button: makeButton, comboButton: comboButton, buildICS: buildICS, _model: eventModel };
 })();
