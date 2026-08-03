@@ -23,12 +23,12 @@
                                ticker crawled through empty page margins well outside "the action" —
                                capping + centering it here so it enters/exits right at the same edges
                                as everything else on the page. */
-  margin: 2px auto 4px;
-  height: calc(2 * 22px);   /* up to 2 concurrent ticker lines — see ROW_HEIGHT_PX/MAX_VISIBLE in
-                               activity-pulse.js. Halved from 4 rows (2026-07-13, Sean: "the filters
-                               bar could be brought up... half the distance of space between the
-                               two") — this empty-most-of-the-time rail was the single biggest
-                               contributor to the gap above the controls bar. */
+  margin: 0 auto 0;
+  height: 22px;             /* 1 concurrent ticker line — see ROW_HEIGHT_PX/MAX_VISIBLE in
+                               activity-pulse.js. Was 2 rows/44px (already halved from 4 once before);
+                               halved again (2026-08-03, Sean: "close that huge gap") — this
+                               empty-most-of-the-time rail was the single biggest contributor to the
+                               gap above the controls bar. */
   overflow: hidden;         /* the "disapear at the end of the frame" clip — no fade-out needed */
   pointer-events: none;     /* purely ambient — never intercepts clicks on the page underneath */
 }
@@ -113,6 +113,6 @@
 }
 
 @media (max-width: 640px) {
-  #activity-rail { height: calc(2 * 18px); }
+  #activity-rail { height: 18px; }
   .activity-msg { font-size: 0.7rem; }
 }

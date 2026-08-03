@@ -32,7 +32,8 @@
   "use strict";
 
   /* ---------- config ---------- */
-  var MAX_VISIBLE = 2;                 // concurrent messages on screen at once — halved from 4
+  var MAX_VISIBLE = 1;                 // concurrent messages on screen — halved again (2026-08-03,
+                                        // closing the gap above the controls bar); was 2, before that 4
                                         // (2026-07-13, Sean: shrink the gap above the controls bar;
                                         // #activity-rail's CSS height was cut to match, see activity-pulse.css)
   var MAX_QUEUE = 8;                   // hard cap on the waiting queue — never let new activity get stuck

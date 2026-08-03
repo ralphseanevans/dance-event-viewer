@@ -39,7 +39,7 @@ body {
   margin: 0 auto;
   padding: 28px 0 4px;
   display: grid;
-  gap: 12px;
+  gap: 8px;
   position: relative;
 }
 /* Unlabeled live-viewer count, deliberately understated (Sean's own troubleshooting
@@ -222,7 +222,7 @@ body {
 
 .controls {
   max-width: var(--maxw);
-  margin: 8px auto 0;
+  margin: 4px auto 0;
   background: transparent;
   border: 0;
   padding: 0;
