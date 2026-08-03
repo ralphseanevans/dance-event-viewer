@@ -24,14 +24,21 @@
     }
   };
 
+  // Site-wide default (2026-08-03), set by the inline pre-paint script in index.html
+  // and admin-configurable in dance-dashboard.html's "Site appearance" panel — falls
+  // back to "ember" only if that script somehow didn't run (defensive, shouldn't happen).
+  function defaultTheme() {
+    return (window.DEV_SITE_DEFAULTS && window.DEV_SITE_DEFAULTS.theme) || "ember";
+  }
+
   function saved() {
     var t = null;
     try { t = localStorage.getItem(STORE_KEY); } catch (e) {}
-    return VALID[t] ? t : "ember";
+    return VALID[t] ? t : defaultTheme();
   }
 
   function apply(theme, persist) {
-    if (!VALID[theme]) theme = "ember";
+    if (!VALID[theme]) theme = defaultTheme();
     document.documentElement.setAttribute("data-theme", theme);
     if (persist) { try { localStorage.setItem(STORE_KEY, theme); } catch (e) {} }
     // Only Classic has a separate historical banner. Every other palette retains the

@@ -16,6 +16,11 @@
   if (controls) {
     peeker = document.createElement("div");
     peeker.className = "panel-peeker";
+    // Site-wide creature pick (2026-08-03): set on <html> by the inline pre-paint
+    // script in index.html, admin-configured in dance-dashboard.html's "Site
+    // appearance" panel. No per-visitor override — see moonlit-ember-theme.css.
+    var creatureChoice = document.documentElement.getAttribute("data-creature");
+    peeker.setAttribute("data-creature", creatureChoice === "bunny" ? "bunny" : "fox");
     peeker.setAttribute("aria-hidden", "true");
     peeker.innerHTML = '<i class="panel-peeker-ear left"></i><i class="panel-peeker-ear right"></i>' +
       '<i class="panel-peeker-head"></i><i class="panel-peeker-eye left"></i>' +
