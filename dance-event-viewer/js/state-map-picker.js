@@ -301,6 +301,11 @@
         setTimeout(refreshHighlight, 0);
       });
     }
+    // Reset (#reset-filters) clears state.mapStates itself (app.js's clearAllFilters()),
+    // but nothing told the map's shapes to drop their visual selected look — deferred for
+    // the same reason as the dropdown listener above (registration-order safety).
+    var resetBtn = document.getElementById("reset-filters");
+    if (resetBtn) resetBtn.addEventListener("click", function () { setTimeout(refreshHighlight, 0); });
   }
 
   if (document.readyState === "loading") {
