@@ -39,7 +39,7 @@ function isRegional(ev) { return SOUTHEAST.includes(ev.state); }
    An explicit location choice is a deliberate request to see that place, so it widens the
    scope past the Southeast-only default — otherwise choosing "California" would match the
    filter yet still show nothing (2026-07-23, Sean). */
-function locScopeActive() { return !!(state.sel.country || state.sel.state || state.sel.town); }
+function locScopeActive() { return !!(state.sel.country || state.sel.state || state.sel.town || state.mapStates.size); }
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
@@ -99,6 +99,12 @@ const state = {
   cityFallbacks: {},     // from venue-coords.json — city name -> {lat, lon}, used when no exact match exists
   filters: { cats: new Set(), days: new Set(), areas: new Set(DEFAULT_AREAS), kinds: new Set() },
   sel: { country: "", state: "", town: "" },   // "" = Any; derived from venue text only
+  // Multi-select state picks from the "Choose location" map (2026-08-03) — a Set, unlike
+  // sel.state above (single-value, drives the State dropdown's cascade). When this has
+  // any members it takes over the location scope entirely (see matchesFilters/
+  // locScopeActive); picking a state on the map clears sel.state and vice versa, so the
+  // two never fight over what "the" selected state is. See js/state-map-picker.js.
+  mapStates: new Set(),
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
   showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline
                           // listings only count/show current events unless this is turned on.
@@ -713,6 +719,7 @@ function clearAllFilters() {
   for (const set of Object.values(state.filters)) set.clear();
   state.filters.areas = new Set(DEFAULT_AREAS);
   state.sel = { country: "", state: "", town: "" };
+  state.mapStates.clear();
   state.search = "";
   syncSearchInput();
   buildLocSelects();
@@ -734,6 +741,7 @@ function syncUrl() {
   for (const [group, key] of Object.entries(URL_KEYS))
     if (state.filters[group].size) p.set(key, [...state.filters[group]].join("|"));
   for (const dim of ["country", "state", "town"]) if (state.sel[dim]) p.set(dim, state.sel[dim]);
+  if (state.mapStates.size) p.set("states", [...state.mapStates].join("|")); // map multi-select (2026-08-03)
   if (state.showPast) p.set("past", "1");
   if (state.showNational) p.set("travel", "1");
   if (state.showUnverified) p.set("unverified", "1");
@@ -752,6 +760,10 @@ function applyUrl() {
   }
   for (const dim of ["country", "state", "town"])
     if (p.has(dim)) { state.sel[dim] = p.get(dim); any = true; }
+  if (p.has("states")) { // map multi-select (2026-08-03)
+    state.mapStates = new Set(p.get("states").split("|").filter(Boolean));
+    if (state.mapStates.size) any = true;
+  }
   if (p.get("past") === "1") { state.showPast = true; any = true; }
   state.showNational = p.get("travel") === "1";
   state.showUnverified = p.get("unverified") === "1";
@@ -836,8 +848,15 @@ function matchesFilters(d) {
   // chips rather than AND-ing with them — otherwise picking "California" matches the
   // cascade yet the Pensacola/Mobile area default hides every result (2026-07-23, Sean).
   if (f.areas.size && !locScopeActive() && !f.areas.has(d.loc.area)) return false;
-  for (const dim of ["country", "state", "town"])
-    if (state.sel[dim] && d.loc[dim] !== state.sel[dim]) return false;
+  if (state.mapStates.size) {
+    // Map multi-select active: any event in one of the picked states, full stop — don't
+    // also apply sel.country/sel.town (they're cleared alongside sel.state when the map
+    // takes over; see selectState() in js/state-map-picker.js).
+    if (!state.mapStates.has(d.loc.state)) return false;
+  } else {
+    for (const dim of ["country", "state", "town"])
+      if (state.sel[dim] && d.loc[dim] !== state.sel[dim]) return false;
+  }
   if (f.kinds.size && !f.kinds.has(d.kind)) return false;
   // Free-text search (2026-07-20, Sean): every whitespace-separated term must appear somewhere
   // in the event's name, venue, style, or derived city/state/area. Case-insensitive; narrows
@@ -2451,6 +2470,7 @@ function init() {
   window.addEventListener("popstate", () => {
     for (const set of Object.values(state.filters)) set.clear();
     state.sel = { country: "", state: "", town: "" };
+    state.mapStates.clear();
     state.showNational = false;
     state.showUnverified = false;
     applyUrl();
@@ -2458,6 +2478,7 @@ function init() {
     document.getElementById("unverified-toggle")?.setAttribute("aria-pressed", String(state.showUnverified));
     document.getElementById("past-toggle")?.setAttribute("aria-pressed", String(state.showPast));
     buildLocSelects();
+    if (window.DEV_STATE_MAP && window.DEV_STATE_MAP.refreshHighlight) window.DEV_STATE_MAP.refreshHighlight();
     render();
   });
   const soloToggle = document.getElementById("solo-styles-toggle");

@@ -1,8 +1,12 @@
 /* Choose-location state map (2026-08-03): renders a clickable US map inside the
- * "Choose location" reveal, wired into the SAME state.sel.state the existing
- * State/Town selects use (js/app.js) — pick a state on the map or from the
- * dropdown, they stay in sync either way. The dropdowns stay in place as the
- * typing-friendly / screen-reader-friendly fallback; the map is additive.
+ * "Choose location" reveal. Multi-select — click as many states as you like,
+ * click again to deselect one — backed by state.mapStates (a Set, js/app.js).
+ * Picking on the map hands location-scope precedence away from the State
+ * dropdown (sel.state/sel.town); picking from the dropdown hands it back — the
+ * two never both apply at once. The dropdown stays in place as the typing-
+ * friendly / screen-reader-friendly single-pick fallback; the map is additive.
+ * Hovering a state for a beat (or focusing it via keyboard) shows its name and
+ * event count in a small tooltip near the pointer/shape.
  *
  * Data (js/us-states-map-data.js, ~145KB of SVG path data — 50 states + DC,
  * pre-projected Albers USA so Alaska/Hawaii already sit in their conventional
@@ -11,9 +15,9 @@
  * fetch to anywhere but this site's own files.
  *
  * Depends on globals defined by js/app.js (loaded earlier in the page, same
- * global scope): `state` (shared filter state), `US_STATES` (code -> full
- * name), `buildLocSelects()`, `render()`. Guarded below in case a future
- * refactor changes how those are exposed.
+ * global scope): `state` (shared filter state, including state.mapStates),
+ * `US_STATES` (code -> full name), `buildLocSelects()`, `render()`. Guarded
+ * below in case a future refactor changes how those are exposed.
  */
 "use strict";
 (function () {
@@ -21,9 +25,11 @@
   var SVG_NS = "http://www.w3.org/2000/svg";
   var loaded = false, loading = false;
   var mapHost = null, statusEl = null, svgEl = null;
+  var tooltipEl = null, hoverTimer = null, lastMouseX = 0, lastMouseY = 0;
+  var HOVER_DELAY = 700; // ms — "hover... if you hold it a sec"
 
   function appReady() {
-    return typeof state === "object" && state && state.sel
+    return typeof state === "object" && state && state.sel && state.mapStates
       && typeof US_STATES === "object"
       && typeof buildLocSelects === "function"
       && typeof render === "function";
@@ -119,6 +125,32 @@
     return counts;
   }
 
+  function ensureTooltip() {
+    if (tooltipEl || !mapHost) return;
+    tooltipEl = document.createElement("div");
+    tooltipEl.className = "state-tooltip";
+    tooltipEl.setAttribute("role", "presentation"); // decorative echo of the shape's own aria-label, not separately announced
+    mapHost.appendChild(tooltipEl);
+  }
+  function showTooltip(name, n, x, y) {
+    if (!tooltipEl) return;
+    tooltipEl.textContent = "";
+    var nameSpan = document.createElement("span");
+    nameSpan.textContent = name;
+    var countSpan = document.createElement("span");
+    countSpan.className = "state-tooltip-count";
+    countSpan.textContent = n === 1 ? "1 event" : n + " events";
+    tooltipEl.appendChild(nameSpan);
+    tooltipEl.appendChild(countSpan);
+    tooltipEl.style.left = x + "px";
+    tooltipEl.style.top = (y - 14) + "px";
+    tooltipEl.classList.add("is-visible");
+  }
+  function hideTooltip() {
+    if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
+    if (tooltipEl) tooltipEl.classList.remove("is-visible");
+  }
+
   function buildSvg() {
     if (!mapHost || !window.US_STATES_MAP) return;
     var data = window.US_STATES_MAP;
@@ -145,10 +177,30 @@
         e.preventDefault();
         selectState(st.code, st.name);
       });
+      // Hover-hold tooltip (2026-08-03): only fires after HOVER_DELAY of the pointer
+      // sitting still over a state, not on every pass-through while scanning the map.
+      p.addEventListener("mouseenter", function (e) {
+        lastMouseX = e.clientX; lastMouseY = e.clientY;
+        hoverTimer = setTimeout(function () {
+          var r = mapHost.getBoundingClientRect();
+          showTooltip(st.name, n, lastMouseX - r.left, lastMouseY - r.top);
+        }, HOVER_DELAY);
+      });
+      p.addEventListener("mousemove", function (e) { lastMouseX = e.clientX; lastMouseY = e.clientY; });
+      p.addEventListener("mouseleave", hideTooltip);
+      // Keyboard equivalent: show immediately next to the focused shape (no delay —
+      // arriving via Tab is already a deliberate, discrete action, not a mouse pass-through).
+      p.addEventListener("focus", function () {
+        var rect = p.getBoundingClientRect();
+        var r = mapHost.getBoundingClientRect();
+        showTooltip(st.name, n, rect.left + rect.width / 2 - r.left, rect.top - r.top);
+      });
+      p.addEventListener("blur", hideTooltip);
       svg.appendChild(p);
     });
     mapHost.appendChild(svg);
     svgEl = svg;
+    ensureTooltip();
     // Count labels — computed straight from each state's own path data (see
     // labelPoint above), not the rendered box, so peninsula/multi-island states
     // place the number on the actual landmass instead of open water.
@@ -172,12 +224,18 @@
 
   // Discrete, addressable selection function + a matching DOM event — so a later
   // feature (e.g. zooming the existing Map view to the chosen state's venue-coords)
-  // can hook in without touching this file. Clicking an already-selected state
-  // deselects it (mirrors picking "Any" in the dropdown).
+  // can hook in without touching this file. Multi-select (2026-08-03): each click
+  // TOGGLES that state in/out of state.mapStates rather than replacing a single
+  // value — pick as many as you like. Using the map at all hands it precedence
+  // over the State dropdown (sel.state/sel.town cleared here); picking from the
+  // dropdown instead hands precedence back (see the dropdown's own 'change'
+  // listener in init() below) — the two never apply at the same time, so there's
+  // no scenario where they contradict each other down to zero results.
   function selectState(code, name) {
     if (!appReady()) return;
-    var wasSelected = state.sel.state === name;
-    state.sel.state = wasSelected ? "" : name;
+    var wasSelected = state.mapStates.has(name);
+    if (wasSelected) state.mapStates.delete(name); else state.mapStates.add(name);
+    state.sel.state = "";
     state.sel.town = "";
     buildLocSelects();
     render();
@@ -192,7 +250,8 @@
     var shapes = svgEl.querySelectorAll(".state-shape");
     for (var i = 0; i < shapes.length; i++) {
       var p = shapes[i];
-      var isSel = !!state.sel.state && p.getAttribute("data-name") === state.sel.state;
+      var name = p.getAttribute("data-name");
+      var isSel = state.mapStates.has(name) || (!!state.sel.state && state.sel.state === name);
       p.setAttribute("aria-pressed", isSel ? "true" : "false");
     }
   }
@@ -217,7 +276,14 @@
     // defer, refreshHighlight() could read state.sel.state before app.js's own handler has
     // updated it. setTimeout(…, 0) guarantees this runs after that handler either way.
     var selState = document.getElementById("sel-state");
-    if (selState) selState.addEventListener("change", function () { setTimeout(refreshHighlight, 0); });
+    if (selState) {
+      selState.addEventListener("change", function () {
+        // A direct dropdown pick hands precedence back from any map multi-select —
+        // matches selectState()'s own precedence rule in reverse.
+        if (state.mapStates && state.mapStates.size) { state.mapStates.clear(); render(); }
+        setTimeout(refreshHighlight, 0);
+      });
+    }
   }
 
   if (document.readyState === "loading") {

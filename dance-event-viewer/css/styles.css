@@ -1325,7 +1325,7 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
    js/us-states-map-data.js. Theme-var driven so every palette in
    moonlit-ember-theme.css recolors it automatically.
    ========================================================================== */
-.loc-map { flex: 1 1 100%; max-width: 640px; margin-top: 6px; }
+.loc-map { flex: 1 1 100%; max-width: 640px; margin-top: 6px; position: relative; }
 .loc-map-status { color: var(--text-dim); font-size: .82rem; margin: 4px 0; }
 .loc-map-status[hidden] { display: none; }
 .loc-map-svg { width: 100%; height: auto; display: block; }
@@ -1343,6 +1343,21 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
   paint-order: stroke fill; stroke: var(--bg); stroke-width: 2.4px; stroke-linejoin: round;
 }
 .state-count-zero { fill: var(--text-dim); opacity: .6; }
+/* Hover tooltip (2026-08-03: "hover name of the state... if you hold it a sec") —
+   one shared element, positioned near the pointer/focused shape. Plain HTML, not
+   SVG, so it sits on top of the map regardless of which state it's naming. */
+.state-tooltip {
+  position: absolute; z-index: 5; pointer-events: none;
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px;
+  padding: 5px 10px; font-size: .82rem; color: var(--text); white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
+  opacity: 0; transform: translate(-50%, -8px); visibility: hidden;
+}
+.state-tooltip.is-visible { opacity: 1; visibility: visible; }
+.state-tooltip-count { color: var(--text-dim); margin-left: 5px; }
+@media (prefers-reduced-motion: no-preference) {
+  .state-tooltip { transition: opacity .12s ease; }
+}
 @media (prefers-reduced-motion: no-preference) {
   .state-shape { transition: fill .12s ease, stroke .12s ease; }
 }
