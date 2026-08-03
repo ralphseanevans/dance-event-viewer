@@ -37,9 +37,9 @@ body {
 .site-header {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 28px 0 4px;
+  padding: 28px 0 0;
   display: grid;
-  gap: 8px;
+  gap: 4px;
   position: relative;
 }
 /* Unlabeled live-viewer count, deliberately understated (Sean's own troubleshooting
@@ -210,6 +210,9 @@ body {
   margin: 8px auto 0;
   display: flex; gap: 8px;
 }
+.source-tabs[hidden] { display: none; } /* the class rule above was overriding the hidden
+  attribute's default styling (author CSS beats the UA [hidden] rule) — harmless today since
+  it's empty with 1 source, but a real bug: it was reserving margin space it shouldn't have. */
 .source-tabs button {
   background: var(--bg-raised); color: var(--text);
   border: 1px solid var(--border); border-bottom: none;
@@ -222,7 +225,7 @@ body {
 
 .controls {
   max-width: var(--maxw);
-  margin: 4px auto 0;
+  margin: 0 auto;
   background: transparent;
   border: 0;
   padding: 0;
