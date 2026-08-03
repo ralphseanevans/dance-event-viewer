@@ -496,6 +496,12 @@ async function loadData() {
       kind: kindOf(ev),
       day: dayOf(ev),
     }));
+  // Add-to-calendar (2026-08-03): expose a read-only key->event map so the bulk
+  // ".ics of what's on screen" export in js/add-to-calendar.js can resolve the
+  // rendered cards' data-key values back to their event records.
+  window.DEV_EVENTS_BY_KEY = new Map(
+    state.events.map(d => d.ev).filter(ev => typeof ev.key === "string" && ev.key).map(ev => [ev.key, ev])
+  );
   buildFilterChips();
   render();
 }
@@ -1162,6 +1168,8 @@ function updateComboBar() {
   if (shareBtn) shareBtn.disabled = n < 1;
   const clearBtn = bar.querySelector("#combo-clear-btn");
   if (clearBtn) clearBtn.disabled = n === 0;
+  const atcBtn = bar.querySelector("#combo-atc-btn");   // add-to-calendar (2026-08-03)
+  if (atcBtn) atcBtn.disabled = n < 1;
 }
 /* Toggle one event in/out of the share set and keep every on-screen copy of that card
    (a card can appear once per view, plus popups) visually in sync. */
@@ -1645,7 +1653,14 @@ function ensureComboUI() {
       const items = selectedShareItems();
       if (items.length) openComboShareModal(items);
     });
-    bar.append(count, spacer, clearBtn, shareBtn);
+    // Add-to-calendar (2026-08-03): a "to my calendar" button for the whole selected
+    // set. The module builds it and receives a getter for the selected keys; nothing
+    // renders if js/add-to-calendar.js is absent.
+    if (window.DEV_ADD_TO_CAL && window.DEV_ADD_TO_CAL.comboButton) {
+      bar.append(count, spacer, clearBtn, window.DEV_ADD_TO_CAL.comboButton(() => [...shareSelection]), shareBtn);
+    } else {
+      bar.append(count, spacer, clearBtn, shareBtn);
+    }
     document.body.appendChild(bar);
   }
   updateComboBar();
@@ -1715,6 +1730,10 @@ function cardActions(ev) {
   shareBtn.textContent = "⤴";
   shareBtn.addEventListener("click", () => handleShare(ev, shareBtn));
   wrap.appendChild(shareBtn);
+
+  // Add-to-calendar (2026-08-03): the whole feature lives in js/add-to-calendar.js;
+  // this hook only asks it for a button. Page works unchanged if that file is absent.
+  if (window.DEV_ADD_TO_CAL) wrap.appendChild(window.DEV_ADD_TO_CAL.button(ev));
 
   // Multi-select toggle — hidden by CSS unless body.selecting is on (Share several mode).
   const selBtn = document.createElement("button");

@@ -280,6 +280,44 @@ block at the end of `css/styles.css`; it is theme-var driven, so it matches what
 is active. The entry button and floating bar are injected by JS (`ensureComboUI`), so the
 feature adds nothing to `index.html` markup.
 
+## Add to Calendar (2026-08-03)
+
+Every card has a **📅 Add to calendar** button (in the same top-right action row as
+favorite/share). It opens a small popover with two choices: **Google Calendar** (a
+prefilled calendar.google.com link, including the recurrence rule) and **Apple /
+Outlook (.ics file)** (a downloaded file any calendar app imports). A **📅 Export
+these (.ics)** button beside the search box downloads one calendar file of every
+event currently shown, filters applied — favorites-only export is just the
+favorites filter plus this button. In **Share several** select mode, the floating
+bar gains a **📅 To my calendar** button beside "Make Dance Card": one selected
+dance opens the normal Google-or-.ics popover; two or more download a single .ics
+of the whole set (Google's add-event links carry only one event, and the popover
+says so — Google Calendar imports the file instead).
+
+All logic lives in the self-contained **`js/add-to-calendar.js`** (share-week
+pattern): app.js contains exactly two hooks — `cardActions()` appends
+`window.DEV_ADD_TO_CAL.button(ev)` when the module is present, `ensureComboUI()`
+places `window.DEV_ADD_TO_CAL.comboButton(getKeys)` in the select-mode bar (with a
+matching disabled-state line in `updateComboBar()`), and `loadData()`
+exposes a read-only `window.DEV_EVENTS_BY_KEY` map for the bulk export. Remove
+the script tag and the site behaves exactly as before. Styling is a
+self-contained theme-var block at the end of `css/styles.css` (`.atc-*`), so all
+13 palettes recolor it. The bulk button lives in `.search-row` — never in the
+view-tabs row (folder-tab convention forbids extra elements on the tab line).
+
+Recurrence is exported as real RFC 5545 rules with `TZID=America/Chicago` and a
+full VTIMEZONE: weekly → `FREQ=WEEKLY;BYDAY`, biweekly → `INTERVAL=2` anchored on
+the correct-parity `start_date`, monthly "Nth Weekday" → `FREQ=MONTHLY;BYDAY=2FR`,
+monthly "15th" → `BYMONTHDAY=15`, `end_date` → `UNTIL`. `exclude_dates` become
+EXDATEs directly; `exclude_monthly_rules` (e.g. SSO's "every Friday except 1st &
+3rd") are enumerated as EXDATEs 18 months ahead (RRULE can't express them
+portably) with an honest note in the event description. One-time events with no
+times export as all-day spans; a missing `end_time` gets a 2-hour default and
+says so in the description. Events with no resolvable date get a clear "no firm
+date yet" message — never a guessed calendar entry — and the bulk export skips
+them with a toast count. Data rules hold: only whitelisted fields are read, and
+nothing is ever invented.
+
 ## Event logos (implemented 2026-07-11)
 
 Per-event images are wired through **`logo-map.json`** in this folder: it maps an event's

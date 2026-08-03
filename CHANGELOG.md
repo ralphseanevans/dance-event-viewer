@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-08-03 - Add to Calendar
+
+### Added
+
+- 📅 **Add to calendar** button on every event card: popover offering a prefilled
+  Google Calendar link or an Apple/Outlook `.ics` download, both with correct
+  RFC 5545 recurrence (weekly/biweekly/monthly Nth-weekday/monthly date-of-month,
+  `UNTIL` from end_date, `EXDATE` from exclude_dates, and exclude_monthly_rules
+  enumerated 18 months ahead). Times carry `TZID=America/Chicago` with a full
+  VTIMEZONE block.
+- **📅 Export these (.ics)** bulk button beside the search box: downloads one
+  calendar file of every event currently shown, filters applied; listings without
+  firm dates are skipped with a toast count instead of guessed.
+- **📅 To my calendar** in the "Share several" select-mode bar: one selected dance
+  opens the normal popover; two or more download one .ics of the set (Google's
+  one-event-per-link limit is stated in the popover; Google imports the file).
+- New self-contained module `js/add-to-calendar.js`; two minimal hooks in
+  `js/app.js` (card-action button, select-mode bar button + disabled-state sync, read-only
+  `window.DEV_EVENTS_BY_KEY` map);
+  themed `.atc-*` CSS block appended to `css/styles.css`.
+
+### Verification
+
+- Node sweep over all 615 canonical events: 610 exportable, 5 honestly declined
+  (no firm date), 0 errors; SSO's "every Friday except 1st & 3rd" produced the
+  correct EXDATE set; one-time span events export as inclusive all-day ranges.
+- jsdom full-page smoke test against a local server: 48 rendered cards → 48
+  calendar buttons, bulk button present, popover opens, Google URL valid,
+  events map populated.
+- `node --check` passed for `app.js` (literal-NUL regex preserved byte-for-byte)
+  and `add-to-calendar.js`.
+
 ## 2026-07-18 - Theme expansion and Dance Whispers removal
 
 ### Changed
