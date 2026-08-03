@@ -1338,9 +1338,9 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
    underneath it. paint-order draws the stroke UNDER the fill, giving the digits
    a readable halo regardless of the state's current fill color. */
 .state-count {
-  font-size: 18px; font-weight: 700; font-family: inherit;
+  font-weight: 700; font-family: inherit;
   fill: var(--text); pointer-events: none; user-select: none;
-  paint-order: stroke fill; stroke: var(--bg); stroke-width: 4.8px; stroke-linejoin: round;
+  paint-order: stroke fill; stroke: var(--bg); stroke-linejoin: round;
 }
 .state-count-zero { fill: var(--text-dim); opacity: .6; }
 /* Hover tooltip (2026-08-03: "hover name of the state... if you hold it a sec") —

@@ -74,13 +74,20 @@
     }
     return { area: Math.abs(a), x: cx / (6 * a), y: cy / (6 * a) };
   }
+  function ringBBox(pts) {
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    return { w: Math.max.apply(null, xs) - Math.min.apply(null, xs), h: Math.max.apply(null, ys) - Math.min.apply(null, ys) };
+  }
   function labelPoint(d) {
-    var rings = parseRings(d), best = null;
+    var rings = parseRings(d), best = null, bestRing = null;
     for (var i = 0; i < rings.length; i++) {
       if (rings[i].length < 3) continue;
       var c = ringCentroid(rings[i]);
-      if (!best || c.area > best.area) best = c;
+      if (!best || c.area > best.area) { best = c; bestRing = rings[i]; }
     }
+    if (!best) return null;
+    var box = ringBBox(bestRing);
+    best.minDim = Math.min(box.w, box.h);
     return best;
   }
 
@@ -203,10 +210,18 @@
     ensureTooltip();
     // Count labels — computed straight from each state's own path data (see
     // labelPoint above), not the rendered box, so peninsula/multi-island states
-    // place the number on the actual landmass instead of open water.
+    // place the number on the actual landmass instead of open water. Scaled to
+    // each state's own size (2026-08-03: "keep the small states small, like Rhode
+    // Island and DC") — a fixed size dwarfed DC (~4 units across) entirely and
+    // badly overflowed RI (~11 units); below LABEL_MIN_DIM there just isn't room
+    // for a legible number at all, so it's skipped rather than drawn as a blob —
+    // the tooltip and aria-label still carry the count for those states.
+    var LABEL_MIN_DIM = 6, LABEL_MAX_FONT = 18, LABEL_MIN_FONT = 3.5, LABEL_SCALE = 0.35;
     data.states.forEach(function (st) {
       var pt = labelPoint(st.d);
       if (!pt) return;
+      var fontSize = Math.min(LABEL_MAX_FONT, pt.minDim * LABEL_SCALE);
+      if (pt.minDim < LABEL_MIN_DIM || fontSize < LABEL_MIN_FONT) return; // too little room for a legible number
       var n = counts[st.code] || 0;
       var label = document.createElementNS(SVG_NS, "text");
       label.setAttribute("x", pt.x);
@@ -215,6 +230,8 @@
       label.setAttribute("text-anchor", "middle");
       label.setAttribute("class", "state-count" + (n ? "" : " state-count-zero"));
       label.setAttribute("aria-hidden", "true"); // count is already folded into the path's aria-label above
+      label.style.fontSize = fontSize.toFixed(1) + "px";
+      label.style.strokeWidth = (fontSize * 0.27).toFixed(2) + "px"; // halo scales with the glyph, or it swallows small digits
       label.textContent = String(n);
       svg.appendChild(label);
     });
