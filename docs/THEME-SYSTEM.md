@@ -1,13 +1,14 @@
 # Theme system
 
-Last verified: 2026-07-18
+Last verified: 2026-08-04
 
 ## What the visitor sees
 
-The Theme button in the upper-left header opens a menu of 13 palettes. A selection is
+The Theme button in the upper-left header opens a menu of 14 palettes. A selection is
 applied to the complete viewer, saved in the browser, and restored before the page
 paints on the next visit. Themes change colors and ambient effects only; they do not
-change event data, filters, view modes, maps, sharing, or the hero artwork.
+change event data, filters, view modes, maps, sharing, or the hero artwork. One
+exception: Mint Reactor also switches the site's font to Martian Mono (see below).
 
 ## Supported themes
 
@@ -26,6 +27,7 @@ change event data, filters, view modes, maps, sharing, or the hero artwork.
 | `technobike` | Technobike |
 | `baldur` | Neon Darkness |
 | `crimson4` | Crimson Gameboy |
+| `mintreactor` | Mint Reactor |
 
 ## File ownership
 
@@ -38,6 +40,16 @@ change event data, filters, view modes, maps, sharing, or the hero artwork.
 
 When adding or renaming a theme, update all four places in the same change. Keep the ID
 identical everywhere. Bump the CSS/JS cache query in `index.html` when publishing.
+
+## Mint Reactor font rule
+
+Mint Reactor (added 2026-08-04) is the only palette that changes typography: when it is
+active, the whole viewer renders in Martian Mono. The font is loaded from Google Fonts
+via a stylesheet link in `index.html`; browsers download the font files lazily, only
+when an element actually uses the family, so the other 13 themes pay nothing beyond the
+tiny CSS request. The override lives in `moonlit-ember-theme.css` as a
+`:root[data-theme="mintreactor"] body { font-family: ... }` rule. Do not add font
+overrides to other palettes without noting them here.
 
 ## Hero rule
 

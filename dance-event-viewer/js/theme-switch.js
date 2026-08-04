@@ -8,7 +8,7 @@
   var VALID = {
     ember:true, classic:true, ennis:true, cybergum:true, crimson:true, deadcity:true,
     bloodmoon:true, hope:true, neonmoon:true, monster:true, technobike:true, baldur:true,
-    crimson4:true
+    crimson4:true, mintreactor:true
   };
 
   // Each theme also swaps the hero banner so the graphic matches the palette

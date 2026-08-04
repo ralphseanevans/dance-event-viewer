@@ -128,6 +128,26 @@
   --ash-a:#ba5044; --ash-b:#7a1c4b; --ash-c:#eff9d6; --ash-glow:rgba(186,80,68,.3);
   --pulse-color:#d26758; --pulse-shadow:0 0 7px rgba(186,80,68,.58);
 }
+/* ---- Mint Reactor (added 2026-08-04, Sean's ask) — near-black terminal look with teal
+   accents and Martian Mono type, colors sampled from a violoop.ai screenshot Sean supplied.
+   This is the only palette that also changes the site's font: Martian Mono is loaded from
+   Google Fonts in index.html, but browsers download the font files lazily — only when this
+   theme is active does any element reference the family, so other themes cost nothing. ---- */
+:root[data-theme="mintreactor"] {
+  --bg:#050505; --bg-raised:#0f1413; --bg-card:#081512; --border:#1e3a34;
+  --text:#f2f0eb; --text-dim:#8d8c86; --accent:#14b8a6; --accent-pink:#5eead4;
+  --accent-soft:#0e2e29; --badge-warn-bg:#3e3822; --badge-warn-fg:#efe3a8;
+  --chip-on-bg:#0e2e29; --chip-on-border:#14b8a6; --danger:#ff6b60;
+  --page-bg:
+    radial-gradient(circle at 72% 4%,rgba(20,184,166,.13) 0,transparent 34rem),
+    radial-gradient(circle at 12% 55%,rgba(8,37,33,.5) 0,transparent 30rem),
+    linear-gradient(180deg,#0a0f0e 0%,#050505 58%,#030404 100%);
+  --ash-a:#14b8a6; --ash-b:#0e7c70; --ash-c:#5eead4; --ash-glow:rgba(20,184,166,.25);
+  --pulse-color:#2dd4bf; --pulse-shadow:0 0 6px rgba(20,184,166,.55),0 0 1px rgba(94,234,212,.9);
+}
+:root[data-theme="mintreactor"] body {
+  font-family:"Martian Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
 
 html,body { background:var(--bg); }
 body {

@@ -28,10 +28,11 @@ Spot a wrong listing? Use the "Wrong info?" link on any event card.
 
 ## Appearance themes
 
-The header theme picker offers 13 saved palettes without changing event data or viewer
+The header theme picker offers 14 saved palettes without changing event data or viewer
 behavior: Moonlit Ember, Classic Blue, Ennis Blade, CyberGum6, Ink-Crimson, Dead City,
 BloodMoon21, Hope Diamond, Neon Moon Tarot, Monster Paper, Technobike, Neon Darkness,
-and Crimson Gameboy. Palette definitions live in
+Crimson Gameboy, and Mint Reactor (which also switches the site font to Martian Mono,
+loaded lazily from Google Fonts only while that theme is active). Palette definitions live in
 `dance-event-viewer/css/moonlit-ember-theme.css`; menu behavior and persistence live in
 `dance-event-viewer/js/theme-switch.js`.
 

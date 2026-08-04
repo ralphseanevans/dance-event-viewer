@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-08-04 - Mint Reactor theme
+
+### Added
+
+- 🎨 **Mint Reactor** palette (14th theme): near-black terminal look with teal
+  accents, colors sampled from a reference screenshot Sean supplied
+  (bg `#050505`, accent `#14b8a6`, teal-tinted cards `#081512`, warm off-white
+  text `#f2f0eb`). First theme to also change typography — the whole viewer
+  renders in Martian Mono while it's active. The font loads from Google Fonts
+  with `display=swap`; font files download lazily only when the theme is in
+  use, so the other 13 palettes are unaffected. Registered in all four theme
+  homes (pre-paint allowlist + menu in `index.html`, `VALID` in
+  `js/theme-switch.js`, swatch in `css/styles.css`, palette + font rule in
+  `css/moonlit-ember-theme.css`) and documented in `docs/THEME-SYSTEM.md`.
+
 ## 2026-08-03 - Add to Calendar
 
 ### Added
