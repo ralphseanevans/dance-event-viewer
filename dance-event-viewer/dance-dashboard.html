@@ -795,7 +795,7 @@ function renderHistory() {
    Three sources, all normalized to the same shape before anything is rendered:
      1. submissions  — the rows already in memory from action:"list". No extra request.
      2. site-log.json — crawl/scan discoveries, published at the repo root by
-        Daily Operating System\Tools\build_site_log.ps1. Source-obfuscated on purpose.
+        Operations\Tools\build_site_log.ps1. Source-obfuscated on purpose.
      3. deploys      — content commits from the public GitHub API (no auth, ETag-cached).
    Display text is ALWAYS built here from structured fields and written with textContent — nothing
    fetched is ever trusted as markup or as a ready-made sentence. Unknown kinds are dropped.

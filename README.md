@@ -13,10 +13,16 @@ pipeline fields are stripped before publishing. The durable clone at
 editable frontend and logo-map home. Its sibling `Dance Website` child under
 `DanceEventViewerProject` is private input storage, not a second viewer.
 
-Publishing is owned by Daily Operating System's `Tools\publish_site.ps1`. It
+Publishing is owned by the combined project's `Operations\Tools\publish_site.ps1`. It
 defaults to a no-write dry run; `-Publish` builds the exact 18-field export,
 source-obfuscated site log, event-key share pages, and map-referenced logo set,
 then commits, pushes without force, and verifies the live site.
+
+Temporary visual tests are not additional project checkouts. Create Git-free,
+conspicuously marked copies only under
+`%LOCALAPPDATA%\Temp\DanceEventViewer-VisualTests\` according to project-level
+`AGENTS.md` rule 12. Never publish or preserve work from those copies; move any
+work worth keeping into a deliberate branch-backed worktree instead.
 
 Spot a wrong listing? Use the "Wrong info?" link on any event card.
 

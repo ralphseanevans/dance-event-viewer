@@ -4,7 +4,7 @@
  * private "Submissions" sheet for Sean to review later.
  *
  * SUBMIT_ENDPOINT points at the deployed Apps Script web app (see
- * Submission_AppsScript_Code.gs in the Daily Operating System project,
+ * Operations/Submission_AppsScript_Code.gs in the Dance Event Viewer Project,
  * Apps Script project "Dance Event Viewer - Submission Intake"). If it's
  * ever blank, the form explains that submissions aren't live yet rather
  * than silently failing.

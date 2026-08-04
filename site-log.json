@@ -1,9 +1,64 @@
 {
   "schema": 1,
-  "generated_at": "2026-07-30T06:19:03Z",
+  "generated_at": "2026-08-04T13:46:47Z",
   "since": "2026-07-22",
-  "_notes": "Derived, public-safe site activity log for the authenticated dashboard Site log panel. Built by Daily Operating System\\Tools\\build_site_log.ps1 from the local master dance_events.json. Source-obfuscated on purpose: no scanner names, source types, source details, flyer/source URLs, notes, or contact fields. Entries begin at \"since\" and accumulate. Not the same thing as the public viewer Activity Pulse (visitor behavior).",
+  "_notes": "Derived, public-safe site activity log for the authenticated dashboard Site log panel. Built by Operations\\Tools\\build_site_log.ps1 from the local master dance_events.json. Source-obfuscated on purpose: no scanner names, source types, source details, flyer/source URLs, notes, or contact fields. Entries begin at \"since\" and accumulate. Not the same thing as the public viewer Activity Pulse (visitor behavior).",
   "entries": [
+    {
+      "id": "discover:ttdgc-latin-groove-thursdays-the-block",
+      "ts": "2026-08-02T12:00:00Z",
+      "ts_precision": "date",
+      "kind": "event_discovered",
+      "key": "ttdgc-latin-groove-thursdays-the-block",
+      "name": "Latin Groove Thursdays at The Block",
+      "venue": "The Block, 113 Eglin Pkwy SE, Ft Walton Beach, FL",
+      "style": "Latin",
+      "state": "FL"
+    },
+    {
+      "id": "discover:ttdgc-zuraka-belly-dance-thursday",
+      "ts": "2026-08-02T12:00:00Z",
+      "ts_precision": "date",
+      "kind": "event_discovered",
+      "key": "ttdgc-zuraka-belly-dance-thursday",
+      "name": "Beginning Belly Dancing with Zuraka Dancers (Thursday)",
+      "venue": "Stott's Park & Recreation Center, 2165 Demetropolis Rd, Mobile, AL",
+      "style": "Belly Dance",
+      "state": "AL"
+    },
+    {
+      "id": "discover:wcs-followers-styling-2026-08-07",
+      "ts": "2026-08-02T12:00:00Z",
+      "ts_precision": "date",
+      "kind": "event_discovered",
+      "key": "wcs-followers-styling-2026-08-07",
+      "name": "WCS Follower's Styling with Rachel Bowlby",
+      "venue": "Flying With Ease Training Center, 1507 Marcus Pointe Blvd, Pensacola, FL 32505",
+      "style": "West Coast Swing",
+      "state": "FL"
+    },
+    {
+      "id": "discover:wcs-lynn-warwick-house-2026-08-19",
+      "ts": "2026-08-02T12:00:00Z",
+      "ts_precision": "date",
+      "kind": "event_discovered",
+      "key": "wcs-lynn-warwick-house-2026-08-19",
+      "name": "Workshops and Practice at Lynn Warwick's House",
+      "venue": "Lynn Warwick's House, 8470 Junior Rd, Mobile, AL 36695",
+      "style": "West Coast Swing",
+      "state": "AL"
+    },
+    {
+      "id": "discover:country-swing-lesson-social-thursday",
+      "ts": "2026-08-01T12:00:00Z",
+      "ts_precision": "date",
+      "kind": "event_discovered",
+      "key": "country-swing-lesson-social-thursday",
+      "name": "Country Swing Lesson & Social",
+      "venue": "Flying With Ease Training Center, 1507 Marcus Pointe, Pensacola, FL",
+      "style": "Country Swing",
+      "state": "FL"
+    },
     {
       "id": "discover:la-copa-del-ritmo-seville-quarter-2026-09-09",
       "ts": "2026-07-27T12:00:00Z",
