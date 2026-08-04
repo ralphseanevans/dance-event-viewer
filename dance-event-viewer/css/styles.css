@@ -1073,6 +1073,7 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .cal-chip[data-cat="Pom"] { background: #2b3510; color: #a3e635; }
 .cal-chip[data-cat="Musical Theatre"] { background: #20244a; color: #818cf8; }
 .cal-chip[data-cat="Dance Fit"] { background: #3a2a08; color: #f59e0b; }
+.cal-chip[data-cat="Line Dance"] { background: #113222; color: #22c55e; }
 
 /* ============================================================================
    Multi-select share — "Share several dances as one" (2026-07-17, Sean).
