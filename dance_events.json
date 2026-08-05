@@ -6181,26 +6181,6 @@
       "verified_on": "2026-07-20"
     },
     {
-      "key": "se-mobile-starlite-practice-party-2026-07-24",
-      "name": "Starlite Ballroom Practice Party",
-      "style": "Ballroom / Latin (social)",
-      "type": "weekly_recurring",
-      "day_of_week": "Friday",
-      "monthly_rule": null,
-      "exclude_monthly_rules": null,
-      "exclude_dates": null,
-      "start_date": null,
-      "end_date": null,
-      "start_time": "21:30",
-      "end_time": null,
-      "venue": "Starlite Ballroom, 7020 Old Shell Rd., Mobile, AL 36608",
-      "state": "AL",
-      "cost": "$15 per person",
-      "source_url": "https://starliteballroomal.com/",
-      "unverified": false,
-      "verified_on": "2026-07-20"
-    },
-    {
       "key": "se-nashville-dance-classic-2026-09-03",
       "name": "Nashville Dance Classic 2026",
       "style": "Country, Swing, Line dance (UCWDC)",
@@ -8547,7 +8527,7 @@
     },
     {
       "key": "ttdgc-starlight-ballroom-friday",
-      "name": "Rhythm & Smooth Group Class + Practice Party at Starlight Ballroom",
+      "name": "Rhythm & Smooth Group Class + Practice Party at Starlite Ballroom",
       "style": "Ballroom",
       "type": "weekly_recurring",
       "day_of_week": "Friday",
@@ -8558,12 +8538,12 @@
       "end_date": null,
       "start_time": "19:00",
       "end_time": "21:30",
-      "venue": "Starlight Ballroom, 7020 Old Shell Road, Mobile, AL",
+      "venue": "Starlite Ballroom, 7020 Old Shell Road, Mobile, AL 36608",
       "state": "AL",
-      "cost": "$15 per class",
+      "cost": "Class $80 for 6 lessons; Practice Party $15 per person",
       "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-08-04"
     },
     {
       "key": "ttdgc-studio-371-monday",
