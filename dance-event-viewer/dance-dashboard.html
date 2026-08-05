@@ -817,6 +817,13 @@ const HISTORY_OUTCOME_FILTERS = [
   { key: "deleted", label: "Deleted" },
 ];
 
+function historyMatchesSearch(row, query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return true;
+  return [row.name, row.event_key, row.venue, row.result_note]
+    .some(value => String(value || "").toLowerCase().includes(q));
+}
+
 function renderHistory() {
   const cardsEl = $("#cards");
   cardsEl.innerHTML = "";
@@ -860,7 +867,7 @@ function renderHistory() {
     if (outcomeSel.value) rows = rows.filter(r => r.status === outcomeSel.value);
     if (fromDate.value) rows = rows.filter(r => String(r.timestamp || "").slice(0, 10) >= fromDate.value);
     if (toDate.value) rows = rows.filter(r => String(r.timestamp || "").slice(0, 10) <= toDate.value);
-    if (q) rows = rows.filter(r => [r.name, r.event_key, r.venue, r.result_note, r.source_note].some(v => String(v || "").toLowerCase().includes(q)));
+    if (q) rows = rows.filter(r => historyMatchesSearch(r, q));
     rows.sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
     list.innerHTML = "";
     if (!rows.length) {

@@ -17,7 +17,7 @@ const SOURCES = [
 // completely different than Country Swing. Don't group any country dances in with it.").
 // Only events whose style is exactly "Country Swing" land here; everything else country-ish
 // stays in "Other" via normCategory's exact-match rule.
-const CORE_CATEGORIES = ["West Coast Swing", "Country Swing", "Mixed", "Latin", "Argentine Tango"];
+const CORE_CATEGORIES = ["West Coast Swing", "Country Swing", "Ballroom", "Mixed", "Latin", "Argentine Tango"];
 // Solo Dance Styles (added 2026-07-13, Sean) — Pensacola Coastals Dance Studio's class schedule.
 // These render in their own collapsed "Solo Dance Styles" group in the Style filter (see
 // #solo-styles-chips in the Filters panel, 2026-07-17 redesign) rather than the main Style row, but they
@@ -29,6 +29,7 @@ const CORE_CATEGORIES = ["West Coast Swing", "Country Swing", "Mixed", "Latin", 
 // Other via normCategory's exact-match rule, same as the country styles.
 const SOLO_STYLES = ["Ballet", "Jazz", "Hip Hop", "Contemporary", "Heels", "Pom", "Musical Theatre", "Dance Fit", "Line Dance", "Belly Dance"];
 const CATEGORY_WHITELIST = [...CORE_CATEGORIES, ...SOLO_STYLES];
+const CATEGORY_ALIASES = { "salsa": "Latin" };
 // Regional pivot (2026-07-17, Sean — Phase 0 of the Regional Repositioning Plan): the
 // default view shows Southern events; everything else (rest of the US + the few
 // international entries) sits behind the "Traveling? Show national events" toggle.
@@ -52,7 +53,7 @@ const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map 
 const MAP_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";  // free, no API key
 const MAP_TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 const MAP_MARKER_COLORS = {
-  "West Coast Swing": "#4cc2ff", "Country Swing": "#d78f4f", "Mixed": "#7fe0a7", "Latin": "#ffc27d",
+  "West Coast Swing": "#4cc2ff", "Country Swing": "#d78f4f", "Ballroom": "#60a5fa", "Mixed": "#7fe0a7", "Latin": "#ffc27d",
   "Argentine Tango": "#ff5fa2", "Other": "#9fadc4",
   // Solo Dance Styles (2026-07-13) — see SOLO_STYLES above.
   "Ballet": "#a78bfa", "Jazz": "#fde047", "Hip Hop": "#f87171", "Contemporary": "#2dd4bf",
@@ -129,6 +130,7 @@ const shareSelection = new Set();
 function normCategory(style) {
   if (typeof style !== "string" || !style.trim()) return null;      // no category — never invent one
   const s = style.trim().toLowerCase();
+  if (CATEGORY_ALIASES[s]) return CATEGORY_ALIASES[s];
   for (const c of CATEGORY_WHITELIST) if (c.toLowerCase() === s) return c;
   if (s === "unspecified") return OTHER;
   return OTHER;                                                     // genuine but unrecognized style

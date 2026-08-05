@@ -795,6 +795,7 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 }
 .cal-chip:hover, .cal-chip:focus-visible { border-color: var(--accent); outline: none; }
 .cal-chip[data-cat="Mixed"] { background: #16382a; color: #7fe0a7; }
+.cal-chip[data-cat="Ballroom"] { background: #172d4d; color: #60a5fa; }
 .cal-chip[data-cat="Latin"] { background: #3a2a14; color: #ffc27d; }
 .cal-chip[data-cat="Argentine Tango"] { background: #3a1a2c; color: var(--accent-pink); }
 .cal-chip[data-cat="Other"] { background: #262c38; color: var(--text-dim); }
