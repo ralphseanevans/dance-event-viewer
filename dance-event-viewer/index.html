@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<!--
+  Dance Event Viewer — reads ../dance_events.json live on every load.
+  Browsers block fetch() from file:// pages. For local development, serve the
+  PUBLIC GIT CHECKOUT ROOT (the parent of this folder), then open:
+
+      http://localhost:<port>/dance-event-viewer/
+
+  Do not serve the private "Dance Website" child; this page reads the sanitized
+  ../dance_events.json from the public checkout root.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Apply the saved color theme (and the site's default creature) before first paint
+       so there's no flash of the wrong palette. Full theme-switcher wiring lives in
+       js/theme-switch.js; the creature is wired in js/club-lights.js.
+       SITE_DEFAULTS (2026-08-03): admin-configurable via dance-dashboard.html's "Site
+       appearance" panel — a first-time visitor (no saved localStorage theme yet) gets
+       these; anyone who has already picked their own theme keeps it regardless of what
+       this default is. The creature has no personal override (site-wide only). -->
+  <script>
+    (function () {
+      var SITE_DEFAULTS = { theme: "ember", creature: "fox", pageCharacters: ["hero-opossum"] };
+      window.DEV_SITE_DEFAULTS = SITE_DEFAULTS;
+      document.documentElement.setAttribute("data-page-character-loading", "true");
+      document.documentElement.setAttribute("data-page-characters", SITE_DEFAULTS.pageCharacters.join(" "));
+      try {
+        var t = localStorage.getItem("dev-theme");
+        var valid = { ember:1, classic:1, ennis:1, cybergum:1, crimson:1, deadcity:1,
+          bloodmoon:1, hope:1, neonmoon:1, monster:1, technobike:1, baldur:1, crimson4:1,
+          mintreactor:1 };
+        document.documentElement.setAttribute("data-theme", valid[t] ? t : SITE_DEFAULTS.theme);
+        document.documentElement.setAttribute("data-creature", SITE_DEFAULTS.creature === "bunny" ? "bunny" : "fox");
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", SITE_DEFAULTS.theme);
+        document.documentElement.setAttribute("data-creature", SITE_DEFAULTS.creature);
+      }
+    })();
+  </script>
+  <title>Dance Event Viewer — Dance Events Across the South</title>
+  <meta name="description" content="Find dance events across the South — West Coast Swing socials, classes, and workshops in Florida, Georgia, Alabama, Mississippi, Louisiana, Tennessee, and the Carolinas. Traveling? Browse national events too.">
+  <link rel="canonical" href="https://danceeventviewer.net/dance-event-viewer/">
+  <meta property="og:title" content="Dance Event Viewer — Dance Events Across the South">
+  <meta property="og:description" content="Find dance events across the South — West Coast Swing socials, classes, and workshops. Traveling? Browse national events too.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://danceeventviewer.net/dance-event-viewer/">
+  <meta property="og:image" content="https://danceeventviewer.net/dance-event-viewer/assets/og-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. Loaded BEFORE
+       styles.css so our dark-theme overrides (in styles.css) win over Leaflet's own defaults. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+  <!-- Martian Mono: used only by the Mint Reactor theme. The stylesheet is tiny and the
+       font files themselves are downloaded lazily — browsers fetch them only when an
+       element actually renders in the family, i.e. only when Mint Reactor is active. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600;700&display=swap">
+
+  <link rel="stylesheet" href="css/styles.css?v=20260804b">
+  <link rel="stylesheet" href="css/page-character.css?v=20260804a">
+  <link rel="stylesheet" href="css/hero-opossum.css?v=20260804c">
+  <link rel="stylesheet" href="css/activity-pulse.css?v=20260803a">
+  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260804a">
+  <script defer src="js/theme-switch.js?v=20260804c"></script>
+  <script defer src="js/page-character.js?v=20260804a"></script>
+  <script defer src="js/club-lights.js?v=20260804c"></script>
+  <script defer src="js/hero-opossum.js?v=20260804c"></script>
+  <script defer src="js/blue-angels-flight.js?v=20260804a"></script>
+
+  <!-- Firebase Realtime Database config used by Activity Pulse and the live viewer count. -->
+  <script>
+    window.ACTIVITY_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBwhVMohQcX06b5I50z1Uaa1r2q-4sYes8",
+      authDomain: "dance-event-viewer.firebaseapp.com",
+      databaseURL: "https://dance-event-viewer-default-rtdb.firebaseio.com",
+      projectId: "dance-event-viewer"
+    };
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+</head>
+<body>
+  <!-- Soft, theme-matched club lighting behind the interface. The beams drift slowly;
+       js/club-lights.js places occasional blooms at random, non-strobing intervals. -->
+  <div id="site-club-lights-layer" aria-hidden="true">
+    <i class="club-beam club-beam-a"></i>
+    <i class="club-beam club-beam-b"></i>
+    <i class="club-beam club-beam-c"></i>
+    <i id="club-light-bloom"></i>
+  </div>
+  <!-- Decorative page-wide ash. Styling and reduced-motion behavior live in
+       css/moonlit-ember-theme.css; it is intentionally separate from the hero. -->
+  <div id="site-ash-layer" aria-hidden="true">
+    <i style="--x:35.0%;--d:-5.8s;--t:32.5s;--s:6px"></i><i style="--x:11.1%;--d:-20.9s;--t:22.2s;--s:5px"></i><i style="--x:2.6%;--d:-19.9s;--t:20.5s;--s:8px"></i><i style="--x:52.3%;--d:-23.8s;--t:18.6s;--s:5px"></i><i style="--x:47.5%;--d:-10.6s;--t:18.1s;--s:6px"></i>
+    <i style="--x:52.6%;--d:-3.4s;--t:20.0s;--s:7px"></i><i style="--x:96.6%;--d:-12.7s;--t:20.2s;--s:7px"></i><i style="--x:34.0%;--d:-5.4s;--t:18.2s;--s:9px"></i><i style="--x:85.1%;--d:-6.0s;--t:32.8s;--s:4px"></i><i style="--x:95.2%;--d:-13.3s;--t:17.2s;--s:4px"></i>
+    <i style="--x:76.5%;--d:-9.7s;--t:24.9s;--s:6px"></i><i style="--x:21.5%;--d:-19.0s;--t:28.0s;--s:6px"></i><i style="--x:86.0%;--d:-13.2s;--t:19.0s;--s:5px"></i><i style="--x:55.9%;--d:-27.0s;--t:17.3s;--s:9px"></i><i style="--x:29.5%;--d:-6.3s;--t:14.2s;--s:4px"></i>
+    <i style="--x:63.4%;--d:-3.9s;--t:16.5s;--s:6px"></i><i style="--x:55.0%;--d:-24.7s;--t:24.5s;--s:6px"></i><i style="--x:57.4%;--d:-16.4s;--t:25.3s;--s:7px"></i><i style="--x:54.0%;--d:-23.1s;--t:29.4s;--s:4px"></i><i style="--x:59.6%;--d:-7.1s;--t:22.2s;--s:8px"></i>
+    <i style="--x:70.4%;--d:-18.1s;--t:28.3s;--s:8px"></i><i style="--x:8.8%;--d:-24.5s;--t:19.9s;--s:8px"></i><i style="--x:26.8%;--d:-25.0s;--t:23.2s;--s:5px"></i><i style="--x:13.7%;--d:-0.8s;--t:21.9s;--s:5px"></i><i style="--x:29.6%;--d:-2.3s;--t:26.7s;--s:5px"></i>
+    <i style="--x:63.4%;--d:-21.4s;--t:25.8s;--s:4px"></i><i style="--x:6.7%;--d:-2.6s;--t:18.6s;--s:6px"></i><i style="--x:33.3%;--d:-24.0s;--t:26.7s;--s:4px"></i><i style="--x:63.7%;--d:-5.2s;--t:17.0s;--s:6px"></i><i style="--x:98.6%;--d:-24.6s;--t:32.0s;--s:4px"></i>
+    <i style="--x:48.5%;--d:-8.2s;--t:19.2s;--s:8px"></i><i style="--x:8.2%;--d:-27.1s;--t:24.9s;--s:4px"></i><i style="--x:45.0%;--d:-10.3s;--t:17.1s;--s:8px"></i><i style="--x:81.9%;--d:-20.5s;--t:21.0s;--s:9px"></i><i style="--x:27.4%;--d:-18.0s;--t:23.9s;--s:4px"></i>
+    <i style="--x:60.8%;--d:-17.3s;--t:16.3s;--s:6px"></i><i style="--x:49.1%;--d:-21.8s;--t:20.6s;--s:8px"></i><i style="--x:90.3%;--d:-22.5s;--t:24.6s;--s:8px"></i><i style="--x:10.0%;--d:-1.3s;--t:31.2s;--s:4px"></i><i style="--x:2.6%;--d:-8.2s;--t:27.8s;--s:4px"></i>
+    <i style="--x:40.9%;--d:-1.0s;--t:24.9s;--s:6px"></i><i style="--x:95.8%;--d:-18.6s;--t:27.5s;--s:9px"></i><i style="--x:59.3%;--d:-9.5s;--t:31.5s;--s:6px"></i><i style="--x:7.1%;--d:-12.9s;--t:27.6s;--s:9px"></i><i style="--x:21.7%;--d:-2.5s;--t:22.1s;--s:7px"></i>
+    <i style="--x:86.8%;--d:-14.1s;--t:33.9s;--s:4px"></i><i style="--x:65.8%;--d:-5.9s;--t:22.9s;--s:4px"></i><i style="--x:72.8%;--d:-4.5s;--t:14.9s;--s:6px"></i><i style="--x:90.5%;--d:-7.2s;--t:24.1s;--s:7px"></i><i style="--x:38.2%;--d:-26.1s;--t:24.7s;--s:8px"></i>
+    <i style="--x:19.7%;--d:-3.0s;--t:16.0s;--s:4px"></i><i style="--x:98.7%;--d:-5.5s;--t:16.6s;--s:9px"></i><i style="--x:71.6%;--d:-10.3s;--t:31.1s;--s:9px"></i><i style="--x:61.0%;--d:-2.4s;--t:28.7s;--s:4px"></i><i style="--x:94.7%;--d:-4.3s;--t:27.6s;--s:8px"></i>
+    <i style="--x:42.4%;--d:-16.4s;--t:33.0s;--s:5px"></i><i style="--x:50.0%;--d:-23.2s;--t:22.3s;--s:4px"></i><i style="--x:69.2%;--d:-3.4s;--t:26.6s;--s:5px"></i><i style="--x:94.3%;--d:-20.4s;--t:31.3s;--s:9px"></i><i style="--x:10.3%;--d:-5.0s;--t:33.0s;--s:5px"></i>
+    <i style="--x:85.1%;--d:-21.8s;--t:18.3s;--s:8px"></i><i style="--x:87.5%;--d:-24.0s;--t:32.0s;--s:5px"></i><i style="--x:11.0%;--d:-5.7s;--t:24.0s;--s:6px"></i><i style="--x:93.1%;--d:-10.5s;--t:32.4s;--s:6px"></i><i style="--x:99.4%;--d:-26.5s;--t:32.9s;--s:5px"></i>
+    <i style="--x:2.8%;--d:-20.8s;--t:33.3s;--s:9px"></i><i style="--x:57.9%;--d:-22.2s;--t:29.8s;--s:6px"></i><i style="--x:21.5%;--d:-17.4s;--t:21.1s;--s:7px"></i><i style="--x:97.3%;--d:-14.2s;--t:23.5s;--s:7px"></i><i style="--x:69.7%;--d:-3.8s;--t:18.0s;--s:6px"></i>
+    <i style="--x:13.6%;--d:-6.1s;--t:20.9s;--s:5px"></i><i style="--x:78.7%;--d:-18.6s;--t:33.4s;--s:5px"></i><i style="--x:32.6%;--d:-20.5s;--t:25.1s;--s:9px"></i><i style="--x:59.5%;--d:-24.2s;--t:30.5s;--s:9px"></i><i style="--x:13.7%;--d:-14.4s;--t:21.5s;--s:8px"></i>
+    <i style="--x:43.3%;--d:-21.8s;--t:19.9s;--s:5px"></i><i style="--x:98.7%;--d:-5.0s;--t:24.3s;--s:5px"></i><i style="--x:5.6%;--d:-27.0s;--t:24.7s;--s:8px"></i><i style="--x:15.6%;--d:-18.9s;--t:30.7s;--s:8px"></i><i style="--x:65.0%;--d:-0.8s;--t:30.3s;--s:4px"></i>
+    <i style="--x:15.1%;--d:-8.5s;--t:17.2s;--s:8px"></i><i style="--x:23.7%;--d:-25.3s;--t:21.4s;--s:5px"></i><i style="--x:65.9%;--d:-18.0s;--t:27.0s;--s:8px"></i><i style="--x:2.5%;--d:-9.8s;--t:20.3s;--s:4px"></i><i style="--x:42.3%;--d:-28.2s;--t:27.4s;--s:9px"></i>
+    <i style="--x:40.6%;--d:-9.5s;--t:33.8s;--s:5px"></i><i style="--x:9.5%;--d:-20.7s;--t:27.8s;--s:9px"></i><i style="--x:22.3%;--d:-23.9s;--t:28.6s;--s:5px"></i><i style="--x:18.9%;--d:-20.6s;--t:33.0s;--s:6px"></i><i style="--x:38.4%;--d:-14.9s;--t:28.7s;--s:9px"></i>
+    <i style="--x:67.6%;--d:-1.4s;--t:17.2s;--s:6px"></i><i style="--x:26.9%;--d:-6.8s;--t:22.8s;--s:5px"></i><i style="--x:43.8%;--d:-2.4s;--t:24.3s;--s:4px"></i><i style="--x:57.4%;--d:-21.0s;--t:15.4s;--s:9px"></i><i style="--x:57.4%;--d:-11.5s;--t:33.6s;--s:7px"></i>
+    <i style="--x:54.0%;--d:-20.5s;--t:28.1s;--s:4px"></i><i style="--x:87.9%;--d:-20.7s;--t:27.5s;--s:7px"></i><i style="--x:93.1%;--d:-3.4s;--t:16.5s;--s:6px"></i><i style="--x:97.1%;--d:-29.0s;--t:16.6s;--s:5px"></i><i style="--x:94.2%;--d:-8.0s;--t:33.5s;--s:4px"></i>
+    <i style="--x:99.1%;--d:-15.0s;--t:15.1s;--s:5px"></i><i style="--x:94.1%;--d:-6.1s;--t:25.3s;--s:7px"></i><i style="--x:43.6%;--d:-29.4s;--t:14.7s;--s:9px"></i><i style="--x:83.5%;--d:-29.5s;--t:15.1s;--s:6px"></i><i style="--x:11.6%;--d:-18.3s;--t:15.5s;--s:6px"></i>
+    <i style="--x:61.3%;--d:-28.4s;--t:27.4s;--s:5px"></i><i style="--x:56.4%;--d:-2.9s;--t:32.9s;--s:6px"></i><i style="--x:51.0%;--d:-18.1s;--t:27.5s;--s:5px"></i><i style="--x:88.0%;--d:-26.7s;--t:26.4s;--s:8px"></i><i style="--x:97.8%;--d:-15.4s;--t:20.3s;--s:9px"></i>
+    <i style="--x:88.0%;--d:-7.5s;--t:31.7s;--s:5px"></i><i style="--x:69.0%;--d:-23.2s;--t:16.4s;--s:8px"></i><i style="--x:59.7%;--d:-9.0s;--t:33.8s;--s:8px"></i><i style="--x:44.4%;--d:-3.6s;--t:22.4s;--s:5px"></i><i style="--x:75.4%;--d:-13.6s;--t:18.7s;--s:6px"></i>
+    <i style="--x:70.9%;--d:-3.3s;--t:23.1s;--s:5px"></i><i style="--x:84.7%;--d:-7.6s;--t:14.8s;--s:6px"></i><i style="--x:43.7%;--d:-8.8s;--t:15.1s;--s:6px"></i><i style="--x:80.3%;--d:-12.7s;--t:21.9s;--s:9px"></i><i style="--x:91.7%;--d:-20.3s;--t:21.5s;--s:7px"></i>
+    <i style="--x:10.1%;--d:-22.4s;--t:22.0s;--s:8px"></i><i style="--x:55.8%;--d:-8.6s;--t:14.2s;--s:9px"></i><i style="--x:20.8%;--d:-28.5s;--t:27.1s;--s:9px"></i><i style="--x:40.8%;--d:-22.4s;--t:27.2s;--s:9px"></i><i style="--x:81.0%;--d:-15.1s;--t:30.7s;--s:5px"></i>
+  </div>
+  <header class="site-header">
+    <!-- Color-theme picker. All palettes share the existing site layout and functionality;
+         menu wiring and the saved preference live in js/theme-switch.js. -->
+    <div class="theme-switch">
+      <button type="button" id="theme-switch-btn" class="theme-switch-btn"
+        aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu"
+        title="Change the site's color theme">
+        <span class="theme-switch-dot" aria-hidden="true"></span>
+        <span>Theme</span>
+        <span class="theme-caret" aria-hidden="true">▾</span>
+      </button>
+      <div id="theme-menu" class="theme-menu" role="menu" aria-label="Color theme" hidden>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="ember" aria-checked="true">
+          <span class="theme-swatch swatch-ember" aria-hidden="true"></span>
+          <span class="theme-option-label">Moonlit Ember</span>
+          <span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="classic" aria-checked="false">
+          <span class="theme-swatch swatch-classic" aria-hidden="true"></span>
+          <span class="theme-option-label">Classic Blue</span>
+          <span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="ennis" aria-checked="false">
+          <span class="theme-swatch swatch-ennis" aria-hidden="true"></span><span class="theme-option-label">Ennis Blade</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="cybergum" aria-checked="false">
+          <span class="theme-swatch swatch-cybergum" aria-hidden="true"></span><span class="theme-option-label">CyberGum6</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="crimson" aria-checked="false">
+          <span class="theme-swatch swatch-crimson" aria-hidden="true"></span><span class="theme-option-label">Ink-Crimson</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="deadcity" aria-checked="false">
+          <span class="theme-swatch swatch-deadcity" aria-hidden="true"></span><span class="theme-option-label">Dead City</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="bloodmoon" aria-checked="false">
+          <span class="theme-swatch swatch-bloodmoon" aria-hidden="true"></span><span class="theme-option-label">BloodMoon21</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="hope" aria-checked="false">
+          <span class="theme-swatch swatch-hope" aria-hidden="true"></span><span class="theme-option-label">Hope Diamond</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="neonmoon" aria-checked="false">
+          <span class="theme-swatch swatch-neonmoon" aria-hidden="true"></span><span class="theme-option-label">Neon Moon Tarot</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="monster" aria-checked="false">
+          <span class="theme-swatch swatch-monster" aria-hidden="true"></span><span class="theme-option-label">Monster Paper</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="technobike" aria-checked="false">
+          <span class="theme-swatch swatch-technobike" aria-hidden="true"></span><span class="theme-option-label">Technobike</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="baldur" aria-checked="false">
+          <span class="theme-swatch swatch-baldur" aria-hidden="true"></span><span class="theme-option-label">Neon Darkness</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="crimson4" aria-checked="false">
+          <span class="theme-swatch swatch-crimson4" aria-hidden="true"></span><span class="theme-option-label">Crimson Gameboy</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="mintreactor" aria-checked="false">
+          <span class="theme-swatch swatch-mintreactor" aria-hidden="true"></span><span class="theme-option-label">Mint Reactor</span><span class="theme-check" aria-hidden="true">✓</span>
+        </button>
+      </div>
+    </div>
+    <div id="brand-slot">
+      <img id="brand-img" src="assets/dance-event-viewer-banner.png" alt="Dance Event Viewer — a dancing couple under warm club lights">
+      <!-- Interactive low-poly opossum: the trigger overlays its visible tail at rest;
+           the self-contained animation and reduced-motion path live in hero-opossum.*. -->
+      <div class="hero-opossum" id="hero-opossum" data-state="hidden">
+        <button type="button" class="opossum-trigger" aria-label="Reveal the hidden opossum"
+          aria-describedby="opossum-status" title="Click the tail to reveal the opossum"></button>
+        <svg class="opossum-art" viewBox="0 0 240 230" role="img" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="opossum-fur" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#d9dce1"/><stop offset=".48" stop-color="#7e8792"/><stop offset="1" stop-color="#3b414c"/>
+            </linearGradient>
+            <linearGradient id="opossum-face" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#f1e8df"/><stop offset=".62" stop-color="#c9c3c2"/><stop offset="1" stop-color="#777681"/>
+            </linearGradient>
+            <linearGradient id="opossum-tail" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#d7a0a9"/><stop offset=".5" stop-color="#bd7e8c"/><stop offset="1" stop-color="#825565"/>
+            </linearGradient>
+          </defs>
+
+          <g class="opossum-tail-mirror" transform="translate(250 0) scale(-1 1)">
+            <g class="opossum-tail">
+              <path class="opossum-tail-shadow" d="M77 133 C38 137 15 153 23 180 C31 208 86 211 116 185 C139 165 126 145 110 153 C96 161 104 174 115 169"/>
+              <path class="opossum-tail-main" d="M77 133 C38 137 15 153 23 180 C31 208 86 211 116 185 C139 165 126 145 110 153 C96 161 104 174 115 169"/>
+              <path class="opossum-tail-rings" d="M35 148l8 15M23 167l17 8M25 188l19-5M45 204l5-19M68 208l-3-20M91 202l-7-17M110 188l-12-14M124 170l-17-7"/>
+            </g>
+          </g>
+
+          <g class="opossum-body">
+            <ellipse class="opossum-shadow" cx="111" cy="179" rx="70" ry="14"/>
+            <polygon class="opossum-rump" points="45,117 61,72 111,48 159,68 181,114 159,157 91,166 55,145"/>
+            <polygon class="fur-facet facet-a" points="61,72 111,48 97,101 45,117"/>
+            <polygon class="fur-facet facet-b" points="111,48 159,68 130,101 97,101"/>
+            <polygon class="fur-facet facet-c" points="45,117 97,101 91,166 55,145"/>
+            <polygon class="fur-facet facet-d" points="97,101 130,101 159,157 91,166"/>
+            <polygon class="fur-facet facet-e" points="130,101 181,114 159,157"/>
+
+            <g class="opossum-legs rear">
+              <polygon points="57,135 82,137 75,174 51,174"/>
+              <path d="M50 173l-9 8m10-7 0 11m4-11 8 8"/>
+            </g>
+            <g class="opossum-legs front">
+              <polygon points="143,132 164,126 173,166 151,171"/>
+              <path d="M153 169l-10 8m12-8 1 12m4-13 9 8"/>
+            </g>
+
+            <g class="opossum-head">
+              <polygon class="opossum-neck" points="117,75 153,68 175,100 143,129 108,111"/>
+              <polygon class="opossum-face" points="132,70 170,72 218,111 162,126 122,105"/>
+              <polygon class="face-facet face-facet-a" points="132,70 170,72 157,103 122,105"/>
+              <polygon class="face-facet face-facet-b" points="170,72 218,111 157,103"/>
+              <polygon class="face-facet face-facet-c" points="122,105 157,103 162,126"/>
+              <polygon class="opossum-ear left" points="131,76 118,48 151,60"/>
+              <polygon class="opossum-ear right" points="168,75 177,48 190,79"/>
+              <polygon class="opossum-ear-inner left" points="130,68 123,55 143,62"/>
+              <polygon class="opossum-ear-inner right" points="174,68 178,55 184,74"/>
+              <g class="opossum-eyes">
+                <circle class="opossum-eye" cx="169" cy="91" r="6"/>
+                <circle class="opossum-eye-glint" cx="171" cy="89" r="1.8"/>
+              </g>
+              <polygon class="opossum-nose" points="218,106 230,111 217,117"/>
+              <path class="opossum-whiskers" d="M208 116l25 10m-29-6 21 16m-25-19 28 1"/>
+              <path class="opossum-mouth-closed" d="M177 112q18 9 35 2"/>
+              <g class="opossum-mouth-open">
+                <polygon class="opossum-jaw" points="149,120 177,159 209,120 194,173 165,181 143,146"/>
+                <polyline class="opossum-jaw-facet" points="149,120 159,151 177,159 165,181"/>
+                <polygon class="opossum-mouth" points="168,105 215,113 179,165 146,123"/>
+                <polygon class="opossum-tongue" points="158,151 176,134 199,132 180,161"/>
+                <g class="opossum-teeth upper">
+                  <polygon points="169,108 178,110 173,126"/><polygon points="180,110 189,112 183,129"/>
+                  <polygon points="191,112 200,113 193,130"/><polygon points="202,113 211,114 203,128"/>
+                </g>
+                <g class="opossum-teeth lower">
+                  <polygon points="151,126 163,137 148,142"/><polygon points="157,143 170,153 154,157"/>
+                  <polygon points="170,153 182,160 166,165"/><polygon points="184,148 198,139 190,158"/>
+                  <polygon points="198,130 210,120 203,141"/>
+                </g>
+              </g>
+            </g>
+
+            <g class="opossum-grip-paw paw-a">
+              <polygon points="118,135 139,131 142,149 121,151"/><path d="M124 149l-5 10m11-11-1 12m8-13 5 9"/>
+            </g>
+            <g class="opossum-grip-paw paw-b">
+              <polygon points="148,131 166,126 171,143 152,148"/><path d="M155 145l-3 11m10-13 2 11m3-13 7 8"/>
+            </g>
+          </g>
+        </svg>
+        <span class="visually-hidden" id="opossum-status" aria-live="polite">A curled opossum tail is peeking from behind the banner.</span>
+      </div>
+    </div>
+    <div class="title-block">
+      <h1 class="visually-hidden">Dance Event Viewer</h1>
+      <div class="title-row">
+        <p class="tagline">Connecting Dancers in the South! &middot; good music &middot; great people</p>
+      </div>
+    </div>
+    <a href="submit-event.html" class="submit-event-btn header-submit">Submit an Event</a>
+    <span id="viewer-count" aria-hidden="true"></span>
+  </header>
+
+  <!-- Activity Pulse — ambient "someone is doing X" terminal ticker, right under the header
+       (Sean, 2026-07-13: "have them go across... from side to side and disapear at the end
+       of the frame. use a nerdy terminal font and a terminal green color" — replaces the
+       earlier left-edge vertical-drift design). Purely decorative, scrolls with the page;
+       see js/activity-pulse.js. -->
+  <div id="activity-rail" aria-hidden="true"></div>
+
+  <nav id="source-tabs" class="source-tabs" aria-label="Event lists" hidden></nav>
+
+  <section class="controls" aria-label="View and filters">
+    <div class="view-tabs-row">
+      <div class="view-switch" role="group" aria-label="View mode">
+          <button type="button" class="view-btn" data-view="timeline" aria-pressed="true">Timeline</button>
+          <button type="button" class="view-btn" data-view="calendar" aria-pressed="false">Calendar</button>
+          <button type="button" class="view-btn" data-view="map" aria-pressed="false">Map</button>
+      </div>
+    </div>
+
+    <div class="controls-panel-inner">
+      <!-- Event search (2026-07-20, Sean): a single quiet box that matches event name,
+           venue, or city. Kept deliberately minimal so it doesn't crowd the filters. -->
+      <div class="search-row">
+        <div class="search-box">
+          <input type="search" id="event-search" class="search-input" autocomplete="off"
+            enterkeyhint="search" placeholder="Search by name, venue, or city…"
+            aria-label="Search events by name, venue, or city">
+          <button type="button" id="event-search-clear" class="search-clear" aria-label="Clear search" hidden>&#10005;</button>
+          <button type="button" id="event-search-apply" class="search-apply" aria-label="Apply search">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+            </svg>
+          </button>
+        </div>
+        <!-- Recent searches from everyone (2026-08-03, Sean's ask): a small shared list
+             next to the search box. Reads ../recent-searches.json (present but effectively
+             empty until the Apps Script log_search action is deployed — see STATUS.md);
+             hidden entirely while there's nothing to show, so it never sits there empty.
+             See js/recent-searches.js. -->
+        <div class="recent-searches" id="recent-searches" aria-label="Recent searches from other visitors" hidden>
+          <span class="recent-searches-label">Recent searches</span>
+          <ul class="recent-searches-list" id="recent-searches-list"></ul>
+        </div>
+      </div>
+    <!-- Always-visible quick filters (redesign 2026-07-17): Dance style + Day pill rows;
+         everything else lives in the collapsible Filters panel below. -->
+    <div class="quick-filters">
+      <div class="qf-group">
+        <span class="qf-label" id="lbl-style">Dance style</span>
+        <div class="chips chips-scroll" data-group="cats" id="main-style-chips" role="group" aria-labelledby="lbl-style"></div>
+      </div>
+      <div class="qf-group">
+        <span class="qf-label" id="lbl-day">Day</span>
+        <div class="chips chips-scroll" data-group="days" role="group" aria-labelledby="lbl-day"></div>
+      </div>
+      <!-- Location moved up out of the Advanced panel into the always-visible quick filters
+           (2026-07-20, Sean). Same controls (area chips + "Choose location" State/Town dropdowns);
+           JS finds them by id/data-group, so relocating the markup needs no logic change. -->
+      <div class="qf-group qf-location" id="fg-area" role="group" aria-labelledby="lbl-loc">
+        <span class="qf-label" id="lbl-loc">Location</span>
+        <div class="location-filter-content">
+          <div class="location-choice-row">
+            <div class="chips" data-group="areas"></div>
+            <button type="button" id="loc-more" class="loc-more" aria-expanded="false" aria-controls="loc-selects">Choose location</button>
+          </div>
+          <div class="loc-selects" id="loc-selects" hidden>
+            <label>State <select id="sel-state"></select></label>
+            <label>Town <select id="sel-town" disabled></select></label>
+            <!-- Clickable US map (2026-08-03): a visual alternative to the State select
+                 above, wired into the same state.sel.state — pick a state either way.
+                 State-path data is loaded lazily (js/state-map-picker.js) the first time
+                 this panel opens, so it costs nothing on a normal page load. -->
+            <div class="loc-map" id="loc-map">
+              <p class="loc-map-status" id="loc-map-status">Loading map&hellip;</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    <!-- "Reset" (moved up from the Advanced panel below, 2026-08-03, Sean's ask; was
+         "Clear all") — bottom-right of this panel, same #reset-filters id so app.js's
+         existing clearAllFilters() wiring needs no change. -->
+    <button type="button" id="reset-filters" class="reset-btn quick-filters-reset">Reset</button>
+    </div>
+
+    <!-- Active-filter summary chips: visible only while the panel is closed and filters are on. -->
+    <div id="active-chips" class="active-chips" hidden></div>
+
+    </div>
+
+    <!-- A distinct disclosure control (moved out of the card 2026-07-18 so its open state
+         can attach to the panel below as one continuous folder tab, per the site's
+         folder-tab convention — no chevron; aria-expanded carries the state). -->
+    <div class="filters-disclosure-row">
+      <button type="button" id="filters-toggle" class="filters-toggle" aria-expanded="false" aria-controls="filter-panel">
+        <svg class="filters-toggle-symbol" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 5h16l-6.5 7.3v5.1l-3 1.6v-6.7z"></path>
+        </svg>
+        <span class="filters-toggle-label">Advanced</span>
+        <span id="filters-count" class="filters-count" aria-live="polite"></span>
+      </button>
+    </div>
+
+    <!-- Backdrop behind the mobile bottom-sheet (2026-07-17): dims the page and closes the
+         sheet on tap. Shown by CSS only while body.sheet-open on small screens. -->
+    <div id="filter-backdrop" aria-hidden="true"></div>
+    <div id="filter-panel" class="filter-panel" hidden>
+      <div class="filter-panel-top">
+        <strong class="filter-panel-title">More filters<span id="filters-count-panel" class="filters-count"></span></strong>
+        <button type="button" id="filters-close" class="filters-close" aria-label="Close filters">&#10005;</button>
+      </div>
+      <!-- Filter groups were <fieldset>/<legend> until 2026-07-17. display:flex on fieldset
+           is unreliable on several mobile browsers (contents rendered stacked/overlapping on
+           Sean's phone), so these are plain divs now — grouping semantics kept via
+           role="group" + aria-labelledby. -->
+      <div class="filter-group" id="fg-kind" role="group" aria-labelledby="fg-kind-label">
+        <span class="fg-legend" id="fg-kind-label">Event type</span>
+        <!-- Multi-select as of 2026-07-29 (Sean) — the chips-radio/chip-radio ○● styling is
+             gone with it; "All types" now paints every sibling chip on. -->
+        <div class="chips" data-group="kinds"></div>
+        <button type="button" id="past-toggle" class="chip" aria-pressed="false"
+          title="Past events are hidden by default to keep this list current. Turn this on to see recently-ended events too (shown greyed out).">
+          <span class="chip-label">Past events</span><span class="chip-count"></span>
+        </button>
+        <!-- National events + Unverified moved here from the always-visible control row
+             (2026-07-29, Sean) and restyled as plain .chip pills so they match the shade,
+             shape, and size of the other Event type chips. IDs unchanged. -->
+        <button type="button" id="traveling-toggle" class="chip traveling-toggle" aria-pressed="false"
+          title="By default this calendar shows events across the South (FL, GA, AL, MS, LA, TN, SC, NC). Turn this on to also browse national conventions and competitions — handy when you're traveling.">
+          <span class="chip-label">National events</span><span class="chip-count"></span>
+        </button>
+        <button type="button" id="unverified-toggle" class="chip unverified-toggle" aria-pressed="false"
+          title="Some listings — mostly newly-researched national events — haven't been confirmed yet. Turn this on to also show those unverified events.">
+          <span class="chip-label">Unverified</span><span class="chip-count"></span>
+        </button>
+      </div>
+      <div class="filter-group" id="fg-solo" role="group" aria-labelledby="fg-solo-label">
+        <span class="fg-legend" id="fg-solo-label">Solo dance styles</span>
+        <div class="chips" data-group="cats" id="solo-styles-chips"></div>
+      </div>
+    </div>
+  </section>
+
+  <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+
+  <main id="results" aria-label="Events"></main>
+
+  <footer class="site-footer">
+    <p>Listings come from various places and data sources. Details can change &mdash; confirm with the venue or organizer when it matters.</p>
+    <!-- Support block: Square donation payment link (created 2026-07-11 in Sean's Square account). -->
+    <div class="support-block">
+      <p>This calendar is a free community project, run on volunteered time. If it's helped you find a dance,
+        you're welcome to chip in toward keeping it going &mdash; totally optional, never expected.</p>
+      <a class="support-btn" href="https://square.link/u/dG0nDt76" target="_blank" rel="noopener noreferrer">&#9829; Support this project</a>
+    </div>
+    <!-- Flag + patriotic message (moved down from the header, 2026-08-03, Sean's ask). -->
+    <div class="anniversary-feature" role="img" aria-label="United States of America — celebrating 250 years, the experiment of freedom">
+      <i class="anniversary-feature-flag" aria-hidden="true"></i>
+      <i class="anniversary-feature-words" aria-hidden="true"></i>
+    </div>
+    <!-- Discreet link to the password-gated review dashboard (dance-dashboard.html); deliberately low-key label. -->
+    <p class="footer-tools">
+      <a class="tools-link" href="dance-dashboard.html">Volunteer tools</a>
+    </p>
+  </footer>
+
+  <div class="blue-angels-flight-stage" aria-hidden="true">
+    <img class="blue-angels-flight" src="assets/blue-angels-low-poly-640.webp" alt="">
+  </div>
+
+  <script src="js/dance-poster.js?v=20260804b"></script>
+  <!-- Add to Calendar (2026-08-03): per-card 📅 button (Google link + .ics download with
+       real recurrence rules). Loaded BEFORE app.js so window.DEV_ADD_TO_CAL exists when
+       the first cards render. Bulk "Export these (.ics)" button disabled for now (Sean's
+       call, same day) — see js/add-to-calendar.js, ensureBulkButton() left intact. -->
+  <script src="js/add-to-calendar.js?v=20260804b"></script>
+  <script src="js/app.js?v=20260804b"></script>
+  <!-- Choose-location state map (2026-08-03): reads/writes app.js's state.sel.state
+       directly (same global scope, loaded after app.js). Its own data file
+       (js/us-states-map-data.js, ~145KB of state path data) is fetched lazily on
+       first open, not here. -->
+  <script src="js/state-map-picker.js?v=20260804b"></script>
+  <!-- Recent searches from everyone (2026-08-03): references SUBMIT_ENDPOINT, a
+       top-level const in app.js — must load after it. -->
+  <script src="js/recent-searches.js?v=20260804b"></script>
+  <script src="js/activity-pulse.js?v=20260804b"></script>
+</body>
+</html>

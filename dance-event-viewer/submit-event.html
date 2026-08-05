@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<!--
+  Dance Event Viewer — "Submit an Event" intake form.
+  Local dev copy. Serve the public Git checkout root (the parent of this folder),
+  then open:
+      http://localhost:<port>/dance-event-viewer/submit-event.html
+  Do not serve the private "Dance Website" child.
+
+  Nothing here writes to dance_events.json/wcs_events.json. Submissions go to
+  a private "Submissions" Google Sheet via an Apps Script web app and sit
+  there until Sean reviews and approves them in a private artifact, then
+  explicitly asks for an "add the approved ones" transfer. See
+  Event_Submission_Form_Prompt.md (Dance Event Viewer Project root) for the
+  full architecture.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Submit an Event — Dance Event Viewer</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/submit-event.css?v=20260718c">
+</head>
+<body class="submit-page">
+  <header class="site-header">
+    <div class="title-block">
+      <h1 class="visually-hidden">Submit an Event</h1>
+      <p class="tagline">Submit an Event</p>
+    </div>
+  </header>
+
+  <main class="submit-wrap">
+    <a class="submit-back" href="index.html">&larr; Back to the Dance Event Viewer</a>
+
+    <p class="submit-intro">
+      Know about a dance, class, or social that's missing from the calendar? Tell us about it below.
+      Submissions are reviewed before anything is added — nothing you submit appears on the public
+      site automatically.
+    </p>
+
+    <form id="submit-form" novalidate>
+      <!-- Step: intake method ------------------------------------------------ -->
+      <section class="method-picker" aria-labelledby="method-picker-title">
+        <h2 class="method-picker-title" id="method-picker-title">How would you like to tell us?</h2>
+        <div class="method-tabs-wrap">
+          <div class="method-tabs" role="radiogroup" aria-label="Submission method">
+            <label class="method-tab">
+              <input type="radio" name="intake_method" value="flyer" checked>
+              <span>📷 Upload a Flyer</span>
+            </label>
+            <label class="method-tab">
+              <input type="radio" name="intake_method" value="form">
+              <span>📝 Fill Out Details</span>
+            </label>
+            <label class="method-tab">
+              <input type="radio" name="intake_method" value="link">
+              <span>🔗 Paste a Link</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="method-panel">
+
+      <!-- Flyer path ----------------------------------------------------------- -->
+      <fieldset class="method-content-section" id="section-flyer">
+        <legend>Flyer photo</legend>
+        <label class="field-label" for="flyer-input">
+          Upload photo(s) of the flyer <span class="req">(required)</span>
+        </label>
+        <!-- The raw file input is visually hidden; the full-width label below is the
+             tap target. A styled file input only reacts to taps on its small native
+             button (a dead zone on iOS Safari) — a label[for] reliably opens the
+             photo picker across mobile browsers. -->
+        <input type="file" id="flyer-input" name="flyer" accept="image/*" multiple class="visually-hidden-file">
+        <label class="file-button" for="flyer-input" id="flyer-button">
+          <span class="file-button-icon" aria-hidden="true">📷</span>
+          <span class="file-button-text" id="flyer-button-text">Tap to choose or take photos</span>
+        </label>
+        <div id="flyer-previews" class="flyer-previews" hidden></div>
+        <p class="field-hint">
+          We'll read the flyer automatically to draft the event details — you don't need to retype
+          anything from it. All photos should be of the <strong>same flyer/event</strong> (front and
+          back, close-ups of the details, etc. — up to 5). If anything looks off, it gets fixed
+          before it's added to the calendar.
+        </p>
+      </fieldset>
+
+      <!-- Form / Link shared source fields -------------------------------------- -->
+      <fieldset class="method-content-section" id="section-source-form">
+        <label class="field-label" for="source-note">
+          How do you know about this event? <span class="req">(required)</span>
+        </label>
+        <textarea id="source-note" name="source_note" rows="2"
+          placeholder="e.g. I'm the organizer, I saw it on Facebook, a friend told me..."></textarea>
+      </fieldset>
+
+      <fieldset class="method-content-section" id="section-source-link">
+        <label class="field-label" for="source-url">
+          Link to the event <span class="req">(required)</span>
+        </label>
+        <input type="url" id="source-url" name="source_url" placeholder="https://...">
+      </fieldset>
+        </div>
+      </section>
+
+      <!-- Event details (skipped for the pure flyer path) ------------------------ -->
+      <div id="section-details">
+        <fieldset class="submit-section">
+          <legend>Event details</legend>
+
+          <label class="field-label" for="event-name">
+            Event name <span class="req">(required)</span>
+          </label>
+          <input type="text" id="event-name" name="name" maxlength="200">
+
+          <label class="field-label" for="event-style">
+            Style of dance <span class="req">(required)</span>
+          </label>
+          <select id="event-style" name="style">
+            <option value="">Choose a style&hellip;</option>
+            <option>West Coast Swing</option>
+            <option>Latin</option>
+            <option>Mixed</option>
+            <option>Argentine Tango</option>
+            <option value="Other">Other</option>
+          </select>
+          <input type="text" id="event-style-other" name="style_other" placeholder="What style?" hidden>
+        </fieldset>
+
+        <fieldset class="submit-section">
+          <legend>When does this happen? <span class="req">(required)</span></legend>
+          <div class="schedule-toggle" role="radiogroup" aria-label="Schedule type">
+            <label><input type="radio" name="schedule_kind" value="one_time" checked> One-time / special event</label>
+            <label><input type="radio" name="schedule_kind" value="recurring"> Recurring?</label>
+          </div>
+
+          <div id="schedule-one-time">
+            <label class="field-label" for="event-date">Date</label>
+            <input type="date" id="event-date" name="start_date">
+            <div class="time-row">
+              <label class="field-label" for="onetime-start-time">Start time</label>
+              <input type="time" id="onetime-start-time" name="start_time_onetime">
+              <label class="field-label" for="onetime-end-time">End time (optional)</label>
+              <input type="time" id="onetime-end-time" name="end_time_onetime">
+            </div>
+          </div>
+
+          <div id="schedule-recurring" hidden>
+            <div class="schedule-sub-toggle" role="radiogroup" aria-label="Recurring pattern">
+              <label><input type="radio" name="recur_kind" value="weekly" checked> Weekly on a specific day</label>
+              <label><input type="radio" name="recur_kind" value="monthly_nth"> Monthly (a certain week, e.g. "First Saturday")</label>
+              <label><input type="radio" name="recur_kind" value="monthly_date"> Monthly on a specific date (e.g. "the 15th")</label>
+              <label><input type="radio" name="recur_kind" value="biweekly"> Every other week (biweekly)</label>
+            </div>
+
+            <div id="recur-weekly">
+              <label class="field-label" for="day-of-week">Day of week</label>
+              <select id="day-of-week" name="day_of_week">
+                <option value="">Choose a day&hellip;</option>
+                <option>Sunday</option><option>Monday</option><option>Tuesday</option>
+                <option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+              </select>
+            </div>
+
+            <div id="recur-monthly-nth" hidden>
+              <label class="field-label" for="monthly-nth">Which week?</label>
+              <div class="monthly-rule-row">
+                <select id="monthly-nth">
+                  <option value="First">First</option>
+                  <option value="Second">Second</option>
+                  <option value="Third">Third</option>
+                  <option value="Fourth">Fourth</option>
+                </select>
+                <select id="monthly-dow">
+                  <option>Sunday</option><option>Monday</option><option>Tuesday</option>
+                  <option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+                </select>
+                <span>of the month</span>
+              </div>
+            </div>
+
+            <div id="recur-monthly-date" hidden>
+              <label class="field-label" for="monthly-date">Day of the month</label>
+              <input type="number" id="monthly-date" name="monthly_date" min="1" max="31" placeholder="e.g. 15">
+            </div>
+
+            <div id="recur-biweekly" hidden>
+              <label class="field-label" for="biweekly-dow">Day of week</label>
+              <select id="biweekly-dow" name="biweekly_day_of_week">
+                <option value="">Choose a day&hellip;</option>
+                <option>Sunday</option><option>Monday</option><option>Tuesday</option>
+                <option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+              </select>
+              <label class="field-label" for="biweekly-anchor-date">
+                A date this actually happens <span class="req">(required — tells us which weeks)</span>
+              </label>
+              <input type="date" id="biweekly-anchor-date" name="biweekly_anchor_date">
+              <p class="field-hint">
+                Every-other-week events need one real example date so we know which weeks are the "on" weeks.
+              </p>
+            </div>
+
+            <div class="time-row">
+              <label class="field-label" for="recur-start-time">Start time</label>
+              <input type="time" id="recur-start-time" name="start_time_recur">
+              <label class="field-label" for="recur-end-time">End time (optional)</label>
+              <input type="time" id="recur-end-time" name="end_time_recur">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="submit-section">
+          <legend>Where</legend>
+          <label class="field-label" for="event-address">
+            Address <span class="req">(required)</span>
+          </label>
+          <input type="text" id="event-address" name="address" placeholder="Street, city, state">
+
+          <label class="field-label" for="event-building">Building/venue name (optional)</label>
+          <input type="text" id="event-building" name="building">
+
+          <label class="field-label" for="event-organizer">Organizer name (optional)</label>
+          <input type="text" id="event-organizer" name="organizer">
+
+          <label class="field-label" for="event-cost">Cost (optional)</label>
+          <input type="text" id="event-cost" name="cost" placeholder="e.g. $10, free, members only">
+        </fieldset>
+
+        <fieldset class="submit-section" id="form-flyer-section">
+          <legend>Flyer image (optional)</legend>
+          <p class="field-hint">
+            Have a flyer for this event? Add it and it'll appear on the event's card once the
+            submission is approved.
+          </p>
+          <input type="file" id="form-flyer-input" name="form_flyer" accept="image/*" class="visually-hidden-file">
+          <label class="file-button" for="form-flyer-input" id="form-flyer-button">
+            <span class="file-button-icon" aria-hidden="true">🖼️</span>
+            <span class="file-button-text" id="form-flyer-button-text">Tap to add a flyer image</span>
+          </label>
+          <img id="form-flyer-preview" class="flyer-preview-img" alt="Flyer preview" hidden>
+        </fieldset>
+      </div>
+
+      <!-- Contact info (always shown, internal only) -------------------------- -->
+      <fieldset class="submit-section">
+        <legend>Your contact info <span class="req">(at least one required)</span></legend>
+        <p class="field-hint">Only Sean sees this — it's for follow-up questions, never shown publicly.</p>
+        <label class="field-label" for="contact-name">Name</label>
+        <input type="text" id="contact-name" name="contact_name">
+        <label class="field-label" for="contact-email">Email</label>
+        <input type="email" id="contact-email" name="contact_email">
+        <label class="field-label" for="contact-phone">Phone</label>
+        <input type="tel" id="contact-phone" name="contact_phone">
+      </fieldset>
+
+      <div class="submit-actions">
+        <button type="submit" id="submit-btn" class="submit-event-btn">Submit</button>
+        <p id="submit-status" class="submit-status" role="status"></p>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/submit-event.js"></script>
+</body>
+</html>
