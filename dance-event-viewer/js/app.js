@@ -24,10 +24,10 @@ const CORE_CATEGORIES = ["West Coast Swing", "Country Swing", "Mixed", "Latin", 
 // still write into the SAME state.filters.cats Set — a class is just a category like any other,
 // only the UI grouping differs. Bachata is deliberately NOT here: it's an existing partner-dance
 // entry already categorized "Latin" (sensual-sundays-bachata-pensacola-coastals) — leave it alone.
-// Line Dance added 2026-08-04 (Sean) — line dance is a no-partner style, so it lives in the solo
-// group. Exact-match "Line Dance" styles categorize here; compound styles (e.g. "Line Dance /
-// Swing") still fall to Other via normCategory's exact-match rule, same as the country styles.
-const SOLO_STYLES = ["Ballet", "Jazz", "Hip Hop", "Contemporary", "Heels", "Pom", "Musical Theatre", "Dance Fit", "Line Dance"];
+// Line Dance and Belly Dance are no-partner styles, so they live in the solo group.
+// Exact-match styles categorize here; compound styles (e.g. "Line Dance / Swing") still fall to
+// Other via normCategory's exact-match rule, same as the country styles.
+const SOLO_STYLES = ["Ballet", "Jazz", "Hip Hop", "Contemporary", "Heels", "Pom", "Musical Theatre", "Dance Fit", "Line Dance", "Belly Dance"];
 const CATEGORY_WHITELIST = [...CORE_CATEGORIES, ...SOLO_STYLES];
 // Regional pivot (2026-07-17, Sean — Phase 0 of the Regional Repositioning Plan): the
 // default view shows Southern events; everything else (rest of the US + the few
@@ -56,7 +56,7 @@ const MAP_MARKER_COLORS = {
   "Argentine Tango": "#ff5fa2", "Other": "#9fadc4",
   // Solo Dance Styles (2026-07-13) — see SOLO_STYLES above.
   "Ballet": "#a78bfa", "Jazz": "#fde047", "Hip Hop": "#f87171", "Contemporary": "#2dd4bf",
-  "Heels": "#e879f9", "Pom": "#a3e635", "Musical Theatre": "#818cf8", "Dance Fit": "#f59e0b", "Line Dance": "#22c55e",
+  "Heels": "#e879f9", "Pom": "#a3e635", "Musical Theatre": "#818cf8", "Dance Fit": "#f59e0b", "Line Dance": "#22c55e", "Belly Dance": "#fb7185",
 };
 // Silent-send endpoint for the correction form: Sean's Google Apps Script web app /exec URL.
 // While empty, the form falls back to opening Gmail compose. No credentials live in this page.
@@ -837,7 +837,7 @@ function matchesFilters(d) {
   // Unverified events (research_confidence "low") hide until the "Unverified" toggle is on (2026-07-20, Sean).
   if (!state.showUnverified && isUnverified(d.ev)) return false;
   // Solo styles are strictly OPT-IN (2026-07-18, Sean): a solo-class category (Ballet,
-  // Jazz, Hip Hop, Contemporary, Heels, Pom, Musical Theatre, Dance Fit, Line Dance) is shown ONLY
+  // Jazz, Hip Hop, Contemporary, Heels, Pom, Musical Theatre, Dance Fit, Line Dance, Belly Dance) is shown ONLY
   // while its own chip is selected — never under the default "All styles" state, and
   // never dragged in by selecting a partner style. Shared ?events= links still bypass
   // everything above (deliberate); a shared ?style=<solo> URL selects the chip, which
