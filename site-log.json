@@ -1,9 +1,20 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-04T13:46:47Z",
+  "generated_at": "2026-08-05T00:02:33Z",
   "since": "2026-07-22",
   "_notes": "Derived, public-safe site activity log for the authenticated dashboard Site log panel. Built by Operations\\Tools\\build_site_log.ps1 from the local master dance_events.json. Source-obfuscated on purpose: no scanner names, source types, source details, flyer/source URLs, notes, or contact fields. Entries begin at \"since\" and accumulate. Not the same thing as the public viewer Activity Pulse (visitor behavior).",
   "entries": [
+    {
+      "id": "discover:starlite-ballroom-tuesday-ballroom-latin-class",
+      "ts": "2026-08-05T00:02:33Z",
+      "ts_precision": "exact",
+      "kind": "event_discovered",
+      "key": "starlite-ballroom-tuesday-ballroom-latin-class",
+      "name": "Starlite Ballroom Group Class (Ballroom & Latin)",
+      "venue": "Starlite Ballroom, 7020 Old Shell Road, Mobile, AL 36608",
+      "style": "Ballroom / Latin",
+      "state": "AL"
+    },
     {
       "id": "discover:ttdgc-latin-groove-thursdays-the-block",
       "ts": "2026-08-02T12:00:00Z",

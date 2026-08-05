@@ -12404,6 +12404,26 @@
       "source_url": "https://dancejamproductions.com/westieweekend/",
       "unverified": false,
       "verified_on": "2026-07-12"
+    },
+    {
+      "key": "starlite-ballroom-tuesday-ballroom-latin-class",
+      "name": "Starlite Ballroom Group Class (Ballroom & Latin)",
+      "style": "Ballroom / Latin",
+      "type": "weekly_recurring",
+      "day_of_week": "Tuesday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": null,
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": null,
+      "venue": "Starlite Ballroom, 7020 Old Shell Road, Mobile, AL 36608",
+      "state": "AL",
+      "cost": "$80 for 6 lessons",
+      "source_url": null,
+      "unverified": false,
+      "verified_on": "2026-08-04"
     }
   ]
 }

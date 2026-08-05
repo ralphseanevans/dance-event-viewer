@@ -61,10 +61,12 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600;700&display=swap">
 
   <link rel="stylesheet" href="css/styles.css?v=20260804b">
+  <link rel="stylesheet" href="css/hero-opossum.css?v=20260804a">
   <link rel="stylesheet" href="css/activity-pulse.css?v=20260803a">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260804a">
-  <script defer src="js/theme-switch.js?v=20260804a"></script>
-  <script defer src="js/club-lights.js?v=20260803a"></script>
+  <script defer src="js/theme-switch.js?v=20260804c"></script>
+  <script defer src="js/club-lights.js?v=20260804b"></script>
+  <script defer src="js/hero-opossum.js?v=20260804a"></script>
 
   <!-- Firebase Realtime Database config used by Activity Pulse and the live viewer count. -->
   <script>
@@ -178,6 +180,92 @@
     </div>
     <div id="brand-slot">
       <img id="brand-img" src="assets/dance-event-viewer-banner.png" alt="Dance Event Viewer — a dancing couple under warm club lights">
+      <!-- Interactive low-poly opossum: the trigger overlays its visible tail at rest;
+           the self-contained animation and reduced-motion path live in hero-opossum.*. -->
+      <div class="hero-opossum" id="hero-opossum" data-state="hidden">
+        <button type="button" class="opossum-trigger" aria-label="Reveal the hidden opossum"
+          aria-describedby="opossum-status" title="Click the tail to reveal the opossum"></button>
+        <svg class="opossum-art" viewBox="0 0 240 230" role="img" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="opossum-fur" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#d9dce1"/><stop offset=".48" stop-color="#7e8792"/><stop offset="1" stop-color="#3b414c"/>
+            </linearGradient>
+            <linearGradient id="opossum-face" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#f1e8df"/><stop offset=".62" stop-color="#c9c3c2"/><stop offset="1" stop-color="#777681"/>
+            </linearGradient>
+            <linearGradient id="opossum-tail" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#d7a0a9"/><stop offset=".5" stop-color="#bd7e8c"/><stop offset="1" stop-color="#825565"/>
+            </linearGradient>
+          </defs>
+
+          <g class="opossum-tail-mirror" transform="translate(250 0) scale(-1 1)">
+            <g class="opossum-tail">
+              <path class="opossum-tail-shadow" d="M77 133 C38 137 15 153 23 180 C31 208 86 211 116 185 C139 165 126 145 110 153 C96 161 104 174 115 169"/>
+              <path class="opossum-tail-main" d="M77 133 C38 137 15 153 23 180 C31 208 86 211 116 185 C139 165 126 145 110 153 C96 161 104 174 115 169"/>
+              <path class="opossum-tail-rings" d="M35 148l8 15M23 167l17 8M25 188l19-5M45 204l5-19M68 208l-3-20M91 202l-7-17M110 188l-12-14M124 170l-17-7"/>
+            </g>
+          </g>
+
+          <g class="opossum-body">
+            <ellipse class="opossum-shadow" cx="111" cy="179" rx="70" ry="14"/>
+            <polygon class="opossum-rump" points="45,117 61,72 111,48 159,68 181,114 159,157 91,166 55,145"/>
+            <polygon class="fur-facet facet-a" points="61,72 111,48 97,101 45,117"/>
+            <polygon class="fur-facet facet-b" points="111,48 159,68 130,101 97,101"/>
+            <polygon class="fur-facet facet-c" points="45,117 97,101 91,166 55,145"/>
+            <polygon class="fur-facet facet-d" points="97,101 130,101 159,157 91,166"/>
+            <polygon class="fur-facet facet-e" points="130,101 181,114 159,157"/>
+
+            <g class="opossum-legs rear">
+              <polygon points="57,135 82,137 75,174 51,174"/>
+              <path d="M50 173l-9 8m10-7 0 11m4-11 8 8"/>
+            </g>
+            <g class="opossum-legs front">
+              <polygon points="143,132 164,126 173,166 151,171"/>
+              <path d="M153 169l-10 8m12-8 1 12m4-13 9 8"/>
+            </g>
+
+            <g class="opossum-head">
+              <polygon class="opossum-neck" points="117,75 153,68 175,100 143,129 108,111"/>
+              <polygon class="opossum-face" points="132,70 170,72 218,111 162,126 122,105"/>
+              <polygon class="face-facet face-facet-a" points="132,70 170,72 157,103 122,105"/>
+              <polygon class="face-facet face-facet-b" points="170,72 218,111 157,103"/>
+              <polygon class="face-facet face-facet-c" points="122,105 157,103 162,126"/>
+              <polygon class="opossum-ear left" points="131,76 118,48 151,60"/>
+              <polygon class="opossum-ear right" points="168,75 177,48 190,79"/>
+              <polygon class="opossum-ear-inner left" points="130,68 123,55 143,62"/>
+              <polygon class="opossum-ear-inner right" points="174,68 178,55 184,74"/>
+              <g class="opossum-eyes">
+                <circle class="opossum-eye" cx="169" cy="91" r="6"/>
+                <circle class="opossum-eye-glint" cx="171" cy="89" r="1.8"/>
+              </g>
+              <polygon class="opossum-nose" points="218,106 230,111 217,117"/>
+              <path class="opossum-whiskers" d="M208 116l25 10m-29-6 21 16m-25-19 28 1"/>
+              <path class="opossum-mouth-closed" d="M177 112q18 9 35 2"/>
+              <g class="opossum-mouth-open">
+                <polygon class="opossum-mouth" points="169,106 214,113 178,142 157,119"/>
+                <polygon class="opossum-tongue" points="169,132 179,121 194,124 178,140"/>
+                <g class="opossum-teeth upper">
+                  <polygon points="170,109 178,111 174,122"/><polygon points="180,111 188,112 183,124"/>
+                  <polygon points="190,112 198,113 193,125"/><polygon points="201,113 209,114 203,124"/>
+                </g>
+                <g class="opossum-teeth lower">
+                  <polygon points="165,121 172,128 161,130"/><polygon points="173,130 181,136 169,137"/>
+                  <polygon points="184,128 191,130 183,137"/><polygon points="195,121 203,119 199,130"/>
+                </g>
+                <polygon class="opossum-jaw" points="158,119 178,142 204,122 181,151 153,133"/>
+              </g>
+            </g>
+
+            <g class="opossum-grip-paw paw-a">
+              <polygon points="118,135 139,131 142,149 121,151"/><path d="M124 149l-5 10m11-11-1 12m8-13 5 9"/>
+            </g>
+            <g class="opossum-grip-paw paw-b">
+              <polygon points="148,131 166,126 171,143 152,148"/><path d="M155 145l-3 11m10-13 2 11m3-13 7 8"/>
+            </g>
+          </g>
+        </svg>
+        <span class="visually-hidden" id="opossum-status" aria-live="polite">A curled opossum tail is peeking from behind the banner.</span>
+      </div>
     </div>
     <div class="title-block">
       <h1 class="visually-hidden">Dance Event Viewer</h1>
@@ -353,21 +441,21 @@
     </p>
   </footer>
 
-  <script src="js/dance-poster.js?v=20260724c"></script>
+  <script src="js/dance-poster.js?v=20260804b"></script>
   <!-- Add to Calendar (2026-08-03): per-card 📅 button (Google link + .ics download with
        real recurrence rules). Loaded BEFORE app.js so window.DEV_ADD_TO_CAL exists when
        the first cards render. Bulk "Export these (.ics)" button disabled for now (Sean's
        call, same day) — see js/add-to-calendar.js, ensureBulkButton() left intact. -->
-  <script src="js/add-to-calendar.js?v=20260803b"></script>
-  <script src="js/app.js?v=20260804a"></script>
+  <script src="js/add-to-calendar.js?v=20260804b"></script>
+  <script src="js/app.js?v=20260804b"></script>
   <!-- Choose-location state map (2026-08-03): reads/writes app.js's state.sel.state
        directly (same global scope, loaded after app.js). Its own data file
        (js/us-states-map-data.js, ~145KB of state path data) is fetched lazily on
        first open, not here. -->
-  <script src="js/state-map-picker.js?v=20260803d"></script>
+  <script src="js/state-map-picker.js?v=20260804b"></script>
   <!-- Recent searches from everyone (2026-08-03): references SUBMIT_ENDPOINT, a
        top-level const in app.js — must load after it. -->
-  <script src="js/recent-searches.js?v=20260803a"></script>
-  <script src="js/activity-pulse.js?v=20260803a"></script>
+  <script src="js/recent-searches.js?v=20260804b"></script>
+  <script src="js/activity-pulse.js?v=20260804b"></script>
 </body>
 </html>

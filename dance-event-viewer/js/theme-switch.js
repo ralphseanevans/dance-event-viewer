@@ -11,8 +11,8 @@
     crimson4:true, mintreactor:true
   };
 
-  // Each theme also swaps the hero banner so the graphic matches the palette
-  // (Sean, 2026-07-17): warm banner for Ember, the original blue/pink one for Classic.
+  // Themes with their own artwork swap the hero banner to match the palette.
+  // Every unlisted palette falls back to the warm Ember banner.
   var BANNERS = {
     ember: {
       src: "assets/dance-event-viewer-banner.png",
@@ -21,6 +21,10 @@
     classic: {
       src: "assets/dance-event-viewer-banner-classic.png",
       alt: "Dance Event Viewer — a dancing couple under blue and pink club lights"
+    },
+    mintreactor: {
+      src: "assets/dance-event-viewer-banner-mint-reactor.png?v=20260804a",
+      alt: "Dance Event Viewer — a dancing couple under mint and coral club lights"
     }
   };
 
@@ -41,8 +45,8 @@
     if (!VALID[theme]) theme = defaultTheme();
     document.documentElement.setAttribute("data-theme", theme);
     if (persist) { try { localStorage.setItem(STORE_KEY, theme); } catch (e) {} }
-    // Only Classic has a separate historical banner. Every other palette retains the
-    // current Moonlit Ember hero, so adding themes does not invent or load missing assets.
+    // Only explicitly mapped themes load separate artwork. Every other palette retains
+    // the current Moonlit Ember hero, so adding themes does not invent missing assets.
     var banner = BANNERS[theme] || BANNERS.ember;
     var img = document.getElementById("brand-img");
     if (img && banner) { img.setAttribute("src", banner.src); img.setAttribute("alt", banner.alt); }
