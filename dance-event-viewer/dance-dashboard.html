@@ -777,7 +777,7 @@ function renderCalendarManager() {
 
   function draw() {
     const q = search.value.trim().toLowerCase();
-    const shown = calendarEvents.filter(event => !q || [event.name, event.venue, event.style, event.key].some(value => String(value || "").toLowerCase().includes(q)));
+    const shown = calendarEvents.filter(event => calendarMatchesSearch(event, q));
     list.innerHTML = "";
     if (!shown.length) {
       list.innerHTML = `<p class="empty">No calendar listings match that search.</p>`;
@@ -788,6 +788,18 @@ function renderCalendarManager() {
   }
   search.addEventListener("input", draw);
   draw();
+}
+
+const CALENDAR_SEARCH_ALIASES = Object.freeze({
+  "tango-lab-fridays-july-2026": ["roberto", "belkis"],
+});
+
+function calendarMatchesSearch(event, query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return true;
+  const aliases = CALENDAR_SEARCH_ALIASES[event?.key] || [];
+  return [event?.name, event?.venue, event?.style, event?.key, ...aliases]
+    .some(value => String(value || "").toLowerCase().includes(q));
 }
 
 /* ---------- History tab (2026-07-23): read-only, filterable audit ---------- */
