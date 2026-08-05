@@ -22,7 +22,7 @@ top-right Submit button). It flips the whole site between 13 palettes by setting
 `localStorage("dev-theme")`, and a tiny inline script in `<head>` applies the saved
 theme before first paint so there's no flash of the wrong palette.
 
-- **Moonlit Ember** is the default; **Classic Blue** preserves the original palette.
+- **Mint Reactor** is the default; **Moonlit Ember** and **Classic Blue** remain available in the theme menu.
 - The additional palettes are **Ennis Blade, CyberGum6, Ink-Crimson, Dead City,
   BloodMoon21, Hope Diamond, Neon Moon Tarot, Monster Paper, Technobike,
   Neon Darkness,** and **Crimson Gameboy**.

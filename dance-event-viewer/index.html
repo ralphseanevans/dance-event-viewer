@@ -22,7 +22,7 @@
        this default is. The creature has no personal override (site-wide only). -->
   <script>
     (function () {
-      var SITE_DEFAULTS = { theme: "ember", creature: "fox", pageCharacters: ["hero-opossum"] };
+      var SITE_DEFAULTS = { theme: "mintreactor", creature: "fox", pageCharacters: ["hero-opossum"] };
       window.DEV_SITE_DEFAULTS = SITE_DEFAULTS;
       document.documentElement.setAttribute("data-page-character-loading", "true");
       document.documentElement.setAttribute("data-page-characters", SITE_DEFAULTS.pageCharacters.join(" "));
@@ -135,7 +135,7 @@
         <span class="theme-caret" aria-hidden="true">▾</span>
       </button>
       <div id="theme-menu" class="theme-menu" role="menu" aria-label="Color theme" hidden>
-        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="ember" aria-checked="true">
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="ember" aria-checked="false">
           <span class="theme-swatch swatch-ember" aria-hidden="true"></span>
           <span class="theme-option-label">Moonlit Ember</span>
           <span class="theme-check" aria-hidden="true">✓</span>
@@ -178,7 +178,7 @@
         <button type="button" class="theme-option" role="menuitemradio" data-theme-value="crimson4" aria-checked="false">
           <span class="theme-swatch swatch-crimson4" aria-hidden="true"></span><span class="theme-option-label">Crimson Gameboy</span><span class="theme-check" aria-hidden="true">✓</span>
         </button>
-        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="mintreactor" aria-checked="false">
+        <button type="button" class="theme-option" role="menuitemradio" data-theme-value="mintreactor" aria-checked="true">
           <span class="theme-swatch swatch-mintreactor" aria-hidden="true"></span><span class="theme-option-label">Mint Reactor</span><span class="theme-check" aria-hidden="true">✓</span>
         </button>
       </div>
