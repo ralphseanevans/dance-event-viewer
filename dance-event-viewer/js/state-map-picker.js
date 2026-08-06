@@ -28,6 +28,23 @@
   var tooltipEl = null, hoverTimer = null, lastMouseX = 0, lastMouseY = 0;
   var HOVER_DELAY = 700; // ms — "hover... if you hold it a sec"
 
+  // City call-outs (2026-08-05, Sean's QI spec item 1: "Pensacola and Mobile should
+  // have their own number"): the two home areas carry their own always-visible
+  // counts, attributed by d.loc.area — the SAME attribution the area chips use
+  // (DEFAULT_AREAS in js/app.js) — and the FL/AL state numbers EXCLUDE these
+  // events, so no event is ever counted twice and punching states never changes
+  // any displayed number. Anchors sit on Pensacola Bay / Mobile Bay in the map's
+  // pre-projected Albers space; the labels themselves sit in open Gulf water
+  // (positions checked against every state's path points) with a thin leader line
+  // back to the anchor, because the two cities are ~13 map units apart — labels
+  // placed on the land itself would collide with each other and the coastline.
+  // Display-only by spec: not clickable, not in the tab order; the counts still
+  // reach assistive tech via each call-out group's aria-label.
+  var CITY_CALLOUTS = [
+    { name: "Pensacola", area: "Pensacola area", anchor: [666.5, 488.5], label: [698, 540] },
+    { name: "Mobile",    area: "Mobile area",    anchor: [653, 487],     label: [612, 548] }
+  ];
+
   function appReady() {
     return typeof state === "object" && state && state.sel && state.mapStates
       && typeof US_STATES === "object"
@@ -119,15 +136,25 @@
   // state"). Deliberately NOT filtered by the other active filters (style/day/
   // national toggle/etc.) — same "any event anywhere" universe the State select's
   // own option list already uses (see buildLocSelects), so the two agree.
+  // 2026-08-05: split into states + cities. An event whose loc.area matches a
+  // CITY_CALLOUTS area counts toward that city INSTEAD of its state, so
+  // cities + all states always sum to the total of state-mappable events (the
+  // Item-5 invariant asserted by Operations/Tests/t7d_math.mjs).
   function countsByCode() {
-    var counts = {};
+    var counts = { states: {}, cities: {} };
+    CITY_CALLOUTS.forEach(function (c) { counts.cities[c.area] = 0; });
     if (!appReady() || !Array.isArray(state.events)) return counts;
     state.events.forEach(function (d) {
       var name = d && d.loc && d.loc.state;
       if (!name) return;
       var code = nameToCode(name);
       if (!code) return;
-      counts[code] = (counts[code] || 0) + 1;
+      var area = d.loc.area;
+      if (area && Object.prototype.hasOwnProperty.call(counts.cities, area)) {
+        counts.cities[area] += 1;
+        return;
+      }
+      counts.states[code] = (counts.states[code] || 0) + 1;
     });
     return counts;
   }
@@ -168,7 +195,7 @@
     svg.setAttribute("role", "group");
     svg.setAttribute("aria-label", "Choose a state on the map");
     data.states.forEach(function (st) {
-      var n = counts[st.code] || 0;
+      var n = counts.states[st.code] || 0;
       var p = document.createElementNS(SVG_NS, "path");
       p.setAttribute("d", st.d);
       p.setAttribute("class", "state-shape");
@@ -222,7 +249,7 @@
       if (!pt) return;
       var fontSize = Math.min(LABEL_MAX_FONT, pt.minDim * LABEL_SCALE);
       if (pt.minDim < LABEL_MIN_DIM || fontSize < LABEL_MIN_FONT) return; // too little room for a legible number
-      var n = counts[st.code] || 0;
+      var n = counts.states[st.code] || 0;
       var label = document.createElementNS(SVG_NS, "text");
       label.setAttribute("x", pt.x);
       label.setAttribute("y", pt.y);
@@ -234,6 +261,55 @@
       label.style.strokeWidth = (fontSize * 0.27).toFixed(2) + "px"; // halo scales with the glyph, or it swallows small digits
       label.textContent = String(n);
       svg.appendChild(label);
+    });
+    // City call-outs (2026-08-05) — drawn after the state labels so they paint on
+    // top. Each is: anchor dot on the bay, thin leader line, count, city name.
+    // Same hover-hold tooltip contract as the states (immediate on nothing —
+    // these aren't focusable, so there's no keyboard variant to mirror).
+    CITY_CALLOUTS.forEach(function (c) {
+      var n = counts.cities[c.area] || 0;
+      var g = document.createElementNS(SVG_NS, "g");
+      g.setAttribute("class", "city-callout");
+      g.setAttribute("role", "img");
+      g.setAttribute("aria-label", c.name + ", " + n + (n === 1 ? " event" : " events"));
+      var line = document.createElementNS(SVG_NS, "line");
+      line.setAttribute("x1", c.anchor[0]);
+      line.setAttribute("y1", c.anchor[1]);
+      line.setAttribute("x2", c.label[0]);
+      line.setAttribute("y2", c.label[1] - 12);
+      line.setAttribute("class", "city-leader");
+      g.appendChild(line);
+      var dot = document.createElementNS(SVG_NS, "circle");
+      dot.setAttribute("cx", c.anchor[0]);
+      dot.setAttribute("cy", c.anchor[1]);
+      dot.setAttribute("r", "2.2");
+      dot.setAttribute("class", "city-anchor");
+      g.appendChild(dot);
+      var num = document.createElementNS(SVG_NS, "text");
+      num.setAttribute("x", c.label[0]);
+      num.setAttribute("y", c.label[1]);
+      num.setAttribute("text-anchor", "middle");
+      num.setAttribute("class", "city-count-num" + (n ? "" : " state-count-zero"));
+      num.textContent = String(n);
+      g.appendChild(num);
+      var nm = document.createElementNS(SVG_NS, "text");
+      nm.setAttribute("x", c.label[0]);
+      nm.setAttribute("y", c.label[1] + 10);
+      nm.setAttribute("text-anchor", "middle");
+      nm.setAttribute("class", "city-count-name");
+      nm.textContent = c.name;
+      g.appendChild(nm);
+      // Hover tooltip, matching the states' hover-hold behavior and wording.
+      g.addEventListener("mouseenter", function (e) {
+        lastMouseX = e.clientX; lastMouseY = e.clientY;
+        hoverTimer = setTimeout(function () {
+          var r = mapHost.getBoundingClientRect();
+          showTooltip(c.name, n, lastMouseX - r.left, lastMouseY - r.top);
+        }, HOVER_DELAY);
+      });
+      g.addEventListener("mousemove", function (e) { lastMouseX = e.clientX; lastMouseY = e.clientY; });
+      g.addEventListener("mouseleave", hideTooltip);
+      svg.appendChild(g);
     });
     if (statusEl) statusEl.hidden = true;
     refreshHighlight();

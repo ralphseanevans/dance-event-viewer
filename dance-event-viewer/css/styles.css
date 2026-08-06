@@ -526,6 +526,10 @@ body {
 }
 .chip[aria-pressed="true"] { background: var(--chip-on-bg); border-color: var(--chip-on-border); font-weight: 600; }
 .chip:hover { border-color: var(--text-dim); }
+/* Three-letter day chips (2026-08-05, Sean: "shorten their buttons") — the labels
+   are now Sun–Sat (see chipLabel in js/app.js), so the buttons drop the wide
+   default padding and the whole week fits one row without crowding. */
+.chips[data-group="days"] .chip { padding: 4px 9px; }
 
 /* Solo Dance Styles (2026-07-13) — collapsed-by-default sub-group in the Style filter for
    studio/class categories (Ballet, Jazz, Hip Hop, etc.) that aren't partner dances. Same
@@ -1351,6 +1355,24 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
   paint-order: stroke fill; stroke: var(--bg); stroke-linejoin: round;
 }
 .state-count-zero { fill: var(--text-dim); opacity: .6; }
+/* City call-outs (2026-08-05) — Pensacola/Mobile carry their own counts, styled
+   distinctly from the state numbers (accent color + small-caps city name) so they
+   read as city counts. They sit in open Gulf water with a leader line back to an
+   anchor dot on the bay; see CITY_CALLOUTS in js/state-map-picker.js. The text
+   keeps the same stroke halo trick as .state-count for legibility on any theme. */
+.city-callout { cursor: default; }
+.city-leader { stroke: var(--text-dim); stroke-width: .8px; opacity: .65; fill: none; }
+.city-anchor { fill: var(--accent); stroke: var(--bg); stroke-width: .8px; }
+.city-count-num {
+  font-weight: 700; font-family: inherit; font-size: 13px;
+  fill: var(--accent); user-select: none;
+  paint-order: stroke fill; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round;
+}
+.city-count-name {
+  font-family: inherit; font-size: 8px; letter-spacing: .06em; text-transform: uppercase;
+  fill: var(--text-dim); user-select: none;
+  paint-order: stroke fill; stroke: var(--bg); stroke-width: 1.9px; stroke-linejoin: round;
+}
 /* Hover tooltip (2026-08-03: "hover name of the state... if you hold it a sec") —
    one shared element, positioned near the pointer/focused shape. Plain HTML, not
    SVG, so it sits on top of the map regardless of which state it's naming. */

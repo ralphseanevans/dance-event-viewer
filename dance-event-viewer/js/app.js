@@ -563,7 +563,16 @@ function chipIsOn(group, v) {
   if (!set) return false;
   return (allMeansEvery(group) && set.size === 0) ? true : set.has(v);
 }
-function chipLabel(group, v) { return group === "areas" ? (AREA_LABELS[v] || v) : v; }
+/* Day chips show three-letter labels (2026-08-05, Sean: "the days are too long
+   horizontally... give them three letters each") — VISIBLE text only. The stored
+   value, URL param, and filter predicates keep the full DAY_ORDER name, and the
+   full name stays on each day chip's aria-label (set in buildFilterChips,
+   refreshed with the live facet count in updateFilterUI). */
+function chipLabel(group, v) {
+  if (group === "areas") return AREA_LABELS[v] || v;
+  if (group === "days") return v.slice(0, 3);
+  return v;
+}
 
 function makeChip(label, onClick, single) {
   const b = document.createElement("button");
@@ -614,6 +623,10 @@ function buildFilterChips() {
     for (const v of cfg.values) {
       const chip = makeChip(chipLabel(group, v), () => toggleValue(group, v), single);
       chip.dataset.value = v;
+      // Day chips abbreviate visibly (see chipLabel); keep the FULL day name as the
+      // accessible name. data-full marks the chip so updateFilterUI can refresh the
+      // aria-label with the live "(N)" count the visible text also carries.
+      if (group === "days") { chip.dataset.full = v; chip.setAttribute("aria-label", v); }
       cfg.holder.appendChild(chip);
     }
   }
@@ -680,6 +693,9 @@ function updateFilterUI() {
       if (chip.dataset.all) { if (cEl) cEl.textContent = group === "areas" ? ` (${facetCount(group, null)})` : ""; continue; }
       const n = facetCount(group, chip.dataset.value);
       if (cEl) cEl.textContent = ` (${n})`;
+      // Abbreviated day chips: aria-label carries full day name + live count, so
+      // AT users hear exactly what sighted users see (2026-08-05).
+      if (chip.dataset.full) chip.setAttribute("aria-label", `${chip.dataset.full} (${n})`);
       // No zero-count dimming: a chip's shade now reflects only its selected state, so every
       // chip in a group reads at the same brightness regardless of its count (Sean, 2026-07-24:
       // "'One-time' and 'Past events' shouldn't be a different shade as recurring and ballet").
