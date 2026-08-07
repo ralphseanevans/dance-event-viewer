@@ -132,23 +132,35 @@
     document.head.appendChild(s);
   }
 
-  // Total events per state (2026-08-03: "put the number in the middle of each
-  // state"). Deliberately NOT filtered by the other active filters (style/day/
-  // national toggle/etc.) — same "any event anywhere" universe the State select's
-  // own option list already uses (see buildLocSelects), so the two agree.
-  // 2026-08-05: split into states + cities. An event whose loc.area matches a
-  // CITY_CALLOUTS area counts toward that city INSTEAD of its state, so
-  // cities + all states always sum to the total of state-mappable events (the
-  // Item-5 invariant asserted by Operations/Tests/t7d_math.mjs).
+  // Events per state/city (2026-08-03: "put the number in the middle of each
+  // state"; 2026-08-05: cities split out so Pensacola/Mobile carry their own
+  // numbers and FL/AL exclude them; 2026-08-06, Sean: count CURRENT events).
+  // Universe = the DEFAULT visible universe, matching what the area chips'
+  // "(N)" facets show on a fresh visit: upcoming only (no past), verified only,
+  // and solo-style classes excluded (they're opt-in). Still deliberately STATIC —
+  // computed once from that fixed default universe, never from the live filter
+  // state — so punching states or toggling filters can never change a map number.
+  // Fail-quiet: if app.js's predicates aren't available (future refactor), fall
+  // back to counting everything rather than breaking the map.
+  function inDefaultUniverse(d, today) {
+    try {
+      if (typeof isPastEvent === "function" && isPastEvent(d, today)) return false;
+      if (typeof isUnverified === "function" && isUnverified(d.ev)) return false;
+      if (typeof SOLO_STYLES !== "undefined" && SOLO_STYLES.indexOf(d.category) !== -1) return false;
+    } catch (e) { /* fall through — count it */ }
+    return true;
+  }
   function countsByCode() {
     var counts = { states: {}, cities: {} };
     CITY_CALLOUTS.forEach(function (c) { counts.cities[c.area] = 0; });
     if (!appReady() || !Array.isArray(state.events)) return counts;
+    var today = new Date(); today.setHours(0, 0, 0, 0);
     state.events.forEach(function (d) {
       var name = d && d.loc && d.loc.state;
       if (!name) return;
       var code = nameToCode(name);
       if (!code) return;
+      if (!inDefaultUniverse(d, today)) return;
       var area = d.loc.area;
       if (area && Object.prototype.hasOwnProperty.call(counts.cities, area)) {
         counts.cities[area] += 1;
