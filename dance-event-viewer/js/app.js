@@ -12,6 +12,7 @@
 const SOURCES = [
   { id: "dance", label: "All Dance Events", file: "../dance_events.json" },
 ];
+const SUPABASE_PUBLIC_FIELDS = "key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on";
 // Country Swing (added 2026-07-24, Sean): its own distinct dance/category — deliberately NOT
 // a bucket for Country/Western, two-step, or line-dance styles (Sean: "any country dancing is
 // completely different than Country Swing. Don't group any country dances in with it.").
@@ -462,9 +463,27 @@ async function loadData() {
   await loadWebEvents();
   let raw;
   try {
-    const res = await fetch(`${src.file}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    raw = await res.text();
+    const supabase = window.DANCE_EVENT_VIEWER_SUPABASE;
+    if (supabase?.enabled && supabase.url && supabase.publishableKey && supabase.table) {
+      try {
+        const endpoint = `${supabase.url}/rest/v1/${encodeURIComponent(supabase.table)}?select=${encodeURIComponent(SUPABASE_PUBLIC_FIELDS)}`;
+        const response = await fetch(endpoint, {
+          cache: "no-store",
+          headers: { apikey: supabase.publishableKey }
+        });
+        if (!response.ok) throw new Error(`Supabase HTTP ${response.status}`);
+        const events = await response.json();
+        if (!Array.isArray(events)) throw new Error("Supabase returned a non-array listing response");
+        raw = JSON.stringify({ events });
+      } catch (supabaseError) {
+        console.warn("Supabase listings unavailable; using static JSON fallback.", supabaseError);
+      }
+    }
+    if (!raw) {
+      const res = await fetch(`${src.file}?t=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      raw = await res.text();
+    }
   } catch (err) {
     state.events = [];
     render();
