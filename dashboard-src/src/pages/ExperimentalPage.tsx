@@ -1,7 +1,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert, Autocomplete, Box, Button, Chip, Divider, FormControl, InputLabel,
-  MenuItem, Paper, Select, Stack, TextField, Typography,
+  MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableHead, TableRow,
+  TextField, Typography,
 } from "@mui/material";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import type { DashboardEvent, DashboardProfile } from "../types";
@@ -20,6 +21,9 @@ interface OwnerDraft { id: string; display_name: string; linked_profile_id: stri
 interface EventLink { series_id: string; event_id: string; }
 interface ManagerLink { series_id: string; user_id: string; }
 interface AssignmentLink { id: string; event_id: string; user_id: string; assigned_by: string | null; active: boolean; assigned_at: string; ended_at: string | null; note: string | null; }
+interface BulkSeriesRow { name: string; code: string; seriesType: SeriesDraft["series_type"]; ownerId: string; }
+
+const emptyBulkRow = (): BulkSeriesRow => ({ name: "", code: "", seriesType: "recurring", ownerId: "" });
 
 export default function ExperimentalPage({ profile }: { profile: DashboardProfile }) {
   const [series, setSeries] = useState<SeriesDraft[]>([]);
@@ -37,6 +41,8 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [seriesType, setSeriesType] = useState<SeriesDraft["series_type"]>("recurring");
   const [ownerId, setOwnerId] = useState("");
   const [newOwnerName, setNewOwnerName] = useState("");
+  const [bulkRows, setBulkRows] = useState<BulkSeriesRow[]>(() => Array.from({ length: 6 }, emptyBulkRow));
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
@@ -122,6 +128,32 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     else { setNewOwnerName(""); await load(); }
   }
 
+  async function createBulkSeries(event: FormEvent) {
+    event.preventDefault(); setError("");
+    const completed = bulkRows.filter(row => row.name.trim() || row.code.trim());
+    if (!completed.length) return;
+    if (completed.some(row => !row.name.trim() || !row.code.trim())) {
+      setError("Every used row needs both a series name and a memorable code.");
+      return;
+    }
+    const payload = completed.map(row => ({
+      series_code: row.code.trim().toUpperCase().replace(/[^A-Z0-9-]+/g, "-").replace(/^-|-$/g, ""),
+      name: row.name.trim(), series_type: row.seriesType,
+      primary_owner_profile_id: row.ownerId.startsWith("profile:") ? row.ownerId.slice(8) : null,
+      primary_owner_draft_id: row.ownerId.startsWith("draft:") ? row.ownerId.slice(6) : null,
+      created_by: profile.id,
+    }));
+    setBulkSaving(true);
+    const { error: insertError } = await supabaseClient.from("experimental_series_drafts").insert(payload);
+    setBulkSaving(false);
+    if (insertError) setError(insertError.message);
+    else { setBulkRows(Array.from({ length: 6 }, emptyBulkRow)); await load(); }
+  }
+
+  function updateBulkRow(index: number, patch: Partial<BulkSeriesRow>) {
+    setBulkRows(rows => rows.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row));
+  }
+
   async function linkEvent() {
     if (!selectedSeries || !selectedEvent) return;
     const { error: insertError } = await supabaseClient.from("experimental_series_event_links").insert({
@@ -185,6 +217,30 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
           <FormControl fullWidth><InputLabel id="series-type-label">Type</InputLabel><Select labelId="series-type-label" label="Type" value={seriesType} onChange={event => setSeriesType(event.target.value as SeriesDraft["series_type"])}><MenuItem value="recurring">Recurring</MenuItem><MenuItem value="occasional">Occasional</MenuItem><MenuItem value="one_off">One-off</MenuItem></Select></FormControl>
           <FormControl fullWidth><InputLabel id="owner-label">Primary owner</InputLabel><Select labelId="owner-label" label="Primary owner" value={ownerId} onChange={event => setOwnerId(event.target.value)}><MenuItem value="">Unassigned</MenuItem>{ownerDrafts.map(owner => <MenuItem key={`draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}{people.map(person => <MenuItem key={`profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email} (dashboard account)</MenuItem>)}</Select></FormControl>
           <Button type="submit" variant="contained" disabled={!name.trim() || !code.trim()}>Create draft</Button>
+        </Stack>
+      </Paper>
+      <Paper component="form" onSubmit={createBulkSeries} sx={{ p: 2.5 }}>
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} gap={1} mb={1.5}>
+          <Box><Typography variant="h6">Bulk-create draft series</Typography><Typography color="text.secondary">Fill any number of rows. Blank rows are ignored.</Typography></Box>
+          <Button variant="outlined" onClick={() => setBulkRows(rows => [...rows, emptyBulkRow()])}>Add row</Button>
+        </Stack>
+        <Box sx={{ overflowX: "auto" }}>
+          <Table size="small" aria-label="Bulk-create draft event series">
+            <TableHead><TableRow><TableCell>Series name</TableCell><TableCell>Memorable code</TableCell><TableCell>Type</TableCell><TableCell>Primary owner</TableCell><TableCell align="right">Row</TableCell></TableRow></TableHead>
+            <TableBody>{bulkRows.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell sx={{ minWidth: 210 }}><TextField value={row.name} onChange={event => updateBulkRow(index, { name: event.target.value })} placeholder="Series name" size="small" fullWidth /></TableCell>
+                <TableCell sx={{ minWidth: 160 }}><TextField value={row.code} onChange={event => updateBulkRow(index, { code: event.target.value })} placeholder="JIVE-1042" size="small" fullWidth /></TableCell>
+                <TableCell sx={{ minWidth: 170 }}><Select value={row.seriesType} onChange={event => updateBulkRow(index, { seriesType: event.target.value as BulkSeriesRow["seriesType"] })} size="small" fullWidth><MenuItem value="recurring">Recurring</MenuItem><MenuItem value="occasional">Occasional</MenuItem><MenuItem value="one_off">One-off</MenuItem></Select></TableCell>
+                <TableCell sx={{ minWidth: 230 }}><Select value={row.ownerId} onChange={event => updateBulkRow(index, { ownerId: event.target.value })} displayEmpty size="small" fullWidth><MenuItem value="">Unassigned</MenuItem>{ownerDrafts.map(owner => <MenuItem key={`bulk-draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}{people.map(person => <MenuItem key={`bulk-profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email}</MenuItem>)}</Select></TableCell>
+                <TableCell align="right"><Button color="inherit" onClick={() => setBulkRows(rows => rows.length === 1 ? [emptyBulkRow()] : rows.filter((_item, rowIndex) => rowIndex !== index))}>Remove</Button></TableCell>
+              </TableRow>
+            ))}</TableBody>
+          </Table>
+        </Box>
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" gap={1} mt={1.5}>
+          <Button onClick={() => setBulkRows(Array.from({ length: 6 }, emptyBulkRow))}>Clear table</Button>
+          <Button type="submit" variant="contained" disabled={bulkSaving || !bulkRows.some(row => row.name.trim() || row.code.trim())}>{bulkSaving ? "Saving…" : "Save all series"}</Button>
         </Stack>
       </Paper>
       <Paper sx={{ p: 2.5 }}>
