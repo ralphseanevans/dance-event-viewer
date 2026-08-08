@@ -4,14 +4,16 @@ A community-facing page for browsing dance events across the Southern United Sta
 `../dance_events.json` (the master event list one folder up). No framework, no build
 step, no dependencies — three files.
 
-## Separate secure dashboard (foundation built 2026-08-08)
+## Separate secure dashboard (live 2026-08-08)
 
 `dashboard/` is generated static output for the new dark Refine/Supabase administrative client;
 its source and pinned lockfile live one level up in `../dashboard-src/`. It does not replace or
 alter this public viewer. Supabase RLS makes inactive users see nothing, limits volunteers to
 actively assigned events, and gives the active owner admin full dashboard access. The dashboard
-is not linked or production-activated until Auth-provider configuration, owner UUID bootstrap,
-real-session acceptance, legacy-tool parity, and guarded release verification are complete.
+is live at `dashboard/` with Google and email-link sign-in, paginated event/source records,
+searchable volunteer assignments, complete recurrence-exclusion and WCS controls, and lazy-loaded
+page modules. Auth-provider configuration, owner bootstrap, real-session acceptance, and guarded
+release verification are complete.
 
 ## Visual theme: Moonlit Ember + page-wide atmosphere (2026-07-16; club-light prototype 2026-07-18)
 
@@ -309,7 +311,8 @@ Outlook (.ics file)** (a downloaded file any calendar app imports). A **📅 Exp
 these (.ics)** button beside the search box downloads one calendar file of every
 event currently shown, filters applied — favorites-only export is just the
 favorites filter plus this button. In **Share several** select mode, the floating
-bar gains a **📅 To my calendar** button beside "Make Dance Card": one selected
+bar gains a **📅 To my calendar** button beside "Create Dance Card" (renamed from
+"Make Dance Card" 2026-08-07, retained through the `c949c0f` recovery): one selected
 dance opens the normal Google-or-.ics popover; two or more download a single .ics
 of the whole set (Google's add-event links carry only one event, and the popover
 says so — Google Calendar imports the file instead).

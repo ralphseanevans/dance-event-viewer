@@ -10,11 +10,14 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
+  Pagination,
   Paper,
   Select,
   Stack,
+  Switch,
   TextField,
   Typography,
   useMediaQuery,
@@ -31,9 +34,21 @@ import { supabaseClient } from "../supabase";
 const editableFields = [
   "name", "style", "event_type", "day_of_week", "monthly_rule", "start_date", "end_date",
   "start_time", "end_time", "venue", "state", "cost", "source_url", "notes", "last_confirmed", "flyer_url",
+  "exclude_dates", "exclude_monthly_rules",
 ] as const;
 
+const PAGE_SIZE = 24;
+
 type FormState = Record<(typeof editableFields)[number], string> & { event_key: string; record_status: string; in_wcs_list: boolean };
+
+function formatStringList(value: unknown): string {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").join(", ") : "";
+}
+
+function parseStringList(value: string): string[] | null {
+  const items = value.split(",").map((item) => item.trim()).filter(Boolean);
+  return items.length ? items : null;
+}
 
 function eventToForm(event?: DashboardEvent | null): FormState {
   return {
@@ -43,6 +58,7 @@ function eventToForm(event?: DashboardEvent | null): FormState {
     event_type: event?.event_type ?? "one_time",
     day_of_week: event?.day_of_week ?? "",
     monthly_rule: event?.monthly_rule ?? "",
+    exclude_monthly_rules: formatStringList(event?.exclude_monthly_rules),
     start_date: event?.start_date ?? "",
     end_date: event?.end_date ?? "",
     start_time: event?.start_time ?? "",
@@ -54,6 +70,7 @@ function eventToForm(event?: DashboardEvent | null): FormState {
     notes: event?.notes ?? "",
     last_confirmed: event?.last_confirmed ?? new Date().toISOString().slice(0, 10),
     flyer_url: event?.flyer_url ?? "",
+    exclude_dates: formatStringList(event?.exclude_dates),
     record_status: event?.record_status ?? "draft",
     in_wcs_list: event?.in_wcs_list ?? false,
   };
@@ -68,6 +85,7 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<DashboardEvent | null | undefined>(undefined);
   const [form, setForm] = useState<FormState>(eventToForm());
   const [saving, setSaving] = useState(false);
@@ -93,6 +111,15 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
     return events.filter((event) => [event.name, event.event_key, event.venue, event.style, event.state]
       .some((value) => value?.toLowerCase().includes(needle)));
   }, [events, search]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visibleEvents = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  );
+
+  useEffect(() => { setPage(1); }, [search]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
 
   function openEdit(event: DashboardEvent) {
     setEditing(event);
@@ -121,6 +148,7 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
       event_type: form.event_type,
       day_of_week: nullable(form.day_of_week),
       monthly_rule: nullable(form.monthly_rule),
+      exclude_monthly_rules: parseStringList(form.exclude_monthly_rules),
       start_date: nullable(form.start_date),
       end_date: nullable(form.end_date),
       start_time: nullable(form.start_time),
@@ -132,6 +160,7 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
       notes: form.notes,
       last_confirmed: form.last_confirmed,
       flyer_url: nullable(form.flyer_url),
+      exclude_dates: parseStringList(form.exclude_dates),
     };
 
     if (editing) {
@@ -187,7 +216,9 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={2}>
         <Box>
           <Typography variant="h4" component="h1">{admin ? "Event records" : "Assigned events"}</Typography>
-          <Typography color="text.secondary">{filtered.length} visible records</Typography>
+          <Typography color="text.secondary">
+            {search.trim() ? `${filtered.length} matching of ${events.length} visible records` : `${events.length} visible records`}
+          </Typography>
         </Box>
         <Stack direction="row" gap={1} flexWrap="wrap">
           <Button startIcon={<RefreshIcon />} onClick={() => void load()}>Refresh</Button>
@@ -206,7 +237,7 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
         <Box py={8} display="grid" sx={{ placeItems: "center" }}><CircularProgress /></Box>
       ) : (
         <Box className="event-grid">
-          {filtered.map((event) => (
+          {visibleEvents.map((event) => (
             <Paper key={event.id} sx={{ p: 2.25, display: "flex", flexDirection: "column", gap: 1.5 }}>
               <Stack direction="row" justifyContent="space-between" gap={1} alignItems="flex-start">
                 <Box minWidth={0}>
@@ -230,6 +261,19 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
           ))}
         </Box>
       )}
+      {!loading && pageCount > 1 && (
+        <Stack direction="row" justifyContent="center">
+          <Pagination
+            page={page}
+            count={pageCount}
+            onChange={(_event, nextPage) => setPage(nextPage)}
+            color="primary"
+            showFirstButton
+            showLastButton
+            aria-label="Event record pages"
+          />
+        </Stack>
+      )}
       <Dialog open={editing !== undefined} onClose={closeEditor} fullWidth maxWidth="md" fullScreen={compactDialog}>
         <Box component="form" onSubmit={save}>
           <DialogTitle>{editing ? `Edit ${editing.name}` : "Add event record"}</DialogTitle>
@@ -251,8 +295,23 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
               </FormControl>
               <TextField label="Day of week" value={form.day_of_week} onChange={(e) => setForm({ ...form, day_of_week: e.target.value })} />
               <TextField label="Monthly rule" value={form.monthly_rule} onChange={(e) => setForm({ ...form, monthly_rule: e.target.value })} />
+              <TextField
+                label="Excluded monthly rules"
+                value={form.exclude_monthly_rules}
+                placeholder="First Friday, Third Saturday"
+                helperText="Comma-separated rules"
+                onChange={(e) => setForm({ ...form, exclude_monthly_rules: e.target.value })}
+              />
               <TextField label="Start date" value={form.start_date} placeholder="YYYY-MM-DD" onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
               <TextField label="End date" value={form.end_date} placeholder="YYYY-MM-DD" onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+              <TextField
+                label="Excluded dates"
+                value={form.exclude_dates}
+                placeholder="2026-12-25, 2027-01-01"
+                helperText="Comma-separated YYYY-MM-DD dates"
+                onChange={(e) => setForm({ ...form, exclude_dates: e.target.value })}
+                sx={{ gridColumn: { sm: "1 / -1" } }}
+              />
               <TextField label="Start time" value={form.start_time} placeholder="7:00 PM" onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
               <TextField label="End time" value={form.end_time} placeholder="10:00 PM" onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
               <TextField label="Venue" value={form.venue} required onChange={(e) => setForm({ ...form, venue: e.target.value })} />
@@ -271,6 +330,18 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
                     <MenuItem value="archived">Archived</MenuItem>
                   </Select>
                 </FormControl>
+              )}
+              {admin && (
+                <FormControlLabel
+                  control={(
+                    <Switch
+                      checked={form.in_wcs_list}
+                      onChange={(event) => setForm({ ...form, in_wcs_list: event.target.checked })}
+                    />
+                  )}
+                  label="Include in West Coast Swing views and calendar"
+                  sx={{ alignSelf: "center" }}
+                />
               )}
             </Box>
           </DialogContent>

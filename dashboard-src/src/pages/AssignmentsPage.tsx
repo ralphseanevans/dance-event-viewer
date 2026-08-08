@@ -1,14 +1,12 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import AddTaskIcon from "@mui/icons-material/AddTask";
@@ -79,23 +77,35 @@ export default function AssignmentsPage({ profile }: { profile: DashboardProfile
       {error && <Alert severity="error">{error}</Alert>}
       <Paper component="form" onSubmit={assign} sx={{ p: 2.5 }}>
         <Stack direction={{ xs: "column", md: "row" }} gap={2} alignItems={{ md: "center" }}>
-          <FormControl fullWidth>
-            <InputLabel id="assignment-event-label">Event</InputLabel>
-            <Select labelId="assignment-event-label" label="Event" value={eventId} onChange={(e) => setEventId(e.target.value)}>
-              {events.map((item) => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl fullWidth>
-            <InputLabel id="assignment-person-label">Volunteer</InputLabel>
-            <Select labelId="assignment-person-label" label="Volunteer" value={userId} onChange={(e) => setUserId(e.target.value)}>
-              {people.map((person) => <MenuItem key={person.id} value={person.id}>{person.display_name || person.email}</MenuItem>)}
-            </Select>
-          </FormControl>
+          <Autocomplete
+            fullWidth
+            options={events}
+            value={events.find((item) => item.id === eventId) ?? null}
+            onChange={(_event, item) => setEventId(item?.id ?? "")}
+            getOptionLabel={(item) => `${item.name} — ${item.event_key}`}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={(params) => <TextField {...params} label="Event" placeholder="Search event name or key" />}
+          />
+          <Autocomplete
+            fullWidth
+            options={people}
+            value={people.find((person) => person.id === userId) ?? null}
+            onChange={(_event, person) => setUserId(person?.id ?? "")}
+            getOptionLabel={(person) => person.display_name || person.email}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            noOptionsText="No active volunteers"
+            renderInput={(params) => <TextField {...params} label="Volunteer" placeholder="Search active volunteers" />}
+          />
           <Button type="submit" variant="contained" startIcon={<AddTaskIcon />} disabled={!eventId || !userId} sx={{ minWidth: 140, minHeight: 42 }}>
             Assign
           </Button>
         </Stack>
       </Paper>
+      {!people.length && (
+        <Typography color="text.secondary">
+          No active volunteers yet. Activate a signed-in volunteer on the People page before assigning events.
+        </Typography>
+      )}
       <Stack spacing={1.25}>
         {assignments.map((assignment) => (
           <Paper key={assignment.id} sx={{ p: 2 }}>

@@ -47,8 +47,9 @@ The public viewer stays plain HTML/CSS/JS. The new administrative client is sepa
 Supabase RLS is authoritative: inactive users see no event data, volunteers can read and edit
 only actively assigned events, and the active owner admin manages all events, people,
 assignments, activity, crawler runs, and source history. New sign-ins are inactive until approved.
-The dashboard is built locally but not linked or published until Google OAuth, owner-UUID
-bootstrap, real-session acceptance, legacy-tool parity, and guarded release checks are complete.
+The live dashboard supports Google and email-link sign-in, paginated event and source-history
+records, complete recurring-event exclusions and WCS inclusion controls, and searchable volunteer-to-event
+assignment linking. Page modules are loaded on demand so the initial dashboard bundle stays lean.
 See the project-root `Secure_Dashboard_Implementation_Plan_2026-08-08.md`.
 
 ## Appearance themes

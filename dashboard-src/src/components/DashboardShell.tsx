@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useState } from "react";
+import { lazy, ReactNode, Suspense, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
   AppBar,
@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Divider,
   Drawer,
   IconButton,
@@ -32,13 +33,13 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LogoutIcon from "@mui/icons-material/Logout";
 import type { DashboardProfile, DashboardSection } from "../types";
 import { supabaseClient } from "../supabase";
-import OverviewPage from "../pages/OverviewPage";
-import EventsPage from "../pages/EventsPage";
-import PeoplePage from "../pages/PeoplePage";
-import AssignmentsPage from "../pages/AssignmentsPage";
-import ActivityPage from "../pages/ActivityPage";
-import SourcesPage from "../pages/SourcesPage";
-import CrawlersPage from "../pages/CrawlersPage";
+const OverviewPage = lazy(() => import("../pages/OverviewPage"));
+const EventsPage = lazy(() => import("../pages/EventsPage"));
+const PeoplePage = lazy(() => import("../pages/PeoplePage"));
+const AssignmentsPage = lazy(() => import("../pages/AssignmentsPage"));
+const ActivityPage = lazy(() => import("../pages/ActivityPage"));
+const SourcesPage = lazy(() => import("../pages/SourcesPage"));
+const CrawlersPage = lazy(() => import("../pages/CrawlersPage"));
 
 const drawerWidth = 260;
 
@@ -157,7 +158,11 @@ export default function DashboardShell({ session, profile }: { session: Session;
         </Drawer>
       </Box>
       <Box component="main" sx={{ ml: { md: `${drawerWidth}px` }, pt: 8, minHeight: "100dvh" }}>
-        <Box sx={{ p: { xs: 2, sm: 3, lg: 4 }, maxWidth: 1500, mx: "auto" }}>{content}</Box>
+        <Box sx={{ p: { xs: 2, sm: 3, lg: 4 }, maxWidth: 1500, mx: "auto" }}>
+          <Suspense fallback={<Box py={8} display="grid" sx={{ placeItems: "center" }}><CircularProgress aria-label="Loading section" /></Box>}>
+            {content}
+          </Suspense>
+        </Box>
       </Box>
     </Box>
   );
