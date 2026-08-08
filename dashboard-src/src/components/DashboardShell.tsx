@@ -29,9 +29,11 @@ import AssignmentIndOutlinedIcon from "@mui/icons-material/AssignmentIndOutlined
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import TravelExploreOutlinedIcon from "@mui/icons-material/TravelExploreOutlined";
 import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
+import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LogoutIcon from "@mui/icons-material/Logout";
 import type { DashboardProfile, DashboardSection } from "../types";
+import ExperimentalShortcut from "./ExperimentalShortcut";
 import { supabaseClient } from "../supabase";
 const OverviewPage = lazy(() => import("../pages/OverviewPage"));
 const EventsPage = lazy(() => import("../pages/EventsPage"));
@@ -40,6 +42,7 @@ const AssignmentsPage = lazy(() => import("../pages/AssignmentsPage"));
 const ActivityPage = lazy(() => import("../pages/ActivityPage"));
 const SourcesPage = lazy(() => import("../pages/SourcesPage"));
 const CrawlersPage = lazy(() => import("../pages/CrawlersPage"));
+const ExperimentalPage = lazy(() => import("../pages/ExperimentalPage"));
 
 const drawerWidth = 260;
 
@@ -65,6 +68,7 @@ const items: Array<{ key: DashboardSection; label: string; icon: ReactNode; admi
   { key: "activity", label: "Activity", icon: <HistoryOutlinedIcon /> },
   { key: "sources", label: "Source history", icon: <TravelExploreOutlinedIcon /> },
   { key: "crawlers", label: "Crawler runs", icon: <SmartToyOutlinedIcon />, admin: true },
+  { key: "experimental", label: "Experimental Dashboard", icon: <ScienceOutlinedIcon />, admin: true },
 ];
 
 export default function DashboardShell({ session, profile }: { session: Session; profile: DashboardProfile }) {
@@ -88,6 +92,7 @@ export default function DashboardShell({ session, profile }: { session: Session;
     activity: <ActivityPage profile={profile} />,
     sources: <SourcesPage profile={profile} />,
     crawlers: <CrawlersPage profile={profile} />,
+    experimental: <ExperimentalPage profile={profile} />,
   }[section];
 
   const drawer = (
@@ -152,9 +157,10 @@ export default function DashboardShell({ session, profile }: { session: Session;
               <MenuIcon />
             </IconButton>
           )}
-          <Typography sx={{ flex: 1, fontWeight: 800 }}>{items.find((item) => item.key === section)?.label}</Typography>
+          <Typography noWrap sx={{ flex: 1, minWidth: 0, fontWeight: 800 }}>{items.find((item) => item.key === section)?.label}</Typography>
           <Stack direction="row" alignItems="center" spacing={1.25}>
-            <Chip size="small" color={admin ? "primary" : "default"} label={admin ? "Owner admin" : "Volunteer"} />
+            {admin && <ExperimentalShortcut active={section === "experimental"} onClick={() => setSection("experimental")} />}
+            <Chip size="small" color={admin ? "primary" : "default"} label={admin ? "Owner admin" : "Volunteer"} sx={{ display: { xs: "none", sm: "inline-flex" } }} />
             <Tooltip title={signedInLabel}>
               <Avatar
                 src={avatarUrl}

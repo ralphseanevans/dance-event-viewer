@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -18,7 +19,15 @@ import {
   Select,
   Stack,
   Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
   useMediaQuery,
   useTheme,
@@ -28,6 +37,9 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
 import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
+import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
+import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined";
+import ImageNotSupportedOutlinedIcon from "@mui/icons-material/ImageNotSupportedOutlined";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
 
@@ -38,6 +50,10 @@ const editableFields = [
 ] as const;
 
 const PAGE_SIZE = 24;
+const VIEW_MODE_KEY = "dance-dashboard-events-view";
+const SHOW_FLYERS_KEY = "dance-dashboard-show-flyers";
+
+type ViewMode = "cards" | "spreadsheet";
 
 type FormState = Record<(typeof editableFields)[number], string> & { event_key: string; record_status: string; in_wcs_list: boolean };
 
@@ -48,6 +64,56 @@ function formatStringList(value: unknown): string {
 function parseStringList(value: string): string[] | null {
   const items = value.split(",").map((item) => item.trim()).filter(Boolean);
   return items.length ? items : null;
+}
+
+function formatTime(value: string | null | undefined): string {
+  const text = value?.trim();
+  if (!text) return "";
+  const match = text.match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/);
+  if (!match) return text;
+  const hour = Number(match[1]);
+  if (hour > 23) return text;
+  return `${hour % 12 || 12}:${match[2]} ${hour < 12 ? "AM" : "PM"}`;
+}
+
+function formatTimeRange(event: DashboardEvent): string {
+  const start = formatTime(event.start_time);
+  const end = formatTime(event.end_time);
+  if (start && end) return `${start} - ${end}`;
+  return start || end;
+}
+
+function resolveFlyerUrl(value: string | null | undefined): string {
+  const url = value?.trim();
+  if (!url || typeof window === "undefined") return url ?? "";
+  if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
+  return new URL(url, new URL("../", window.location.href)).href;
+}
+
+function FlyerPreview({ url, label, compact = false }: { url: string | null | undefined; label: string; compact?: boolean }) {
+  const [broken, setBroken] = useState(false);
+  const resolved = resolveFlyerUrl(url);
+
+  useEffect(() => { setBroken(false); }, [resolved]);
+
+  if (!resolved || broken) {
+    return (
+      <Box className={`flyer-placeholder${compact ? " flyer-placeholder--compact" : ""}`} role="img" aria-label={resolved ? `Flyer unavailable for ${label}` : `No flyer for ${label}`}>
+        <ImageNotSupportedOutlinedIcon fontSize={compact ? "small" : "medium"} />
+        {!compact && <Typography variant="caption">{resolved ? "Flyer unavailable" : "No flyer"}</Typography>}
+      </Box>
+    );
+  }
+
+  return <Box component="img" className={`event-flyer${compact ? " event-flyer--compact" : ""}`} src={resolved} alt={`Flyer for ${label}`} loading="lazy" onError={() => setBroken(true)} />;
+}
+
+function storedViewMode(): ViewMode {
+  try { return localStorage.getItem(VIEW_MODE_KEY) === "spreadsheet" ? "spreadsheet" : "cards"; } catch { return "cards"; }
+}
+
+function storedShowFlyers(): boolean {
+  try { return localStorage.getItem(SHOW_FLYERS_KEY) !== "false"; } catch { return true; }
 }
 
 function eventToForm(event?: DashboardEvent | null): FormState {
@@ -89,6 +155,11 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
   const [editing, setEditing] = useState<DashboardEvent | null | undefined>(undefined);
   const [form, setForm] = useState<FormState>(eventToForm());
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(storedViewMode);
+  const [showFlyers, setShowFlyers] = useState(storedShowFlyers);
+
+  useEffect(() => { try { localStorage.setItem(VIEW_MODE_KEY, viewMode); } catch { /* optional preference */ } }, [viewMode]);
+  useEffect(() => { try { localStorage.setItem(SHOW_FLYERS_KEY, String(showFlyers)); } catch { /* optional preference */ } }, [showFlyers]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -215,14 +286,14 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
     <Stack spacing={2.5}>
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" gap={2}>
         <Box>
-          <Typography variant="h4" component="h1">{admin ? "Event records" : "Assigned events"}</Typography>
+          <Typography variant="h4" component="h1">{admin ? "Events" : "Assigned events"}</Typography>
           <Typography color="text.secondary">
-            {search.trim() ? `${filtered.length} matching of ${events.length} visible records` : `${events.length} visible records`}
+            {search.trim() ? `${filtered.length} matching of ${events.length} events` : `${events.length} events`}
           </Typography>
         </Box>
         <Stack direction="row" gap={1} flexWrap="wrap">
           <Button startIcon={<RefreshIcon />} onClick={() => void load()}>Refresh</Button>
-          {admin && <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Add record</Button>}
+          {admin && <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>Add event</Button>}
         </Stack>
       </Stack>
       <TextField
@@ -232,13 +303,21 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
         InputProps={{ startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} /> }}
         fullWidth
       />
+      <Stack direction={{ xs: "column", sm: "row" }} gap={1.5} alignItems={{ sm: "center" }} justifyContent="space-between">
+        <ToggleButtonGroup value={viewMode} exclusive onChange={(_event, next: ViewMode | null) => { if (next) setViewMode(next); }} size="small" aria-label="Event view">
+          <ToggleButton value="cards" aria-label="Card view"><GridViewOutlinedIcon sx={{ mr: 1 }} />Cards</ToggleButton>
+          <ToggleButton value="spreadsheet" aria-label="Spreadsheet view"><TableRowsOutlinedIcon sx={{ mr: 1 }} />Spreadsheet</ToggleButton>
+        </ToggleButtonGroup>
+        <FormControlLabel control={<Checkbox checked={showFlyers} onChange={(event) => setShowFlyers(event.target.checked)} />} label="Show flyers" />
+      </Stack>
       {error && <Alert severity="error" onClose={() => setError("")}>{error}</Alert>}
       {loading ? (
         <Box py={8} display="grid" sx={{ placeItems: "center" }}><CircularProgress /></Box>
-      ) : (
+      ) : viewMode === "cards" ? (
         <Box className="event-grid">
           {visibleEvents.map((event) => (
             <Paper key={event.id} sx={{ p: 2.25, display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {showFlyers && <FlyerPreview url={event.flyer_url} label={event.name} />}
               <Stack direction="row" justifyContent="space-between" gap={1} alignItems="flex-start">
                 <Box minWidth={0}>
                   <Typography variant="h6" sx={{ overflowWrap: "anywhere" }}>{event.name}</Typography>
@@ -249,7 +328,7 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
               <Typography color="text.secondary">{event.style} · {event.venue}</Typography>
               <Typography variant="body2">
                 {event.start_date || event.day_of_week || event.monthly_rule || "Schedule pending"}
-                {event.start_time ? ` · ${event.start_time}` : ""}
+                {formatTimeRange(event) ? ` · ${formatTimeRange(event)}` : ""}
               </Typography>
               <Stack direction="row" gap={1} mt="auto">
                 <Button startIcon={<EditOutlinedIcon />} onClick={() => openEdit(event)}>Edit</Button>
@@ -260,6 +339,28 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
             </Paper>
           ))}
         </Box>
+      ) : (
+        <TableContainer component={Paper} sx={{ maxWidth: "100%", overflowX: "auto" }}>
+          <Table size="small" aria-label="Events spreadsheet">
+            <TableHead><TableRow>
+              {showFlyers && <TableCell>Flyer</TableCell>}
+              <TableCell>Name</TableCell><TableCell>Schedule</TableCell><TableCell>Venue</TableCell><TableCell>Style</TableCell><TableCell>Status</TableCell><TableCell align="right">Actions</TableCell>
+            </TableRow></TableHead>
+            <TableBody>{visibleEvents.map((event) => (
+              <TableRow key={event.id} hover>
+                {showFlyers && <TableCell><FlyerPreview url={event.flyer_url} label={event.name} compact /></TableCell>}
+                <TableCell><Typography fontWeight={750}>{event.name}</Typography><Typography variant="caption" color="text.secondary">{event.event_key}</Typography></TableCell>
+                <TableCell sx={{ whiteSpace: "nowrap" }}>{event.start_date || event.day_of_week || event.monthly_rule || "Pending"}{formatTimeRange(event) ? ` · ${formatTimeRange(event)}` : ""}</TableCell>
+                <TableCell>{event.venue}</TableCell><TableCell>{event.style}</TableCell>
+                <TableCell><Chip size="small" label={event.record_status} color={event.record_status === "active" ? "success" : "default"} /></TableCell>
+                <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                  <Button startIcon={<EditOutlinedIcon />} onClick={() => openEdit(event)}>Edit</Button>
+                  {admin && event.record_status !== "archived" && <Button color="warning" onClick={() => void archive(event)}>Archive</Button>}
+                </TableCell>
+              </TableRow>
+            ))}</TableBody>
+          </Table>
+        </TableContainer>
       )}
       {!loading && pageCount > 1 && (
         <Stack direction="row" justifyContent="center">
@@ -270,13 +371,13 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
             color="primary"
             showFirstButton
             showLastButton
-            aria-label="Event record pages"
+            aria-label="Event pages"
           />
         </Stack>
       )}
       <Dialog open={editing !== undefined} onClose={closeEditor} fullWidth maxWidth="md" fullScreen={compactDialog}>
         <Box component="form" onSubmit={save}>
-          <DialogTitle>{editing ? `Edit ${editing.name}` : "Add event record"}</DialogTitle>
+          <DialogTitle>{editing ? `Edit ${editing.name}` : "Add event"}</DialogTitle>
           <DialogContent dividers>
             <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }} gap={2} pt={1}>
               {!editing && admin && (
@@ -320,6 +421,10 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
               <TextField label="Last confirmed" value={form.last_confirmed} placeholder="YYYY-MM-DD" onChange={(e) => setForm({ ...form, last_confirmed: e.target.value })} />
               <TextField label="Source URL" value={form.source_url} onChange={(e) => setForm({ ...form, source_url: e.target.value })} sx={{ gridColumn: { sm: "1 / -1" } }} />
               <TextField label="Flyer URL" value={form.flyer_url} onChange={(e) => setForm({ ...form, flyer_url: e.target.value })} sx={{ gridColumn: { sm: "1 / -1" } }} />
+              <Box sx={{ gridColumn: { sm: "1 / -1" }, maxWidth: 360 }}>
+                <Typography variant="caption" color="text.secondary">Flyer preview</Typography>
+                <Box sx={{ mt: 0.75 }}><FlyerPreview url={form.flyer_url} label={form.name || "this event"} /></Box>
+              </Box>
               <TextField label="Notes" value={form.notes} multiline minRows={3} onChange={(e) => setForm({ ...form, notes: e.target.value })} sx={{ gridColumn: { sm: "1 / -1" } }} />
               {admin && (
                 <FormControl>
@@ -348,7 +453,7 @@ export default function EventsPage({ profile }: { profile: DashboardProfile }) {
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={closeEditor} disabled={saving}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={saving || !form.name.trim() || !form.venue.trim()}>
-              {saving ? "Saving…" : "Save record"}
+              {saving ? "Saving…" : "Save event"}
             </Button>
           </DialogActions>
         </Box>

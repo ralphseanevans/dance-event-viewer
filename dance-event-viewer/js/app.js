@@ -70,11 +70,9 @@ const SEND_ENDPOINT = "https://script.google.com/macros/s/AKfycbyTcNCMl42HCDosDS
 const SUBMIT_ENDPOINT = "https://script.google.com/macros/s/AKfycbwtL7anIfkIv7XBkR7AwDKKc13DBPrEghmcEEZiURWR_NLZI3s8CdayU6VQzelK9VMn6w/exec";
 const MAX_CORRECTION_PHOTO_BYTES = 8 * 1024 * 1024; // 8MB — matches submit-event.js's MAX_FLYER_BYTES
 
-/* ---------- favorites (added 2026-07-13, Sean: "share and favorite buttons") ----------
-   Purely client-side/this-browser — a heart toggle stored in localStorage, keyed by each
-   event's stable `key` field. No server, no account, nothing sent anywhere. Events with no
-   `key` (shouldn't happen given loadData()'s whitelist, but guarded anyway) can't be
-   favorited — there's no stable id to remember them by. */
+/* ---------- favorites (added 2026-07-13; account sync added 2026-08-08) ----------
+   Anonymous favorites remain in localStorage. When a Supabase session exists on this origin,
+   those keys merge once into the signed-in user's RLS-protected favorites and stay synced. */
 const FAVORITES_KEY = "dance-event-viewer-favorites-v1";
 function loadFavorites() {
   try {
@@ -86,6 +84,50 @@ function saveFavorites(set) {
   try { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...set])); } catch (e) { /* private mode etc. — just won't persist */ }
 }
 let favorites = loadFavorites();
+let favoritesClient = null;
+let favoritesUserId = null;
+
+async function syncAccountFavorites(session) {
+  favoritesUserId = session?.user?.id || null;
+  if (!favoritesClient || !favoritesUserId) return;
+  const { data, error } = await favoritesClient
+    .from("user_favorites")
+    .select("event_key")
+    .eq("user_id", favoritesUserId);
+  if (error) { console.warn("Account favorites unavailable; keeping browser favorites.", error); return; }
+  const remote = new Set((data || []).map(row => row.event_key).filter(Boolean));
+  const missing = [...favorites].filter(key => !remote.has(key));
+  if (missing.length) {
+    const { error: mergeError } = await favoritesClient
+      .from("user_favorites")
+      .insert(missing.map(event_key => ({ user_id: favoritesUserId, event_key })));
+    if (mergeError) console.warn("Some browser favorites could not be merged into the account.", mergeError);
+    else missing.forEach(key => remote.add(key));
+  }
+  favorites = new Set([...favorites, ...remote]);
+  saveFavorites(favorites);
+  if (state.events.length) render();
+}
+
+async function initAccountFavorites() {
+  const config = window.DANCE_EVENT_VIEWER_SUPABASE;
+  if (!window.supabase?.createClient || !config?.enabled || !config.url || !config.publishableKey) return;
+  favoritesClient = window.supabase.createClient(config.url, config.publishableKey, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: "pkce" }
+  });
+  const { data } = await favoritesClient.auth.getSession();
+  await syncAccountFavorites(data.session);
+  favoritesClient.auth.onAuthStateChange((_event, session) => { void syncAccountFavorites(session); });
+}
+
+async function syncFavoriteChange(eventKey, enabled) {
+  if (!favoritesClient || !favoritesUserId) return;
+  const query = enabled
+    ? favoritesClient.from("user_favorites").insert({ user_id: favoritesUserId, event_key: eventKey })
+    : favoritesClient.from("user_favorites").delete().eq("user_id", favoritesUserId).eq("event_key", eventKey);
+  const { error } = await query;
+  if (error && !(enabled && error.code === "23505")) console.warn("Account favorite did not sync; the browser copy was kept.", error);
+}
 
 /* ---------- state ---------- */
 const state = {
@@ -404,7 +446,7 @@ async function loadWebEvents() {
   try {
     const res = await fetch(`../web-events.json?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) { state.webEvents = []; return; }
-    const j = JSON.parse((await res.text()).replace(/ +\s*$/g, "").trim());
+    const j = JSON.parse((await res.text()).replace(/\u0000+\s*$/g, "").trim());
     state.webEvents = Array.isArray(j?.events) ? j.events : [];
   } catch (err) { state.webEvents = []; }
 }
@@ -1775,6 +1817,7 @@ function cardActions(ev) {
       const nowOn = !favorites.has(ev.key);
       nowOn ? favorites.add(ev.key) : favorites.delete(ev.key);
       saveFavorites(favorites);
+      void syncFavoriteChange(ev.key, nowOn);
       favBtn.setAttribute("aria-pressed", String(nowOn));
       favBtn.setAttribute("aria-label", nowOn ? "Remove from favorites" : "Add to favorites");
       favBtn.textContent = nowOn ? "♥" : "♡";
@@ -2414,6 +2457,7 @@ function startSubmitAttention() {
 }
 
 function init() {
+  void initAccountFavorites();
   loadPrefs();
   applyUrl();   // URL query string wins over defaults (shareable filtered links, 2026-07-17)
   for (const b of document.querySelectorAll(".view-btn"))

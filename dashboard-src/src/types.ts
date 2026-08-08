@@ -88,4 +88,4 @@ export interface SourceHistoryEntry {
   created_at: string;
 }
 
-export type DashboardSection = "overview" | "events" | "people" | "assignments" | "activity" | "sources" | "crawlers";
+export type DashboardSection = "overview" | "events" | "people" | "assignments" | "activity" | "sources" | "crawlers" | "experimental";

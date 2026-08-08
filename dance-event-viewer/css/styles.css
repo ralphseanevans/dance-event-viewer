@@ -1328,6 +1328,37 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
 .combo-bar-atc { white-space: nowrap; }
 @media (max-width: 560px) { .combo-bar-atc { flex-shrink: 0; } }
 
+/* Phone portrait: keep every selected-dance action inside the viewport without
+   shrinking the touch targets. The two primary actions share the second row. */
+@media (max-width: 560px) {
+  .combo-bar {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: auto;
+    transform: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 8px;
+    padding: 8px 10px;
+    border-radius: 18px;
+  }
+  .combo-bar-count { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .combo-bar-spacer { display: none; }
+  .combo-bar-clear { grid-column: 2; grid-row: 1; min-height: 44px; }
+  .combo-bar-atc,
+  .combo-bar-share {
+    grid-row: 2;
+    min-height: 44px;
+    padding: 7px 9px;
+    font-size: .78rem;
+    line-height: 1.1;
+    white-space: normal;
+  }
+  .combo-bar-atc { grid-column: 1; width: 100%; }
+  .combo-bar-share { grid-column: 2; max-width: 126px; }
+}
+
 /* ============================================================================
    Choose-location state map (2026-08-03) — clickable US map inside the
    Location filter's "Choose location" reveal, alongside the existing State/
