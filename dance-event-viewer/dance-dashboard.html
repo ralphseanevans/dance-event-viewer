@@ -451,11 +451,11 @@ const ACTION_TOOLTIPS = {
   "Return to Pending": "Remove the hold and send this item back to the Pending review queue.",
   "Save edits": "Save field corrections without changing the current review status.",
   "Reopen for review": "Move this completed decision back to Pending so it can be reviewed again.",
-  "Archive submission record": "Move this dashboard submission record to Archived. It does not remove an event from the website and does not change dance_events.json or wcs_events.json.",
+  "Archive submission record": "Move this dashboard submission record to Archived. It does not remove an event from the website and does not change canonical dance_events.json.",
   "Restore to live updates": "Unarchive this record and return it to Live updates. Nothing new is published by this action.",
   "Cancel queued fix": "Stop this pending correction and move the record to Denied. The correction will not be applied.",
-  "Delete submission record": "Move this submission record to the Deleted tab. It may also remove a temporary web-events.json listing and a flyer/logo uploaded by this submission. It never changes dance_events.json or wcs_events.json.",
-  "Request removal from calendar JSON": "File a correction request asking for this event to be removed from canonical dance_events.json. This button does not edit JSON immediately; the protected local workflow must back up, regenerate WCS, test, and publish the removal.",
+  "Delete submission record": "Move this submission record to the Deleted tab. It may also remove a temporary web-events.json listing and a flyer/logo uploaded by this submission. It never changes canonical dance_events.json.",
+  "Request removal from calendar JSON": "File a correction request asking for this event to be removed from canonical dance_events.json. This button does not edit JSON immediately; the protected local workflow must back up, validate, test, and publish the removal.",
   "Edit calendar entry": "Open a side panel prefilled from this published listing. Submitting creates an exact-key correction request; it does not directly edit canonical JSON.",
   "Submit calendar edit request": "File the edited fields as an exact-key correction request. The canonical JSON remains unchanged until the protected local workflow applies, validates, tests, and publishes it.",
 };
@@ -768,7 +768,7 @@ function renderCalendarManager() {
   add.addEventListener("click", openAddPanel);
   const note = document.createElement("p");
   note.className = "manage-note";
-  note.textContent = "Removal buttons create protected correction requests. They do not directly edit dance_events.json or wcs_events.json. Canonical removal happens later through backup, WCS regeneration, validation, tests, and publish.";
+  note.textContent = "Removal buttons create protected correction requests. They do not directly edit canonical dance_events.json. Canonical removal happens later through backup, validation, tests, and publish.";
   tools.appendChild(search); tools.appendChild(add); tools.appendChild(note);
   cardsEl.appendChild(tools);
   const list = document.createElement("div");

@@ -239,15 +239,15 @@ user never has to leave the Manage calendar tab.
 
 The removal control deliberately says **Request removal from calendar JSON**. Its
 two-step confirmation creates a trusted text-correction row (`pending-fix`) naming the
-exact event key; it does not directly modify either canonical JSON file. Applying that
+exact event key; it does not directly modify the canonical JSON file. Applying that
 request remains an interactive local operation using the required backup → edit master
-→ derive WCS → validate → atomic replace → tests → publish pipeline.
+→ validate → atomic replace → tests → publish pipeline.
 
 Dashboard record cleanup is separate. **Delete submission record** moves a Submissions
 Sheet row to Deleted and may remove only that row's temporary `web-events.json` entry
 or uploaded flyer/logo mapping. **Archive submission record** only moves the dashboard
-row to Archived. Neither action changes canonical `dance_events.json` or
-`wcs_events.json`. Buttons, tooltips, confirmation text, and completion messages all
+row to Archived. Neither action changes canonical `dance_events.json`. Buttons,
+tooltips, confirmation text, and completion messages all
 state these boundaries explicitly.
 
 ## Views & filters
@@ -365,16 +365,6 @@ The map is optional decoration — it can never affect event data.
 - **Page logo/banner:** drop an `<img>` inside `<div id="brand-slot">` in `index.html`;
   put site-wide image files in `assets/`.
 - All colors/spacing are CSS custom properties at the top of `css/styles.css`.
-
-## Adding the WCS-only tab later
-
-In `js/app.js`, add one entry to `SOURCES`:
-
-    { id: "wcs", label: "West Coast Swing", file: "../wcs_events.json" }
-
-Tabs appear automatically when more than one source is configured. (Note: `wcs_events.json`
-entries have no `style` field — they'd all show under "Other" unless a default style is
-set for that source. Ask Claude to wire that when the time comes.)
 
 ## Data rules this page follows
 

@@ -1,6 +1,6 @@
 /* Submit an Event — client-side form logic.
  * Posts to a private Apps Script web app (SUBMIT_ENDPOINT below). Nothing here
- * ever touches dance_events.json/wcs_events.json — this just files a row in a
+ * ever touches canonical dance_events.json — this just files a row in a
  * private "Submissions" sheet for Sean to review later.
  *
  * SUBMIT_ENDPOINT points at the deployed Apps Script web app (see
