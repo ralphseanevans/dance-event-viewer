@@ -13,9 +13,10 @@ import VolunteerPreviewExperiment from "./VolunteerPreviewExperiment";
 
 interface SeriesDraft {
   id: string; series_code: string; name: string; series_type: "recurring" | "occasional" | "one_off";
-  primary_owner_profile_id: string | null; notes: string; draft_status: "draft" | "ready" | "archived";
+  primary_owner_profile_id: string | null; primary_owner_draft_id: string | null; notes: string; draft_status: "draft" | "ready" | "archived";
   created_by: string; created_at: string; updated_at: string;
 }
+interface OwnerDraft { id: string; display_name: string; linked_profile_id: string | null; }
 interface EventLink { series_id: string; event_id: string; }
 interface ManagerLink { series_id: string; user_id: string; }
 interface AssignmentLink { id: string; event_id: string; user_id: string; assigned_by: string | null; active: boolean; assigned_at: string; ended_at: string | null; note: string | null; }
@@ -24,6 +25,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [series, setSeries] = useState<SeriesDraft[]>([]);
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [people, setPeople] = useState<DashboardProfile[]>([]);
+  const [ownerDrafts, setOwnerDrafts] = useState<OwnerDraft[]>([]);
   const [eventLinks, setEventLinks] = useState<EventLink[]>([]);
   const [managerLinks, setManagerLinks] = useState<ManagerLink[]>([]);
   const [assignments, setAssignments] = useState<AssignmentLink[]>([]);
@@ -34,6 +36,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [code, setCode] = useState("");
   const [seriesType, setSeriesType] = useState<SeriesDraft["series_type"]>("recurring");
   const [ownerId, setOwnerId] = useState("");
+  const [newOwnerName, setNewOwnerName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
@@ -45,19 +48,21 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
-    const [seriesResult, eventsResult, peopleResult, eventLinksResult, managersResult, assignmentsResult] = await Promise.all([
+    const [seriesResult, eventsResult, peopleResult, ownerDraftsResult, eventLinksResult, managersResult, assignmentsResult] = await Promise.all([
       supabaseClient.from("experimental_series_drafts").select("*").order("updated_at", { ascending: false }),
       supabaseClient.from("dashboard_events_admin").select("*").order("name").limit(1000),
       supabaseClient.from("dashboard_profiles").select("*").order("display_name").limit(1000),
+      supabaseClient.from("experimental_owner_drafts").select("id,display_name,linked_profile_id").order("display_name"),
       supabaseClient.from("experimental_series_event_links").select("series_id,event_id"),
       supabaseClient.from("experimental_series_managers").select("series_id,user_id"),
       supabaseClient.from("event_assignments").select("*").eq("active", true),
     ]);
-    const firstError = [seriesResult, eventsResult, peopleResult, eventLinksResult, managersResult, assignmentsResult].find(result => result.error)?.error;
+    const firstError = [seriesResult, eventsResult, peopleResult, ownerDraftsResult, eventLinksResult, managersResult, assignmentsResult].find(result => result.error)?.error;
     if (firstError) setError(firstError.message);
     setSeries((seriesResult.data as SeriesDraft[] | null) ?? []);
     setEvents((eventsResult.data as DashboardEvent[] | null) ?? []);
     setPeople((peopleResult.data as DashboardProfile[] | null) ?? []);
+    setOwnerDrafts((ownerDraftsResult.data as OwnerDraft[] | null) ?? []);
     setEventLinks((eventLinksResult.data as EventLink[] | null) ?? []);
     setManagerLinks((managersResult.data as ManagerLink[] | null) ?? []);
     setAssignments((assignmentsResult.data as AssignmentLink[] | null) ?? []);
@@ -98,10 +103,23 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     const normalizedCode = code.trim().toUpperCase().replace(/[^A-Z0-9-]+/g, "-").replace(/^-|-$/g, "");
     const { error: insertError } = await supabaseClient.from("experimental_series_drafts").insert({
       series_code: normalizedCode, name: name.trim(), series_type: seriesType,
-      primary_owner_profile_id: ownerId || null, created_by: profile.id,
+      primary_owner_profile_id: ownerId.startsWith("profile:") ? ownerId.slice(8) : null,
+      primary_owner_draft_id: ownerId.startsWith("draft:") ? ownerId.slice(6) : null,
+      created_by: profile.id,
     });
     if (insertError) setError(insertError.message);
     else { setName(""); setCode(""); setOwnerId(""); await load(); }
+  }
+
+  async function createOwner(event: FormEvent) {
+    event.preventDefault(); setError("");
+    const displayName = newOwnerName.trim();
+    if (!displayName) return;
+    const { error: insertError } = await supabaseClient.from("experimental_owner_drafts").insert({
+      display_name: displayName, created_by: profile.id,
+    });
+    if (insertError) setError(insertError.message);
+    else { setNewOwnerName(""); await load(); }
   }
 
   async function linkEvent() {
@@ -150,13 +168,22 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
           <Button size="small" onClick={() => { setSearchQuery(""); setStyleFilter(""); setStateFilter(""); setDayFilter(""); setTypeFilter(""); setStatusFilter(""); }}>Clear filters</Button>
         </Stack>
       </Paper>
+      <Paper component="form" onSubmit={createOwner} sx={{ p: 2.5 }}>
+        <Typography variant="h6" gutterBottom>Owners</Typography>
+        <Typography color="text.secondary" mb={1.5}>Create an owner by name now; link the owner to a login later.</Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} gap={1.5}>
+          <TextField label="Owner name" value={newOwnerName} onChange={event => setNewOwnerName(event.target.value)} fullWidth />
+          <Button type="submit" variant="outlined" disabled={!newOwnerName.trim()}>Add owner</Button>
+        </Stack>
+        <Stack direction="row" gap={1} flexWrap="wrap" mt={1.5}>{ownerDrafts.map(owner => <Chip key={owner.id} label={owner.display_name} />)}</Stack>
+      </Paper>
       <Paper component="form" onSubmit={createSeries} sx={{ p: 2.5 }}>
         <Typography variant="h6" gutterBottom>Create a draft event series</Typography>
         <Stack direction={{ xs: "column", md: "row" }} gap={1.5}>
           <TextField label="Series name" value={name} required onChange={event => setName(event.target.value)} fullWidth />
           <TextField label="Memorable code" value={code} required placeholder="JIVE-1042" onChange={event => setCode(event.target.value)} fullWidth />
           <FormControl fullWidth><InputLabel id="series-type-label">Type</InputLabel><Select labelId="series-type-label" label="Type" value={seriesType} onChange={event => setSeriesType(event.target.value as SeriesDraft["series_type"])}><MenuItem value="recurring">Recurring</MenuItem><MenuItem value="occasional">Occasional</MenuItem><MenuItem value="one_off">One-off</MenuItem></Select></FormControl>
-          <FormControl fullWidth><InputLabel id="owner-label">Primary owner</InputLabel><Select labelId="owner-label" label="Primary owner" value={ownerId} onChange={event => setOwnerId(event.target.value)}><MenuItem value="">Unassigned</MenuItem>{people.map(person => <MenuItem key={person.id} value={person.id}>{person.display_name || person.email}</MenuItem>)}</Select></FormControl>
+          <FormControl fullWidth><InputLabel id="owner-label">Primary owner</InputLabel><Select labelId="owner-label" label="Primary owner" value={ownerId} onChange={event => setOwnerId(event.target.value)}><MenuItem value="">Unassigned</MenuItem>{ownerDrafts.map(owner => <MenuItem key={`draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}{people.map(person => <MenuItem key={`profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email} (dashboard account)</MenuItem>)}</Select></FormControl>
           <Button type="submit" variant="contained" disabled={!name.trim() || !code.trim()}>Create draft</Button>
         </Stack>
       </Paper>
