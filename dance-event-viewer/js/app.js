@@ -1707,7 +1707,7 @@ function ensureComboUI() {
     });
     const shareBtn = document.createElement("button");
     shareBtn.type = "button"; shareBtn.id = "combo-share-btn"; shareBtn.className = "combo-bar-btn combo-bar-share";
-    shareBtn.textContent = "Make Dance Card"; shareBtn.disabled = true;
+    shareBtn.textContent = "Create Dance Card"; shareBtn.disabled = true;
     shareBtn.addEventListener("click", () => {
       const items = selectedShareItems();
       if (items.length) openComboShareModal(items);

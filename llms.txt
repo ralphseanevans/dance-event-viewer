@@ -1,0 +1,21 @@
+# Dance Event Viewer
+
+> Dance Event Viewer (danceeventviewer.net) is a free calendar of partner-dance and social-dance
+> events across the Southern United States — West Coast Swing, ballroom, Latin, country swing,
+> line dance, and more — centered on the Pensacola, FL and Mobile, AL areas, with national
+> events included. Each event lists schedule, venue, cost, and dance style.
+
+## Main pages
+
+- [Event calendar (list, calendar, and map views)](https://danceeventviewer.net/dance-event-viewer/)
+- [Submit an event](https://danceeventviewer.net/dance-event-viewer/submit-event.html)
+
+## Event pages
+
+- [Sitemap of all individual event pages](https://danceeventviewer.net/sitemap.xml): every event
+  has its own page under /e/ with schedule, venue, cost, and schema.org Event markup.
+
+## Notes
+
+- Event data is curated and updated continually from organizer announcements.
+- Recurring events list their pattern (for example "Every Tuesday" or "3rd Saturday").

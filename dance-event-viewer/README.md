@@ -4,6 +4,15 @@ A community-facing page for browsing dance events across the Southern United Sta
 `../dance_events.json` (the master event list one folder up). No framework, no build
 step, no dependencies — three files.
 
+## Separate secure dashboard (foundation built 2026-08-08)
+
+`dashboard/` is generated static output for the new dark Refine/Supabase administrative client;
+its source and pinned lockfile live one level up in `../dashboard-src/`. It does not replace or
+alter this public viewer. Supabase RLS makes inactive users see nothing, limits volunteers to
+actively assigned events, and gives the active owner admin full dashboard access. The dashboard
+is not linked or production-activated until Auth-provider configuration, owner UUID bootstrap,
+real-session acceptance, legacy-tool parity, and guarded release verification are complete.
+
 ## Visual theme: Moonlit Ember + page-wide atmosphere (2026-07-16; club-light prototype 2026-07-18)
 
 The site-wide palette and background atmosphere are defined in

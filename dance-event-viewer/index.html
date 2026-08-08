@@ -50,6 +50,18 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Site analytics (GA4, added 2026-08-07). js/analytics.js holds only the public
+       measurement ID and listens to the existing activity-signal bus for custom events.
+       Deliberately a plain (non-defer) script: its fetch observer must install before
+       the deferred app.js issues the Supabase read. -->
+  <script src="js/analytics.js?v=20260807a"></script>
+
+  <!-- Structured data: identifies the site to search engines (added 2026-08-07). -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebSite","name":"Dance Event Viewer","url":"https://danceeventviewer.net/dance-event-viewer/","description":"Find dance events across the South — West Coast Swing socials, classes, and workshops in Florida, Georgia, Alabama, Mississippi, Louisiana, Tennessee, and the Carolinas, plus national events."}
+  </script>
+
   <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. Loaded BEFORE
        styles.css so our dark-theme overrides (in styles.css) win over Leaflet's own defaults. -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -459,7 +471,7 @@
        call, same day) — see js/add-to-calendar.js, ensureBulkButton() left intact. -->
   <script src="js/add-to-calendar.js?v=20260804b"></script>
   <script src="js/supabase-config.js?v=20260807a"></script>
-  <script src="js/app.js?v=20260807a"></script>
+  <script src="js/app.js?v=20260807b"></script>
   <!-- Choose-location state map (2026-08-03): reads/writes app.js's state.sel.state
        directly (same global scope, loaded after app.js). Its own data file
        (js/us-states-map-data.js, ~145KB of state path data) is fetched lazily on

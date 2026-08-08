@@ -15,8 +15,19 @@ editable frontend and logo-map home. Its sibling `Dance Website` child under
 
 Publishing is owned by the combined project's `Operations\Tools\publish_site.ps1`. It
 defaults to a no-write dry run; `-Publish` builds the exact 18-field export,
-source-obfuscated site log, event-key share pages, and map-referenced logo set,
+source-obfuscated site log, event-key pages, and map-referenced logo set,
 then commits, pushes without force, and verifies the live site.
+
+The `e/` event pages were rebuilt 2026-08-07 (Sean-approved SEO overhaul): each is now a
+full indexable landing page — self-canonical, schema.org Event JSON-LD, visible
+name/schedule/venue/cost/flyer, related-event links, and a "Open the full calendar"
+button — instead of an instant redirect. `build_share_pages.mjs` also regenerates the
+repo-root `sitemap.xml` (viewer + all event pages). `llms.txt` at the repo root
+describes the site for AI search. Analytics are GA4 (public measurement ID
+`G-HC9F04RL9D`): `dance-event-viewer/js/analytics.js` on the viewer and submit form
+(custom events ride the existing activity-signal bus; a `supabase_fallback` event
+reports static-JSON fallback), inline tags on the root redirect and event pages. The
+admin dashboard is deliberately untagged so admin visits don't pollute the data.
 
 Temporary visual tests are not additional project checkouts. Create Git-free,
 conspicuously marked copies only under
@@ -25,6 +36,20 @@ conspicuously marked copies only under
 work worth keeping into a deliberate branch-backed worktree instead.
 
 Spot a wrong listing? Use the "Wrong info?" link on any event card.
+
+## Secure dashboard
+
+The public viewer stays plain HTML/CSS/JS. The new administrative client is separate:
+`dashboard-src/` contains pinned Refine 5, React 18, Supabase, and Material UI 6 source;
+`npm run typecheck` validates it and `npm run build` writes static output to
+`dance-event-viewer/dashboard/`. Only the Supabase URL and publishable key ship to the browser.
+
+Supabase RLS is authoritative: inactive users see no event data, volunteers can read and edit
+only actively assigned events, and the active owner admin manages all events, people,
+assignments, activity, crawler runs, and source history. New sign-ins are inactive until approved.
+The dashboard is built locally but not linked or published until Google OAuth, owner-UUID
+bootstrap, real-session acceptance, legacy-tool parity, and guarded release checks are complete.
+See the project-root `Secure_Dashboard_Implementation_Plan_2026-08-08.md`.
 
 ## Appearance themes
 
