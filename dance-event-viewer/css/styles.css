@@ -1,0 +1,1394 @@
+/* Dance Event Viewer — dark theme.
+   All colors/spacing live in the custom properties below so future
+   custom graphics and re-theming only touch this block. */
+
+:root {
+  color-scheme: dark;
+  --bg: #0e1420;
+  --bg-raised: #171f2e;
+  --bg-card: #1b2537;
+  --border: #2b3850;
+  --text: #e8edf5;
+  --text-dim: #9fadc4;
+  --accent: #4cc2ff;          /* interactive highlights */
+  --accent-pink: #ff5fa2;     /* title gradient partner */
+  --accent-soft: #163851;
+  --badge-warn-bg: #4a3413;
+  --badge-warn-fg: #ffd27d;
+  --chip-on-bg: #1d4c68;
+  --chip-on-border: #4cc2ff;
+  --danger: #ff8080;
+  --radius: 12px;
+  --gap: 14px;
+  --maxw: 1100px;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  padding: 0 16px 48px;
+}
+
+.site-header {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 28px 0 0;
+  display: grid;
+  gap: 4px;
+  position: relative;
+}
+/* Unlabeled live-viewer count, deliberately understated (Sean's own troubleshooting
+   readout, not a visitor-facing feature) — a bare number tucked in the corner. */
+#viewer-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: .65rem;
+  line-height: 1;
+  color: var(--text-dim);
+  opacity: .55;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  user-select: none;
+}
+#viewer-count:empty { display: none; }
+#brand-slot {
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--radius) * 1.5);
+}
+#brand-slot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.5);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .42),
+              0 0 42px rgba(76, 194, 255, .12),
+              0 0 54px rgba(255, 95, 162, .1);
+  transform-origin: 50% 50%;
+  animation: banner-drift 12s ease-in-out infinite alternate;
+  will-change: transform, filter;
+}
+#brand-slot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(112deg, transparent 35%, rgba(255,255,255,.12) 48%, transparent 61%);
+  background-size: 220% 100%;
+  mix-blend-mode: screen;
+  opacity: .38;
+  animation: banner-glint 8s ease-in-out infinite;
+}
+@keyframes banner-drift {
+  from { transform: scale(1.005) translate3d(-.35%, .15%, 0); filter: brightness(.98) saturate(1); }
+  to { transform: scale(1.018) translate3d(.35%, -.15%, 0); filter: brightness(1.04) saturate(1.04); }
+}
+@keyframes banner-glint {
+  0%, 35% { background-position: 120% 0; opacity: 0; }
+  52% { opacity: .38; }
+  70%, 100% { background-position: -20% 0; opacity: 0; }
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.tagline {
+  color: var(--text-dim);
+  font-size: .98rem;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+}
+
+/* Header note toggles ("Under Construction" / "About These Listings") — small pills
+   flanking the tagline, both sharing the dark-blue look at rest (2026-07-13, Sean:
+   "put the collapsed buttons higher to each side of ... to conserve vertical space
+   ... make the collapsed button dark blue ... have the buttons open up downwards and
+   not overlap anything"). Previously these were full-width bars stacked below the
+   header that auto-opened then collapsed on load; now they always start closed and
+   clicking one opens a floating panel below the button instead of reflowing the
+   page — that's what eliminates the vertical gap before the controls section.
+   About These Listings keeps its amber color once OPEN (still reads as its own kind
+   of notice), but at rest both toggles match, per "in look." */
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* nudged right (2026-08-03, Sean's ask) — was centered */
+  gap: 14px;
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .title-row { justify-content: center; } /* not enough width to read right-aligned on small screens */
+}
+
+.sean-note, .beta-note {
+  position: relative;
+  max-width: none;
+  margin: 0;
+}
+
+.sean-toggle, .beta-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  background: linear-gradient(160deg, #14335a, #0e2444);
+  border: 1px solid #2a5c8a;
+  color: var(--accent);
+}
+.sean-toggle strong, .beta-toggle strong {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: .72rem;
+}
+.sean-toggle span, .beta-toggle span { font-size: 1rem; line-height: 1; }
+.sean-toggle:hover, .beta-toggle:hover { filter: brightness(1.15); }
+.sean-toggle:focus-visible, .beta-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.sean-details, .beta-details {
+  position: absolute;
+  top: calc(100% + 8px);
+  z-index: 30;
+  width: min(300px, 86vw);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .5);
+}
+.sean-details[hidden], .beta-details[hidden] { display: none; }
+
+.sean-details {
+  left: 0;
+  padding: 14px 16px;
+  background: linear-gradient(160deg, #14335a, #0e2444);
+  border: 1px solid #2a5c8a;
+}
+.sean-note-lead {
+  margin: 0 0 12px;
+  color: var(--text);
+  line-height: 1.55;
+}
+.sean-note-list {
+  margin: 0;
+  padding-left: 1.25em;
+  color: var(--text-dim);
+  line-height: 1.6;
+  font-size: .95rem;
+}
+.sean-note-list li { margin-bottom: 6px; }
+.sean-note-list li:last-child { margin-bottom: 0; }
+
+.beta-details {
+  right: 0;
+  padding: 10px 14px;
+  background: var(--badge-warn-bg);
+  color: var(--badge-warn-fg);
+  font-size: .82rem;
+  line-height: 1.4;
+  border: 1px solid #6b511f;
+}
+.beta-details a { color: var(--badge-warn-fg); text-decoration: underline; }
+
+.source-tabs {
+  max-width: var(--maxw);
+  margin: 8px auto 0;
+  display: flex; gap: 8px;
+}
+.source-tabs[hidden] { display: none; } /* the class rule above was overriding the hidden
+  attribute's default styling (author CSS beats the UA [hidden] rule) — harmless today since
+  it's empty with 1 source, but a real bug: it was reserving margin space it shouldn't have. */
+.source-tabs button {
+  background: var(--bg-raised); color: var(--text);
+  border: 1px solid var(--border); border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 5px 18px; cursor: pointer; font-size: .95rem;
+}
+.source-tabs button[aria-selected="true"] {
+  background: var(--bg-card); border-color: var(--accent); color: var(--accent);
+}
+
+.controls {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.controls-panel-inner {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 8px 16px;
+  display: grid;
+  gap: 10px;
+}
+.control-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+
+/* Groups the view switcher and the Filters button together (2026-07-13, Sean: "position it
+   right next to that group") so they read as one control cluster; .control-row's
+   space-between still pushes this whole cluster away from .control-row-right (Submit an
+   Event) on the other side. */
+.view-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Folder-style view tabs. The row stays in normal flow and supplies the visible
+   top edge of the lower controls panel; narrow screens scroll it horizontally. */
+.view-tabs-row {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 3px 16px 0;
+  background: linear-gradient(to bottom, transparent calc(100% - 1px), var(--border) 0);
+}
+.view-tabs-row::-webkit-scrollbar { display: none; }
+.view-switch {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  min-width: 100%;
+}
+.view-btn {
+  position: relative;
+  z-index: 1;
+  min-height: 40px;
+  flex: 0 0 auto;
+  padding: 8px 16px 7px;
+  background: color-mix(in srgb, var(--bg-card) 45%, var(--bg-raised));
+  color: color-mix(in srgb, var(--text-dim) 65%, var(--text));
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 2px 2px;
+  cursor: pointer;
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.view-btn:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+.view-btn[aria-pressed="true"] {
+  z-index: 2;
+  background: var(--bg-raised);
+  color: color-mix(in srgb, var(--accent) 75%, var(--text));
+  border-color: var(--accent);
+  border-bottom-color: var(--bg-raised);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 12px var(--accent-soft);
+}
+.view-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.view-btn[aria-pressed="true"]:focus-visible {
+  border-bottom-color: var(--bg-raised);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .view-btn {
+    transition: color .15s ease, border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+}
+@media (max-width: 480px) {
+  .view-tabs-row { padding-inline: 8px; }
+  .view-btn { padding-inline: 12px; font-size: .88rem; }
+}
+.chip:focus-visible, .reset-btn:focus-visible, .source-tabs button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+.reset-btn {
+  background: transparent; color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 16px; cursor: pointer; font-size: .92rem;
+}
+.reset-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+.control-row-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Theme switcher (2026-07-17) — appearance dropdown at the right of the control row.
+   Palette-agnostic: uses the shared tokens, so it recolors with whichever theme is active.
+   Behavior in js/theme-switch.js; palettes/effects in css/moonlit-ember-theme.css. */
+.theme-switch { position: relative; }
+.theme-switch-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent; color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 14px; cursor: pointer; font-size: .92rem;
+}
+.theme-switch-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.theme-switch-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-switch-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.theme-caret { font-size: .75rem; transition: transform .15s ease; }
+.theme-switch-btn[aria-expanded="true"] { color: var(--accent); border-color: var(--chip-on-border); }
+.theme-switch-btn[aria-expanded="true"] .theme-caret { transform: rotate(180deg); }
+
+.theme-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30;
+  min-width: 220px; max-height: min(72vh, 540px); overflow-y: auto; padding: 6px;
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, .45);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.theme-menu[hidden] { display: none; }
+.theme-option {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: transparent; color: var(--text); text-align: left;
+  border: none; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: .92rem;
+}
+.theme-option:hover { background: var(--accent-soft); }
+.theme-option:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.theme-swatch { width: 15px; height: 15px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18); }
+.swatch-ember { background: linear-gradient(135deg, #e8785b, #db8d85); }
+.swatch-classic { background: linear-gradient(135deg, #4cc2ff, #ff5fa2); }
+.swatch-ennis { background: linear-gradient(135deg, #e3b3db, #8488aa); }
+.swatch-cybergum { background: linear-gradient(135deg, #20b8b6, #d768b5); }
+.swatch-crimson { background: linear-gradient(135deg, #0ce6f2, #ff0546); }
+.swatch-deadcity { background: linear-gradient(135deg, #c04020, #718c3d); }
+.swatch-bloodmoon { background: linear-gradient(135deg, #ff252b, #7d0f1f); }
+.swatch-hope { background: linear-gradient(135deg, #b7ced2, #687688); }
+.swatch-neonmoon { background: linear-gradient(135deg, #70b9fb, #fe0094); }
+.swatch-monster { background: linear-gradient(135deg, #08785e, #de5b91); }
+.swatch-technobike { background: linear-gradient(135deg, #2a616e, #07ef5c); }
+.swatch-baldur { background: linear-gradient(135deg, #20a5a6, #dd5639); }
+.swatch-crimson4 { background: linear-gradient(135deg, #ba5044, #7a1c4b); }
+.swatch-mintreactor { background: linear-gradient(135deg, #14b8a6, #062a25); }
+.theme-option-label { flex: 1; }
+.theme-check { color: var(--accent); opacity: 0; }
+.theme-option[aria-checked="true"] { font-weight: 600; }
+.theme-option[aria-checked="true"] .theme-check { opacity: 1; }
+
+/* Header actions: Theme and Submit return to the top row of the page. */
+.site-header { grid-template-columns: auto 1fr; }
+.site-header .theme-switch {
+  position: relative; top: auto; left: auto; z-index: 6;
+  grid-column: 1; grid-row: 1; justify-self: start; align-self: center;
+}
+.site-header #brand-slot { grid-column: 1 / -1; grid-row: 2; }
+.site-header .title-block { grid-column: 1 / -1; grid-row: 3; }
+.site-header.theme-menu-open {
+  /* Lift the header only while the menu is open so the dropdown paints above the
+     Timeline/Grid/List/Calendar/Map controls, then returns to normal on close. */
+  z-index: 2000;
+}
+.site-header .theme-menu { right: auto; left: 0; }
+.site-header .theme-menu { max-height: min(40vh, 420px); }
+.site-header .theme-switch-btn {
+  background: rgba(10, 12, 20, .55);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+@media (max-width: 560px) {
+  .site-header .theme-switch-btn { padding: 4px 11px; font-size: .82rem; }
+}
+
+.submit-event-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(92deg, var(--accent-soft), #2c2029);
+  color: #d98cae; font-weight: 600; text-decoration: none;
+  border: 1px solid #d98cae; border-radius: 999px;
+  padding: 5px 16px; font-size: .92rem; cursor: pointer;
+}
+.submit-event-btn:hover { filter: brightness(1.2); }
+.submit-event-btn:focus-visible { outline: 2px solid #d98cae; outline-offset: 2px; }
+
+@keyframes submit-attention {
+  0%, 100% { border-color: #d98cae; color: #d98cae; background: linear-gradient(92deg, var(--accent-soft), #2c2029); box-shadow: 0 0 10px rgba(217, 140, 174, .45); }
+  50% { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 10px rgba(76, 194, 255, .45); }
+}
+.submit-event-btn.attention-blink { animation: submit-attention 1s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .submit-event-btn.attention-blink { animation: none; }
+}
+
+.filters-toggle {
+  display: inline-grid; grid-template-columns: auto auto auto;
+  align-items: center; gap: 8px; width: auto; min-width: 190px; min-height: 40px;
+  background: color-mix(in srgb,var(--bg-card) 72%,var(--bg-raised)); color: var(--text);
+  border: 1px solid var(--border); border-radius: 11px;
+  padding: 5px 10px; cursor: pointer; text-align: left;
+  box-shadow: 0 6px 18px rgba(0,0,0,.16);
+  transition: border-color .15s ease,background .15s ease,box-shadow .15s ease;
+}
+.filters-toggle:hover { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+.filters-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.filters-toggle-symbol { width: 19px; height: 19px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linejoin: round; }
+.filters-toggle-label { font-weight: 700; line-height: 1.15; }
+.filters-toggle[aria-expanded="true"] { color: var(--accent); border-color: var(--chip-on-border); background: var(--accent-soft); }
+
+/* Open state ≥641px (2026-07-18): the Advanced button and #filter-panel join into one
+   continuous folder tab, same principle as the view tabs — the ROW supplies the panel's
+   top edge as a 1px gradient line, the active button masks its segment of that line with
+   its own bottom border in the panel background, and the panel below drops its top border.
+   No negative margins/positioning/transforms (folder-tab convention). Mobile keeps the
+   bottom-sheet, where the button stays standalone. */
+@media (min-width: 641px) {
+  body.sheet-open .filters-disclosure-row {
+    margin-left: 0;
+    padding-top: 3px;
+    background: linear-gradient(to bottom, transparent calc(100% - 1px), var(--border) 0);
+  }
+  body.sheet-open .filters-toggle {
+    background: var(--bg-raised);
+    color: color-mix(in srgb, var(--accent) 75%, var(--text));
+    border-color: var(--accent);
+    border-bottom-color: var(--bg-raised);
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 0 12px var(--accent-soft);
+  }
+  body.sheet-open .filters-toggle:hover {
+    background: var(--bg-raised);
+    border-color: var(--accent);
+    border-bottom-color: var(--bg-raised); /* reassert: no dividing line under the active tab */
+  }
+  body.sheet-open .filters-toggle:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+    border-bottom-color: var(--bg-raised);
+  }
+  body.sheet-open #filter-panel {
+    margin-top: 0;
+    border-top: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+}
+
+@keyframes filters-attention {
+  0%, 100% { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 10px rgba(76, 194, 255, .45); }
+  50% { border-color: #ffd23d; color: #ffd23d; background: #3a3210; box-shadow: 0 0 10px rgba(255, 210, 61, .45); }
+}
+.filters-toggle.attention-blink { animation: filters-attention .8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .filters-toggle.attention-blink { animation: none; }
+  #brand-slot img, #brand-slot::after { animation: none; }
+}
+
+/* Show Past Events toggle (added 2026-07-12, Sean's request) — mirrors .filters-toggle
+   so it reads as part of the same button group. Native title attribute gives the
+   hover tooltip (same pattern already used by button.venue elsewhere in this file). */
+.past-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent; color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 16px; cursor: pointer; font-size: .92rem;
+}
+.past-toggle:hover { color: var(--text); border-color: var(--text-dim); }
+.past-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.past-toggle[aria-pressed="true"] { color: var(--accent); border-color: var(--chip-on-border); background: var(--accent-soft); }
+
+.filter-panel {
+  display: grid; gap: 10px; margin-top: 12px; padding: 16px;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 18px 42px rgba(0,0,0,.22);
+}
+.filter-panel[hidden] { display: none; }
+.filter-panel-actions { display: flex; justify-content: flex-end; }
+
+.filter-group { border: none; padding: 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+/* .fg-legend was <legend> with a float:left reset until 2026-07-17 — see index.html note. */
+.filter-group .fg-legend { color: var(--text-dim); font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; min-width: 52px; padding-top: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Older iOS WebKit (< 14.5) ignores gap in flexbox — chips/pill rows render jammed
+   edge-to-edge. translate:none support arrived in the same engine release as flex-gap,
+   so it works as the @supports proxy (flex-gap itself isn't feature-queryable). */
+@supports not (translate: none) {
+  .chips, .filter-group, .quick-filters .qf-group { gap: 0; }
+  .chips .chip { margin: 4px 8px 4px 0; }
+  .filter-group > .fg-legend, .filter-group > .chips, .filter-group > .loc-more,
+  .filter-group > .past-toggle, .qf-group > .qf-label { margin: 4px 12px 4px 0; }
+}
+/* National-source toggles (WSDC / USA Dance / Arthur Murray / Fred Astaire), relocated into the
+   Style filter group 2026-07-12 (Sean). 2026-07-13 fix: now styled as real .chip elements (not
+   .past-toggle) and wired as state.filters.cats members in app.js, so they look and behave
+   exactly like the style chips above — clicking one narrows the list, same as any style. */
+.source-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: var(--bg-card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 4px 14px; cursor: pointer; font-size: .92rem;
+}
+.chip[aria-pressed="true"] { background: var(--chip-on-bg); border-color: var(--chip-on-border); font-weight: 600; }
+.chip:hover { border-color: var(--text-dim); }
+/* Three-letter day chips (2026-08-05, Sean: "shorten their buttons") — the labels
+   are now Sun–Sat (see chipLabel in js/app.js), so the buttons drop the wide
+   default padding and the whole week fits one row without crowding. */
+.chips[data-group="days"] .chip { padding: 4px 9px; }
+
+/* Solo Dance Styles (2026-07-13) — collapsed-by-default sub-group in the Style filter for
+   studio/class categories (Ballet, Jazz, Hip Hop, etc.) that aren't partner dances. Same
+   .past-toggle pill as the national-source toggles above; the chevron rotates open on expand. */
+.solo-styles-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+.solo-styles-toggle span { display: inline-block; transition: transform .15s ease; margin-left: 2px; }
+.solo-styles-toggle[aria-expanded="true"] span { transform: rotate(90deg); }
+.solo-styles-group .chips[hidden] { display: none; }
+
+.loc-selects { display: flex; gap: 12px; flex-wrap: wrap; width: 100%; padding-left: 64px; }
+.loc-selects[hidden] { display: none; }
+.loc-selects label { color: var(--text-dim); font-size: .85rem; display: flex; align-items: center; gap: 6px; }
+.loc-selects select {
+  background: var(--bg-card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; font-size: .92rem;
+}
+.loc-selects select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 640px) { .loc-selects { padding-left: 0; } }
+
+.card-link {
+  align-self: flex-start;
+  color: var(--accent); text-decoration: none; font-size: .92rem; font-weight: 600;
+  border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
+}
+.card-link:hover { border-color: var(--accent); }
+.card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.status-line {
+  max-width: var(--maxw); margin: 14px auto 2px;
+  color: var(--text-dim); font-size: .95rem; min-height: 1.4em;
+}
+.status-line.error { color: var(--danger); }
+
+main { max-width: var(--maxw); margin: 0 auto; }
+
+.bucket-heading {
+  margin: 13px 0 12px; font-size: 1.05rem; color: var(--accent);
+  text-transform: uppercase; letter-spacing: .1em;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+/* First timeline heading row (e.g. TODAY) carries the "Share multiple" button on its
+   right side (2026-07-20, Sean). The label span keeps the heading's uppercase styling;
+   the button opts back out of the inherited transform/tracking. */
+.bucket-heading--action {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+}
+/* TODAY heading enlarged 50% vs other bucket headings (1.05rem base -> 1.575rem), Sean 2026-07-20 */
+.bucket-heading--action .bucket-heading-label { min-width: 0; font-size: 1.575rem; line-height: 1.1; }
+.bucket-heading--action .share-several-toggle {
+  flex: none; align-self: center;
+  text-transform: none; letter-spacing: normal; color: var(--text-dim);
+}
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--gap); }
+
+.card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+/* Share/favorite icon buttons — top-right corner of every card (added 2026-07-13, Sean:
+   "share and favorite buttons"). Absolutely positioned so they sit consistently in the
+   corner regardless of whether a card has art/badges above the title; painted above the
+   card's static content automatically (no z-index tuning needed) since positioned
+   elements always stack above non-positioned siblings. */
+.card-actions {
+  position: absolute;
+  top: 10px; right: 10px;
+  display: flex; gap: 6px;
+}
+.card-action-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(14, 20, 32, .72);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: .95rem; line-height: 1;
+  padding: 0; cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.card-action-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.card-action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-action-btn:disabled { opacity: .35; cursor: default; }
+.card-action-favorite[aria-pressed="true"] {
+  color: var(--accent-pink); border-color: var(--accent-pink);
+  background: rgba(255, 95, 162, .14);
+}
+.card-action-share.copied { color: var(--accent); border-color: var(--accent); }
+.card-art { min-height: 0; }               /* per-event graphic (from logo-map.json) */
+.card-art img {
+  display: block; margin: 0 auto;
+  max-width: 100%; max-height: 180px; width: auto;
+  border-radius: 8px; object-fit: contain;
+}
+.card-art-trigger {
+  display: block; width: 100%; background: none; border: none; padding: 0; margin: 0;
+  cursor: pointer; border-radius: 8px;
+}
+.card-art-trigger img { transition: opacity .15s ease; }
+.card-art-trigger:hover img { opacity: .82; }
+.card-art-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card h3 { font-size: 1.08rem; line-height: 1.3; }
+.card .when { color: var(--accent); font-weight: 600; font-size: .95rem; }
+.card .schedule { color: var(--text); font-size: .95rem; }
+.card .venue { color: var(--text-dim); font-size: .92rem; }
+button.venue {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; padding: 0; font: inherit;
+  color: var(--text-dim); font-size: .92rem; cursor: pointer;
+  text-decoration: underline dotted;
+}
+button.venue:hover { color: var(--accent); }
+button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card .cost { font-size: .92rem; }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge {
+  font-size: .75rem; font-weight: 600; letter-spacing: .03em;
+  padding: 2px 10px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+}
+.badge.warn { background: var(--badge-warn-bg); color: var(--badge-warn-fg); }
+.badge.past { background: #262c38; color: var(--text-dim); }
+
+/* Past events (shown only when the "Show Past Events" toggle is on) — greyed out so
+   they read as secondary/historical at a glance without needing separate copy on
+   every card. .list-row-details override avoids double-dimming a card that's
+   already inside an .is-past list row. */
+.card.is-past { opacity: .55; filter: grayscale(55%); }
+.card.is-past:hover, .card.is-past:focus-within { opacity: .85; }
+.card.is-past .when { color: var(--text-dim); }
+.list-row-details .card.is-past { opacity: 1; filter: none; }
+
+.fb-toggle {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: .82rem; text-decoration: underline dotted;
+  padding: 2px 0; margin-top: 6px; align-self: flex-start;
+}
+.fb-toggle:hover, .fb-toggle[aria-expanded="true"] { color: var(--accent); }
+.fb-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fb-form { display: grid; gap: 8px; margin-top: 8px; padding: 10px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; }
+.fb-form[hidden] { display: none; }   /* keep the form closed until the toggle is clicked */
+.fb-form textarea, .fb-form input {
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; font: inherit; font-size: .9rem; width: 100%;
+}
+.fb-form textarea:focus-visible, .fb-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fb-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.fb-send {
+  background: var(--accent-soft); color: var(--accent); font-weight: 600;
+  border: 1px solid var(--chip-on-border); border-radius: 999px; padding: 5px 16px; cursor: pointer;
+}
+.fb-alt {
+  background: transparent; color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; cursor: pointer;
+}
+.fb-send:hover { filter: brightness(1.15); }
+.fb-alt:hover { color: var(--text); border-color: var(--text-dim); }
+.fb-send:focus-visible, .fb-alt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fb-status { color: var(--text-dim); font-size: .82rem; min-height: 1.2em; margin: 0; }
+.fb-photo-label { color: var(--text-dim); font-size: .82rem; margin: 2px 0 -4px; }
+.fb-photo-input { padding: 6px 0; }
+.fb-photo-preview { max-width: 160px; max-height: 160px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; }
+
+/* ---------- List view (added 2026-07-11) — title-only rows, tap to expand ---------- */
+.list-rows { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.list-row {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.list-row-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: transparent; color: var(--text); border: none;
+  padding: 13px 16px; font: inherit; font-size: 1rem; text-align: left; cursor: pointer;
+}
+.list-row-toggle:hover { color: var(--accent); }
+.list-row-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.list-row-title { flex: 1; min-width: 0; }
+.list-row-chevron {
+  color: var(--text-dim); font-size: 1.1rem; line-height: 1;
+  transition: transform .15s ease;
+}
+.list-row-toggle[aria-expanded="true"] .list-row-chevron { transform: rotate(90deg); color: var(--accent); }
+.list-row-details { border-top: 1px solid var(--border); padding: 4px 16px 14px; }
+.list-row-details[hidden] { display: none; }
+.list-row-details .card { border: none; padding: 10px 0 0; background: transparent; }
+.list-row.is-past { opacity: .55; filter: grayscale(45%); }
+.list-row.is-past:hover, .list-row.is-past:focus-within { opacity: .85; }
+
+.empty-state {
+  text-align: center; color: var(--text-dim);
+  padding: 60px 20px; border: 1px dashed var(--border); border-radius: var(--radius);
+  margin-top: 20px;
+}
+
+.site-footer {
+  max-width: var(--maxw); margin: 40px auto 0;
+  color: var(--text-dim); font-size: .85rem;
+  border-top: 1px solid var(--border); padding-top: 14px;
+}
+.support-block { margin-top: 14px; }
+.support-block[hidden] { display: none; }
+.support-btn {
+  display: inline-block; margin-top: 8px;
+  background: linear-gradient(92deg, var(--accent-soft), #3a1a2c);
+  color: var(--accent-pink); font-weight: 600; text-decoration: none;
+  border: 1px solid var(--accent-pink); border-radius: 999px; padding: 5px 20px;
+}
+.support-btn:hover { filter: brightness(1.2); }
+.support-btn:focus-visible { outline: 2px solid var(--accent-pink); outline-offset: 2px; }
+
+/* Low-key link to the review dashboard — small, dim, blends into the footer (Sean 2026-07-20). */
+.footer-tools { margin-top: 22px; text-align: center; }
+.footer-tools .tools-link {
+  display: inline-block; font-size: .75rem; color: var(--text-dim);
+  text-decoration: none; opacity: .55;
+  border: 1px solid var(--border); border-radius: 999px; padding: 4px 14px;
+}
+.footer-tools .tools-link:hover { opacity: 1; color: var(--text); }
+.footer-tools .tools-link:focus-visible { outline: 2px solid var(--border); outline-offset: 2px; opacity: 1; }
+
+@media (max-width: 640px) {
+  .site-header { gap: 10px; padding-top: 18px; }
+  .tagline { font-size: .78rem; letter-spacing: .1em; }
+  .filter-group .fg-legend { min-width: 100%; padding-top: 0; }
+  .cards { grid-template-columns: 1fr; }
+}
+
+/* ---------- Calendar view (added 2026-07-11) ---------- */
+.calendar { margin-top: 8px; }
+.cal-header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; margin-bottom: 12px; }
+.cal-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cal-title { font-size: 1.35rem; font-weight: 700; min-width: 200px; text-align: center; letter-spacing: .02em; }
+.cal-btn {
+  background: var(--bg-card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 4px 12px; cursor: pointer; font-size: .95rem;
+}
+.cal-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cal-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--chip-on-border); font-weight: 600; }
+.cal-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dow { text-align: center; color: var(--text-dim); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; padding: 6px 0 8px; }
+.cal-cell {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+  min-height: 96px; padding: 6px; display: flex; flex-direction: column; gap: 4px;
+  overflow: hidden;
+}
+.cal-cell.empty { background: transparent; border-color: transparent; }
+.cal-cell .day-num { font-size: .85rem; color: var(--text-dim); font-weight: 600; }
+.cal-cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.cal-cell.today .day-num { color: var(--accent); }
+
+.cal-chip {
+  display: block; width: 100%; text-align: left;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid transparent; border-radius: 6px;
+  padding: 2px 6px; font-size: .72rem; line-height: 1.3; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-chip:hover, .cal-chip:focus-visible { border-color: var(--accent); outline: none; }
+.cal-chip[data-cat="Mixed"] { background: #16382a; color: #7fe0a7; }
+.cal-chip[data-cat="Ballroom"] { background: #172d4d; color: #60a5fa; }
+.cal-chip[data-cat="Latin"] { background: #3a2a14; color: #ffc27d; }
+.cal-chip[data-cat="Argentine Tango"] { background: #3a1a2c; color: var(--accent-pink); }
+.cal-chip[data-cat="Other"] { background: #262c38; color: var(--text-dim); }
+.cal-chip.tentative { background: var(--badge-warn-bg); color: var(--badge-warn-fg); }
+
+.cal-year { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.cal-mini {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; cursor: pointer; text-align: left; color: var(--text); font: inherit;
+}
+.cal-mini:hover { border-color: var(--accent); }
+.cal-mini:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cal-mini h4 { color: var(--accent); font-size: .95rem; margin-bottom: 6px; text-align: center; letter-spacing: .04em; }
+.cal-mini table { width: 100%; border-collapse: collapse; }
+.cal-mini th { color: var(--text-dim); font-size: .6rem; font-weight: 600; padding: 2px 0; text-align: center; }
+.cal-mini td { text-align: center; font-size: .72rem; color: var(--text); padding: 2px 0; border-radius: 6px; }
+.cal-mini td.has-events { background: var(--chip-on-bg); color: #fff; font-weight: 700; }
+.cal-mini td.today { box-shadow: 0 0 0 1px var(--accent) inset; color: var(--accent); }
+
+.cal-undated { margin-top: 12px; color: var(--text-dim); font-size: .88rem; }
+
+.cal-pop-backdrop {
+  position: fixed; inset: 0; background: rgba(4, 8, 16, .6);
+  display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
+}
+.cal-pop {
+  max-width: 440px; width: 100%; max-height: 85vh; overflow: auto;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; position: relative;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+}
+.cal-pop .pop-date { color: var(--accent); font-size: .9rem; font-weight: 600; margin: 0 24px 10px 0; }
+.cal-pop .pop-close {
+  position: absolute; top: 8px; right: 12px; background: none; border: none;
+  color: var(--text-dim); font-size: 1.4rem; cursor: pointer; line-height: 1;
+}
+.cal-pop .pop-close:hover { color: var(--text); }
+.cal-pop .card { border: none; padding: 0; background: transparent; }
+
+/* Click-to-enlarge flyer/logo lightbox (added 2026-07-12, Sean's request).
+   Reuses .cal-pop-backdrop for the dark overlay. Image caps at 540px tall —
+   3x the 180px card thumbnail (.card-art img above) — capped again by 80vh
+   so it never overflows a short/mobile viewport. */
+.lightbox-pop {
+  max-width: min(92vw, 640px); background: var(--bg-raised);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; position: relative; display: flex; justify-content: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+}
+.lightbox-pop .pop-close {
+  position: absolute; top: 8px; right: 12px; background: none; border: none;
+  color: var(--text-dim); font-size: 1.4rem; cursor: pointer; line-height: 1;
+}
+.lightbox-pop .pop-close:hover { color: var(--text); }
+.lightbox-pop img {
+  display: block; max-width: 100%; max-height: min(540px, 80vh);
+  width: auto; height: auto; object-fit: contain; border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .cal-cell { min-height: 64px; padding: 4px; border-radius: 6px; }
+  .cal-chip { font-size: .58rem; padding: 1px 4px; }
+  .cal-title { min-width: 150px; font-size: 1.05rem; }
+  .cal-dow { font-size: .62rem; }
+  .cal-cell .day-num { font-size: .72rem; }
+}
+
+/* ---------- Map view (added 2026-07-12) — Leaflet + free OpenStreetMap/CARTO tiles ---------- */
+.map-canvas {
+  height: 480px; width: 100%;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg-card);
+}
+.map-canvas.mini-map { height: 240px; margin-top: 10px; }
+.map-address-pop { max-width: 480px; }
+
+/* Dark-theme overrides for Leaflet's default (light) chrome. */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: var(--bg-raised); color: var(--text);
+}
+.leaflet-popup-content { margin: 10px; }
+.leaflet-popup-content .card { border: none; padding: 0; background: transparent; }
+.leaflet-popup-close-button { color: var(--text-dim) !important; }
+.leaflet-control-attribution {
+  background: rgba(14, 20, 32, .75) !important; color: var(--text-dim) !important;
+}
+.leaflet-control-attribution a { color: var(--text-dim); }
+.leaflet-control-zoom a {
+  background: var(--bg-raised) !important; color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+.leaflet-control-zoom a:hover { background: var(--bg-card) !important; }
+.leaflet-tooltip {
+  background: var(--bg-raised); color: var(--text); border: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .map-canvas { height: 360px; }
+}
+
+/* ============================================================
+   Filter redesign (2026-07-17, Sean's spec): quick-filter rows,
+   summary chips, facet counts, radio pills, bottom sheet.
+   ============================================================ */
+.header-submit {
+  position: relative; top: auto; right: auto; z-index: 5;
+  grid-column: 2; grid-row: 1; justify-self: end; align-self: center;
+  white-space: nowrap;
+}
+.site-header { position: relative; }
+
+/* Event search box (2026-07-20, Sean) — one quiet field above the quick filters; theme-
+   driven colors so it matches every palette. Kept low-contrast so it doesn't shout. */
+.search-row { margin: 2px 0 4px; min-width: 0; }
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 12px; max-width: 420px;
+}
+.search-box:focus-within { border-color: var(--accent); }
+.search-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.search-input {
+  flex: 1 1 auto; min-width: 0; border: none; background: transparent;
+  color: var(--text); font: inherit; font-size: .9rem; padding: 2px 0; outline: none;
+}
+.search-input::placeholder { color: var(--text-dim); }
+.search-input::-webkit-search-cancel-button { display: none; }  /* we provide our own ✕ */
+.search-clear {
+  flex: none; border: none; background: transparent; cursor: pointer;
+  color: var(--text-dim); font-size: .95rem; line-height: 1; padding: 2px 4px; border-radius: 50%;
+}
+.search-clear:hover { color: var(--text); }
+/* Apply-search button (2026-07-20, Sean): the small magnifier on the right runs the search. */
+.search-apply {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; cursor: pointer;
+  color: var(--text-dim); padding: 2px; border-radius: 50%;
+}
+.search-apply:hover { color: var(--accent); }
+.search-apply:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; color: var(--accent); }
+/* Recent searches from everyone (2026-08-03, Sean's ask) — sits to the right of
+   .search-box in the same flex .search-row. Hidden entirely (via [hidden] in the
+   markup) until js/recent-searches.js has something to show. */
+.recent-searches { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.recent-searches-label { color: var(--text-dim); font-size: .78rem; white-space: nowrap; }
+.recent-searches-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; min-width: 0; }
+.recent-search-term {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px;
+  color: var(--text-dim); font: inherit; font-size: .8rem; padding: 4px 11px; cursor: pointer;
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.recent-search-term:hover { color: var(--text); border-color: var(--accent); }
+.recent-search-term:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 780px) { .recent-searches-label { display: none; } }
+@media (max-width: 560px) { .recent-searches { display: none; } }  /* the mobile bottom-sheet controls are already dense enough */
+
+.quick-filters { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; min-width: 0; max-width: 100%; }  /* min-width:0 — .controls is a grid on mobile; without this the row can't shrink/scroll */
+.quick-filters-reset { align-self: flex-end; margin-top: 2px; }
+.qf-group { display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
+/* Location row can grow to a second line when the State/Town dropdowns open — keep its
+   label aligned to the top instead of vertically centered against the taller content. */
+.qf-group.qf-location { align-items: baseline; }
+.qf-label { flex: 0 0 auto; color: var(--text-dim); font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; width: 92px; }
+.filters-disclosure-row { display: flex; justify-content: flex-start; margin-top: 12px; }
+.filters-count {
+  color: var(--accent); font-weight: 700; font-size: .76rem; white-space: nowrap;
+  background: var(--accent-soft); border: 1px solid var(--chip-on-border);
+  border-radius: 999px; padding: 3px 7px;
+}
+.filters-count:empty { display: none; }
+.filter-panel-title .filters-count { margin-left: 6px; }
+
+/* selection states: filled+check when on, dark+border when off, brighter border on hover */
+.chip { transition: border-color .12s ease, background .12s ease; }
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] .chip-label::before { content: "✓ "; font-weight: 700; }
+.chip.chip-radio .chip-label::before { content: "○ "; font-weight: 400; }
+.chip.chip-radio[aria-pressed="true"] .chip-label::before { content: "● "; }
+.chip-count { opacity: .65; font-size: .85em; }
+.chip.chip-dim { opacity: .38; }
+.chip.chip-dim:hover { opacity: .7; }
+
+/* Quick-filter pill rows: WRAP on desktop (Sean, 2026-07-17: "the buttons dont wrap");
+   they only become horizontal scrollers on small screens (see the media block below). */
+.chips-scroll { flex-wrap: wrap; min-width: 0; flex: 1 1 0%; max-width: 100%; }
+.chips-scroll .chip { flex: 0 0 auto; white-space: nowrap; }
+
+/* active-filter summary chips (panel closed) */
+.active-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; min-width: 0; max-width: 100%; }
+.active-chip { background: var(--chip-on-bg); color: var(--text); border: 1px solid var(--accent);
+  border-radius: 999px; padding: 4px 12px; font-size: .85rem; cursor: pointer; }
+.active-chip .active-chip-x { margin-left: 4px; opacity: .8; font-weight: 700; }
+.active-chip:hover { border-color: var(--accent-pink); }
+.active-clear { background: none; border: none; color: var(--accent); cursor: pointer;
+  font-size: .85rem; text-decoration: underline; padding: 4px 6px; }
+
+/* Top-right "Clear all" (2026-07-24, Sean) — replaces the removed active-chip strip's
+   clear. Lives at the right end of .control-row (which is flex + space-between). */
+.clear-all-top { margin-left: auto; background: none; border: 1px solid var(--border);
+  border-radius: 999px; color: var(--accent); cursor: pointer; font: inherit;
+  font-size: .85rem; font-weight: 600; padding: 6px 14px; white-space: nowrap; }
+.clear-all-top:hover { color: var(--text); border-color: var(--accent); }
+.clear-all-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.clear-all-top[hidden] { display: none; }
+
+/* panel top row */
+.filter-panel-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.filter-panel-title { font-size: 1rem; }
+.filter-panel-top .filters-close { margin-left: auto; }
+/* ✕ close (2026-07-17): the mobile sheet covers the Filters button that opened it, so the
+   panel needs its own exit beyond "Show events". Shown on desktop too — harmless there. */
+.filters-close {
+  background: transparent; color: var(--text-dim); border: 1px solid var(--border);
+  border-radius: 50%; width: 30px; height: 30px; line-height: 1; cursor: pointer;
+  font-size: .95rem; flex: none; display: inline-flex; align-items: center; justify-content: center;
+}
+.filters-close:hover { color: var(--text); border-color: var(--text-dim); }
+.filters-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Backdrop: hidden by default; on small screens it dims the page behind the open sheet
+   and closes it on tap (wired in app.js). */
+#filter-backdrop { display: none; }
+
+/* Location extras */
+.location-filter-content { min-width: 0; flex: 1 1 520px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.location-choice-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; max-width: 100%; }
+.loc-more { background: none; border: none; color: var(--accent); cursor: pointer; padding: 4px 0;
+  font: inherit; font-size: .88rem; text-decoration: underline; text-underline-offset: 2px; display: block; }
+.loc-more:hover { color: var(--text); }
+.loc-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.loc-selects { padding-left: 0; }
+.loc-selects label { margin: 4px 0; }
+.loc-selects select:disabled { opacity: .4; }
+
+/* mobile: bottom sheet */
+@media (max-width: 640px) {
+  .chips-scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+  .qf-label { width: auto; min-width: 84px; }
+  .filters-disclosure-row { margin-top: 10px; }
+  .filters-toggle { width: auto; min-width: 190px; }
+  #fg-area { display: block; width: 100%; min-width: 0; overflow: hidden; }
+  #fg-area .fg-legend { display: block; margin-bottom: 8px; }
+  .location-filter-content { width: 100%; max-width: 100%; min-width: 0; flex: 0 0 100%; overflow: hidden; }
+  .location-choice-row { width: calc(100vw - 34px); max-width: calc(100vw - 34px); min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+  .location-choice-row .chips { flex-wrap: nowrap; }
+  .location-choice-row .loc-more { flex: 0 0 auto; }
+  .filter-panel { position: fixed; left: 0; right: 0; bottom: 0; top: auto; max-height: 82vh;
+    overflow-y: auto; z-index: 1200; border-radius: 16px 16px 0 0; margin: 0;
+    box-shadow: 0 -8px 30px rgba(0,0,0,.55); background: var(--bg-raised); padding: 16px;
+    /* iOS: momentum scrolling + keep sheet scrolls from chaining to the page behind
+       (WebKit ignores body{overflow:hidden}, so without this the background scrolls too). */
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  body.sheet-open #filter-backdrop { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    z-index: 1100; background: rgba(0, 0, 0, .45); }
+  /* THE stacking fix (2026-07-17, from Sean's iPhone screenshots): moonlit-ember-theme.css
+     gives every page section position:relative+z-index:1, which makes .controls a stacking
+     context that CAPTURES the sheet's z-index:1200 — so the status line, timeline cards
+     (later siblings, also z-1), the combo bar (z-60) and whispers (z-40) all painted ON TOP
+     of the open sheet. Lifting .controls itself while the sheet is open frees the sheet and
+     backdrop to cover them. Scoped to this mobile block — the sheet only overlays here. */
+  body.sheet-open .controls { z-index: 1200; }
+  body.sheet-open { overflow: hidden; }
+}
+
+/* Calendar color legend (2026-07-17) — swatches match cal-chip + map marker colors. */
+.cal-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 2px 10px; font-size: .82rem; color: var(--text-dim); }
+.cal-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend-swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+.cal-legend-swatch-tentative { background: var(--badge-warn-bg); border: 1px solid var(--badge-warn-fg); }
+/* Solo-style day chips: give them their real colors so chips + legend agree (previously
+   they fell back to the default blue, indistinguishable from West Coast Swing). */
+.cal-chip[data-cat="Ballet"] { background: #2a2347; color: #a78bfa; }
+.cal-chip[data-cat="Jazz"] { background: #3a3510; color: #fde047; }
+.cal-chip[data-cat="Hip Hop"] { background: #3d1a1a; color: #f87171; }
+.cal-chip[data-cat="Contemporary"] { background: #0f3530; color: #2dd4bf; }
+.cal-chip[data-cat="Heels"] { background: #38173d; color: #e879f9; }
+.cal-chip[data-cat="Pom"] { background: #2b3510; color: #a3e635; }
+.cal-chip[data-cat="Musical Theatre"] { background: #20244a; color: #818cf8; }
+.cal-chip[data-cat="Dance Fit"] { background: #3a2a08; color: #f59e0b; }
+.cal-chip[data-cat="Line Dance"] { background: #113222; color: #22c55e; }
+.cal-chip[data-cat="Belly Dance"] { background: #3a1826; color: #fb7185; }
+
+/* ============================================================================
+   Multi-select share — "Share several dances as one" (2026-07-17, Sean).
+   All colors come from the theme's CSS variables, so this layer automatically
+   matches whatever theme is active (Moonlit Ember today) with no hard-coded hues.
+   ============================================================================ */
+
+/* Entry toggle — same pill language as .past-toggle; a warm gradient when active. */
+.share-several-toggle[aria-pressed="true"] {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+}
+
+/* The per-card select control is hidden until "Share several" is on; while selecting,
+   it becomes the ONLY corner action so the choice is unambiguous. */
+.card-action-select { display: none; }
+body.selecting .card-action-select { display: flex; }
+body.selecting .card-action-favorite,
+body.selecting .card-action-share { display: none; }
+.card-action-select[aria-pressed="true"] {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  font-weight: 700;
+}
+/* While selecting, cards invite a tap and lift a little when chosen. */
+body.selecting .card.selectable { cursor: pointer; }
+body.selecting .card.selectable:hover { border-color: var(--text-dim); }
+.card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent) inset, 0 14px 40px rgba(0, 0, 0, .35) !important;
+}
+
+/* Floating action bar (bottom, above the whisper widget). */
+.combo-bar {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  z-index: 60; display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 12px;
+  width: min(620px, calc(100vw - 28px));
+  padding: 10px 12px 10px 18px;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: 999px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+}
+.combo-bar[hidden] { display: none; }
+.combo-bar-count { color: var(--text); font-size: .95rem; font-weight: 600; white-space: nowrap; }
+.combo-bar-spacer { flex: 1 1 auto; }
+.combo-bar-btn {
+  border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
+  padding: 8px 16px; font-size: .92rem; font-weight: 600;
+  background: transparent; color: var(--text-dim);
+}
+.combo-bar-btn:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
+.combo-bar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.combo-bar-btn:disabled { opacity: .4; cursor: default; }
+.combo-bar-share {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+}
+.combo-bar-share:disabled { background: var(--bg-card); color: var(--text-dim); }
+
+/* The "lovely share" preview modal — reuses .cal-pop-backdrop for the scrim. */
+.combo-pop {
+  max-width: 460px; width: 100%; max-height: 94vh; overflow: auto;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: 18px; position: relative;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .6);
+}
+.combo-pop .pop-close {
+  position: absolute; top: 10px; right: 14px; z-index: 2;
+  background: rgba(0, 0, 0, .28); width: 30px; height: 30px; border-radius: 999px;
+  border: none; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer;
+}
+.combo-pop .pop-close:hover { background: rgba(0, 0, 0, .45); }
+
+/* The poster preview — shows the ACTUAL rendered 4:5 PNG, scaled so the whole thing reads
+   at a glance on a phone (no scrolling to find the point). */
+.combo-poster-stage {
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px 16px 4px; min-height: 220px;
+}
+.combo-poster-img {
+  width: 100%; max-width: 384px; max-height: 58vh; height: auto;
+  object-fit: contain; border-radius: 16px; display: block;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .5);
+}
+.combo-poster-loading { margin: 0; padding: 80px 0; color: var(--text-dim); font-size: .95rem; }
+
+/* One-line guidance above the Layout/Look pickers (2026-07-24). */
+.combo-pop-hint { margin: 4px 16px 0; text-align: center; color: var(--text-dim); font-size: .85rem; line-height: 1.35; }
+
+/* "Look" picker — pick a Dance Card style; choice is remembered (localStorage). */
+.combo-style-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  justify-content: center; padding: 6px 16px 2px;
+}
+.combo-style-label { color: var(--text-dim); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; margin-right: 2px; }
+.combo-style-chip {
+  border: 1px solid var(--border); background: var(--bg-card); color: var(--text-dim);
+  border-radius: 999px; padding: 6px 14px; font-size: .85rem; font-weight: 600; cursor: pointer;
+}
+.combo-style-chip:hover { color: var(--text); border-color: var(--text-dim); }
+.combo-style-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.combo-style-chip[aria-pressed="true"] {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+}
+
+/* Legacy DOM-poster styles (kept harmless; the preview is now the rendered image above). */
+.combo-poster { border-radius: 18px 18px 0 0; overflow: hidden; }
+.combo-poster-head {
+  padding: 26px 24px 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-pink));
+  color: #1a1119;
+}
+.combo-headline { margin: 0; font-size: 1.6rem; line-height: 1.15; font-weight: 800; letter-spacing: -.01em; }
+.combo-sub { margin: 8px 0 0; font-size: .9rem; font-weight: 600; opacity: .82; }
+.combo-list { list-style: none; margin: 0; padding: 8px 20px 4px; display: grid; gap: 4px; }
+.combo-item { display: flex; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+.combo-item:last-child { border-bottom: none; }
+.combo-dot { font-size: 1.1rem; line-height: 1.4; flex: 0 0 auto; }
+.combo-item-body { min-width: 0; }
+.combo-item-name { margin: 0; font-size: 1.06rem; font-weight: 700; color: var(--text); }
+.combo-item-when { margin: 3px 0 0; font-size: .94rem; font-weight: 600; color: var(--accent-pink); }
+.combo-item-meta { margin: 3px 0 0; font-size: .88rem; color: var(--text-dim); }
+.combo-poster-foot {
+  margin: 0; padding: 6px 24px 18px; color: var(--accent);
+  font-size: .9rem; font-weight: 700;
+}
+.combo-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 20px 20px; }
+.combo-btn {
+  flex: 1 1 auto; border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
+  padding: 11px 14px; font-size: .95rem; font-weight: 600;
+  background: transparent; color: var(--text-dim);
+}
+.combo-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.combo-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.combo-btn.copied { color: var(--accent); border-color: var(--accent); }
+.combo-btn-primary {
+  flex-basis: 100%; color: #fff; border-color: transparent;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+}
+.combo-btn-primary.copied { color: #fff; background: linear-gradient(92deg, var(--accent-pink), var(--accent)); }
+
+/* "Email me a designed graphic" (2026-07-24) — full-width, its own offer, tinted so it
+   reads as the richer option without competing with the primary Share button. */
+.combo-btn-email {
+  flex-basis: 100%; color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.combo-btn-email:hover { color: var(--text); border-color: var(--accent); }
+/* The inline email-capture panel that replaces the action row when opened. */
+.combo-email-panel { display: flex; flex-direction: column; gap: 12px; padding: 8px 20px 22px; }
+.combo-email-lead { margin: 0; color: var(--text-dim); font-size: .95rem; line-height: 1.4; }
+.combo-email-ok { color: var(--text); font-weight: 600; }
+.combo-email-label { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--text-dim); }
+.combo-email-input {
+  width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 14px; font-size: 1rem; background: var(--bg); color: var(--text);
+}
+.combo-email-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.combo-email-textarea { resize: vertical; min-height: 74px; font-family: inherit; line-height: 1.4; }
+.combo-email-status { margin: 0; min-height: 1.1em; font-size: .88rem; color: var(--text-dim); }
+.combo-email-status.is-err { color: var(--accent); }
+.combo-email-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+/* 90-second "designing your Dance Card" countdown (2026-07-24). */
+.combo-countdown {
+  margin: 2px 0 0; text-align: center; font-size: 2.4rem; font-weight: 800;
+  letter-spacing: .02em; line-height: 1.1; font-variant-numeric: tabular-nums;
+  background: linear-gradient(92deg, var(--accent), var(--accent-pink));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.combo-countdown.is-done { font-size: 2rem; }
+
+/* Recipient banner for a shared-set (?events=) link. */
+.shared-set-banner {
+  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  max-width: var(--maxw); margin: 0 auto 12px; padding: 12px 18px;
+  background: var(--accent-soft); border: 1px solid var(--chip-on-border);
+  border-radius: var(--radius); color: var(--text); font-weight: 600;
+}
+.shared-set-clear {
+  border: 1px solid var(--chip-on-border); background: transparent; color: var(--accent);
+  border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: .9rem; font-weight: 600;
+}
+.shared-set-clear:hover { color: var(--text); border-color: var(--text-dim); }
+.shared-set-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .combo-bar { bottom: 12px; padding: 9px 10px 9px 14px; gap: 8px; border-radius: 22px; }
+  .combo-bar-count { font-size: .86rem; }
+  .combo-bar-btn { padding: 8px 13px; font-size: .86rem; }
+  .combo-headline { font-size: 1.4rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card.is-selected { transition: box-shadow .15s ease, border-color .15s ease; }
+}
+
+/* ============================================================================
+   Add to Calendar (2026-08-03) — per-card popover, bulk export button, toast.
+   Self-contained block for js/add-to-calendar.js. Theme-var driven so every
+   palette in moonlit-ember-theme.css recolors it automatically.
+   ========================================================================== */
+.search-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.atc-bulk-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-card); color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 6px 14px; font: inherit; font-size: .85rem; cursor: pointer;
+  white-space: nowrap;
+}
+.atc-bulk-btn:hover { color: var(--text); border-color: var(--text-dim); }
+.atc-bulk-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.atc-popover {
+  position: fixed; z-index: 1200; min-width: 230px; max-width: 300px;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.45);
+}
+.atc-head {
+  font-size: .8rem; color: var(--text-dim);
+  padding: 4px 8px 8px; border-bottom: 1px solid var(--border); margin-bottom: 6px;
+}
+.atc-item {
+  display: block; width: 100%; text-align: left; text-decoration: none;
+  background: transparent; color: var(--text);
+  border: 1px solid transparent; border-radius: 8px;
+  padding: 9px 10px; font: inherit; font-size: .95rem; cursor: pointer;
+}
+.atc-item:hover { background: var(--bg-card); border-color: var(--border); }
+.atc-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.atc-note, .atc-msg {
+  font-size: .78rem; color: var(--text-dim); padding: 8px 8px 4px; margin: 0;
+}
+.atc-msg { padding: 4px 6px; }
+
+.atc-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px);
+  background: var(--bg-raised); color: var(--text);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 10px 18px; font-size: .85rem; z-index: 1300;
+  opacity: 0; transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none; max-width: min(92vw, 480px); text-align: center;
+}
+.atc-toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .atc-toast { transition: none; } }
+.combo-bar-atc { white-space: nowrap; }
+@media (max-width: 560px) { .combo-bar-atc { flex-shrink: 0; } }
+
+/* ============================================================================
+   Choose-location state map (2026-08-03) — clickable US map inside the
+   Location filter's "Choose location" reveal, alongside the existing State/
+   Town selects (kept as the typing- / screen-reader-friendly fallback).
+   Self-contained block for js/state-map-picker.js + lazily-loaded
+   js/us-states-map-data.js. Theme-var driven so every palette in
+   moonlit-ember-theme.css recolors it automatically.
+   ========================================================================== */
+.loc-map { flex: 1 1 100%; max-width: 640px; margin-top: 6px; position: relative; }
+.loc-map-status { color: var(--text-dim); font-size: .82rem; margin: 4px 0; }
+.loc-map-status[hidden] { display: none; }
+.loc-map-svg { width: 100%; height: auto; display: block; }
+.state-shape { fill: var(--bg-card); stroke: var(--border); stroke-width: 1.1px; cursor: pointer; }
+.state-shape:hover { fill: var(--accent-soft); stroke: var(--text-dim); }
+.state-shape:focus { outline: none; }   /* mouse click: Firefox/Safari do not match :focus-visible here, so the UA ring would paint as a box around the path bbox */
+.state-shape:focus-visible { outline: none; stroke: var(--accent); stroke-width: 2.4px; }
+.state-shape[aria-pressed="true"] { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.6px; }
+/* Per-state event-count labels (2026-08-03) — sit on top of the shapes, so
+   pointer-events:none is required or clicking a number would miss the state
+   underneath it. paint-order draws the stroke UNDER the fill, giving the digits
+   a readable halo regardless of the state's current fill color. */
+.state-count {
+  font-weight: 700; font-family: inherit;
+  fill: var(--text); pointer-events: none; user-select: none;
+  paint-order: stroke fill; stroke: var(--bg); stroke-linejoin: round;
+}
+.state-count-zero { fill: var(--text-dim); opacity: .6; }
+/* City call-outs (2026-08-05) — Pensacola/Mobile carry their own counts, styled
+   distinctly from the state numbers (accent color + small-caps city name) so they
+   read as city counts. They sit in open Gulf water with a leader line back to an
+   anchor dot on the bay; see CITY_CALLOUTS in js/state-map-picker.js. The text
+   keeps the same stroke halo trick as .state-count for legibility on any theme. */
+.city-callout { cursor: default; }
+.city-leader { stroke: var(--text-dim); stroke-width: .8px; opacity: .65; fill: none; }
+.city-anchor { fill: var(--accent); stroke: var(--bg); stroke-width: .8px; }
+.city-count-num {
+  font-weight: 700; font-family: inherit; font-size: 13px;
+  fill: var(--accent); user-select: none;
+  paint-order: stroke fill; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round;
+}
+.city-count-name {
+  font-family: inherit; font-size: 8px; letter-spacing: .06em; text-transform: uppercase;
+  fill: var(--text-dim); user-select: none;
+  paint-order: stroke fill; stroke: var(--bg); stroke-width: 1.9px; stroke-linejoin: round;
+}
+/* Hover tooltip (2026-08-03: "hover name of the state... if you hold it a sec") —
+   one shared element, positioned near the pointer/focused shape. Plain HTML, not
+   SVG, so it sits on top of the map regardless of which state it's naming. */
+.state-tooltip {
+  position: absolute; z-index: 5; pointer-events: none;
+  background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px;
+  padding: 5px 10px; font-size: .82rem; color: var(--text); white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
+  opacity: 0; transform: translate(-50%, -8px); visibility: hidden;
+}
+.state-tooltip.is-visible { opacity: 1; visibility: visible; }
+.state-tooltip-count { color: var(--text-dim); margin-left: 5px; }
+@media (prefers-reduced-motion: no-preference) {
+  .state-tooltip { transition: opacity .12s ease; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .state-shape { transition: fill .12s ease, stroke .12s ease; }
+}
+@media (max-width: 640px) { .loc-map { max-width: 100%; } }
