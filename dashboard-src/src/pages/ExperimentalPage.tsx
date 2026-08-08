@@ -19,7 +19,6 @@ interface SeriesDraft {
 }
 interface OwnerDraft { id: string; display_name: string; linked_profile_id: string | null; }
 interface EventLink { series_id: string; event_id: string; }
-interface ManagerLink { series_id: string; user_id: string; }
 interface AssignmentLink { id: string; event_id: string; user_id: string; assigned_by: string | null; active: boolean; assigned_at: string; ended_at: string | null; note: string | null; }
 interface BulkSeriesRow { name: string; code: string; seriesType: SeriesDraft["series_type"]; ownerId: string; }
 
@@ -31,17 +30,11 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [people, setPeople] = useState<DashboardProfile[]>([]);
   const [ownerDrafts, setOwnerDrafts] = useState<OwnerDraft[]>([]);
   const [eventLinks, setEventLinks] = useState<EventLink[]>([]);
-  const [managerLinks, setManagerLinks] = useState<ManagerLink[]>([]);
   const [assignments, setAssignments] = useState<AssignmentLink[]>([]);
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<DashboardEvent | null>(null);
-  const [selectedManager, setSelectedManager] = useState<DashboardProfile | null>(null);
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [seriesType, setSeriesType] = useState<SeriesDraft["series_type"]>("recurring");
-  const [ownerId, setOwnerId] = useState("");
   const [newOwnerName, setNewOwnerName] = useState("");
-  const [bulkRows, setBulkRows] = useState<BulkSeriesRow[]>(() => Array.from({ length: 6 }, emptyBulkRow));
+  const [bulkRows, setBulkRows] = useState<BulkSeriesRow[]>(() => [emptyBulkRow()]);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState("");
@@ -54,23 +47,21 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
-    const [seriesResult, eventsResult, peopleResult, ownerDraftsResult, eventLinksResult, managersResult, assignmentsResult] = await Promise.all([
+    const [seriesResult, eventsResult, peopleResult, ownerDraftsResult, eventLinksResult, assignmentsResult] = await Promise.all([
       supabaseClient.from("experimental_series_drafts").select("*").order("updated_at", { ascending: false }),
       supabaseClient.from("dashboard_events_admin").select("*").order("name").limit(1000),
       supabaseClient.from("dashboard_profiles").select("*").order("display_name").limit(1000),
       supabaseClient.from("experimental_owner_drafts").select("id,display_name,linked_profile_id").order("display_name"),
       supabaseClient.from("experimental_series_event_links").select("series_id,event_id"),
-      supabaseClient.from("experimental_series_managers").select("series_id,user_id"),
       supabaseClient.from("event_assignments").select("*").eq("active", true),
     ]);
-    const firstError = [seriesResult, eventsResult, peopleResult, ownerDraftsResult, eventLinksResult, managersResult, assignmentsResult].find(result => result.error)?.error;
+    const firstError = [seriesResult, eventsResult, peopleResult, ownerDraftsResult, eventLinksResult, assignmentsResult].find(result => result.error)?.error;
     if (firstError) setError(firstError.message);
     setSeries((seriesResult.data as SeriesDraft[] | null) ?? []);
     setEvents((eventsResult.data as DashboardEvent[] | null) ?? []);
     setPeople((peopleResult.data as DashboardProfile[] | null) ?? []);
     setOwnerDrafts((ownerDraftsResult.data as OwnerDraft[] | null) ?? []);
     setEventLinks((eventLinksResult.data as EventLink[] | null) ?? []);
-    setManagerLinks((managersResult.data as ManagerLink[] | null) ?? []);
     setAssignments((assignmentsResult.data as AssignmentLink[] | null) ?? []);
     setLoading(false);
   }, []);
@@ -80,7 +71,6 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
 
   const selectedSeries = series.find(item => item.id === selectedSeriesId) ?? null;
   const linkedEvents = useMemo(() => new Set(eventLinks.filter(link => link.series_id === selectedSeriesId).map(link => link.event_id)), [eventLinks, selectedSeriesId]);
-  const linkedManagers = useMemo(() => new Set(managerLinks.filter(link => link.series_id === selectedSeriesId).map(link => link.user_id)), [managerLinks, selectedSeriesId]);
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const styles = useMemo(() => [...new Set(events.map(item => item.style).filter(Boolean))].sort(), [events]);
   const states = useMemo(() => [...new Set(events.map(item => item.state).filter((value): value is string => Boolean(value)))].sort(), [events]);
@@ -103,19 +93,6 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     if (!normalizedSearch) return series;
     return series.filter(item => `${item.series_code} ${item.name}`.toLowerCase().includes(normalizedSearch));
   }, [series, normalizedSearch]);
-
-  async function createSeries(event: FormEvent) {
-    event.preventDefault(); setError("");
-    const normalizedCode = code.trim().toUpperCase().replace(/[^A-Z0-9-]+/g, "-").replace(/^-|-$/g, "");
-    const { error: insertError } = await supabaseClient.from("experimental_series_drafts").insert({
-      series_code: normalizedCode, name: name.trim(), series_type: seriesType,
-      primary_owner_profile_id: ownerId.startsWith("profile:") ? ownerId.slice(8) : null,
-      primary_owner_draft_id: ownerId.startsWith("draft:") ? ownerId.slice(6) : null,
-      created_by: profile.id,
-    });
-    if (insertError) setError(insertError.message);
-    else { setName(""); setCode(""); setOwnerId(""); await load(); }
-  }
 
   async function createOwner(event: FormEvent) {
     event.preventDefault(); setError("");
@@ -147,7 +124,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     const { error: insertError } = await supabaseClient.from("experimental_series_drafts").insert(payload);
     setBulkSaving(false);
     if (insertError) setError(insertError.message);
-    else { setBulkRows(Array.from({ length: 6 }, emptyBulkRow)); await load(); }
+    else { setBulkRows([emptyBulkRow()]); await load(); }
   }
 
   function updateBulkRow(index: number, patch: Partial<BulkSeriesRow>) {
@@ -164,14 +141,6 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
       series_id: selectedSeries.id, event_id: selectedEvent.id, created_by: profile.id,
     });
     if (insertError) setError(insertError.message); else { setSelectedEvent(null); await load(); }
-  }
-
-  async function addManager() {
-    if (!selectedSeries || !selectedManager) return;
-    const { error: insertError } = await supabaseClient.from("experimental_series_managers").insert({
-      series_id: selectedSeries.id, user_id: selectedManager.id, created_by: profile.id,
-    });
-    if (insertError) setError(insertError.message); else { setSelectedManager(null); await load(); }
   }
 
   return (
@@ -213,23 +182,13 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
         </Stack>
         <Stack direction="row" gap={1} flexWrap="wrap" mt={1.5}>{ownerDrafts.map(owner => <Chip key={owner.id} label={owner.display_name} />)}</Stack>
       </Paper>
-      <Paper component="form" onSubmit={createSeries} sx={{ p: 2.5 }}>
-        <Typography variant="h6" gutterBottom>Create a draft event series</Typography>
-        <Stack direction={{ xs: "column", md: "row" }} gap={1.5}>
-          <TextField label="Series name" value={name} required onChange={event => setName(event.target.value)} fullWidth />
-          <TextField label="Memorable code" value={code} required placeholder="JIVE-1042" onChange={event => setCode(event.target.value)} fullWidth />
-          <FormControl fullWidth><InputLabel id="series-type-label">Type</InputLabel><Select labelId="series-type-label" label="Type" value={seriesType} onChange={event => setSeriesType(event.target.value as SeriesDraft["series_type"])}><MenuItem value="recurring">Recurring</MenuItem><MenuItem value="occasional">Occasional</MenuItem><MenuItem value="one_off">One-off</MenuItem></Select></FormControl>
-          <FormControl fullWidth><InputLabel id="owner-label">Primary owner</InputLabel><Select labelId="owner-label" label="Primary owner" value={ownerId} onChange={event => setOwnerId(event.target.value)}><MenuItem value="">Unassigned</MenuItem>{ownerDrafts.map(owner => <MenuItem key={`draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}{people.map(person => <MenuItem key={`profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email} (dashboard account)</MenuItem>)}</Select></FormControl>
-          <Button type="submit" variant="contained" disabled={!name.trim() || !code.trim()}>Create draft</Button>
-        </Stack>
-      </Paper>
       <Paper component="form" onSubmit={createBulkSeries} sx={{ p: 2.5 }}>
         <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} gap={1} mb={1.5}>
-          <Box><Typography variant="h6">Bulk-create draft series</Typography><Typography color="text.secondary">Fill any number of rows. Blank rows are ignored.</Typography></Box>
+          <Box><Typography variant="h6">Create a draft event series</Typography><Typography color="text.secondary">Start with one row. Add more rows whenever you want to enter several series together.</Typography></Box>
           <Button variant="outlined" onClick={() => setBulkRows(rows => [...rows, emptyBulkRow()])}>Add row</Button>
         </Stack>
         <Box sx={{ overflowX: "auto" }}>
-          <Table size="small" aria-label="Bulk-create draft event series">
+          <Table size="small" aria-label="Create draft event series">
             <TableHead><TableRow><TableCell>Series name</TableCell><TableCell>Memorable code</TableCell><TableCell>Type</TableCell><TableCell>Primary owner</TableCell><TableCell align="right">Row</TableCell></TableRow></TableHead>
             <TableBody>{bulkRows.map((row, index) => (
               <TableRow key={index}>
@@ -243,8 +202,8 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
           </Table>
         </Box>
         <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" gap={1} mt={1.5}>
-          <Button onClick={() => setBulkRows(Array.from({ length: 6 }, emptyBulkRow))}>Clear table</Button>
-          <Button type="submit" variant="contained" disabled={bulkSaving || !bulkRows.some(row => row.name.trim() || row.code.trim())}>{bulkSaving ? "Saving…" : "Save all series"}</Button>
+          <Button onClick={() => setBulkRows([emptyBulkRow()])}>Clear</Button>
+          <Button type="submit" variant="contained" disabled={bulkSaving || !bulkRows.some(row => row.name.trim() || row.code.trim())}>{bulkSaving ? "Saving…" : bulkRows.length === 1 ? "Create draft" : "Save all series"}</Button>
         </Stack>
       </Paper>
       <Paper sx={{ p: 2.5 }}>
@@ -253,10 +212,8 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
         {loading ? <Typography color="text.secondary">Loading drafts…</Typography> : !selectedSeries ? <Typography color="text.secondary">Create a draft series to begin.</Typography> : (
           <Stack spacing={2}>
             <Stack direction={{ xs: "column", md: "row" }} gap={1.5}><Autocomplete fullWidth options={filteredEvents.filter(item => !linkedEvents.has(item.id))} value={selectedEvent} onChange={(_event, value) => setSelectedEvent(value)} getOptionLabel={item => `${item.name} — ${item.venue}`} renderInput={params => <TextField {...params} label="Link an existing event" />} /><Button variant="outlined" disabled={!selectedEvent} onClick={() => void linkEvent()}>Link event</Button></Stack>
-            <Stack direction={{ xs: "column", md: "row" }} gap={1.5}><Autocomplete fullWidth options={people.filter(item => !linkedManagers.has(item.id))} value={selectedManager} onChange={(_event, value) => setSelectedManager(value)} getOptionLabel={item => item.display_name || item.email} renderInput={params => <TextField {...params} label="Who manages this?" />} /><Button variant="outlined" disabled={!selectedManager} onClick={() => void addManager()}>Add manager</Button></Stack>
             <Divider />
             <Box><Typography fontWeight={800}>Linked events ({linkedEvents.size})</Typography><Stack direction="row" gap={1} flexWrap="wrap" mt={1}>{events.filter(item => linkedEvents.has(item.id)).map(item => <Chip key={item.id} label={item.name} />)}</Stack></Box>
-            <Box><Typography fontWeight={800}>Draft managers ({linkedManagers.size})</Typography><Stack direction="row" gap={1} flexWrap="wrap" mt={1}>{people.filter(item => linkedManagers.has(item.id)).map(item => <Chip key={item.id} label={item.display_name || item.email} />)}</Stack></Box>
           </Stack>
         )}
       </Paper>

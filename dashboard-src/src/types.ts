@@ -1,4 +1,4 @@
-export type DashboardRole = "owner_admin" | "volunteer";
+export type DashboardRole = "owner_admin" | "volunteer_admin" | "volunteer";
 
 export interface DashboardProfile {
   id: string;

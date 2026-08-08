@@ -8,7 +8,7 @@ export default function ActivityPage({ profile }: { profile: DashboardProfile })
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const view = profile.role === "owner_admin" ? "dashboard_activity_admin" : "dashboard_activity";
+    const view = profile.role === "owner_admin" || profile.role === "volunteer_admin" ? "dashboard_activity_admin" : "dashboard_activity";
     void supabaseClient.from(view).select("*").order("occurred_at", { ascending: false }).limit(250)
       .then(({ data, error: queryError }) => {
         if (queryError) setError(queryError.message);

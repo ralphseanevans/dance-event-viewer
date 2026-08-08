@@ -13,7 +13,7 @@ export default function SourcesPage({ profile }: { profile: DashboardProfile }) 
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const view = profile.role === "owner_admin" ? "dashboard_source_history_admin" : "dashboard_source_history";
+    const view = profile.role === "owner_admin" || profile.role === "volunteer_admin" ? "dashboard_source_history_admin" : "dashboard_source_history";
     void supabaseClient.from(view).select("*").order("last_seen", { ascending: false }).limit(1000)
       .then(({ data, error: queryError }) => {
         if (queryError) setError(queryError.message);

@@ -17,7 +17,7 @@ interface Counts {
 export default function OverviewPage({ profile }: { profile: DashboardProfile }) {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [error, setError] = useState("");
-  const admin = profile.role === "owner_admin";
+  const admin = profile.role === "owner_admin" || profile.role === "volunteer_admin";
 
   useEffect(() => {
     const eventView = admin ? "dashboard_events_admin" : "dashboard_events";
@@ -52,7 +52,7 @@ export default function OverviewPage({ profile }: { profile: DashboardProfile })
           <Box>
             <Typography variant="h4" component="h1">Welcome back</Typography>
             <Typography color="text.secondary" mt={0.5}>
-              {admin ? "You have full owner access." : "Only assigned records are visible and editable."}
+              {profile.role === "owner_admin" ? "You have full owner access." : admin ? "You have overall day-to-day admin access." : "Only assigned records are visible and editable."}
             </Typography>
           </Box>
           <Chip label="Supabase RLS enforced" color="success" variant="outlined" sx={{ alignSelf: "flex-start" }} />

@@ -145,7 +145,7 @@ function eventToForm(event?: DashboardEvent | null): FormState {
 export default function EventsPage({ profile }: { profile: DashboardProfile }) {
   const theme = useTheme();
   const compactDialog = useMediaQuery(theme.breakpoints.down("sm"));
-  const admin = profile.role === "owner_admin";
+  const admin = profile.role === "owner_admin" || profile.role === "volunteer_admin";
   const view = admin ? "dashboard_events_admin" : "dashboard_events";
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);

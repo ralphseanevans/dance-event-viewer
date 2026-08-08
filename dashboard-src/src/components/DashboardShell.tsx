@@ -60,7 +60,7 @@ function googleAvatarUrl(session: Session) {
     ?? textMetadataValue(userMetadata?.picture);
 }
 
-const items: Array<{ key: DashboardSection; label: string; icon: ReactNode; admin?: boolean }> = [
+const items: Array<{ key: DashboardSection; label: string; icon: ReactNode; admin?: boolean; ownerOnly?: boolean }> = [
   { key: "overview", label: "Overview", icon: <DashboardOutlinedIcon /> },
   { key: "events", label: "Events", icon: <EventNoteOutlinedIcon /> },
   { key: "people", label: "People", icon: <PeopleOutlineIcon />, admin: true },
@@ -68,7 +68,7 @@ const items: Array<{ key: DashboardSection; label: string; icon: ReactNode; admi
   { key: "activity", label: "Activity", icon: <HistoryOutlinedIcon /> },
   { key: "sources", label: "Source history", icon: <TravelExploreOutlinedIcon /> },
   { key: "crawlers", label: "Crawler runs", icon: <SmartToyOutlinedIcon />, admin: true },
-  { key: "experimental", label: "Experimental Dashboard", icon: <ScienceOutlinedIcon />, admin: true },
+  { key: "experimental", label: "Experimental Dashboard", icon: <ScienceOutlinedIcon />, ownerOnly: true },
 ];
 
 export default function DashboardShell({ session, profile }: { session: Session; profile: DashboardProfile }) {
@@ -76,13 +76,14 @@ export default function DashboardShell({ session, profile }: { session: Session;
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [section, setSection] = useState<DashboardSection>("overview");
-  const admin = profile.role === "owner_admin";
+  const ownerAdmin = profile.role === "owner_admin";
+  const admin = profile.role === "owner_admin" || profile.role === "volunteer_admin";
   const avatarUrl = googleAvatarUrl(session);
   const signedInWithGoogle = session.user.identities?.some((identity) => identity.provider === "google") ?? false;
   const signedInLabel = signedInWithGoogle
     ? `Signed in with Google as ${session.user.email ?? "this account"}`
     : session.user.email ?? "Signed-in user";
-  const visibleItems = useMemo(() => items.filter((item) => !item.admin || admin), [admin]);
+  const visibleItems = useMemo(() => items.filter((item) => (!item.admin || admin) && (!item.ownerOnly || ownerAdmin)), [admin, ownerAdmin]);
 
   const content = {
     overview: <OverviewPage profile={profile} />,
@@ -159,8 +160,8 @@ export default function DashboardShell({ session, profile }: { session: Session;
           )}
           <Typography noWrap sx={{ flex: 1, minWidth: 0, fontWeight: 800 }}>{items.find((item) => item.key === section)?.label}</Typography>
           <Stack direction="row" alignItems="center" spacing={1.25}>
-            {admin && <ExperimentalShortcut active={section === "experimental"} onClick={() => setSection("experimental")} />}
-            <Chip size="small" color={admin ? "primary" : "default"} label={admin ? "Owner admin" : "Volunteer"} sx={{ display: { xs: "none", sm: "inline-flex" } }} />
+            {ownerAdmin && <ExperimentalShortcut active={section === "experimental"} onClick={() => setSection("experimental")} />}
+            <Chip size="small" color={admin ? "primary" : "default"} label={ownerAdmin ? "Owner admin" : profile.role === "volunteer_admin" ? "Volunteer admin" : "Volunteer"} sx={{ display: { xs: "none", sm: "inline-flex" } }} />
             <Tooltip title={signedInLabel}>
               <Avatar
                 src={avatarUrl}

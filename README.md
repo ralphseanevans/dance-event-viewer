@@ -22,8 +22,11 @@ The `e/` event pages were rebuilt 2026-08-07 (Sean-approved SEO overhaul): each 
 full indexable landing page — self-canonical, schema.org Event JSON-LD, visible
 name/schedule/venue/cost/flyer, related-event links, and a "Open the full calendar"
 button — instead of an instant redirect. `build_share_pages.mjs` also regenerates the
-repo-root `sitemap.xml` (viewer + all event pages). `llms.txt` at the repo root
-describes the site for AI search. Analytics are GA4 (public measurement ID
+repo-root `sitemap.xml` (viewer + all event pages); since 2026-08-08 the publisher stages
+and commits it on every publish, refuses to run without `llms.txt` (the AI-search
+discovery file at the repo root), and auto-rewrites css/js `?v=` cache-busters to content
+hashes via `bump_cache_busters.mjs` when frontend changes are included — never hand-bump
+a `?v=` suffix again. Analytics are GA4 (public measurement ID
 `G-HC9F04RL9D`): `dance-event-viewer/js/analytics.js` on the viewer and submit form
 (custom events ride the existing activity-signal bus; a `supabase_fallback` event
 reports static-JSON fallback), inline tags on the root redirect and event pages. The

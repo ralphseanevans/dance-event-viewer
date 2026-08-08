@@ -56,7 +56,7 @@
        measurement ID and listens to the existing activity-signal bus for custom events.
        Deliberately a plain (non-defer) script: its fetch observer must install before
        the deferred app.js issues the Supabase read. -->
-  <script src="js/analytics.js?v=20260807a"></script>
+  <script src="js/analytics.js?v=d88dcbe5"></script>
 
   <!-- Structured data: identifies the site to search engines (added 2026-08-07). -->
   <script type="application/ld+json">
@@ -75,16 +75,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600;700&display=swap">
 
-  <link rel="stylesheet" href="css/styles.css?v=20260808b">
-  <link rel="stylesheet" href="css/page-character.css?v=20260804a">
-  <link rel="stylesheet" href="css/hero-opossum.css?v=20260804c">
-  <link rel="stylesheet" href="css/activity-pulse.css?v=20260803a">
-  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=20260804a">
-  <script defer src="js/theme-switch.js?v=20260804c"></script>
-  <script defer src="js/page-character.js?v=20260804a"></script>
-  <script defer src="js/club-lights.js?v=20260804c"></script>
-  <script defer src="js/hero-opossum.js?v=20260804c"></script>
-  <script defer src="js/blue-angels-flight.js?v=20260804a"></script>
+  <link rel="stylesheet" href="css/styles.css?v=11e5d5d1">
+  <link rel="stylesheet" href="css/page-character.css?v=ccc2d727">
+  <link rel="stylesheet" href="css/hero-opossum.css?v=e2d7b33b">
+  <link rel="stylesheet" href="css/activity-pulse.css?v=9cf17ff3">
+  <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=0d8a05e2">
+  <script defer src="js/theme-switch.js?v=45f6be77"></script>
+  <script defer src="js/page-character.js?v=5c137e18"></script>
+  <script defer src="js/club-lights.js?v=a05f233f"></script>
+  <script defer src="js/hero-opossum.js?v=35cdcac9"></script>
+  <script defer src="js/blue-angels-flight.js?v=3dc74cd4"></script>
 
   <!-- Firebase Realtime Database config used by Activity Pulse and the live viewer count. -->
   <script>
@@ -465,23 +465,23 @@
     <img class="blue-angels-flight" src="assets/blue-angels-low-poly-640.webp" alt="">
   </div>
 
-  <script src="js/dance-poster.js?v=20260804b"></script>
+  <script src="js/dance-poster.js?v=11955ed6"></script>
   <!-- Add to Calendar (2026-08-03): per-card 📅 button (Google link + .ics download with
        real recurrence rules). Loaded BEFORE app.js so window.DEV_ADD_TO_CAL exists when
        the first cards render. Bulk "Export these (.ics)" button disabled for now (Sean's
        call, same day) — see js/add-to-calendar.js, ensureBulkButton() left intact. -->
-  <script src="js/add-to-calendar.js?v=20260804b"></script>
+  <script src="js/add-to-calendar.js?v=52b9e656"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
-  <script src="js/supabase-config.js?v=20260808a"></script>
-  <script src="js/app.js?v=20260808b"></script>
+  <script src="js/supabase-config.js?v=d191cb0e"></script>
+  <script src="js/app.js?v=3aff048e"></script>
   <!-- Choose-location state map (2026-08-03): reads/writes app.js's state.sel.state
        directly (same global scope, loaded after app.js). Its own data file
        (js/us-states-map-data.js, ~145KB of state path data) is fetched lazily on
        first open, not here. -->
-  <script src="js/state-map-picker.js?v=20260806a"></script>
+  <script src="js/state-map-picker.js?v=462d2614"></script>
   <!-- Recent searches from everyone (2026-08-03): references SUBMIT_ENDPOINT, a
        top-level const in app.js — must load after it. -->
-  <script src="js/recent-searches.js?v=20260804b"></script>
-  <script src="js/activity-pulse.js?v=20260804b"></script>
+  <script src="js/recent-searches.js?v=a9bbdbf1"></script>
+  <script src="js/activity-pulse.js?v=e3afe637"></script>
 </body>
 </html>
