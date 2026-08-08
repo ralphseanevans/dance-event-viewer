@@ -154,6 +154,10 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     setBulkRows(rows => rows.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row));
   }
 
+  function updateBulkOwner(index: number, ownerId: string) {
+    setBulkRows(rows => rows.map((row, rowIndex) => rowIndex >= index ? { ...row, ownerId } : row));
+  }
+
   async function linkEvent() {
     if (!selectedSeries || !selectedEvent) return;
     const { error: insertError } = await supabaseClient.from("experimental_series_event_links").insert({
@@ -232,7 +236,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                 <TableCell sx={{ minWidth: 210 }}><TextField value={row.name} onChange={event => updateBulkRow(index, { name: event.target.value })} placeholder="Series name" size="small" fullWidth /></TableCell>
                 <TableCell sx={{ minWidth: 160 }}><TextField value={row.code} onChange={event => updateBulkRow(index, { code: event.target.value })} placeholder="JIVE-1042" size="small" fullWidth /></TableCell>
                 <TableCell sx={{ minWidth: 170 }}><Select value={row.seriesType} onChange={event => updateBulkRow(index, { seriesType: event.target.value as BulkSeriesRow["seriesType"] })} size="small" fullWidth><MenuItem value="recurring">Recurring</MenuItem><MenuItem value="occasional">Occasional</MenuItem><MenuItem value="one_off">One-off</MenuItem></Select></TableCell>
-                <TableCell sx={{ minWidth: 230 }}><Select value={row.ownerId} onChange={event => updateBulkRow(index, { ownerId: event.target.value })} displayEmpty size="small" fullWidth><MenuItem value="">Unassigned</MenuItem>{ownerDrafts.map(owner => <MenuItem key={`bulk-draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}{people.map(person => <MenuItem key={`bulk-profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email}</MenuItem>)}</Select></TableCell>
+                <TableCell sx={{ minWidth: 230 }}><Select value={row.ownerId} onChange={event => updateBulkOwner(index, event.target.value)} displayEmpty size="small" fullWidth><MenuItem value="">Unassigned</MenuItem>{ownerDrafts.map(owner => <MenuItem key={`bulk-draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}{people.map(person => <MenuItem key={`bulk-profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email}</MenuItem>)}</Select></TableCell>
                 <TableCell align="right"><Button color="inherit" onClick={() => setBulkRows(rows => rows.length === 1 ? [emptyBulkRow()] : rows.filter((_item, rowIndex) => rowIndex !== index))}>Remove</Button></TableCell>
               </TableRow>
             ))}</TableBody>
