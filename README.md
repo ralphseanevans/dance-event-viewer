@@ -49,7 +49,8 @@ only actively assigned events, and the active owner admin manages all events, pe
 assignments, activity, crawler runs, and source history. New sign-ins are inactive until approved.
 The live dashboard supports Google and email-link sign-in, paginated event and source-history
 records, complete recurring-event exclusions and WCS inclusion controls, and searchable volunteer-to-event
-assignment linking. Page modules are loaded on demand so the initial dashboard bundle stays lean.
+assignment linking. Linked Google accounts show their Google profile photo in the header; email-only
+accounts retain the initial fallback. Page modules are loaded on demand so the initial dashboard bundle stays lean.
 See the project-root `Secure_Dashboard_Implementation_Plan_2026-08-08.md`.
 
 ## Appearance themes

@@ -43,6 +43,20 @@ const CrawlersPage = lazy(() => import("../pages/CrawlersPage"));
 
 const drawerWidth = 260;
 
+function textMetadataValue(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function googleAvatarUrl(session: Session) {
+  const googleIdentity = session.user.identities?.find((identity) => identity.provider === "google");
+  const identityData = googleIdentity?.identity_data;
+  const userMetadata = session.user.user_metadata;
+  return textMetadataValue(identityData?.avatar_url)
+    ?? textMetadataValue(identityData?.picture)
+    ?? textMetadataValue(userMetadata?.avatar_url)
+    ?? textMetadataValue(userMetadata?.picture);
+}
+
 const items: Array<{ key: DashboardSection; label: string; icon: ReactNode; admin?: boolean }> = [
   { key: "overview", label: "Overview", icon: <DashboardOutlinedIcon /> },
   { key: "events", label: "Events", icon: <EventNoteOutlinedIcon /> },
@@ -59,6 +73,11 @@ export default function DashboardShell({ session, profile }: { session: Session;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [section, setSection] = useState<DashboardSection>("overview");
   const admin = profile.role === "owner_admin";
+  const avatarUrl = googleAvatarUrl(session);
+  const signedInWithGoogle = session.user.identities?.some((identity) => identity.provider === "google") ?? false;
+  const signedInLabel = signedInWithGoogle
+    ? `Signed in with Google as ${session.user.email ?? "this account"}`
+    : session.user.email ?? "Signed-in user";
   const visibleItems = useMemo(() => items.filter((item) => !item.admin || admin), [admin]);
 
   const content = {
@@ -136,8 +155,13 @@ export default function DashboardShell({ session, profile }: { session: Session;
           <Typography sx={{ flex: 1, fontWeight: 800 }}>{items.find((item) => item.key === section)?.label}</Typography>
           <Stack direction="row" alignItems="center" spacing={1.25}>
             <Chip size="small" color={admin ? "primary" : "default"} label={admin ? "Owner admin" : "Volunteer"} />
-            <Tooltip title={session.user.email ?? "Signed-in user"}>
-              <Avatar sx={{ width: 34, height: 34, bgcolor: "secondary.dark" }}>
+            <Tooltip title={signedInLabel}>
+              <Avatar
+                src={avatarUrl}
+                alt={avatarUrl ? `Google profile photo for ${session.user.email ?? "signed-in user"}` : undefined}
+                aria-label={signedInLabel}
+                sx={{ width: 34, height: 34, bgcolor: "secondary.dark" }}
+              >
                 {(profile.display_name || session.user.email || "U").slice(0, 1).toUpperCase()}
               </Avatar>
             </Tooltip>
