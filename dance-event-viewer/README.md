@@ -12,8 +12,10 @@ alter this public viewer. Supabase RLS makes inactive users see nothing, limits 
 actively assigned events, and gives the active owner admin full dashboard access. The dashboard
 is live at `dashboard/` with Google and email-link sign-in, paginated event/source records,
 searchable volunteer assignments, complete recurrence-exclusion and WCS controls, and lazy-loaded
-page modules. Auth-provider configuration, owner bootstrap, real-session acceptance, and guarded
-release verification are complete.
+page modules. The owner-only Experimental Dashboard uses event cards for immediate, read-back-verified
+draft-series and primary-owner linking, with rapid-review filters and a responsive owner/bulk-series
+panel; Volunteer Admin authority remains separate. Auth-provider configuration, owner bootstrap,
+real-session acceptance, and guarded release verification are complete.
 
 ## Visual theme: Moonlit Ember + page-wide atmosphere (2026-07-16; club-light prototype 2026-07-18)
 

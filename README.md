@@ -53,7 +53,10 @@ assignments, activity, crawler runs, and source history. New sign-ins are inacti
 The live dashboard supports Google and email-link sign-in, paginated event and source-history
 records, complete recurring-event exclusions and WCS inclusion controls, and searchable volunteer-to-event
 assignment linking. Linked Google accounts show their Google profile photo in the header; email-only
-accounts retain the initial fallback. Page modules are loaded on demand so the initial dashboard bundle stays lean.
+accounts retain the initial fallback. The owner-only Experimental Dashboard presents existing events
+as flyer cards with immediate, read-back-verified draft-series and primary-owner linking, rapid-review
+filters, and a responsive owner/bulk-series side panel; Volunteer Admin authority remains separate.
+Page modules are loaded on demand so the initial dashboard bundle stays lean.
 See the project-root `Secure_Dashboard_Implementation_Plan_2026-08-08.md`.
 
 ## Appearance themes
