@@ -39,6 +39,7 @@ const chipSx = {
   bgcolor: "transparent",
   whiteSpace: "nowrap",
   flex: "0 0 auto",
+  minWidth: "max-content",
   fontWeight: 600,
   "&:hover": { borderColor: "secondary.main", bgcolor: "action.hover" },
   "&[aria-pressed='true']": { borderColor: "secondary.main", bgcolor: "rgba(57,216,192,.14)", color: "text.primary" },
