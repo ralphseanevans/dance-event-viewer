@@ -153,6 +153,12 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     return result;
   }, [eventLinks]);
   const seriesById = useMemo(() => new Map(series.map(item => [item.id, item])), [series]);
+  const ownerNameForSeries = useCallback((draft: SeriesDraft): string | undefined => draft.primary_owner_draft_id
+    ? ownerDrafts.find(owner => owner.id === draft.primary_owner_draft_id)?.display_name
+    : draft.primary_owner_profile_id
+      ? people.find(person => person.id === draft.primary_owner_profile_id)?.display_name
+        ?? people.find(person => person.id === draft.primary_owner_profile_id)?.email
+      : undefined, [ownerDrafts, people]);
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const styles = useMemo(() => {
     const present = new Set(events.map(item => publicStyleCategory(item.style)));
@@ -345,12 +351,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                 const recommendationConfirmed = Boolean(recommendedSeriesId) && confirmedSeriesByEvent[item.id] === recommendedSeriesId;
                 const selectedSeriesId = pendingSeries[item.id] ?? confirmedSeriesId;
                 const selectedSeries = series.find(draft => draft.id === selectedSeriesId);
-                const selectedOwner = selectedSeries?.primary_owner_draft_id
-                  ? ownerDrafts.find(owner => owner.id === selectedSeries.primary_owner_draft_id)?.display_name
-                  : selectedSeries?.primary_owner_profile_id
-                    ? people.find(person => person.id === selectedSeries.primary_owner_profile_id)?.display_name
-                      ?? people.find(person => person.id === selectedSeries.primary_owner_profile_id)?.email
-                    : undefined;
+                const selectedOwner = selectedSeries ? ownerNameForSeries(selectedSeries) : undefined;
                 const state = relationshipState(item.id);
                 const feedback = saveStates[item.id];
                 const saving = feedback?.state === "saving";
@@ -428,7 +429,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                   </Table>
                 </Box>
                 <Stack direction="row" justifyContent="flex-end" gap={1} mt={1}><Button size="small" onClick={() => setBulkRows([emptyBulkRow()])}>Clear</Button><Button type="submit" size="small" variant="contained" disabled={bulkSaving || !bulkRows.some(row => row.name.trim() || row.code.trim())}>{bulkSaving ? "Saving…" : bulkRows.length === 1 ? "Create draft" : "Save all"}</Button></Stack>
-                <Stack gap={0.75} mt={1.5}>{series.map(item => <Paper key={item.id} variant="outlined" sx={{ p: 1 }}><Typography variant="body2" fontWeight={750}>{item.name}</Typography><Typography variant="caption" color="text.secondary">{item.series_code} · {ownerValue(item) ? "Owner assigned" : "Owner unassigned"}</Typography></Paper>)}</Stack>
+                <Stack gap={0.75} mt={1.5}>{series.map(item => <Paper key={item.id} variant="outlined" sx={{ p: 1 }}><Typography variant="body2" fontWeight={750}>{item.name}</Typography><Typography variant="caption" color="text.secondary">{item.series_code} · {ownerValue(item) ? `Owner: ${ownerNameForSeries(item) ?? "Unknown owner"}` : "Owner unassigned"}</Typography></Paper>)}</Stack>
               </Box>
             </Stack>
           </Collapse>
