@@ -7,10 +7,10 @@ import {
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import ImageNotSupportedOutlinedIcon from "@mui/icons-material/ImageNotSupportedOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
+import EventFilterBar, { type LocalArea, type RelationshipFilter } from "../components/EventFilterBar";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
 import DataQualityInbox from "./DataQualityInbox";
-import ExperimentStatus from "./ExperimentStatus";
 import DraftReviewExperiment from "./DraftReviewExperiment";
 import VolunteerPreviewExperiment from "./VolunteerPreviewExperiment";
 
@@ -24,8 +24,7 @@ interface EventLink { series_id: string; event_id: string; }
 interface AssignmentLink { id: string; event_id: string; user_id: string; assigned_by: string | null; active: boolean; assigned_at: string; ended_at: string | null; note: string | null; }
 interface BulkSeriesRow { name: string; code: string; seriesType: SeriesDraft["series_type"]; ownerId: string; }
 type SaveState = { state: "saving" | "saved" | "error"; message: string };
-type LinkFilter = "all" | "needs_review" | "unlinked" | "unassigned" | "complete";
-type RelationshipState = Exclude<LinkFilter, "all">;
+type RelationshipState = "unlinked" | "needs_review" | "linked";
 
 const PAGE_SIZE = 24;
 const emptyBulkRow = (): BulkSeriesRow => ({ name: "", code: "", seriesType: "recurring", ownerId: "" });
@@ -78,7 +77,8 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [searchQuery, setSearchQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
-  const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
+  const [linkFilter, setLinkFilter] = useState<RelationshipFilter>("all");
+  const [areaFilters, setAreaFilters] = useState<Set<LocalArea>>(() => new Set(["Pensacola area", "Mobile area"]));
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
   const [pendingSeries, setPendingSeries] = useState<Record<string, string>>({});
   const [panelOpen, setPanelOpen] = useState(true);
@@ -124,27 +124,36 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     const links = linksByEvent.get(eventId) ?? [];
     if (!links.length) return "unlinked";
     if (links.length !== 1) return "needs_review";
-    return ownerValue(seriesById.get(links[0].series_id)) ? "complete" : "unassigned";
+    return "linked";
+  }
+
+  function eventArea(event: DashboardEvent): LocalArea | "" {
+    const location = `${event.name} ${event.venue}`;
+    if (/pensacola/i.test(location)) return "Pensacola area";
+    if (/mobile/i.test(location)) return "Mobile area";
+    return "";
   }
 
   const matchingEvents = useMemo(() => events.filter(item => {
     const matchesSearch = !normalizedSearch || [item.name, item.event_key, item.style, item.venue, item.state, item.day_of_week, item.monthly_rule]
       .some(value => String(value ?? "").toLowerCase().includes(normalizedSearch));
     const state = relationshipState(item.id);
-    const matchesLink = linkFilter === "all" || (linkFilter === "needs_review" ? state !== "complete" : state === linkFilter);
-    return matchesSearch && matchesLink && (!styleFilter || item.style === styleFilter) && (!stateFilter || item.state === stateFilter);
-  }), [events, normalizedSearch, styleFilter, stateFilter, linkFilter, linksByEvent, seriesById]);
+    const matchesLink = linkFilter === "all" || (linkFilter === "needs_review" ? state !== "linked" : state === linkFilter);
+    const area = eventArea(item);
+    const matchesArea = !areaFilters.size || Boolean(area && areaFilters.has(area));
+    return matchesSearch && matchesLink && matchesArea && (!styleFilter || item.style === styleFilter) && (!stateFilter || item.state === stateFilter);
+  }), [events, normalizedSearch, styleFilter, stateFilter, linkFilter, areaFilters, linksByEvent]);
 
   const counts = useMemo(() => events.reduce((result, item) => {
     const state = relationshipState(item.id);
     result[state] += 1;
-    if (state !== "complete") result.needs_review += 1;
+    if (state !== "linked") result.needs_review += 1;
     return result;
-  }, { unlinked: 0, unassigned: 0, complete: 0, needs_review: 0 }), [events, linksByEvent, seriesById]);
+  }, { unlinked: 0, linked: 0, needs_review: 0 }), [events, linksByEvent]);
 
   const pageCount = Math.max(1, Math.ceil(matchingEvents.length / PAGE_SIZE));
   const visibleEvents = matchingEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  useEffect(() => { setPage(1); }, [searchQuery, styleFilter, stateFilter, linkFilter]);
+  useEffect(() => { setPage(1); }, [searchQuery, styleFilter, stateFilter, linkFilter, areaFilters]);
   useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
 
   async function createOwner(event: FormEvent) {
@@ -210,15 +219,15 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
 
   function moveToNextNeedsReview(eventId: string) {
     const currentIndex = matchingEvents.findIndex(item => item.id === eventId);
-    const next = matchingEvents.slice(currentIndex + 1).find(item => relationshipState(item.id) !== "complete")
-      ?? matchingEvents.find(item => item.id !== eventId && relationshipState(item.id) !== "complete");
+    const next = matchingEvents.slice(currentIndex + 1).find(item => relationshipState(item.id) !== "linked")
+      ?? matchingEvents.find(item => item.id !== eventId && relationshipState(item.id) !== "linked");
     if (!next) return;
     const nextIndex = matchingEvents.findIndex(item => item.id === next.id);
     setPage(Math.floor(nextIndex / PAGE_SIZE) + 1);
     window.setTimeout(() => document.getElementById(`series-select-${next.id}`)?.focus(), 80);
   }
 
-  async function saveRelationship(event: DashboardEvent, nextSeriesId: string, nextOwnerValue: string, writeOwner = false) {
+  async function saveRelationship(event: DashboardEvent, nextSeriesId: string) {
     const priorLinks = linksByEvent.get(event.id) ?? [];
     setPendingSeries(items => ({ ...items, [event.id]: nextSeriesId }));
     setSaveStates(items => ({ ...items, [event.id]: { state: "saving", message: "Saving…" } }));
@@ -239,16 +248,6 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
         if (insertError) throw insertError;
       }
 
-      if (nextOwnerValue || writeOwner) {
-        const ownerPatch = {
-          primary_owner_profile_id: nextOwnerValue.startsWith("profile:") ? nextOwnerValue.slice(8) : null,
-          primary_owner_draft_id: nextOwnerValue.startsWith("draft:") ? nextOwnerValue.slice(6) : null,
-        };
-        const { data, error: ownerError } = await supabaseClient.from("experimental_series_drafts")
-          .update(ownerPatch).eq("id", nextSeriesId).select("*").maybeSingle();
-        if (ownerError || !data || ownerValue(data as SeriesDraft) !== nextOwnerValue) throw ownerError ?? new Error("The owner change could not be confirmed.");
-      }
-
       const oldSeriesIds = priorLinks.filter(link => link.series_id !== nextSeriesId).map(link => link.series_id);
       if (oldSeriesIds.length) {
         const { error: cleanupError } = await supabaseClient.from("experimental_series_event_links")
@@ -258,11 +257,9 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
 
       const verifiedLinks = await readBackRelationship(event.id, nextSeriesId);
       if (verifiedLinks.length !== 1 || verifiedLinks[0].series_id !== nextSeriesId) throw new Error("The saved relationship did not match after read-back.");
-      const verifiedSeries = seriesById.get(nextSeriesId);
-      const complete = Boolean(nextOwnerValue || ownerValue(verifiedSeries));
       setPendingSeries(items => { const next = { ...items }; delete next[event.id]; return next; });
-      setSaveStates(items => ({ ...items, [event.id]: { state: "saved", message: complete ? "Saved" : "Saved — needs owner" } }));
-      if (complete && focusNext) moveToNextNeedsReview(event.id);
+      setSaveStates(items => ({ ...items, [event.id]: { state: "saved", message: "Saved" } }));
+      if (focusNext) moveToNextNeedsReview(event.id);
     } catch (saveError) {
       try { await readBackRelationship(event.id, nextSeriesId || undefined); } catch { /* retain the last confirmed in-memory state */ }
       setPendingSeries(items => { const next = { ...items }; delete next[event.id]; return next; });
@@ -275,15 +272,10 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     }
   }
 
-  async function changeOwner(event: DashboardEvent, selectedSeriesId: string, nextOwnerValue: string) {
-    if (!selectedSeriesId) return;
-    await saveRelationship(event, selectedSeriesId, nextOwnerValue, true);
-  }
-
   return (
     <Stack spacing={2.5}>
       <Box>
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap"><ScienceOutlinedIcon color="secondary" /><Typography variant="h4" component="h1">Experimental Dashboard</Typography><Chip label="Beta" color="secondary" size="small" /><ExperimentStatus status="live" /></Stack>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap"><ScienceOutlinedIcon color="secondary" /><Typography variant="h4" component="h1">Experimental Dashboard</Typography><Chip label="Beta" color="secondary" size="small" /></Stack>
         <Typography color="text.secondary">Owner-only draft workspace. Relationship changes stay isolated from public listings and volunteer permissions.</Typography>
       </Box>
       {error && <Alert severity="error" onClose={() => setError("")}>{error}</Alert>}
@@ -295,16 +287,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
               <Box><Typography variant="h5" component="h2">Link existing events</Typography><Typography color="text.secondary">Choose a draft series on each event card. Changes save immediately and are verified before completion.</Typography></Box>
               <FormControlLabel control={<Switch checked={focusNext} onChange={event => setFocusNext(event.target.checked)} />} label="Focus next after linking" />
             </Stack>
-            <TextField label="Search events" placeholder="Name, venue, location, style, or event key" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} fullWidth sx={{ mt: 2 }} />
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" }, gap: 1.5, mt: 1.5 }}>
-              <FormControl fullWidth><InputLabel id="experimental-link-filter-label">Link status</InputLabel><Select labelId="experimental-link-filter-label" label="Link status" value={linkFilter} onChange={event => setLinkFilter(event.target.value as LinkFilter)}><MenuItem value="all">All events ({events.length})</MenuItem><MenuItem value="needs_review">Needs review ({counts.needs_review})</MenuItem><MenuItem value="unlinked">Unlinked ({counts.unlinked})</MenuItem><MenuItem value="unassigned">Owner unassigned ({counts.unassigned})</MenuItem><MenuItem value="complete">Completed ({counts.complete})</MenuItem></Select></FormControl>
-              <FormControl fullWidth><InputLabel id="experimental-style-filter-label">Style</InputLabel><Select labelId="experimental-style-filter-label" label="Style" value={styleFilter} onChange={event => setStyleFilter(event.target.value)}><MenuItem value="">All styles</MenuItem>{styles.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</Select></FormControl>
-              <FormControl fullWidth><InputLabel id="experimental-state-filter-label">State</InputLabel><Select labelId="experimental-state-filter-label" label="State" value={stateFilter} onChange={event => setStateFilter(event.target.value)}><MenuItem value="">All locations</MenuItem>{states.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</Select></FormControl>
-            </Box>
-            <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ sm: "center" }} justifyContent="space-between" gap={1} mt={1}>
-              <Typography variant="caption" color="text.secondary">{`${matchingEvents.length} shown of ${events.length} events`}</Typography>
-              <Button size="small" onClick={() => { setSearchQuery(""); setStyleFilter(""); setStateFilter(""); setLinkFilter("all"); }}>Clear filters</Button>
-            </Stack>
+            <EventFilterBar search={searchQuery} onSearchChange={setSearchQuery} styles={styles} style={styleFilter} onStyleChange={setStyleFilter} states={states} state={stateFilter} onStateChange={setStateFilter} areas={areaFilters} onAreasChange={setAreaFilters} relationship={linkFilter} onRelationshipChange={setLinkFilter} counts={{ all: events.length, ...counts }} shown={matchingEvents.length} onReset={() => { setSearchQuery(""); setStyleFilter(""); setStateFilter(""); setLinkFilter("all"); setAreaFilters(new Set(["Pensacola area", "Mobile area"])); }} />
           </Paper>
 
           {loading ? <Box py={8} display="grid" sx={{ placeItems: "center" }}><CircularProgress /></Box> : !visibleEvents.length ? (
@@ -315,36 +298,25 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                 const confirmedLinks = linksByEvent.get(item.id) ?? [];
                 const confirmedSeriesId = confirmedLinks.length === 1 ? confirmedLinks[0].series_id : "";
                 const selectedSeriesId = pendingSeries[item.id] ?? confirmedSeriesId;
-                const selectedSeries = seriesById.get(selectedSeriesId);
-                const selectedOwner = ownerValue(selectedSeries);
                 const state = relationshipState(item.id);
                 const feedback = saveStates[item.id];
                 const saving = feedback?.state === "saving";
                 return (
-                  <Paper key={item.id} component="article" sx={{ p: 2.25, display: "flex", flexDirection: "column", gap: 1.5, border: "1px solid", borderColor: state === "complete" ? "success.dark" : state === "needs_review" ? "warning.dark" : "divider" }}>
+                  <Paper key={item.id} component="article" sx={{ p: 2.25, display: "flex", flexDirection: "column", gap: 1.5, border: "1px solid", borderColor: state === "linked" ? "success.dark" : state === "needs_review" ? "warning.dark" : "divider" }}>
                     <EventFlyer event={item} />
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
                       <Box minWidth={0}><Typography variant="h6" sx={{ overflowWrap: "anywhere" }}>{item.name}</Typography><Typography variant="caption" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>{item.event_key}</Typography></Box>
-                      <Chip size="small" color={state === "complete" ? "success" : "warning"} label={state === "complete" ? "Linked" : "Needs review"} />
+                      <Chip size="small" color={state === "linked" ? "success" : "warning"} label={state === "linked" ? "Linked" : "Needs review"} />
                     </Stack>
                     <Typography variant="body2">{formatDate(item)}</Typography>
                     <Typography color="text.secondary">{item.venue}{item.state ? ` · ${item.state}` : ""}</Typography>
                     <FormControl fullWidth disabled={saving || !series.length}>
                       <InputLabel id={`series-label-${item.id}`}>Draft event series</InputLabel>
-                      <Select id={`series-select-${item.id}`} labelId={`series-label-${item.id}`} label="Draft event series" value={selectedSeriesId} onChange={event => void saveRelationship(item, event.target.value, ownerValue(seriesById.get(event.target.value)))}>
+                      <Select id={`series-select-${item.id}`} labelId={`series-label-${item.id}`} label="Draft event series" value={selectedSeriesId} onChange={event => void saveRelationship(item, event.target.value)} sx={{ minHeight: 44, "& .MuiSelect-select": { minHeight: "44px !important", boxSizing: "border-box", display: "flex", alignItems: "center" } }}>
                         <MenuItem value=""><em>No series — needs review</em></MenuItem>
                         {series.map(draft => <MenuItem key={draft.id} value={draft.id}>{draft.series_code} — {draft.name}</MenuItem>)}
                       </Select>
                       {confirmedLinks.length > 1 && <FormHelperText error>Multiple links found. Choose the one to keep.</FormHelperText>}
-                    </FormControl>
-                    <FormControl fullWidth disabled={saving || !selectedSeriesId}>
-                      <InputLabel id={`owner-label-${item.id}`}>Owner</InputLabel>
-                      <Select labelId={`owner-label-${item.id}`} label="Owner" value={selectedOwner} onChange={event => void changeOwner(item, selectedSeriesId, event.target.value)}>
-                        <MenuItem value=""><em>Unassigned</em></MenuItem>
-                        {ownerDrafts.map(owner => <MenuItem key={`draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}
-                        {people.map(person => <MenuItem key={`profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email}</MenuItem>)}
-                      </Select>
-                      <FormHelperText>{selectedSeriesId ? "Primary owner for this draft series" : "Choose a draft series first"}</FormHelperText>
                     </FormControl>
                     <Box role="status" aria-live="polite" sx={{ minHeight: 22 }}>
                       {feedback && <Typography variant="caption" color={feedback.state === "error" ? "error" : feedback.state === "saved" ? "success.main" : "text.secondary"}>{feedback.message}</Typography>}
@@ -377,7 +349,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                     <TableHead><TableRow><TableCell>Name & code</TableCell><TableCell>Owner</TableCell><TableCell /></TableRow></TableHead>
                     <TableBody>{bulkRows.map((row, index) => <TableRow key={index}>
                       <TableCell sx={{ minWidth: 185 }}><Stack gap={1}><TextField value={row.name} onChange={event => updateBulkRow(index, { name: event.target.value })} placeholder="Series name" size="small" /><TextField value={row.code} onChange={event => updateBulkRow(index, { code: event.target.value })} placeholder="JIVE-1042" size="small" /><Select value={row.seriesType} onChange={event => updateBulkRow(index, { seriesType: event.target.value as BulkSeriesRow["seriesType"] })} size="small"><MenuItem value="recurring">Recurring</MenuItem><MenuItem value="occasional">Occasional</MenuItem><MenuItem value="one_off">One-off</MenuItem></Select></Stack></TableCell>
-                      <TableCell sx={{ minWidth: 170 }}><Select value={row.ownerId} onChange={event => updateBulkOwner(index, event.target.value)} displayEmpty size="small" fullWidth><MenuItem value="">Unassigned</MenuItem>{ownerDrafts.map(owner => <MenuItem key={`bulk-draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}{people.map(person => <MenuItem key={`bulk-profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email}</MenuItem>)}</Select></TableCell>
+                      <TableCell sx={{ minWidth: 170 }}><Select inputProps={{ "aria-label": `Owner for series row ${index + 1}` }} value={row.ownerId} onChange={event => updateBulkOwner(index, event.target.value)} displayEmpty size="small" fullWidth><MenuItem value="">Unassigned</MenuItem>{ownerDrafts.map(owner => <MenuItem key={`bulk-draft:${owner.id}`} value={`draft:${owner.id}`}>{owner.display_name}</MenuItem>)}{people.map(person => <MenuItem key={`bulk-profile:${person.id}`} value={`profile:${person.id}`}>{person.display_name || person.email}</MenuItem>)}</Select></TableCell>
                       <TableCell><Button color="inherit" size="small" onClick={() => setBulkRows(rows => rows.length === 1 ? [emptyBulkRow()] : rows.filter((_item, rowIndex) => rowIndex !== index))}>Remove</Button></TableCell>
                     </TableRow>)}</TableBody>
                   </Table>

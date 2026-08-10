@@ -33,7 +33,6 @@ import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LogoutIcon from "@mui/icons-material/Logout";
 import type { DashboardProfile, DashboardSection } from "../types";
-import ExperimentalShortcut from "./ExperimentalShortcut";
 import { supabaseClient } from "../supabase";
 const OverviewPage = lazy(() => import("../pages/OverviewPage"));
 const EventsPage = lazy(() => import("../pages/EventsPage"));
@@ -160,7 +159,6 @@ export default function DashboardShell({ session, profile }: { session: Session;
           )}
           <Typography noWrap sx={{ flex: 1, minWidth: 0, fontWeight: 800 }}>{items.find((item) => item.key === section)?.label}</Typography>
           <Stack direction="row" alignItems="center" spacing={1.25}>
-            {ownerAdmin && <ExperimentalShortcut active={section === "experimental"} onClick={() => setSection("experimental")} />}
             <Chip size="small" color={admin ? "primary" : "default"} label={ownerAdmin ? "Owner admin" : profile.role === "volunteer_admin" ? "Volunteer admin" : "Volunteer"} sx={{ display: { xs: "none", sm: "inline-flex" } }} />
             <Tooltip title={signedInLabel}>
               <Avatar
