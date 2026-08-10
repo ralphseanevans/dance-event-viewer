@@ -86,6 +86,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [searchQuery, setSearchQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("");
   const [linkFilter, setLinkFilter] = useState<RelationshipFilter>("all");
   const [areaFilters, setAreaFilters] = useState<Set<LocalArea>>(() => new Set(["Pensacola area", "Mobile area"]));
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
@@ -148,6 +149,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     return PUBLIC_STYLE_ORDER.filter(category => present.has(category));
   }, [events]);
   const states = useMemo(() => [...new Set(events.map(item => item.state).filter((value): value is string => Boolean(value)))].sort(), [events]);
+  const availableDaysOfWeek = useMemo(() => [...new Set(events.map(item => item.day_of_week).filter((value): value is string => Boolean(value)))].sort(), [events]);
 
   function relationshipState(eventId: string): RelationshipState {
     const links = linksByEvent.get(eventId) ?? [];
@@ -170,8 +172,8 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     const matchesLink = linkFilter === "all" || (linkFilter === "needs_review" ? state !== "linked" : state === linkFilter);
     const area = eventArea(item);
     const matchesArea = !areaFilters.size || Boolean(area && areaFilters.has(area));
-    return matchesSearch && matchesLink && matchesArea && (!styleFilter || publicStyleCategory(item.style) === styleFilter) && (!stateFilter || item.state === stateFilter);
-  }), [events, normalizedSearch, styleFilter, stateFilter, linkFilter, areaFilters, linksByEvent]);
+    return matchesSearch && matchesLink && matchesArea && (!styleFilter || publicStyleCategory(item.style) === styleFilter) && (!stateFilter || item.state === stateFilter) && (!selectedDayOfWeek || item.day_of_week === selectedDayOfWeek);
+  }), [events, normalizedSearch, styleFilter, stateFilter, selectedDayOfWeek, linkFilter, areaFilters, linksByEvent]);
 
   const counts = useMemo(() => events.reduce((result, item) => {
     const state = relationshipState(item.id);
@@ -182,7 +184,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
 
   const pageCount = Math.max(1, Math.ceil(matchingEvents.length / PAGE_SIZE));
   const visibleEvents = matchingEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  useEffect(() => { setPage(1); }, [searchQuery, styleFilter, stateFilter, linkFilter, areaFilters]);
+  useEffect(() => { setPage(1); }, [searchQuery, styleFilter, stateFilter, selectedDayOfWeek, linkFilter, areaFilters]);
   useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
 
   async function createOwner(event: FormEvent) {
@@ -316,7 +318,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
               <Box><Typography variant="h5" component="h2">Link existing events</Typography><Typography color="text.secondary">Choose a draft series on each event card. Changes save immediately and are verified before completion.</Typography></Box>
               <FormControlLabel control={<Switch checked={focusNext} onChange={event => setFocusNext(event.target.checked)} />} label="Focus next after linking" />
             </Stack>
-            <EventFilterBar search={searchQuery} onSearchChange={setSearchQuery} styles={styles} style={styleFilter} onStyleChange={setStyleFilter} states={states} state={stateFilter} onStateChange={setStateFilter} areas={areaFilters} onAreasChange={setAreaFilters} relationship={linkFilter} onRelationshipChange={setLinkFilter} counts={{ all: events.length, ...counts }} shown={matchingEvents.length} onReset={() => { setSearchQuery(""); setStyleFilter(""); setStateFilter(""); setLinkFilter("all"); setAreaFilters(new Set(["Pensacola area", "Mobile area"])); }} />
+            <EventFilterBar search={searchQuery} onSearchChange={setSearchQuery} styles={styles} style={styleFilter} onStyleChange={setStyleFilter} states={states} state={stateFilter} onStateChange={setStateFilter} availableDaysOfWeek={availableDaysOfWeek} selectedDayOfWeek={selectedDayOfWeek} onSelectedDayOfWeekChange={setSelectedDayOfWeek} areas={areaFilters} onAreasChange={setAreaFilters} relationship={linkFilter} onRelationshipChange={setLinkFilter} counts={{ all: events.length, ...counts }} shown={matchingEvents.length} onReset={() => { setSearchQuery(""); setStyleFilter(""); setStateFilter(""); setSelectedDayOfWeek(""); setLinkFilter("all"); setAreaFilters(new Set(["Pensacola area", "Mobile area"])); }} />
           </Paper>
 
           {loading ? <Box py={8} display="grid" sx={{ placeItems: "center" }}><CircularProgress /></Box> : !visibleEvents.length ? (
@@ -327,6 +329,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                 const confirmedLinks = linksByEvent.get(item.id) ?? [];
                 const confirmedSeriesId = confirmedLinks.length === 1 ? confirmedLinks[0].series_id : "";
                 const selectedSeriesId = pendingSeries[item.id] ?? confirmedSeriesId;
+                const selectedSeries = series.find(draft => draft.id === selectedSeriesId);
                 const state = relationshipState(item.id);
                 const feedback = saveStates[item.id];
                 const saving = feedback?.state === "saving";
@@ -341,9 +344,27 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                     <Typography color="text.secondary">{item.venue}{item.state ? ` · ${item.state}` : ""}</Typography>
                     <FormControl fullWidth disabled={saving || !series.length}>
                       <InputLabel id={`series-label-${item.id}`}>Draft event series</InputLabel>
-                      <Select id={`series-select-${item.id}`} labelId={`series-label-${item.id}`} label="Draft event series" value={selectedSeriesId} onChange={event => void saveRelationship(item, event.target.value)} sx={{ minHeight: 44, "& .MuiSelect-select": { minHeight: "44px !important", boxSizing: "border-box", display: "flex", alignItems: "center" } }}>
+                      <Select
+                        id={`series-select-${item.id}`}
+                        labelId={`series-label-${item.id}`}
+                        label="Draft event series"
+                        value={selectedSeriesId}
+                        onChange={event => void saveRelationship(item, event.target.value)}
+                        renderValue={() => selectedSeries ? (
+                          <Stack direction="row" alignItems="center" gap={1} minWidth={0}>
+                            <Typography component="span" noWrap>{selectedSeries.series_code} — {selectedSeries.name}</Typography>
+                            {confirmedSeriesId === selectedSeries.id && <Chip label="Recommended" size="small" color="success" variant="outlined" />}
+                          </Stack>
+                        ) : <em>No series — needs review</em>}
+                        sx={{ minHeight: 44, "& .MuiSelect-select": { minHeight: "44px !important", boxSizing: "border-box", display: "flex", alignItems: "center" } }}
+                      >
                         <MenuItem value=""><em>No series — needs review</em></MenuItem>
-                        {series.map(draft => <MenuItem key={draft.id} value={draft.id}>{draft.series_code} — {draft.name}</MenuItem>)}
+                        {series.map(draft => <MenuItem key={draft.id} value={draft.id}>
+                          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} width="100%" minWidth={0}>
+                            <Typography component="span" noWrap>{draft.series_code} — {draft.name}</Typography>
+                            {confirmedSeriesId === draft.id && <Chip label="Recommended" size="small" color="success" variant="outlined" />}
+                          </Stack>
+                        </MenuItem>)}
                       </Select>
                       {confirmedLinks.length > 1 && <FormHelperText error>Multiple links found. Choose the one to keep.</FormHelperText>}
                     </FormControl>

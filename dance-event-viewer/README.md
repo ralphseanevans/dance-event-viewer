@@ -14,7 +14,8 @@ is live at `dashboard/` with Google and email-link sign-in, paginated event/sour
 searchable volunteer assignments, complete recurrence-exclusion and WCS controls, and lazy-loaded
 page modules. The owner-only Experimental Dashboard uses event cards for immediate, read-back-verified
 draft-series linking, with front-page-style event/style/state/Pensacola/Mobile filters and a responsive
-owner/bulk-series panel where series ownership remains manageable; Volunteer Admin authority remains
+owner/bulk-series panel where series ownership remains manageable. Verified card links are visibly
+labeled `Recommended` in the Draft Event Series control; Volunteer Admin authority remains
 separate. Experimental uses the same exact/pattern `logo-map.json` flyer resolution as public cards,
 falling back to a database flyer URL only when no public mapping exists. Auth-provider configuration, owner bootstrap,
 real-session acceptance, and guarded release verification are complete.

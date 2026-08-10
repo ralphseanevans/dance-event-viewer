@@ -19,6 +19,9 @@ interface EventFilterBarProps {
   states: string[];
   state: string;
   onStateChange: (value: string) => void;
+  availableDaysOfWeek: string[];
+  selectedDayOfWeek: string;
+  onSelectedDayOfWeekChange: (value: string) => void;
   areas: Set<LocalArea>;
   onAreasChange: (value: Set<LocalArea>) => void;
   relationship: RelationshipFilter;
@@ -80,6 +83,12 @@ export default function EventFilterBar(props: EventFilterBarProps) {
         <FilterChip label="All styles" pressed={!props.style} onClick={() => props.onStyleChange("")} />
         {props.styles.map(value => <FilterChip key={value} label={value} pressed={props.style === value} onClick={() => props.onStyleChange(value)} />)}
       </Box></FilterRow>
+      <FilterRow label="Day"><FormControl sx={{ minWidth: { xs: "100%", md: 180 } }}>
+        <InputLabel id="experimental-day-filter-label">Day of week</InputLabel>
+        <Select labelId="experimental-day-filter-label" label="Day of week" value={props.selectedDayOfWeek} onChange={event => props.onSelectedDayOfWeekChange(event.target.value)} sx={{ minHeight: 44, "& .MuiSelect-select": { minHeight: "44px !important", boxSizing: "border-box", display: "flex", alignItems: "center" } }}>
+          <MenuItem value="">All days</MenuItem>{props.availableDaysOfWeek.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+        </Select>
+      </FormControl></FilterRow>
       <FilterRow label="Location"><Stack direction={{ xs: "column", md: "row" }} gap={1.25} alignItems={{ md: "center" }}>
         <Box sx={scrollRowSx} role="group" aria-label="Local area">
           <FilterChip label="Everywhere" pressed={!props.areas.size} onClick={() => props.onAreasChange(new Set())} />
