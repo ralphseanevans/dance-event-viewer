@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert, Box, Button, Chip, CircularProgress, Collapse, FormControl, FormControlLabel,
+  Alert, Box, Button, Checkbox, Chip, CircularProgress, Collapse, FormControl, FormControlLabel,
   FormHelperText, InputLabel, MenuItem, Pagination, Paper, Select, Stack, Switch,
   Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography,
 } from "@mui/material";
@@ -92,6 +92,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
   const [publicFlyers, setPublicFlyers] = useState<PublicFlyerMap>({ logos: {}, patterns: [], baseUrl: "" });
   const [pendingSeries, setPendingSeries] = useState<Record<string, string>>({});
+  const [confirmedSeriesByEvent, setConfirmedSeriesByEvent] = useState<Record<string, string>>({});
   // A recommendation is the review baseline loaded with a card, not the latest
   // selection. Keeping it separately prevents the badge from following focus.
   const [recommendedSeriesByEvent, setRecommendedSeriesByEvent] = useState<Record<string, string>>({});
@@ -164,7 +165,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     const links = linksByEvent.get(eventId) ?? [];
     if (!links.length) return "unlinked";
     if (links.length !== 1) return "needs_review";
-    return "linked";
+    return confirmedSeriesByEvent[eventId] === links[0].series_id ? "linked" : "needs_review";
   }
 
   function eventArea(event: DashboardEvent): LocalArea | "" {
@@ -182,14 +183,14 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     const area = eventArea(item);
     const matchesArea = !areaFilters.size || Boolean(area && areaFilters.has(area));
     return matchesSearch && matchesLink && matchesArea && (!styleFilter || publicStyleCategory(item.style) === styleFilter) && (!stateFilter || item.state === stateFilter) && (!selectedDayOfWeek || item.day_of_week === selectedDayOfWeek);
-  }), [events, normalizedSearch, styleFilter, stateFilter, selectedDayOfWeek, linkFilter, areaFilters, linksByEvent]);
+  }), [events, normalizedSearch, styleFilter, stateFilter, selectedDayOfWeek, linkFilter, areaFilters, linksByEvent, confirmedSeriesByEvent]);
 
   const counts = useMemo(() => events.reduce((result, item) => {
     const state = relationshipState(item.id);
     result[state] += 1;
     if (state !== "linked") result.needs_review += 1;
     return result;
-  }, { unlinked: 0, linked: 0, needs_review: 0 }), [events, linksByEvent]);
+  }, { unlinked: 0, linked: 0, needs_review: 0 }), [events, linksByEvent, confirmedSeriesByEvent]);
 
   const pageCount = Math.max(1, Math.ceil(matchingEvents.length / PAGE_SIZE));
   const visibleEvents = matchingEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -278,6 +279,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
         const verifiedLinks = await readBackRelationship(event.id);
         if (verifiedLinks.length) throw new Error("The event still has a draft-series link after unlinking.");
         setPendingSeries(items => { const next = { ...items }; delete next[event.id]; return next; });
+        setConfirmedSeriesByEvent(items => { const next = { ...items }; delete next[event.id]; return next; });
         setSaveStates(items => ({ ...items, [event.id]: { state: "saved", message: "Saved — needs series" } }));
         return;
       }
@@ -299,6 +301,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
       const verifiedLinks = await readBackRelationship(event.id, nextSeriesId);
       if (verifiedLinks.length !== 1 || verifiedLinks[0].series_id !== nextSeriesId) throw new Error("The saved relationship did not match after read-back.");
       setPendingSeries(items => { const next = { ...items }; delete next[event.id]; return next; });
+      setConfirmedSeriesByEvent(items => ({ ...items, [event.id]: nextSeriesId }));
       setSaveStates(items => ({ ...items, [event.id]: { state: "saved", message: "Saved" } }));
       if (focusNext) moveToNextNeedsReview(event.id);
     } catch (saveError) {
@@ -339,6 +342,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                 const confirmedLinks = linksByEvent.get(item.id) ?? [];
                 const confirmedSeriesId = confirmedLinks.length === 1 ? confirmedLinks[0].series_id : "";
                 const recommendedSeriesId = recommendedSeriesByEvent[item.id] ?? "";
+                const recommendationConfirmed = Boolean(recommendedSeriesId) && confirmedSeriesByEvent[item.id] === recommendedSeriesId;
                 const selectedSeriesId = pendingSeries[item.id] ?? confirmedSeriesId;
                 const selectedSeries = series.find(draft => draft.id === selectedSeriesId);
                 const selectedOwner = selectedSeries?.primary_owner_draft_id
@@ -387,8 +391,9 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                       {confirmedLinks.length > 1 && <FormHelperText error>Multiple links found. Choose the one to keep.</FormHelperText>}
                     </FormControl>
                     <Box role="status" aria-live="polite" sx={{ minHeight: 22 }}>
-                      {feedback && <Typography variant="caption" color={feedback.state === "error" ? "error" : feedback.state === "saved" ? "success.main" : "text.secondary"}>{feedback.message}</Typography>}
+                      {feedback ? <Typography variant="caption" color={feedback.state === "error" ? "error" : feedback.state === "saved" ? "success.main" : "text.secondary"}>{feedback.message}</Typography> : recommendedSeriesId ? <Typography variant="caption" color="text.secondary">Suggested — confirm below to save.</Typography> : null}
                     </Box>
+                    {recommendedSeriesId && <FormControlLabel sx={{ mt: -1, alignSelf: "flex-start" }} control={<Checkbox checked={recommendationConfirmed} disabled={saving || recommendationConfirmed} onChange={event => { if (event.target.checked) void saveRelationship(item, recommendedSeriesId); }} inputProps={{ "aria-label": `Confirm recommended series for ${item.name}` }} />} label="Use recommended series" />}
                   </Paper>
                 );
               })}
