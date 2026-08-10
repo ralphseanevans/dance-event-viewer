@@ -56,7 +56,8 @@ assignment linking. Linked Google accounts show their Google profile photo in th
 accounts retain the initial fallback. The owner-only Experimental Dashboard presents existing events
 as flyer cards with immediate, read-back-verified draft-series linking, front-page-style event/style/
 state/local-area filters, and a responsive owner/bulk-series side panel where series ownership remains
-manageable; Volunteer Admin authority remains separate.
+manageable. Experimental resolves flyers through the same exact/pattern `logo-map.json` path as the
+public cards, with the database flyer URL retained as a fallback; Volunteer Admin authority remains separate.
 Page modules are loaded on demand so the initial dashboard bundle stays lean.
 See the project-root `Secure_Dashboard_Implementation_Plan_2026-08-08.md`.
 

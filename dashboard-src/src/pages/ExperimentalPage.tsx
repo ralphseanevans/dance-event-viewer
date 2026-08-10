@@ -23,6 +23,7 @@ interface OwnerDraft { id: string; display_name: string; linked_profile_id: stri
 interface EventLink { series_id: string; event_id: string; }
 interface AssignmentLink { id: string; event_id: string; user_id: string; assigned_by: string | null; active: boolean; assigned_at: string; ended_at: string | null; note: string | null; }
 interface BulkSeriesRow { name: string; code: string; seriesType: SeriesDraft["series_type"]; ownerId: string; }
+interface PublicFlyerMap { logos: Record<string, string>; patterns: Array<{ contains: string; logo: string }>; baseUrl: string; }
 type SaveState = { state: "saving" | "saved" | "error"; message: string };
 type RelationshipState = "unlinked" | "needs_review" | "linked";
 
@@ -50,9 +51,17 @@ function resolveFlyerUrl(value: string | null | undefined): string {
   return new URL(url, new URL("../", window.location.href)).href;
 }
 
-function EventFlyer({ event }: { event: DashboardEvent }) {
+function publicFlyerUrl(event: DashboardEvent, map: PublicFlyerMap): string {
+  const exact = map.logos[event.event_key];
+  const mapped = exact || map.patterns.find(pattern => event.event_key.includes(pattern.contains))?.logo;
+  if (mapped) {
+    try { return new URL(mapped, map.baseUrl).href; } catch { /* fall through to the database value */ }
+  }
+  return resolveFlyerUrl(event.flyer_url);
+}
+
+function EventFlyer({ event, url }: { event: DashboardEvent; url: string }) {
   const [broken, setBroken] = useState(false);
-  const url = resolveFlyerUrl(event.flyer_url);
   useEffect(() => { setBroken(false); }, [url]);
   if (!url || broken) {
     return (
@@ -80,6 +89,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [linkFilter, setLinkFilter] = useState<RelationshipFilter>("all");
   const [areaFilters, setAreaFilters] = useState<Set<LocalArea>>(() => new Set(["Pensacola area", "Mobile area"]));
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
+  const [publicFlyers, setPublicFlyers] = useState<PublicFlyerMap>({ logos: {}, patterns: [], baseUrl: "" });
   const [pendingSeries, setPendingSeries] = useState<Record<string, string>>({});
   const [panelOpen, setPanelOpen] = useState(true);
   const [focusNext, setFocusNext] = useState(true);
@@ -109,6 +119,22 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    const mapUrl = new URL("../logo-map.json", window.location.href);
+    void fetch(`${mapUrl.href}?t=${Date.now()}`, { cache: "no-store" })
+      .then(async response => response.ok ? response.json() : null)
+      .then(value => {
+        if (!active || !value) return;
+        const logos = value.logos && typeof value.logos === "object" && !Array.isArray(value.logos) ? value.logos as Record<string, string> : {};
+        const patterns = Array.isArray(value.patterns)
+          ? value.patterns.filter((item: unknown): item is { contains: string; logo: string } => Boolean(item && typeof item === "object" && "contains" in item && "logo" in item && typeof item.contains === "string" && item.contains && typeof item.logo === "string" && item.logo))
+          : [];
+        setPublicFlyers({ logos, patterns, baseUrl: mapUrl.href });
+      })
+      .catch(() => { /* Public flyer decoration is optional; database flyer_url remains the fallback. */ });
+    return () => { active = false; };
+  }, []);
 
   const linksByEvent = useMemo(() => {
     const result = new Map<string, EventLink[]>();
@@ -306,7 +332,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                 const saving = feedback?.state === "saving";
                 return (
                   <Paper key={item.id} component="article" sx={{ p: 2.25, display: "flex", flexDirection: "column", gap: 1.5, border: "1px solid", borderColor: state === "linked" ? "success.dark" : state === "needs_review" ? "warning.dark" : "divider" }}>
-                    <EventFlyer event={item} />
+                    <EventFlyer event={item} url={publicFlyerUrl(item, publicFlyers)} />
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
                       <Box minWidth={0}><Typography variant="h6" sx={{ overflowWrap: "anywhere" }}>{item.name}</Typography><Typography variant="caption" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>{item.event_key}</Typography></Box>
                       <Chip size="small" color={state === "linked" ? "success" : "warning"} label={state === "linked" ? "Linked" : "Needs review"} />

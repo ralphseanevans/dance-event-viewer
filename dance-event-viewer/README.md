@@ -15,7 +15,8 @@ searchable volunteer assignments, complete recurrence-exclusion and WCS controls
 page modules. The owner-only Experimental Dashboard uses event cards for immediate, read-back-verified
 draft-series linking, with front-page-style event/style/state/Pensacola/Mobile filters and a responsive
 owner/bulk-series panel where series ownership remains manageable; Volunteer Admin authority remains
-separate. Auth-provider configuration, owner bootstrap,
+separate. Experimental uses the same exact/pattern `logo-map.json` flyer resolution as public cards,
+falling back to a database flyer URL only when no public mapping exists. Auth-provider configuration, owner bootstrap,
 real-session acceptance, and guarded release verification are complete.
 
 ## Visual theme: Moonlit Ember + page-wide atmosphere (2026-07-16; club-light prototype 2026-07-18)
