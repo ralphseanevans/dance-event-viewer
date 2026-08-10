@@ -7,7 +7,7 @@ import {
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import ImageNotSupportedOutlinedIcon from "@mui/icons-material/ImageNotSupportedOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
-import EventFilterBar, { type LocalArea, type RelationshipFilter } from "../components/EventFilterBar";
+import EventFilterBar, { PUBLIC_STYLE_ORDER, publicStyleCategory, type LocalArea, type RelationshipFilter } from "../components/EventFilterBar";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
 import DataQualityInbox from "./DataQualityInbox";
@@ -117,7 +117,10 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   }, [eventLinks]);
   const seriesById = useMemo(() => new Map(series.map(item => [item.id, item])), [series]);
   const normalizedSearch = searchQuery.trim().toLowerCase();
-  const styles = useMemo(() => [...new Set(events.map(item => item.style).filter(Boolean))].sort(), [events]);
+  const styles = useMemo(() => {
+    const present = new Set(events.map(item => publicStyleCategory(item.style)));
+    return PUBLIC_STYLE_ORDER.filter(category => present.has(category));
+  }, [events]);
   const states = useMemo(() => [...new Set(events.map(item => item.state).filter((value): value is string => Boolean(value)))].sort(), [events]);
 
   function relationshipState(eventId: string): RelationshipState {
@@ -141,7 +144,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     const matchesLink = linkFilter === "all" || (linkFilter === "needs_review" ? state !== "linked" : state === linkFilter);
     const area = eventArea(item);
     const matchesArea = !areaFilters.size || Boolean(area && areaFilters.has(area));
-    return matchesSearch && matchesLink && matchesArea && (!styleFilter || item.style === styleFilter) && (!stateFilter || item.state === stateFilter);
+    return matchesSearch && matchesLink && matchesArea && (!styleFilter || publicStyleCategory(item.style) === styleFilter) && (!stateFilter || item.state === stateFilter);
   }), [events, normalizedSearch, styleFilter, stateFilter, linkFilter, areaFilters, linksByEvent]);
 
   const counts = useMemo(() => events.reduce((result, item) => {

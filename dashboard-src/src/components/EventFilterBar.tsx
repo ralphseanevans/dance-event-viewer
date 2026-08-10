@@ -2,6 +2,13 @@ import { Box, Button, FormControl, InputLabel, MenuItem, Select, Stack, TextFiel
 
 export type RelationshipFilter = "all" | "needs_review" | "unlinked" | "linked";
 export type LocalArea = "Pensacola area" | "Mobile area";
+export const PUBLIC_STYLE_ORDER = ["West Coast Swing", "Country Swing", "Ballroom", "Mixed", "Latin", "Argentine Tango", "Other"] as const;
+export function publicStyleCategory(value: string | null | undefined): string {
+  const style = value?.trim().toLowerCase();
+  if (!style) return "Other";
+  if (style === "salsa") return "Latin";
+  return PUBLIC_STYLE_ORDER.find(category => category.toLowerCase() === style) ?? "Other";
+}
 
 interface EventFilterBarProps {
   search: string;
