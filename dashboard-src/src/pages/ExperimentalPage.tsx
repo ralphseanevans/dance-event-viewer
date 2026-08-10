@@ -92,6 +92,9 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
   const [publicFlyers, setPublicFlyers] = useState<PublicFlyerMap>({ logos: {}, patterns: [], baseUrl: "" });
   const [pendingSeries, setPendingSeries] = useState<Record<string, string>>({});
+  // A recommendation is the review baseline loaded with a card, not the latest
+  // selection. Keeping it separately prevents the badge from following focus.
+  const [recommendedSeriesByEvent, setRecommendedSeriesByEvent] = useState<Record<string, string>>({});
   const [panelOpen, setPanelOpen] = useState(true);
   const [focusNext, setFocusNext] = useState(true);
   const [page, setPage] = useState(1);
@@ -114,7 +117,13 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     setEvents((eventsResult.data as DashboardEvent[] | null) ?? []);
     setPeople((peopleResult.data as DashboardProfile[] | null) ?? []);
     setOwnerDrafts((ownerDraftsResult.data as OwnerDraft[] | null) ?? []);
-    setEventLinks((eventLinksResult.data as EventLink[] | null) ?? []);
+    const loadedLinks = (eventLinksResult.data as EventLink[] | null) ?? [];
+    setEventLinks(loadedLinks);
+    setRecommendedSeriesByEvent(() => {
+      const byEvent = new Map<string, EventLink[]>();
+      loadedLinks.forEach(link => byEvent.set(link.event_id, [...(byEvent.get(link.event_id) ?? []), link]));
+      return Object.fromEntries([...byEvent].flatMap(([eventId, links]) => links.length === 1 ? [[eventId, links[0].series_id]] : []));
+    });
     setAssignments((assignmentsResult.data as AssignmentLink[] | null) ?? []);
     setLoading(false);
   }, []);
@@ -268,6 +277,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
         if (deleteError) throw deleteError;
         const verifiedLinks = await readBackRelationship(event.id);
         if (verifiedLinks.length) throw new Error("The event still has a draft-series link after unlinking.");
+        setPendingSeries(items => { const next = { ...items }; delete next[event.id]; return next; });
         setSaveStates(items => ({ ...items, [event.id]: { state: "saved", message: "Saved — needs series" } }));
         return;
       }
@@ -328,8 +338,15 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
               {visibleEvents.map(item => {
                 const confirmedLinks = linksByEvent.get(item.id) ?? [];
                 const confirmedSeriesId = confirmedLinks.length === 1 ? confirmedLinks[0].series_id : "";
+                const recommendedSeriesId = recommendedSeriesByEvent[item.id] ?? "";
                 const selectedSeriesId = pendingSeries[item.id] ?? confirmedSeriesId;
                 const selectedSeries = series.find(draft => draft.id === selectedSeriesId);
+                const selectedOwner = selectedSeries?.primary_owner_draft_id
+                  ? ownerDrafts.find(owner => owner.id === selectedSeries.primary_owner_draft_id)?.display_name
+                  : selectedSeries?.primary_owner_profile_id
+                    ? people.find(person => person.id === selectedSeries.primary_owner_profile_id)?.display_name
+                      ?? people.find(person => person.id === selectedSeries.primary_owner_profile_id)?.email
+                    : undefined;
                 const state = relationshipState(item.id);
                 const feedback = saveStates[item.id];
                 const saving = feedback?.state === "saving";
@@ -351,9 +368,10 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                         value={selectedSeriesId}
                         onChange={event => void saveRelationship(item, event.target.value)}
                         renderValue={() => selectedSeries ? (
-                          <Stack direction="row" alignItems="center" gap={1} minWidth={0}>
+                          <Stack direction="row" alignItems="center" gap={1} minWidth={0} width="100%">
                             <Typography component="span" noWrap>{selectedSeries.series_code} — {selectedSeries.name}</Typography>
-                            {confirmedSeriesId === selectedSeries.id && <Chip label="Recommended" size="small" color="success" variant="outlined" />}
+                            <Typography component="span" variant="caption" color="text.secondary" noWrap sx={{ ml: "auto" }}>Owner: {selectedOwner ?? "Unassigned"}</Typography>
+                            {recommendedSeriesId === selectedSeries.id && <Chip label="Recommended" size="small" color="success" variant="outlined" />}
                           </Stack>
                         ) : <em>No series — needs review</em>}
                         sx={{ minHeight: 44, "& .MuiSelect-select": { minHeight: "44px !important", boxSizing: "border-box", display: "flex", alignItems: "center" } }}
@@ -362,7 +380,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
                         {series.map(draft => <MenuItem key={draft.id} value={draft.id}>
                           <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} width="100%" minWidth={0}>
                             <Typography component="span" noWrap>{draft.series_code} — {draft.name}</Typography>
-                            {confirmedSeriesId === draft.id && <Chip label="Recommended" size="small" color="success" variant="outlined" />}
+                            {recommendedSeriesId === draft.id && <Chip label="Recommended" size="small" color="success" variant="outlined" />}
                           </Stack>
                         </MenuItem>)}
                       </Select>
