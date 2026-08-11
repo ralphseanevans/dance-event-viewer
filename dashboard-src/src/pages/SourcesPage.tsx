@@ -3,6 +3,7 @@ import { Alert, Box, Chip, Link, Pagination, Paper, Stack, TextField, Typography
 import SearchIcon from "@mui/icons-material/Search";
 import type { DashboardProfile, SourceHistoryEntry } from "../types";
 import { supabaseClient } from "../supabase";
+import { safeHttpUrl } from "../urls";
 
 const PAGE_SIZE = 24;
 
@@ -62,7 +63,7 @@ export default function SourcesPage({ profile }: { profile: DashboardProfile }) 
                 <Chip size="small" label={entry.review_status} color={entry.review_status === "accepted" ? "success" : "default"} />
               </Stack>
               <Typography variant="body2" color="text.secondary">{entry.source_type} · {entry.source_skill || "manual"}</Typography>
-              {entry.source_url && <Link href={entry.source_url} target="_blank" rel="noopener" sx={{ overflowWrap: "anywhere" }}>Open source</Link>}
+              {safeHttpUrl(entry.source_url) && <Link href={safeHttpUrl(entry.source_url)} target="_blank" rel="noopener noreferrer" sx={{ overflowWrap: "anywhere" }}>Open source</Link>}
               <Typography variant="caption" color="text.secondary">Last seen {new Date(entry.last_seen).toLocaleDateString()}</Typography>
             </Stack>
           </Paper>

@@ -24,6 +24,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#070910">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://drive.google.com https://lh3.googleusercontent.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://api.github.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'">
 <title>Dance Review Dashboard</title>
 <style>
   :root {
@@ -509,6 +511,16 @@ function driveFileId(url) {
 function fmtTimestamp(iso) {
   try { return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
   catch (e) { return iso || ""; }
+}
+/* Any URL rendered as a link or image here comes from submitter/crawler data, so only
+   explicit http(s) URLs are ever used — a javascript:/data: value would otherwise run in
+   this authenticated dashboard. Returns "" when the value isn't a usable web link. */
+function safeHttpUrl(value) {
+  const raw = String(value == null ? "" : value).trim();
+  if (!raw) return "";
+  let parsed;
+  try { parsed = new URL(raw, location.href); } catch (e) { return ""; }
+  return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "";
 }
 function escapeHtml(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -1204,10 +1216,11 @@ function renderSiteLog() {
         const det = document.createElement("span");
         det.className = "log-detail";
         if (e.detail) det.appendChild(document.createTextNode(e.detail));
-        if (e.url) {
+        const logUrl = safeHttpUrl(e.url);
+        if (logUrl) {
           if (e.detail) det.appendChild(document.createTextNode(" · "));
           const a = document.createElement("a");
-          a.href = e.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+          a.href = logUrl; a.target = "_blank"; a.rel = "noopener noreferrer";
           a.textContent = "view commit";
           det.appendChild(a);
         }
@@ -1548,16 +1561,17 @@ function renderCard(row) {
   }
 
   // Flyer
-  if (row.flyer_url) {
+  const flyerUrl = safeHttpUrl(row.flyer_url);
+  if (flyerUrl) {
     const fr = document.createElement("div");
     fr.className = "flyer-row";
-    const fileId = driveFileId(row.flyer_url);
+    const fileId = driveFileId(flyerUrl);
     const img = document.createElement("img");
     img.className = "flyer-thumb"; img.alt = "Flyer"; img.loading = "lazy";
-    img.src = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w300` : "";
+    if (fileId) img.src = `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w300`;
     img.onerror = () => { img.style.display = "none"; };
     const link = document.createElement("a");
-    link.className = "flyer-link"; link.href = row.flyer_url; link.target = "_blank"; link.rel = "noopener noreferrer";
+    link.className = "flyer-link"; link.href = flyerUrl; link.target = "_blank"; link.rel = "noopener noreferrer";
     link.textContent = "Open full-size flyer ↗";
     setTooltip(link, "Open the original uploaded flyer in Google Drive for a full-resolution manual review.");
     fr.appendChild(img); fr.appendChild(link);
@@ -1798,7 +1812,9 @@ function renderSubmitted(row, isCorrection) {
     if (row.style) rows.push(["Style", escapeHtml(row.style) + (row.style_other ? " (" + escapeHtml(row.style_other) + ")" : "")]);
     if (row.cost) rows.push(["Cost", escapeHtml(row.cost)]);
   }
-  if (row.source_url) rows.push(["Link", `<a href="${escapeHtml(row.source_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(row.source_url)}</a>`]);
+  const sourceUrl = safeHttpUrl(row.source_url);
+  if (sourceUrl) rows.push(["Link", `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(sourceUrl)}</a>`]);
+  else if (row.source_url) rows.push(["Link", escapeHtml(row.source_url)]);
   if (row.contact_name) rows.push(["From", escapeHtml(row.contact_name)]);
 
   let html = `<div class="label">${isCorrection ? "Submitted via “Wrong info? / Need to add info?”" : "What they submitted"}</div>`;

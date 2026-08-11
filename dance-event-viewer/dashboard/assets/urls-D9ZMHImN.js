@@ -1,0 +1,1 @@
+function e(e){let t=e?.trim();if(!t)return``;try{let e=new URL(t);return e.protocol===`http:`||e.protocol===`https:`?e.href:``}catch{return``}}function t(t){return e(t)!==``}export{e as n,t};

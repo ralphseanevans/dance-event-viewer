@@ -1,4 +1,5 @@
 import type { DashboardEvent } from "../types";
+import { isHttpUrl } from "../urls";
 
 export type DataQualityKind =
   | "missing_flyer"
@@ -16,16 +17,6 @@ export interface DataQualityFinding {
   kind: DataQualityKind;
   title: string;
   detail: string;
-}
-
-function validHttpUrl(value: string | null) {
-  if (!value) return false;
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 function parseTimeMinutes(value: string | null) {
@@ -68,7 +59,7 @@ export function buildDataQualityFindings(events: DashboardEvent[], now = new Dat
 
   for (const event of events.filter(item => item.record_status !== "archived")) {
     if (!event.flyer_url?.trim()) add(event, "missing_flyer", "Missing flyer", "No flyer URL is recorded.");
-    if (!validHttpUrl(event.source_url)) add(event, "invalid_source_url", "Missing or invalid source link", "The source URL is empty or is not an HTTP(S) link.");
+    if (!isHttpUrl(event.source_url)) add(event, "invalid_source_url", "Missing or invalid source link", "The source URL is empty or is not an HTTP(S) link.");
     const confirmed = new Date(`${event.last_confirmed}T00:00:00Z`);
     if (!event.last_confirmed || Number.isNaN(confirmed.getTime()) || confirmed < staleBefore) {
       add(event, "stale_verification", "Verification may be stale", "Last confirmation is missing, invalid, or more than 180 days old.");
