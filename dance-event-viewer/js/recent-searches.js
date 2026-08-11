@@ -54,9 +54,16 @@
 
   function loadList() {
     fetch(LIST_SRC, { cache: "no-store" })
-      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (res) {
+        if (!res.ok) throw new Error("recent searches returned HTTP " + res.status);
+        return res.json();
+      })
       .then(function (data) { render(data && data.terms); })
-      .catch(function () { /* file absent/unreachable — stay hidden, not an error state visitors need to see */ });
+      .catch(function (err) {
+        // Stay hidden — not an error state visitors need to see, but the reason belongs in the console.
+        console.warn("Shared recent searches could not be loaded.", err);
+        render([]);
+      });
   }
 
   // Optimistic local update: prepend right away so the visitor who just searched
@@ -80,7 +87,13 @@
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" }, // matches the dashboard's simple-request pattern, avoids a CORS preflight
       body: JSON.stringify({ action: "log_search", term: term }),
-    }).catch(function () { /* backend not deployed yet, or offline — the optimistic local update already covers this visitor */ });
+    })
+      // Backend not deployed yet, or offline — the optimistic local update already
+      // covers this visitor, so only the console hears about it.
+      .then(function (res) {
+        if (!res.ok) console.warn("Search term was not logged (HTTP " + res.status + ").");
+      })
+      .catch(function (err) { console.warn("Search term could not be logged.", err); });
   }
 
   function init() {

@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-08-11 - Error handling review
+
+### Fixed
+
+- **Dashboard access is no longer denied on a failed lookup**: a network or RLS
+  failure while reading the session or `dashboard_profiles` used to be
+  indistinguishable from an unapproved account, so an activated volunteer saw the
+  "Access awaiting approval" screen. `App.tsx` now reports the real message with a
+  Try again action, and `providers.ts` throws on a failed permission read instead
+  of returning a null role (which means "no access") — `accessControlProvider.can`
+  surfaces that as "permissions could not be checked".
+- **Sign out reports failure**: a rejected `signOut()` left the session intact
+  silently in the dashboard shell and the pending-access screen; both now show why.
+- **Submissions distinguish "rejected" from "unreachable"**: the event form, the
+  Dance Card email request and both correction forms parsed responses with
+  `res.json().catch(() => null)`, so an HTTP error or a non-JSON Apps Script error
+  page produced the same generic "something went wrong" with nothing logged. A
+  shared `postSubmission()` helper now raises the HTTP status / unreadable-body
+  reason, and every failure path logs it.
+- **Share buttons answer a failed copy**: when neither `navigator.share` nor the
+  clipboard worked, the button did nothing at all; it now flashes a failure label.
+
+### Changed
+
+- Silently swallowed failures across the viewer now explain themselves in the
+  console while keeping the same fail-quiet behaviour: logo map, venue
+  coordinates, `web-events.json` overlay, site settings, shared recent searches,
+  state-map data, poster image loads, activity-pulse writes/presence/pruning
+  (including the Firebase promise rejections that escaped `try`/`catch`), and the
+  account-favorites boot promise, which was fire-and-forget.
+
 ## 2026-08-04 - Mint Reactor theme
 
 ### Added

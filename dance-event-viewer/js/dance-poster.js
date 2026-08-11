@@ -78,7 +78,11 @@
       if (!src) { res(null); return; }
       var img = new Image();
       img.onload = function () { res(img); };
-      img.onerror = function () { res(null); };
+      img.onerror = function () {
+        // A missing flyer/background just leaves that slot blank on the poster.
+        console.warn("Poster image could not be loaded: " + src);
+        res(null);
+      };
       img.src = src;
     });
   }

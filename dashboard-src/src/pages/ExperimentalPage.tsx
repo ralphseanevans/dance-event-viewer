@@ -55,7 +55,8 @@ function publicFlyerUrl(event: DashboardEvent, map: PublicFlyerMap): string {
   const exact = map.logos[event.event_key];
   const mapped = exact || map.patterns.find(pattern => event.event_key.includes(pattern.contains))?.logo;
   if (mapped) {
-    try { return new URL(mapped, map.baseUrl).href; } catch { /* fall through to the database value */ }
+    try { return new URL(mapped, map.baseUrl).href; }
+    catch (urlError) { console.warn(`Mapped flyer path "${mapped}" is not a resolvable URL; using the database value.`, urlError); }
   }
   return resolveFlyerUrl(event.flyer_url);
 }
@@ -134,7 +135,10 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     let active = true;
     const mapUrl = new URL("../logo-map.json", window.location.href);
     void fetch(`${mapUrl.href}?t=${Date.now()}`, { cache: "no-store" })
-      .then(async response => response.ok ? response.json() : null)
+      .then(async response => {
+        if (!response.ok) throw new Error(`public flyer map returned HTTP ${response.status}`);
+        return response.json();
+      })
       .then(value => {
         if (!active || !value) return;
         const logos = value.logos && typeof value.logos === "object" && !Array.isArray(value.logos) ? value.logos as Record<string, string> : {};
@@ -143,7 +147,10 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
           : [];
         setPublicFlyers({ logos, patterns, baseUrl: mapUrl.href });
       })
-      .catch(() => { /* Public flyer decoration is optional; database flyer_url remains the fallback. */ });
+      .catch((flyerError: unknown) => {
+        // Public flyer decoration is optional; database flyer_url remains the fallback.
+        console.warn("Public flyer map unavailable; falling back to database flyer URLs.", flyerError);
+      });
     return () => { active = false; };
   }, []);
 

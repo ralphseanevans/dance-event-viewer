@@ -28,5 +28,8 @@
       return response.json();
     })
     .then(function (settings) { return apply(settings && settings.page_characters); })
-    .catch(function () { return apply(fallback); });
+    .catch(function (err) {
+      console.warn("Site settings unavailable; using the checked-in default page character.", err);
+      return apply(fallback);
+    });
 })();

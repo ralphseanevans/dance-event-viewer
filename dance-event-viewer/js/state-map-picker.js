@@ -117,6 +117,7 @@
     s.onload = function () {
       loading = false;
       if (!window.US_STATES_MAP) {
+        console.warn("State map data loaded but exposed no US_STATES_MAP payload.");
         if (statusEl) statusEl.textContent = "Map unavailable right now \u2014 use the State dropdown above.";
         return;
       }
@@ -127,6 +128,7 @@
     };
     s.onerror = function () {
       loading = false;
+      console.warn("State map data could not be loaded from " + DATA_SRC + ".");
       if (statusEl) statusEl.textContent = "Map unavailable right now \u2014 use the State dropdown above.";
     };
     document.head.appendChild(s);
@@ -142,12 +144,19 @@
   // state — so punching states or toggling filters can never change a map number.
   // Fail-quiet: if app.js's predicates aren't available (future refactor), fall
   // back to counting everything rather than breaking the map.
+  var universeWarned = false;   // this runs per event — report the fallback once, not per card
   function inDefaultUniverse(d, today) {
     try {
       if (typeof isPastEvent === "function" && isPastEvent(d, today)) return false;
       if (typeof isUnverified === "function" && isUnverified(d.ev)) return false;
       if (typeof SOLO_STYLES !== "undefined" && SOLO_STYLES.indexOf(d.category) !== -1) return false;
-    } catch (e) { /* fall through — count it */ }
+    } catch (e) {
+      // Fall through and count it, but say why the counts may be broader than the chips'.
+      if (!universeWarned) {
+        universeWarned = true;
+        console.warn("Map counts fell back to counting every event; app.js predicates were unavailable.", e);
+      }
+    }
     return true;
   }
   function countsByCode() {

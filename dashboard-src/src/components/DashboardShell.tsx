@@ -1,6 +1,7 @@
 import { lazy, ReactNode, Suspense, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
+  Alert,
   AppBar,
   Avatar,
   Box,
@@ -75,6 +76,8 @@ export default function DashboardShell({ session, profile }: { session: Session;
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [section, setSection] = useState<DashboardSection>("overview");
+  // A rejected sign-out used to leave the session intact with no sign anything failed.
+  const [signOutError, setSignOutError] = useState("");
   const ownerAdmin = profile.role === "owner_admin";
   const admin = profile.role === "owner_admin" || profile.role === "volunteer_admin";
   const avatarUrl = googleAvatarUrl(session);
@@ -130,9 +133,19 @@ export default function DashboardShell({ session, profile }: { session: Session;
         >
           Public viewer
         </Button>
-        <Button startIcon={<LogoutIcon />} onClick={() => void supabaseClient.auth.signOut()} fullWidth>
+        <Button
+          startIcon={<LogoutIcon />}
+          onClick={() => {
+            setSignOutError("");
+            void supabaseClient.auth.signOut().then(({ error }) => {
+              if (error) setSignOutError(error.message);
+            });
+          }}
+          fullWidth
+        >
           Sign out
         </Button>
+        {signOutError && <Alert severity="error">Still signed in — {signOutError}</Alert>}
       </Stack>
     </Stack>
   );
