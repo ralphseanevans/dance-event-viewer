@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import type { DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { firstErrorMessage, isOwnerAdmin, rowsOf } from "../lib/queries";
 
 interface OwnerDraft { id: string; display_name: string; }
 interface OwnerManagerDraft { id: string; manager_profile_id: string | null; manager_owner_draft_id: string | null; owner_draft_id: string; }
@@ -31,17 +32,17 @@ export default function PeoplePage({ profile }: { profile: DashboardProfile }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const ownerAdmin = profile.role === "owner_admin";
+    const ownerAdmin = isOwnerAdmin(profile);
     const [profilesResult, ownersResult, managersResult] = await Promise.all([
       supabaseClient.from("dashboard_profiles").select("*").order("created_at", { ascending: false }),
       ownerAdmin ? supabaseClient.from("experimental_owner_drafts").select("id,display_name").order("display_name") : Promise.resolve({ data: [], error: null }),
       ownerAdmin ? supabaseClient.from("experimental_manager_scope_drafts").select("id,manager_profile_id,manager_owner_draft_id,owner_draft_id").eq("scope_type", "owner") : Promise.resolve({ data: [], error: null }),
     ]);
-    const firstError = [profilesResult, ownersResult, managersResult].find(result => result.error)?.error;
-    if (firstError) setError(firstError.message);
-    setProfiles((profilesResult.data as DashboardProfile[] | null) ?? []);
-    setOwners((ownersResult.data as OwnerDraft[] | null) ?? []);
-    setOwnerManagers((managersResult.data as OwnerManagerDraft[] | null) ?? []);
+    const failure = firstErrorMessage([profilesResult, ownersResult, managersResult]);
+    if (failure) setError(failure);
+    setProfiles(rowsOf<DashboardProfile>(profilesResult));
+    setOwners(rowsOf<OwnerDraft>(ownersResult));
+    setOwnerManagers(rowsOf<OwnerManagerDraft>(managersResult));
     setLoading(false);
   }, [profile.role]);
 
@@ -84,7 +85,7 @@ export default function PeoplePage({ profile }: { profile: DashboardProfile }) {
     ? owners.find(owner => owner.id === item.manager_owner_draft_id)?.display_name ?? "Unknown person"
     : profiles.find(person => person.id === item.manager_profile_id)?.display_name ?? profiles.find(person => person.id === item.manager_profile_id)?.email ?? "Unknown account";
   const ownerName = (ownerId: string) => owners.find(owner => owner.id === ownerId)?.display_name ?? "Unknown owner";
-  const ownerAdmin = profile.role === "owner_admin";
+  const ownerAdmin = isOwnerAdmin(profile);
 
   return (
     <Stack spacing={2.5}>

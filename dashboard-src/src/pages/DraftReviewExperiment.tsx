@@ -3,6 +3,7 @@ import { Alert, Autocomplete, Box, Button, Chip, Paper, Stack, TextField, Typogr
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { rowsOf } from "../lib/queries";
 import ExperimentStatus from "./ExperimentStatus";
 
 type ReviewStatus = "draft" | "in_review" | "approved" | "rejected";
@@ -24,10 +25,10 @@ export default function DraftReviewExperiment({ events, profile }: { events: Das
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const { data, error: loadError } = await supabaseClient.from("experimental_event_change_drafts")
+    const result = await supabaseClient.from("experimental_event_change_drafts")
       .select("id,event_id,proposed_changes,note,review_status,created_at,updated_at")
       .order("updated_at", { ascending: false }).limit(100);
-    if (loadError) setError(loadError.message); else setDrafts((data as ChangeDraft[] | null) ?? []);
+    if (result.error) setError(result.error.message); else setDrafts(rowsOf<ChangeDraft>(result));
   }, []);
   useEffect(() => { void load(); }, [load]);
 

@@ -80,7 +80,11 @@
   <link rel="stylesheet" href="css/hero-opossum.css?v=e2d7b33b">
   <link rel="stylesheet" href="css/activity-pulse.css?v=9cf17ff3">
   <link rel="stylesheet" href="css/moonlit-ember-theme.css?v=0d8a05e2">
-  <script defer src="js/theme-switch.js?v=45f6be77"></script>
+  <!-- Shared helpers every module below depends on, so they load before both the
+       deferred scripts here and the plain ones at the end of the body. -->
+  <script src="js/local-prefs.js?v=ce9e0080"></script>
+  <script src="js/event-schedule.js?v=f0ebd703"></script>
+  <script defer src="js/theme-switch.js?v=44f3bc0d"></script>
   <script defer src="js/page-character.js?v=5c137e18"></script>
   <script defer src="js/club-lights.js?v=a05f233f"></script>
   <script defer src="js/hero-opossum.js?v=35cdcac9"></script>
@@ -470,10 +474,10 @@
        real recurrence rules). Loaded BEFORE app.js so window.DEV_ADD_TO_CAL exists when
        the first cards render. Bulk "Export these (.ics)" button disabled for now (Sean's
        call, same day) — see js/add-to-calendar.js, ensureBulkButton() left intact. -->
-  <script src="js/add-to-calendar.js?v=52b9e656"></script>
+  <script src="js/add-to-calendar.js?v=10553756"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
   <script src="js/supabase-config.js?v=d191cb0e"></script>
-  <script src="js/app.js?v=3aff048e"></script>
+  <script src="js/app.js?v=a6207765"></script>
   <!-- Choose-location state map (2026-08-03): reads/writes app.js's state.sel.state
        directly (same global scope, loaded after app.js). Its own data file
        (js/us-states-map-data.js, ~145KB of state path data) is fetched lazily on

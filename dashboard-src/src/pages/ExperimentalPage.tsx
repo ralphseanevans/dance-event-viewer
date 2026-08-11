@@ -10,6 +10,9 @@ import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import EventFilterBar, { PUBLIC_STYLE_ORDER, publicStyleCategory, type LocalArea, type RelationshipFilter } from "../components/EventFilterBar";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { firstErrorMessage, rowsOf } from "../lib/queries";
+import { resolveFlyerUrl } from "../lib/flyers";
+import { PAGE_SIZE, usePagedList } from "../lib/usePagedList";
 import DataQualityInbox from "./DataQualityInbox";
 import DraftReviewExperiment from "./DraftReviewExperiment";
 import VolunteerPreviewExperiment from "./VolunteerPreviewExperiment";
@@ -27,7 +30,6 @@ interface PublicFlyerMap { logos: Record<string, string>; patterns: Array<{ cont
 type SaveState = { state: "saving" | "saved" | "error"; message: string };
 type RelationshipState = "unlinked" | "needs_review" | "linked";
 
-const PAGE_SIZE = 24;
 const emptyBulkRow = (): BulkSeriesRow => ({ name: "", code: "", seriesType: "recurring", ownerId: "" });
 
 function ownerValue(series: SeriesDraft | null | undefined): string {
@@ -42,13 +44,6 @@ function formatDate(event: DashboardEvent): string {
     if (!Number.isNaN(parsed.getTime())) return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(parsed);
   }
   return event.day_of_week || event.monthly_rule || "Schedule pending";
-}
-
-function resolveFlyerUrl(value: string | null | undefined): string {
-  const url = value?.trim();
-  if (!url || typeof window === "undefined") return url ?? "";
-  if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
-  return new URL(url, new URL("../", window.location.href)).href;
 }
 
 function publicFlyerUrl(event: DashboardEvent, map: PublicFlyerMap): string {
@@ -98,7 +93,6 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   const [recommendedSeriesByEvent, setRecommendedSeriesByEvent] = useState<Record<string, string>>({});
   const [panelOpen, setPanelOpen] = useState(true);
   const [focusNext, setFocusNext] = useState(true);
-  const [page, setPage] = useState(1);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -112,20 +106,20 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
       supabaseClient.from("experimental_series_event_links").select("series_id,event_id"),
       supabaseClient.from("event_assignments").select("*").eq("active", true),
     ]);
-    const firstError = [seriesResult, eventsResult, peopleResult, ownerDraftsResult, eventLinksResult, assignmentsResult].find(result => result.error)?.error;
-    if (firstError) setError(firstError.message);
-    setSeries((seriesResult.data as SeriesDraft[] | null) ?? []);
-    setEvents((eventsResult.data as DashboardEvent[] | null) ?? []);
-    setPeople((peopleResult.data as DashboardProfile[] | null) ?? []);
-    setOwnerDrafts((ownerDraftsResult.data as OwnerDraft[] | null) ?? []);
-    const loadedLinks = (eventLinksResult.data as EventLink[] | null) ?? [];
+    const failure = firstErrorMessage([seriesResult, eventsResult, peopleResult, ownerDraftsResult, eventLinksResult, assignmentsResult]);
+    if (failure) setError(failure);
+    setSeries(rowsOf<SeriesDraft>(seriesResult));
+    setEvents(rowsOf<DashboardEvent>(eventsResult));
+    setPeople(rowsOf<DashboardProfile>(peopleResult));
+    setOwnerDrafts(rowsOf<OwnerDraft>(ownerDraftsResult));
+    const loadedLinks = rowsOf<EventLink>(eventLinksResult);
     setEventLinks(loadedLinks);
     setRecommendedSeriesByEvent(() => {
       const byEvent = new Map<string, EventLink[]>();
       loadedLinks.forEach(link => byEvent.set(link.event_id, [...(byEvent.get(link.event_id) ?? []), link]));
       return Object.fromEntries([...byEvent].flatMap(([eventId, links]) => links.length === 1 ? [[eventId, links[0].series_id]] : []));
     });
-    setAssignments((assignmentsResult.data as AssignmentLink[] | null) ?? []);
+    setAssignments(rowsOf<AssignmentLink>(assignmentsResult));
     setLoading(false);
   }, []);
 
@@ -198,10 +192,8 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
     return result;
   }, { unlinked: 0, linked: 0, needs_review: 0 }), [events, linksByEvent, confirmedSeriesByEvent]);
 
-  const pageCount = Math.max(1, Math.ceil(matchingEvents.length / PAGE_SIZE));
-  const visibleEvents = matchingEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  useEffect(() => { setPage(1); }, [searchQuery, styleFilter, stateFilter, selectedDayOfWeek, linkFilter, areaFilters]);
-  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+  const { page, setPage, pageCount, visibleItems: visibleEvents } = usePagedList(matchingEvents);
+  useEffect(() => { setPage(1); }, [searchQuery, styleFilter, stateFilter, selectedDayOfWeek, linkFilter, areaFilters, setPage]);
 
   async function createOwner(event: FormEvent) {
     event.preventDefault(); setError("");
@@ -252,7 +244,7 @@ export default function ExperimentalPage({ profile }: { profile: DashboardProfil
   async function readBackRelationship(eventId: string, seriesId?: string) {
     const linksResult = await supabaseClient.from("experimental_series_event_links").select("series_id,event_id").eq("event_id", eventId);
     if (linksResult.error) throw linksResult.error;
-    const verifiedLinks = (linksResult.data as EventLink[] | null) ?? [];
+    const verifiedLinks = rowsOf<EventLink>(linksResult);
     setEventLinks(items => [...items.filter(item => item.event_id !== eventId), ...verifiedLinks]);
     if (seriesId) {
       const seriesResult = await supabaseClient.from("experimental_series_drafts")

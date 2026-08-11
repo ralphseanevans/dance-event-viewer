@@ -6,6 +6,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 import type { DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { firstErrorMessage, isAdmin } from "../lib/queries";
 
 interface Counts {
   events: number;
@@ -17,7 +18,7 @@ interface Counts {
 export default function OverviewPage({ profile }: { profile: DashboardProfile }) {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [error, setError] = useState("");
-  const admin = profile.role === "owner_admin" || profile.role === "volunteer_admin";
+  const admin = isAdmin(profile);
 
   useEffect(() => {
     const eventView = admin ? "dashboard_events_admin" : "dashboard_events";
@@ -27,8 +28,8 @@ export default function OverviewPage({ profile }: { profile: DashboardProfile })
       supabaseClient.from("dashboard_activity").select("id", { count: "exact", head: true }),
       supabaseClient.from("dashboard_source_history").select("id", { count: "exact", head: true }),
     ]).then((results) => {
-      const firstError = results.find((result) => result.error)?.error;
-      if (firstError) setError(firstError.message);
+      const failure = firstErrorMessage(results);
+      if (failure) setError(failure);
       setCounts({
         events: results[0].count ?? 0,
         assignments: results[1].count ?? 0,

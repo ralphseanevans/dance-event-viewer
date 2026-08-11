@@ -40,57 +40,18 @@
   var TZID = "America/Chicago";
   var EXCLUDE_HORIZON_MONTHS = 18;   // how far ahead exclude_monthly_rules become EXDATEs
   var DEFAULT_DURATION_MIN = 120;    // used only when end_time is missing
-  var DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   var BYDAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
-  /* ---------- tiny local mirrors of app.js parsing (kept dependency-free) ---------- */
-
-  function parseISO(d) {
-    if (typeof d !== "string") return null;
-    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.trim());
-    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
-  }
-  function parseHM(t) {
-    if (typeof t !== "string") return null;
-    var m = /^(\d{1,2}):(\d{2})$/.exec(t.trim());
-    if (!m) return null;
-    var h = +m[1], mi = +m[2];
-    return (h >= 0 && h < 24 && mi >= 0 && mi < 60) ? { h: h, m: mi } : null;
-  }
-  function monthlyRuleParts(rule) {
-    if (typeof rule !== "string") return null;
-    var m = /(first|1st|second|2nd|third|3rd|fourth|4th)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i.exec(rule);
-    if (!m) return null;
-    var nth = { first: 1, "1st": 1, second: 2, "2nd": 2, third: 3, "3rd": 3, fourth: 4, "4th": 4 }[m[1].toLowerCase()];
-    var dow = DAY_ORDER.findIndex(function (d) { return d.toLowerCase() === m[2].toLowerCase(); });
-    return { nth: nth, dow: dow };
-  }
-  function monthlyDateOfMonth(rule) {
-    if (typeof rule !== "string") return null;
-    var m = /^\s*(\d{1,2})(?:st|nd|rd|th)?\s*$/i.exec(rule);
-    if (!m) return null;
-    var day = +m[1];
-    return (day >= 1 && day <= 31) ? day : null;
-  }
-  function daysInMonth(y, m0) { return new Date(y, m0 + 1, 0).getDate(); }
-  function sameLocalDate(a, b) {
-    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  }
-  function isExcludedOccurrence(ev, dt) {
-    var dates = ev && ev.exclude_dates;
-    if (Array.isArray(dates) && dates.length) {
-      var iso = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
-      if (dates.indexOf(iso) !== -1) return true;
-    }
-    var rules = ev && ev.exclude_monthly_rules;
-    if (!Array.isArray(rules) || !rules.length) return false;
-    var dow = dt.getDay();
-    var nth = Math.floor((dt.getDate() - 1) / 7) + 1;
-    return rules.some(function (r) {
-      var p = monthlyRuleParts(r);
-      return !!(p && p.dow === dow && p.nth === nth);
-    });
-  }
+  /* Schedule grammar and recurrence math come from js/event-schedule.js, shared with
+     app.js. Missing that file leaves the site exactly as it was without this one. */
+  var SCHEDULE = window.DEV_SCHEDULE;
+  if (!SCHEDULE) return;
+  var DAY_ORDER = SCHEDULE.DAY_ORDER;
+  var parseISO = SCHEDULE.parseISO;
+  var parseHM = SCHEDULE.parseHM;
+  var monthlyRuleParts = SCHEDULE.monthlyRuleParts;
+  var monthlyDateOfMonth = SCHEDULE.monthlyDateOfMonth;
+  var isExcludedOccurrence = SCHEDULE.isExcludedOccurrence;
 
   /* First occurrence of the SERIES PATTERN on/after today (DTSTART must match the
      RRULE pattern, so — unlike app.js's nextOccurrence — weekly DTSTART does NOT
@@ -105,12 +66,8 @@
     if (ev.type === "weekly_recurring") {
       var target = DAY_ORDER.indexOf(ev.day_of_week);
       if (target < 0) return null;
-      var d = new Date(t0);
-      d.setDate(d.getDate() + ((target - d.getDay()) + 7) % 7);
-      if (start && d < start) {
-        d = new Date(start);
-        d.setDate(d.getDate() + ((target - d.getDay()) + 7) % 7);
-      }
+      var d = SCHEDULE.onOrAfterWeekday(t0, target);
+      if (start && d < start) d = SCHEDULE.onOrAfterWeekday(start, target);
       if (end && d > end) return null;
       return d;
     }
@@ -121,30 +78,19 @@
       if (t0 <= start) {
         b = new Date(start);
       } else {
-        b = new Date(t0);
-        b.setDate(b.getDate() + ((tgt - b.getDay()) + 7) % 7);
-        var diffDays = Math.round((b - start) / 86400000);
-        var rem = ((diffDays % 14) + 14) % 14;
-        if (rem !== 0) b.setDate(b.getDate() + 7);
+        b = SCHEDULE.onOrAfterWeekday(t0, tgt);
+        if (!SCHEDULE.onBiweeklyParity(start, b)) b.setDate(b.getDate() + 7);
       }
       if (end && b > end) return null;
       return b;
     }
     if (ev.type === "monthly_recurring") {
-      var rule = monthlyRuleParts(ev.monthly_rule);
-      var dom = rule ? null : monthlyDateOfMonth(ev.monthly_rule);
-      if (!rule && !dom) return null;
+      var pattern = SCHEDULE.monthlyPattern(ev.monthly_rule);
+      if (!pattern) return null;
       for (var k = 0; k < 3; k++) {
-        var first = new Date(t0.getFullYear(), t0.getMonth() + k, 1);
-        var m;
-        if (rule) {
-          m = new Date(first);
-          m.setDate(1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
-        } else {
-          if (dom > daysInMonth(first.getFullYear(), first.getMonth())) continue;
-          m = new Date(first.getFullYear(), first.getMonth(), dom);
-        }
-        if (m >= t0 && (!end || m <= end) && (!start || m >= start)) return m;
+        var month = new Date(t0.getFullYear(), t0.getMonth() + k, 1);
+        var m = SCHEDULE.monthlyOccurrence(pattern, month.getFullYear(), month.getMonth());
+        if (m && m >= t0 && (!end || m <= end) && (!start || m >= start)) return m;
       }
       return null;
     }
@@ -170,20 +116,12 @@
         if (isExcludedOccurrence(ev, d)) out.push(new Date(d));
       }
     } else if (ev.type === "monthly_recurring") {
-      var rule = monthlyRuleParts(ev.monthly_rule);
-      var dom = rule ? null : monthlyDateOfMonth(ev.monthly_rule);
+      var pattern = SCHEDULE.monthlyPattern(ev.monthly_rule);
       for (var k = 0; ; k++) {
         var first = new Date(dtstart.getFullYear(), dtstart.getMonth() + k, 1);
         if (first > horizon) break;
-        var m;
-        if (rule) {
-          m = new Date(first);
-          m.setDate(1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
-        } else {
-          if (dom > daysInMonth(first.getFullYear(), first.getMonth())) continue;
-          m = new Date(first.getFullYear(), first.getMonth(), dom);
-        }
-        if (m >= dtstart && m <= horizon && isExcludedOccurrence(ev, m)) out.push(m);
+        var m = SCHEDULE.monthlyOccurrence(pattern, first.getFullYear(), first.getMonth());
+        if (m && m >= dtstart && m <= horizon && isExcludedOccurrence(ev, m)) out.push(m);
       }
     }
     return out;

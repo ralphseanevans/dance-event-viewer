@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-08-11 - Shared utilities for duplicated logic
+
+### Changed
+
+- 🧹 **`js/event-schedule.js`** (new, `window.DEV_SCHEDULE`) now owns the schedule
+  parsing and recurrence math that `js/app.js` and `js/add-to-calendar.js` had each
+  implemented separately: ISO/`HH:MM` parsing, weekly and biweekly stepping,
+  `first Saturday`-style and day-of-month monthly rules, and the
+  `exclude_dates`/`exclude_monthly_rules` check. The card listings and the calendar
+  exports can no longer drift apart on when a series meets.
+- 🧹 **`js/local-prefs.js`** (new, `window.DEV_PREFS`) replaces the repeated
+  try/catch `localStorage` blocks in `js/app.js` and `js/theme-switch.js`; reads still
+  fall back and writes still fail quietly in private mode or on a full quota.
+- 🧹 Dashboard: `src/lib/` holds the Supabase row/error unwrapping (`rowsOf`,
+  `firstErrorMessage`), the admin/owner role checks, `resolveFlyerUrl`, the preference
+  storage helpers, and the `usePagedList` + `filterByText` list paging that nine pages
+  had copied. `PAGE_SIZE` is now defined once.
+
+### Verification
+
+- Behavior parity checked mechanically against the previous scripts across all 620
+  entries of `dance_events.json`: next occurrence for 400 different "today" values,
+  30 months of calendar-grid occurrences, schedule/day/time labels, and generated
+  `.ics` output — 269,700 comparisons, no differences.
+- `npm run typecheck` and `npm run build` clean in `dashboard-src/`; the rebuilt
+  `dance-event-viewer/dashboard/` output is included.
+
 ## 2026-08-04 - Mint Reactor theme
 
 ### Added

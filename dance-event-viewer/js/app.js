@@ -46,7 +46,18 @@ function isRegional(ev) { return SOUTHEAST.includes(ev.state); }
    filter yet still show nothing (2026-07-23, Sean). */
 function locScopeActive() { return !!(state.sel.country || state.sel.state || state.sel.town || state.mapStates.size); }
 const OTHER = "Other";
-const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+/* Schedule grammar and recurrence math live in js/event-schedule.js so this file and
+   add-to-calendar.js read the same fields the same way. */
+const SCHEDULE = window.DEV_SCHEDULE;
+const DAY_ORDER = SCHEDULE.DAY_ORDER;
+const parseISO = SCHEDULE.parseISO;
+const daysInMonth = SCHEDULE.daysInMonth;
+const monthlyRuleParts = SCHEDULE.monthlyRuleParts;
+const monthlyDateOfMonth = SCHEDULE.monthlyDateOfMonth;
+const isExcludedOccurrence = SCHEDULE.isExcludedOccurrence;
+const ordinal = SCHEDULE.ordinal;
+/* UI preferences only, through the shared fail-quiet localStorage wrapper. */
+const PREFS = window.DEV_PREFS;
 const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
 const DEFAULT_AREAS = ["Pensacola area", "Mobile area"];   // 2026-07-20 (Sean): default location scope back to Pensacola + Mobile selected on load (and on "Clear all"). Everywhere/other chips still available to widen. Areas aren't persisted, so every fresh visit starts here.
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
@@ -75,13 +86,11 @@ const MAX_CORRECTION_PHOTO_BYTES = 8 * 1024 * 1024; // 8MB — matches submit-ev
    those keys merge once into the signed-in user's RLS-protected favorites and stay synced. */
 const FAVORITES_KEY = "dance-event-viewer-favorites-v1";
 function loadFavorites() {
-  try {
-    const arr = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
-    return new Set(Array.isArray(arr) ? arr.filter(v => typeof v === "string") : []);
-  } catch (e) { return new Set(); }
+  const arr = PREFS.getJSON(FAVORITES_KEY, []);
+  return new Set(Array.isArray(arr) ? arr.filter(v => typeof v === "string") : []);
 }
 function saveFavorites(set) {
-  try { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...set])); } catch (e) { /* private mode etc. — just won't persist */ }
+  PREFS.setJSON(FAVORITES_KEY, [...set]);
 }
 let favorites = loadFavorites();
 let favoritesClient = null;
@@ -217,17 +226,11 @@ function kindOf(ev) {
   return (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring")
     ? "Recurring" : "One-time";
 }
-function parseISO(d) {
-  if (typeof d !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
-  const [y, m, day] = d.split("-").map(Number);
-  const dt = new Date(y, m - 1, day);
-  return isNaN(dt) ? null : dt;
-}
 function fmtTime(t) {
-  if (typeof t !== "string" || !/^\d{1,2}:\d{2}$/.test(t)) return null;
-  const [h, m] = t.split(":").map(Number);
-  const ap = h >= 12 ? "pm" : "am";
-  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")}${ap}`;
+  const hm = SCHEDULE.parseHM(t);
+  if (!hm) return null;
+  const ap = hm.h >= 12 ? "pm" : "am";
+  return `${((hm.h + 11) % 12) + 1}:${String(hm.m).padStart(2, "0")}${ap}`;
 }
 function timeRange(ev) {
   const a = fmtTime(ev.start_time), b = fmtTime(ev.end_time);
@@ -235,61 +238,6 @@ function timeRange(ev) {
 }
 function fmtDate(dt) {
   return dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-}
-function monthlyRuleParts(rule) {
-  if (typeof rule !== "string") return null;
-  const m = /(first|1st|second|2nd|third|3rd|fourth|4th)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i.exec(rule);
-  if (!m) return null;
-  const nth = { first: 1, "1st": 1, second: 2, "2nd": 2, third: 3, "3rd": 3, fourth: 4, "4th": 4 }[m[1].toLowerCase()];
-  const dow = DAY_ORDER.findIndex(d => d.toLowerCase() === m[2].toLowerCase());
-  return { nth, dow };
-}
-/* Monthly-on-a-calendar-date rule (added 2026-07-13, Sean: "the 15th of every month") —
-   a SEPARATE convention from monthlyRuleParts() above, which only understands "Nth Weekday"
-   (e.g. "First Saturday"). This one accepts a bare day-of-month number, optionally with an
-   ordinal suffix ("15" or "15th"), and is tried as a fallback wherever monthlyRuleParts()
-   returns null for a monthly_recurring event. The two formats are mutually exclusive and
-   distinguishable on sight, so no separate schema field was needed — monthly_rule just
-   holds whichever format the event actually uses. */
-function monthlyDateOfMonth(rule) {
-  if (typeof rule !== "string") return null;
-  const m = /^\s*(\d{1,2})(?:st|nd|rd|th)?\s*$/i.exec(rule);
-  if (!m) return null;
-  const day = Number(m[1]);
-  return (day >= 1 && day <= 31) ? day : null;
-}
-/* "1st"/"2nd"/"3rd"/"4th"/... — used to display a numeric monthly_rule in scheduleText(). */
-function ordinal(n) {
-  const suffixes = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
-}
-/* "Nth weekday of the month" exclusions for an otherwise-weekly event (added 2026-07-17,
-   Sean: "SSO doesn't have a dance on 3rd Fridays"). ev.exclude_monthly_rules is an array of
-   "Nth Weekday" strings — same grammar monthlyRuleParts() already understands (e.g.
-   "First Friday", "Third Friday"). A weekly_recurring occurrence landing on one of those
-   Nth-weekdays is suppressed, so a series that meets "every Friday except the 1st & 3rd" is
-   modeled in place without splitting the key (which would orphan its logo/calendar links). */
-function isExcludedOccurrence(ev, dt) {
-  // One-off skips (added 2026-07-18, Sean: "remove the Friday the 24th" — the Salsa Lindy
-  // Crossover Night takes SSO's Jul 24 slot): ev.exclude_dates is an array of "YYYY-MM-DD"
-  // strings naming single dates the series does NOT meet, for date-specific cancellations
-  // that aren't a recurring pattern.
-  const dates = ev && ev.exclude_dates;
-  if (Array.isArray(dates) && dates.length) {
-    const iso = dt.getFullYear() + "-" +
-      String(dt.getMonth() + 1).padStart(2, "0") + "-" +
-      String(dt.getDate()).padStart(2, "0");
-    if (dates.includes(iso)) return true;
-  }
-  const rules = ev && ev.exclude_monthly_rules;
-  if (!Array.isArray(rules) || !rules.length) return false;
-  const dow = dt.getDay();
-  const nth = Math.floor((dt.getDate() - 1) / 7) + 1;
-  return rules.some(r => {
-    const p = monthlyRuleParts(r);
-    return p && p.dow === dow && p.nth === nth;
-  });
 }
 function dayOf(ev) {
   if (DAY_ORDER.includes(ev.day_of_week)) return ev.day_of_week;
@@ -314,12 +262,8 @@ function nextOccurrence(ev, today) {
   if (ev.type === "weekly_recurring") {
     const target = DAY_ORDER.indexOf(ev.day_of_week);
     if (target < 0) return null;
-    let d = new Date(t0);
-    d.setDate(d.getDate() + ((target - d.getDay()) + 7) % 7);
-    if (start && d < start) {
-      d = new Date(start);
-      d.setDate(d.getDate() + ((target - d.getDay()) + 7) % 7);
-    }
+    let d = SCHEDULE.onOrAfterWeekday(t0, target);
+    if (start && d < start) d = SCHEDULE.onOrAfterWeekday(start, target);
     // Skip Nth-weekday exclusions (e.g. SSO doesn't meet the 1st/3rd Friday) — jump a week at a time.
     for (let guard = 0; guard < 60 && isExcludedOccurrence(ev, d); guard++) {
       d.setDate(d.getDate() + 7);
@@ -329,20 +273,12 @@ function nextOccurrence(ev, today) {
     return d;
   }
   if (ev.type === "monthly_recurring") {
-    const rule = monthlyRuleParts(ev.monthly_rule);
-    const dateOfMonth = rule ? null : monthlyDateOfMonth(ev.monthly_rule);
-    if (!rule && !dateOfMonth) return null;
+    const pattern = SCHEDULE.monthlyPattern(ev.monthly_rule);
+    if (!pattern) return null;
     for (let k = 0; k < 3; k++) {
-      const first = new Date(t0.getFullYear(), t0.getMonth() + k, 1);
-      let d;
-      if (rule) {
-        d = new Date(first);
-        d.setDate(1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
-      } else {
-        if (dateOfMonth > daysInMonth(first.getFullYear(), first.getMonth())) continue;   // e.g. no Feb 30th — skip, never invent a nearby date
-        d = new Date(first.getFullYear(), first.getMonth(), dateOfMonth);
-      }
-      if (d >= t0 && (!end || d <= end) && (!start || d >= start)) return d;
+      const month = new Date(t0.getFullYear(), t0.getMonth() + k, 1);
+      const d = SCHEDULE.monthlyOccurrence(pattern, month.getFullYear(), month.getMonth());
+      if (d && d >= t0 && (!end || d <= end) && (!start || d >= start)) return d;
     }
     return null;
   }
@@ -356,12 +292,9 @@ function nextOccurrence(ev, today) {
     if (t0 <= start) {
       d = new Date(start);
     } else {
-      d = new Date(t0);
-      d.setDate(d.getDate() + ((target - d.getDay()) + 7) % 7);
-      const diffDays = Math.round((d - start) / 86400000);
-      const rem = ((diffDays % 14) + 14) % 14;
-      if (rem !== 0) d.setDate(d.getDate() + 7);   // same-weekday dates differ by multiples of 7, so the
-    }                                               // only two parities possible here are 0 or 7 mod 14
+      d = SCHEDULE.onOrAfterWeekday(t0, target);
+      if (!SCHEDULE.onBiweeklyParity(start, d)) d.setDate(d.getDate() + 7);
+    }
     if (end && d > end) return null;
     return d;
   }
@@ -1497,7 +1430,7 @@ function openPosterEmailPanel(items, headline, pop, actions) {
   input.type = "email"; input.className = "combo-email-input";
   input.placeholder = "you@example.com"; input.required = true;
   input.autocomplete = "email"; input.inputMode = "email";
-  try { input.value = localStorage.getItem(POSTER_EMAIL_LS_KEY) || ""; } catch (e) {}
+  input.value = PREFS.get(POSTER_EMAIL_LS_KEY) || "";
   label.appendChild(input);
 
   // Free-text styling request (Sean, 2026-07-24) \u2014 whatever the visitor types here is
@@ -1543,7 +1476,7 @@ function openPosterEmailPanel(items, headline, pop, actions) {
     }
     send.disabled = true; back.disabled = true;
     status.className = "combo-email-status"; status.textContent = "Sending…";
-    try { localStorage.setItem(POSTER_EMAIL_LS_KEY, email); } catch (e2) {}
+    PREFS.set(POSTER_EMAIL_LS_KEY, email);
     const styleRequest = wish.value.trim().slice(0, 400);
     // Default design brief from the chips; a typed request wins over it.
     const defaultBrief = layout === "calendar"
@@ -1662,19 +1595,15 @@ function comboPosterBgSrc(items) {
 /* The chosen Dance Card "look" (seasonal / midnight / bold / paper), remembered across
    sessions. Falls back to seasonal for an unknown/stored-bad value. */
 function getPosterStyle() {
-  const valid = { seasonal: 1, midnight: 1, bold: 1, paper: 1 };
-  try { const s = localStorage.getItem("dev-poster-style"); if (valid[s]) return s; } catch (e) {}
-  return "seasonal";
+  return PREFS.oneOf("dev-poster-style", { seasonal: 1, midnight: 1, bold: 1, paper: 1 }, "seasonal");
 }
-function setPosterStyle(s) { try { localStorage.setItem("dev-poster-style", s); } catch (e) {} }
+function setPosterStyle(s) { PREFS.set("dev-poster-style", s); }
 
 /* The chosen Dance Card layout (list / calendar), remembered across sessions. */
 function getPosterLayout() {
-  const valid = { list: 1, calendar: 1 };
-  try { const s = localStorage.getItem("dev-poster-layout"); if (valid[s]) return s; } catch (e) {}
-  return "list";
+  return PREFS.oneOf("dev-poster-layout", { list: 1, calendar: 1 }, "list");
 }
-function setPosterLayout(s) { try { localStorage.setItem("dev-poster-layout", s); } catch (e) {} }
+function setPosterLayout(s) { PREFS.set("dev-poster-layout", s); }
 
 /* Render the combined post to a 4:5 (1080×1350) social-friendly PNG so a whole weekend of
    dances goes into a chat as ONE lovely "Dance Card" image. Delegates to the shared renderer,
@@ -2406,22 +2335,18 @@ function setView(view) {
 function savePrefs() {
   // 2026-07-17 redesign: filters/sel are NO LONGER persisted here — the URL query string
   // owns filter state (shareable links). Only true UI prefs remain.
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify({
-      view: state.view,
-      filtersOpen: state.filtersOpen,
-      showPast: state.showPast,
-    }));
-  } catch (e) { /* private mode etc. — prefs just won't persist */ }
+  PREFS.setJSON(PREFS_KEY, {
+    view: state.view,
+    filtersOpen: state.filtersOpen,
+    showPast: state.showPast,
+  });
 }
 function loadPrefs() {
-  try {
-    const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    if (["timeline", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
-    else if (["grid", "list"].includes(p.view)) state.view = "timeline";
-    // filtersOpen intentionally NOT restored (Sean, 2026-07-12) — panel starts collapsed.
-    if (typeof p.showPast === "boolean") state.showPast = p.showPast;
-  } catch (e) { /* ignore bad prefs */ }
+  const p = PREFS.getJSON(PREFS_KEY, {}) || {};
+  if (["timeline", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
+  else if (["grid", "list"].includes(p.view)) state.view = "timeline";
+  // filtersOpen intentionally NOT restored (Sean, 2026-07-12) — panel starts collapsed.
+  if (typeof p.showPast === "boolean") state.showPast = p.showPast;
 }
 function setFiltersOpen(open) {
   state.filtersOpen = open;
@@ -2605,8 +2530,6 @@ document.addEventListener("DOMContentLoaded", init);
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const cal = { year: null, month: null, mode: "month" };
 
-function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
-
 /* Day-of-month numbers an event occurs on in a given month. */
 function occurrencesInMonth(ev, y, m) {
   const out = [];
@@ -2625,18 +2548,8 @@ function occurrencesInMonth(ev, y, m) {
     return out;
   }
   if (ev.type === "monthly_recurring") {
-    const rule = monthlyRuleParts(ev.monthly_rule);
-    const dateOfMonth = rule ? null : monthlyDateOfMonth(ev.monthly_rule);
-    if (!rule && !dateOfMonth) return out;
-    let dt;
-    if (rule) {
-      const first = new Date(y, m, 1);
-      dt = new Date(y, m, 1 + ((rule.dow - first.getDay()) + 7) % 7 + (rule.nth - 1) * 7);
-    } else {
-      if (dateOfMonth > daysInMonth(y, m)) return out;   // e.g. no Feb 30th — no occurrence this month
-      dt = new Date(y, m, dateOfMonth);
-    }
-    if (dt.getMonth() === m && (!start || dt >= start) && (!end || dt <= end)) out.push(dt.getDate());
+    const dt = SCHEDULE.monthlyOccurrence(SCHEDULE.monthlyPattern(ev.monthly_rule), y, m);
+    if (dt && (!start || dt >= start) && (!end || dt <= end)) out.push(dt.getDate());
     return out;
   }
   if (ev.type === "biweekly_recurring") {
@@ -2647,8 +2560,7 @@ function occurrencesInMonth(ev, y, m) {
       if (dt.getDay() !== target) continue;
       if (dt < start) continue;
       if (end && dt > end) continue;
-      const diffDays = Math.round((dt - start) / 86400000);
-      if (((diffDays % 14) + 14) % 14 !== 0) continue;
+      if (!SCHEDULE.onBiweeklyParity(start, dt)) continue;
       out.push(d);
     }
     return out;
