@@ -17,6 +17,29 @@ const MAX_FLYER_BYTES = 8 * 1024 * 1024;        // 8MB per photo — plenty for 
 const MAX_FLYER_COUNT = 5;                      // photos of the SAME flyer (front/back/close-ups)
 const MAX_FLYER_TOTAL_BYTES = 20 * 1024 * 1024; // combined cap keeps the POST well under Apps Script limits
 
+/* POST the submission and return the parsed response body. An HTTP failure or an
+   unreadable (non-JSON, e.g. a Google sign-in/error page) response throws with the
+   real reason instead of looking identical to a rejected submission, so the console
+   shows what happened. A JSON body carrying its own `error` is returned even on a
+   4xx/5xx, since the backend's message beats the status code for the submitter. */
+async function postSubmission(payload) {
+  const res = await fetch(SUBMIT_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
+    body: JSON.stringify(payload),
+  });
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); }
+    catch (parseError) {
+      throw new Error(`submission service returned an unreadable response (HTTP ${res.status})`);
+    }
+  }
+  if (!res.ok && !(data && data.error)) throw new Error(`submission service returned HTTP ${res.status}`);
+  return data;
+}
+
 function $(sel, root) { return (root || document).querySelector(sel); }
 function $all(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
 
@@ -149,6 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       setStatus("", false, false);
     } catch (readErr) {
+      console.error("A selected flyer photo could not be read.", readErr);
       clearFlyerImages();
       flyerInput.value = "";
       setStatus("Couldn't read one of those photos — please try again.", true);
@@ -186,6 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (formFlyerPreview) { formFlyerPreview.src = dataUrl; formFlyerPreview.hidden = false; }
       setStatus("", false, false);
     } catch (readErr) {
+      console.error("The selected flyer image could not be read.", readErr);
       clearFormFlyer();
       formFlyerInput.value = "";
       setStatus("Couldn't read that image — please try again.", true);
@@ -320,12 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
     submitBtn.disabled = true;
     setStatus("Sending…", false);
     try {
-      const res = await fetch(SUBMIT_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json().catch(() => null);
+      const data = await postSubmission(payload);
       if (data && data.ok) {
         form.reset();
         clearFlyerImages();
@@ -338,6 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setStatus((data && data.error) || "Something went wrong — please try again.", true);
       }
     } catch (err) {
+      console.error("Event submission failed.", err);
       setStatus("Couldn't reach the submission service — please try again in a moment.", true);
     } finally {
       submitBtn.disabled = false;

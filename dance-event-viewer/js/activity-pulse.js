@@ -253,9 +253,14 @@
     }
     if (detail.type === "view") { payload.view = detail.view; }
     if (detail.type === "event_viewed") { payload.eventId = detail.eventId; }
+    // Ambient nice-to-have only — never break the page over it. The push() promise needs
+    // its own handler: a rejected write (e.g. a security rule change) escapes try/catch.
     try {
-      window.__activityPulseRef.push(payload);
-    } catch (e) { /* ambient nice-to-have only — never break the page over it */ }
+      var write = window.__activityPulseRef.push(payload);
+      if (write && typeof write.catch === "function") {
+        write.catch(function (e) { console.warn("Activity signal was not recorded.", e); });
+      }
+    } catch (e) { console.warn("Activity signal could not be sent.", e); }
   }
 
   /* Anonymous live viewer count. This used to live inside whispers.js; it belongs here
@@ -267,13 +272,13 @@
       var myRef = db.ref("presence").push();
       db.ref(".info/connected").on("value", function (snap) {
         if (snap.val() !== true) return;
-        myRef.onDisconnect().remove();
-        myRef.set(true);
-      });
+        myRef.onDisconnect().remove().catch(function (e) { console.warn("Presence cleanup could not be registered.", e); });
+        myRef.set(true).catch(function (e) { console.warn("Presence could not be published; the viewer count may be short by one.", e); });
+      }, function (e) { console.warn("Presence connection state is unavailable.", e); });
       db.ref("presence").on("value", function (snap) {
         countEl.textContent = String(snap.numChildren());
-      });
-    } catch (e) { /* nice-to-have only */ }
+      }, function (e) { console.warn("Live viewer count is unavailable.", e); });
+    } catch (e) { console.warn("Live viewer count could not start.", e); }
   }
 
   /* ---------- boot ---------- */
@@ -283,12 +288,15 @@
 
     try {
       reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    } catch (e) { /* default false */ }
+    } catch (e) { console.warn("Reduced-motion preference could not be read; animations stay enabled.", e); }
 
     // Trusted event-name lookup, fetched independently of app.js (own copy, own scope —
     // never trusts anything read back from Firebase for event titles, only this).
     fetch("../dance_events.json")
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (r) {
+        if (!r.ok) throw new Error("event names returned HTTP " + r.status);
+        return r.json();
+      })
       .then(function (data) {
         var events = data && Array.isArray(data.events) ? data.events : [];
         var names = Object.create(null);
@@ -300,7 +308,11 @@
         eventNameByKey = names;
         validCategories = cats;
       })
-      .catch(function () { eventNameByKey = {}; validCategories = new Set(["Other"]); });
+      .catch(function (err) {
+        eventNameByKey = {};
+        validCategories = new Set(["Other"]);
+        console.warn("Activity rail could not load event names; signals stay generic.", err);
+      });
 
     var cfg = window.ACTIVITY_FIREBASE_CONFIG;
     if (!cfg || !cfg.apiKey || typeof firebase === "undefined") return;   // stays quietly empty
@@ -315,9 +327,11 @@
     // wrapped defensively; if the security rule doesn't allow removal yet this just no-ops.
     try {
       activityRef.orderByChild("ts").endAt(Date.now() - PRUNE_AGE_MS).once("value", function (snap) {
-        snap.forEach(function (child) { child.ref.remove().catch(function () {}); });
-      });
-    } catch (e) { /* non-critical */ }
+        snap.forEach(function (child) {
+          child.ref.remove().catch(function (e) { console.warn("Stale activity node could not be pruned.", e); });
+        });
+      }, function (e) { console.warn("Stale activity nodes could not be read for pruning.", e); });
+    } catch (e) { console.warn("Activity pruning could not start.", e); }
 
     // Only truly new signals from this moment forward — see the bug note above for why this
     // isn't `startAt(Date.now() - 5min)` anymore.

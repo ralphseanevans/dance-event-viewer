@@ -70,6 +70,30 @@ const SEND_ENDPOINT = "https://script.google.com/macros/s/AKfycbyTcNCMl42HCDosDS
 const SUBMIT_ENDPOINT = "https://script.google.com/macros/s/AKfycbwtL7anIfkIv7XBkR7AwDKKc13DBPrEghmcEEZiURWR_NLZI3s8CdayU6VQzelK9VMn6w/exec";
 const MAX_CORRECTION_PHOTO_BYTES = 8 * 1024 * 1024; // 8MB — matches submit-event.js's MAX_FLYER_BYTES
 
+/* POST a payload to the submission-intake Apps Script and return its parsed body.
+   An HTTP failure or an unreadable (non-JSON, e.g. a Google error page) response
+   throws with the real reason instead of collapsing into an indistinguishable
+   "something went wrong", so callers can report it and log it. A JSON body that
+   carries its own `error` is returned as-is even on a 4xx/5xx status, because the
+   backend's own message is more useful to the visitor than the status code. */
+async function postSubmission(payload) {
+  const res = await fetch(SUBMIT_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
+    body: JSON.stringify(payload),
+  });
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); }
+    catch (parseError) {
+      throw new Error(`submission service returned an unreadable response (HTTP ${res.status})`);
+    }
+  }
+  if (!res.ok && !(data && data.error)) throw new Error(`submission service returned HTTP ${res.status}`);
+  return data;
+}
+
 /* ---------- favorites (added 2026-07-13; account sync added 2026-08-08) ----------
    Anonymous favorites remain in localStorage. When a Supabase session exists on this origin,
    those keys merge once into the signed-in user's RLS-protected favorites and stay synced. */
@@ -428,13 +452,16 @@ async function loadLogoMap() {
   // Optional decoration: failure or absence of the map never affects event data.
   try {
     const res = await fetch(`${LOGO_MAP_FILE}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return;
+    if (!res.ok) { console.warn(`Logo map unavailable (HTTP ${res.status}); cards render without flyers.`); return; }
     const j = JSON.parse(await res.text());
     if (j && typeof j.logos === "object" && j.logos !== null && !Array.isArray(j.logos)) state.logos = j.logos;
     state.logoPatterns = Array.isArray(j?.patterns)
       ? j.patterns.filter(p => p && typeof p.contains === "string" && p.contains && typeof p.logo === "string" && p.logo)
       : [];
-  } catch (err) { state.logos = {}; state.logoPatterns = []; }
+  } catch (err) {
+    state.logos = {}; state.logoPatterns = [];
+    console.warn("Logo map could not be read; cards render without flyers.", err);
+  }
 }
 /* Optional overlay of trusted flyer auto-publishes (../web-events.json, written
    by the submission backend). Same defensive contract as loadLogoMap: any
@@ -445,10 +472,17 @@ async function loadLogoMap() {
 async function loadWebEvents() {
   try {
     const res = await fetch(`../web-events.json?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) { state.webEvents = []; return; }
+    if (!res.ok) {
+      state.webEvents = [];
+      console.warn(`Flyer auto-publish overlay unavailable (HTTP ${res.status}); only canonical events are listed.`);
+      return;
+    }
     const j = JSON.parse((await res.text()).replace(/\u0000+\s*$/g, "").trim());
     state.webEvents = Array.isArray(j?.events) ? j.events : [];
-  } catch (err) { state.webEvents = []; }
+  } catch (err) {
+    state.webEvents = [];
+    console.warn("Flyer auto-publish overlay could not be read; only canonical events are listed.", err);
+  }
 }
 function logoFor(key) {
   if (typeof key !== "string" || !key) return null;
@@ -463,11 +497,14 @@ async function loadVenueCoords() {
   // Optional decoration: failure or absence never affects event data or other views.
   try {
     const res = await fetch(`${VENUE_COORDS_FILE}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return;
+    if (!res.ok) { console.warn(`Venue coordinates unavailable (HTTP ${res.status}); the map view has no pins.`); return; }
     const j = JSON.parse(await res.text());
     if (j && typeof j.venues === "object" && j.venues !== null) state.venueCoords = j.venues;
     if (j && typeof j.city_fallbacks === "object" && j.city_fallbacks !== null) state.cityFallbacks = j.city_fallbacks;
-  } catch (err) { state.venueCoords = {}; state.cityFallbacks = {}; }
+  } catch (err) {
+    state.venueCoords = {}; state.cityFallbacks = {};
+    console.warn("Venue coordinates could not be read; the map view has no pins.", err);
+  }
 }
 /* Tiny deterministic offset so events that share one fallback pin (e.g. several
    "Pensacola, FL" venues) fan out instead of stacking exactly on top of each other.
@@ -529,6 +566,7 @@ async function loadData() {
   } catch (err) {
     state.events = [];
     render();
+    console.error("Event listings could not be fetched.", err);
     setStatus("Couldn’t load the events file. If you opened this page as a plain file, run the local server (see README).", true);
     return;
   }
@@ -539,6 +577,7 @@ async function loadData() {
   } catch (err) {
     state.events = [];
     render();
+    console.error("Event listings were not valid JSON.", err);
     setStatus("The events file couldn’t be read (invalid data). Nothing is displayed rather than showing wrong information.", true);
     return;
   }
@@ -973,7 +1012,8 @@ function shareTextFor(ev) {
 }
 async function copyText(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fall through */ }
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) { console.warn("Clipboard API copy failed; trying the legacy path.", e); }
   }
   try {
     const ta = document.createElement("textarea");
@@ -981,8 +1021,9 @@ async function copyText(text) {
     document.body.appendChild(ta); ta.focus(); ta.select();
     const ok = document.execCommand("copy");
     document.body.removeChild(ta);
+    if (!ok) console.warn("Legacy clipboard copy was rejected by the browser.");
     return ok;
-  } catch (e) { return false; }
+  } catch (e) { console.warn("Legacy clipboard copy failed.", e); return false; }
 }
 function flashShareCopied(btn) {
   const original = btn.textContent;
@@ -1008,10 +1049,24 @@ async function handleShare(ev, btn) {
     } catch (e) {
       if (e && e.name === "AbortError") return;   // user cancelled the share sheet — not an error
       // real failure (e.g. share unsupported for this data) — fall through to clipboard below
+      console.warn("Native share failed; copying the link instead.", e);
     }
   }
   const ok = await copyText(`${text}\n${url}`);
+  // A failed copy used to leave the button silent, so the visitor could not tell
+  // whether anything happened at all.
   if (ok) flashShareCopied(btn);
+  else flashShareFailed(btn);
+}
+/* Same shape as flashShareCopied, for the case where neither sharing nor copying worked. */
+function flashShareFailed(btn) {
+  const original = btn.textContent;
+  btn.textContent = "!";
+  btn.setAttribute("aria-label", "Couldn't copy the link — copy it from the address bar instead.");
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.setAttribute("aria-label", "Share this event");
+  }, 1800);
 }
 
 /* ============================================================================
@@ -1301,10 +1356,11 @@ async function handleComboShare(items, btn) {
     } catch (e) {
       if (e && e.name === "AbortError") return false;      // user cancelled — not an error
       // fall through to clipboard
+      console.warn("Native share failed; copying the Dance Card text instead.", e);
     }
   }
   const ok = await copyText(text);
-  if (ok && btn) flashComboBtn(btn, "Copied ✓");
+  if (btn) flashComboBtn(btn, ok ? "Copied ✓" : "Couldn't copy");
   return ok;
 }
 function flashComboBtn(btn, label) {
@@ -1374,7 +1430,8 @@ function openComboShareModal(items) {
       img.alt = "Dance Card preview: " + headline;
       img.src = canvas.toDataURL("image/png");
       stage.replaceChildren(img);
-    }).catch(() => {
+    }).catch(err => {
+      console.warn("Dance Card preview could not be rendered.", err);
       const p = loadingEl(); p.textContent = "Couldn't build the Dance Card preview.";
       stage.replaceChildren(p);
     });
@@ -1426,7 +1483,7 @@ function openComboShareModal(items) {
   copyBtn.addEventListener("click", async () => {
     const url = comboShareUrl(items);
     const ok = await copyText(buildComboText(items, headline, url));
-    if (ok) flashComboBtn(copyBtn, "Copied ✓");
+    flashComboBtn(copyBtn, ok ? "Copied ✓" : "Couldn't copy");
   });
   const linkBtn = document.createElement("button");
   linkBtn.type = "button"; linkBtn.className = "combo-btn";
@@ -1562,12 +1619,7 @@ function openPosterEmailPanel(items, headline, pop, actions) {
     };
     try {
       if (!SUBMIT_ENDPOINT) throw new Error("no endpoint configured");
-      const res = await fetch(SUBMIT_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json().catch(() => null);
+      const data = await postSubmission(payload);
       if (data && data.ok) {
         // 2026-07-24 (Sean): a 90-second countdown while the graphic is being designed,
         // then "check your email" - so the visitor knows to wait rather than wandering off.
@@ -1621,6 +1673,7 @@ function openPosterEmailPanel(items, headline, pop, actions) {
         status.textContent = (data && data.error) || "Couldn't send — please try again, or email ralphseanevans@gmail.com.";
       }
     } catch (err) {
+      console.error("Dance Card email request failed.", err);
       send.disabled = false; back.disabled = false;
       status.className = "combo-email-status is-err";
       status.textContent = "Couldn't send — please try again in a moment.";
@@ -1691,7 +1744,7 @@ function renderComboPoster(items, headline) {
 async function handleComboShareImage(items, btn) {
   let canvas;
   try { canvas = await renderComboPoster(items, comboHeadline(items, new Date())); }
-  catch (e) { if (btn) flashComboBtn(btn, "Couldn't build image"); return; }
+  catch (e) { console.warn("Dance Card image could not be rendered.", e); if (btn) flashComboBtn(btn, "Couldn't build image"); return; }
   const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
   if (!blob) { if (btn) flashComboBtn(btn, "Couldn't build image"); return; }
   const fname = "dances-to-share.png";
@@ -2164,12 +2217,7 @@ function feedbackWidget(ev) {
           source_url: link.value.trim(),
           contact_name: who.value.trim(),
         };
-        const res = await fetch(SUBMIT_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(() => null);
+        const data = await postSubmission(payload);
         if (data && data.ok) {
           status.textContent = data.published
             ? "Your flyer is live! Give it a couple of minutes, then refresh to see it on this listing."
@@ -2182,6 +2230,7 @@ function feedbackWidget(ev) {
           status.textContent = (data && data.error) || "Couldn't send — please try again, or email ralphseanevans@gmail.com.";
         }
       } catch (e) {
+        console.error("Flyer correction submission failed.", e);
         send.disabled = false;
         status.textContent = "Couldn't send — please email ralphseanevans@gmail.com instead.";
       }
@@ -2206,12 +2255,7 @@ function feedbackWidget(ev) {
           source_url: link.value.trim(),
           contact_name: who.value.trim(),
         };
-        const res = await fetch(SUBMIT_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(() => null);
+        const data = await postSubmission(payload);
         if (data && data.ok) {
           status.textContent = data.queued
             ? "Got it — your fix is queued and usually lands on the listing within the hour."
@@ -2223,6 +2267,7 @@ function feedbackWidget(ev) {
           status.textContent = (data && data.error) || "Couldn't send — please try again, or email ralphseanevans@gmail.com.";
         }
       } catch (e) {
+        console.error("Text correction submission failed.", e);
         send.disabled = false;
         status.textContent = "Couldn't send — please email ralphseanevans@gmail.com instead.";
       }
@@ -2242,6 +2287,7 @@ function feedbackWidget(ev) {
         desc.value = ""; link.value = ""; who.value = "";
         setTimeout(() => { form.hidden = true; toggle.setAttribute("aria-expanded", "false"); status.textContent = ""; send.disabled = false; }, 2500);
       } catch (e) {
+        console.error("Correction mail relay request failed.", e);
         send.disabled = false;
         status.textContent = "Couldn't send — please email ralphseanevans@gmail.com instead.";
       }
@@ -2457,7 +2503,9 @@ function startSubmitAttention() {
 }
 
 function init() {
-  void initAccountFavorites();
+  initAccountFavorites().catch(err => {
+    console.warn("Account favorite sync is unavailable; browser favorites still work.", err);
+  });
   loadPrefs();
   applyUrl();   // URL query string wins over defaults (shareable filtered links, 2026-07-17)
   for (const b of document.querySelectorAll(".view-btn"))
