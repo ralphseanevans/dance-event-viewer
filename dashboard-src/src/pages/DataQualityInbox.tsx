@@ -6,6 +6,7 @@ import {
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { rowsOf } from "../lib/queries";
 import ExperimentStatus from "./ExperimentStatus";
 import { buildDataQualityFindings, type DataQualityFinding, type DataQualityKind } from "./ExperimentalDataQuality";
 
@@ -30,11 +31,11 @@ export default function DataQualityInbox({ events, profile }: { events: Dashboar
   const [saving, setSaving] = useState("");
 
   const loadDecisions = useCallback(async () => {
-    const { data, error: loadError } = await supabaseClient
+    const result = await supabaseClient
       .from("experimental_data_quality_decisions")
       .select("event_id,finding_key,decision,note");
-    if (loadError) setError(loadError.message);
-    else setDecisions((data as StoredDecision[] | null) ?? []);
+    if (result.error) setError(result.error.message);
+    else setDecisions(rowsOf<StoredDecision>(result));
   }, []);
 
   useEffect(() => { void loadDecisions(); }, [loadDecisions]);

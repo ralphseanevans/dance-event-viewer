@@ -34,6 +34,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LogoutIcon from "@mui/icons-material/Logout";
 import type { DashboardProfile, DashboardSection } from "../types";
 import { supabaseClient } from "../supabase";
+import { isAdmin, isOwnerAdmin } from "../lib/queries";
 const OverviewPage = lazy(() => import("../pages/OverviewPage"));
 const EventsPage = lazy(() => import("../pages/EventsPage"));
 const PeoplePage = lazy(() => import("../pages/PeoplePage"));
@@ -75,8 +76,8 @@ export default function DashboardShell({ session, profile }: { session: Session;
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [section, setSection] = useState<DashboardSection>("overview");
-  const ownerAdmin = profile.role === "owner_admin";
-  const admin = profile.role === "owner_admin" || profile.role === "volunteer_admin";
+  const ownerAdmin = isOwnerAdmin(profile);
+  const admin = isAdmin(profile);
   const avatarUrl = googleAvatarUrl(session);
   const signedInWithGoogle = session.user.identities?.some((identity) => identity.provider === "google") ?? false;
   const signedInLabel = signedInWithGoogle

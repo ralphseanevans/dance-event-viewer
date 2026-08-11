@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import type { DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { rowsOf } from "../lib/queries";
 
 interface CrawlerRun {
   id: string;
@@ -20,9 +21,9 @@ export default function CrawlersPage({ profile: _profile }: { profile: Dashboard
 
   useEffect(() => {
     void supabaseClient.from("dashboard_crawler_runs").select("*").order("started_at", { ascending: false }).limit(200)
-      .then(({ data, error: queryError }) => {
-        if (queryError) setError(queryError.message);
-        setRuns((data as CrawlerRun[] | null) ?? []);
+      .then((result) => {
+        if (result.error) setError(result.error.message);
+        setRuns(rowsOf<CrawlerRun>(result));
       });
   }, []);
 

@@ -36,15 +36,13 @@
   }
 
   function saved() {
-    var t = null;
-    try { t = localStorage.getItem(STORE_KEY); } catch (e) {}
-    return VALID[t] ? t : defaultTheme();
+    return window.DEV_PREFS.oneOf(STORE_KEY, VALID, defaultTheme());
   }
 
   function apply(theme, persist) {
     if (!VALID[theme]) theme = defaultTheme();
     document.documentElement.setAttribute("data-theme", theme);
-    if (persist) { try { localStorage.setItem(STORE_KEY, theme); } catch (e) {} }
+    if (persist) window.DEV_PREFS.set(STORE_KEY, theme);
     // Only explicitly mapped themes load separate artwork. Every other palette retains
     // the current Moonlit Ember hero, so adding themes does not invent missing assets.
     var banner = BANNERS[theme] || BANNERS.ember;

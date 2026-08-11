@@ -151,7 +151,7 @@ SANITIZED export — exactly 18 fields (`key`, `name`, `style`, `type`, `day_of_
 series can skip specific Nth-weekdays, e.g. SSO Lindy & Blues meets every Friday EXCEPT the
 1st & 3rd; `exclude_dates` added 2026-07-18 for one-off skips by exact ISO date, e.g. SSO
 skips 2026-07-24 because the Salsa Lindy Crossover Night takes that slot — both handled by
-`isExcludedOccurrence()` in `js/app.js`); internal pipeline fields are
+`isExcludedOccurrence()` in `js/event-schedule.js`); internal pipeline fields are
 stripped and must never be pushed. (Two former differences no longer apply: (a)
 `dance-calendar.html` was decommissioned and removed entirely 2026-07-12, so it's just
 gone, not merely kept off the repo; (b) the old claim that the published `index.html`
@@ -257,6 +257,23 @@ row to Archived. Neither action changes canonical `dance_events.json`. Buttons,
 tooltips, confirmation text, and completion messages all
 state these boundaries explicitly.
 
+## Shared viewer modules
+
+Two tiny dependency-free scripts hold logic that both `js/app.js` and
+`js/add-to-calendar.js` need, loaded before every other script in `index.html`:
+
+- **`js/event-schedule.js`** (`window.DEV_SCHEDULE`) — schedule parsing and recurrence
+  math: ISO date / `HH:MM` parsing, weekly and biweekly stepping, `first Saturday`-style
+  and day-of-month monthly rules, and the `exclude_dates` / `exclude_monthly_rules`
+  check. Pure functions only: no DOM, no fetching, and an unparseable or absent
+  schedule always yields `null` rather than an invented date.
+- **`js/local-prefs.js`** (`window.DEV_PREFS`) — `localStorage` reads and writes that
+  fail quietly (private mode, full quota) so a lost UI preference can never break the
+  page. Used for the theme, view/filter prefs, favorites, and Dance Card choices.
+
+Both are plain scripts (not `defer`), because `app.js` and `add-to-calendar.js` run
+during parsing and would otherwise execute first.
+
 ## Views & filters
 
 - **Timeline** (default): events grouped by next occurrence — Today / This Week / Next Week / Later.
@@ -322,8 +339,10 @@ dance opens the normal Google-or-.ics popover; two or more download a single .ic
 of the whole set (Google's add-event links carry only one event, and the popover
 says so — Google Calendar imports the file instead).
 
-All logic lives in the self-contained **`js/add-to-calendar.js`** (share-week
-pattern): app.js contains exactly two hooks — `cardActions()` appends
+All calendar-export logic lives in **`js/add-to-calendar.js`** (share-week
+pattern); its only dependency is the shared `js/event-schedule.js` recurrence math
+(see "Shared viewer modules" below), so the two exports and the on-page listings can
+never disagree about when a series meets. app.js contains exactly two hooks — `cardActions()` appends
 `window.DEV_ADD_TO_CAL.button(ev)` when the module is present, `ensureComboUI()`
 places `window.DEV_ADD_TO_CAL.comboButton(getKeys)` in the select-mode bar (with a
 matching disabled-state line in `updateComboBar()`), and `loadData()`

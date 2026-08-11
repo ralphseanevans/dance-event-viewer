@@ -42,6 +42,10 @@ import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined";
 import ImageNotSupportedOutlinedIcon from "@mui/icons-material/ImageNotSupportedOutlined";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { isAdmin, rowsOf } from "../lib/queries";
+import { resolveFlyerUrl } from "../lib/flyers";
+import { readStored, writeStored } from "../lib/storage";
+import { filterByText, usePagedList } from "../lib/usePagedList";
 
 const editableFields = [
   "name", "style", "event_type", "day_of_week", "monthly_rule", "start_date", "end_date",
@@ -49,7 +53,6 @@ const editableFields = [
   "exclude_dates", "exclude_monthly_rules",
 ] as const;
 
-const PAGE_SIZE = 24;
 const VIEW_MODE_KEY = "dance-dashboard-events-view";
 const SHOW_FLYERS_KEY = "dance-dashboard-show-flyers";
 
@@ -83,13 +86,6 @@ function formatTimeRange(event: DashboardEvent): string {
   return start || end;
 }
 
-function resolveFlyerUrl(value: string | null | undefined): string {
-  const url = value?.trim();
-  if (!url || typeof window === "undefined") return url ?? "";
-  if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
-  return new URL(url, new URL("../", window.location.href)).href;
-}
-
 function FlyerPreview({ url, label, compact = false }: { url: string | null | undefined; label: string; compact?: boolean }) {
   const [broken, setBroken] = useState(false);
   const resolved = resolveFlyerUrl(url);
@@ -109,11 +105,11 @@ function FlyerPreview({ url, label, compact = false }: { url: string | null | un
 }
 
 function storedViewMode(): ViewMode {
-  try { return localStorage.getItem(VIEW_MODE_KEY) === "spreadsheet" ? "spreadsheet" : "cards"; } catch { return "cards"; }
+  return readStored(VIEW_MODE_KEY) === "spreadsheet" ? "spreadsheet" : "cards";
 }
 
 function storedShowFlyers(): boolean {
-  try { return localStorage.getItem(SHOW_FLYERS_KEY) !== "false"; } catch { return true; }
+  return readStored(SHOW_FLYERS_KEY) !== "false";
 }
 
 function eventToForm(event?: DashboardEvent | null): FormState {
@@ -145,52 +141,43 @@ function eventToForm(event?: DashboardEvent | null): FormState {
 export default function EventsPage({ profile }: { profile: DashboardProfile }) {
   const theme = useTheme();
   const compactDialog = useMediaQuery(theme.breakpoints.down("sm"));
-  const admin = profile.role === "owner_admin" || profile.role === "volunteer_admin";
+  const admin = isAdmin(profile);
   const view = admin ? "dashboard_events_admin" : "dashboard_events";
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<DashboardEvent | null | undefined>(undefined);
   const [form, setForm] = useState<FormState>(eventToForm());
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(storedViewMode);
   const [showFlyers, setShowFlyers] = useState(storedShowFlyers);
 
-  useEffect(() => { try { localStorage.setItem(VIEW_MODE_KEY, viewMode); } catch { /* optional preference */ } }, [viewMode]);
-  useEffect(() => { try { localStorage.setItem(SHOW_FLYERS_KEY, String(showFlyers)); } catch { /* optional preference */ } }, [showFlyers]);
+  useEffect(() => { writeStored(VIEW_MODE_KEY, viewMode); }, [viewMode]);
+  useEffect(() => { writeStored(SHOW_FLYERS_KEY, String(showFlyers)); }, [showFlyers]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-    const { data, error: queryError } = await supabaseClient
+    const result = await supabaseClient
       .from(view)
       .select("*")
       .order("updated_at", { ascending: false })
       .limit(1000);
-    if (queryError) setError(queryError.message);
-    setEvents((data as DashboardEvent[] | null) ?? []);
+    if (result.error) setError(result.error.message);
+    setEvents(rowsOf<DashboardEvent>(result));
     setLoading(false);
   }, [view]);
 
   useEffect(() => { void load(); }, [load]);
 
-  const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    if (!needle) return events;
-    return events.filter((event) => [event.name, event.event_key, event.venue, event.style, event.state]
-      .some((value) => value?.toLowerCase().includes(needle)));
-  }, [events, search]);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const visibleEvents = useMemo(
-    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filtered, page],
+  const filtered = useMemo(
+    () => filterByText(events, search, (event) => [event.name, event.event_key, event.venue, event.style, event.state]),
+    [events, search],
   );
+  const { page, setPage, pageCount, visibleItems: visibleEvents } = usePagedList(filtered);
 
-  useEffect(() => { setPage(1); }, [search]);
-  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+  useEffect(() => { setPage(1); }, [search, setPage]);
 
   function openEdit(event: DashboardEvent) {
     setEditing(event);

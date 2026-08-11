@@ -13,6 +13,7 @@ import AddTaskIcon from "@mui/icons-material/AddTask";
 import PersonRemoveOutlinedIcon from "@mui/icons-material/PersonRemoveOutlined";
 import type { DashboardEvent, DashboardProfile, EventAssignment } from "../types";
 import { supabaseClient } from "../supabase";
+import { firstErrorMessage, rowsOf } from "../lib/queries";
 
 export default function AssignmentsPage({ profile }: { profile: DashboardProfile }) {
   const [events, setEvents] = useState<DashboardEvent[]>([]);
@@ -28,11 +29,11 @@ export default function AssignmentsPage({ profile }: { profile: DashboardProfile
       supabaseClient.from("dashboard_profiles").select("*").eq("role", "volunteer").eq("active", true).order("email"),
       supabaseClient.from("event_assignments").select("*").eq("active", true).order("assigned_at", { ascending: false }),
     ]);
-    const firstError = eventResult.error || peopleResult.error || assignmentResult.error;
-    if (firstError) setError(firstError.message);
-    setEvents((eventResult.data as DashboardEvent[] | null) ?? []);
-    setPeople((peopleResult.data as DashboardProfile[] | null) ?? []);
-    setAssignments((assignmentResult.data as EventAssignment[] | null) ?? []);
+    const failure = firstErrorMessage([eventResult, peopleResult, assignmentResult]);
+    if (failure) setError(failure);
+    setEvents(rowsOf<DashboardEvent>(eventResult));
+    setPeople(rowsOf<DashboardProfile>(peopleResult));
+    setAssignments(rowsOf<EventAssignment>(assignmentResult));
   }, []);
 
   useEffect(() => { void load(); }, [load]);

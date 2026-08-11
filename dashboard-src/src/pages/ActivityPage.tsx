@@ -2,19 +2,20 @@ import { useEffect, useState } from "react";
 import { Alert, Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import type { ActivityEntry, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { isAdmin, rowsOf } from "../lib/queries";
 
 export default function ActivityPage({ profile }: { profile: DashboardProfile }) {
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
   const [error, setError] = useState("");
+  const view = isAdmin(profile) ? "dashboard_activity_admin" : "dashboard_activity";
 
   useEffect(() => {
-    const view = profile.role === "owner_admin" || profile.role === "volunteer_admin" ? "dashboard_activity_admin" : "dashboard_activity";
     void supabaseClient.from(view).select("*").order("occurred_at", { ascending: false }).limit(250)
-      .then(({ data, error: queryError }) => {
-        if (queryError) setError(queryError.message);
-        setEntries((data as ActivityEntry[] | null) ?? []);
+      .then((result) => {
+        if (result.error) setError(result.error.message);
+        setEntries(rowsOf<ActivityEntry>(result));
       });
-  }, [profile.role]);
+  }, [view]);
 
   return (
     <Stack spacing={2.5}>

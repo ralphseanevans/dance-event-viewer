@@ -3,38 +3,30 @@ import { Alert, Box, Chip, Link, Pagination, Paper, Stack, TextField, Typography
 import SearchIcon from "@mui/icons-material/Search";
 import type { DashboardProfile, SourceHistoryEntry } from "../types";
 import { supabaseClient } from "../supabase";
-
-const PAGE_SIZE = 24;
+import { isAdmin, rowsOf } from "../lib/queries";
+import { filterByText, usePagedList } from "../lib/usePagedList";
 
 export default function SourcesPage({ profile }: { profile: DashboardProfile }) {
   const [entries, setEntries] = useState<SourceHistoryEntry[]>([]);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const view = isAdmin(profile) ? "dashboard_source_history_admin" : "dashboard_source_history";
 
   useEffect(() => {
-    const view = profile.role === "owner_admin" || profile.role === "volunteer_admin" ? "dashboard_source_history_admin" : "dashboard_source_history";
     void supabaseClient.from(view).select("*").order("last_seen", { ascending: false }).limit(1000)
-      .then(({ data, error: queryError }) => {
-        if (queryError) setError(queryError.message);
-        setEntries((data as SourceHistoryEntry[] | null) ?? []);
+      .then((result) => {
+        if (result.error) setError(result.error.message);
+        setEntries(rowsOf<SourceHistoryEntry>(result));
       });
-  }, [profile.role]);
+  }, [view]);
 
-  const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    if (!needle) return entries;
-    return entries.filter((entry) => [entry.source_detail, entry.source_type, entry.source_skill, entry.source_url]
-      .some((value) => value?.toLowerCase().includes(needle)));
-  }, [entries, search]);
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const visibleEntries = useMemo(
-    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filtered, page],
+  const filtered = useMemo(
+    () => filterByText(entries, search, (entry) => [entry.source_detail, entry.source_type, entry.source_skill, entry.source_url]),
+    [entries, search],
   );
+  const { page, setPage, pageCount, visibleItems: visibleEntries } = usePagedList(filtered);
 
-  useEffect(() => { setPage(1); }, [search]);
-  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+  useEffect(() => { setPage(1); }, [search, setPage]);
 
   return (
     <Stack spacing={2.5}>
