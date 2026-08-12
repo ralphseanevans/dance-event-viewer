@@ -12,7 +12,7 @@
 const SOURCES = [
   { id: "dance", label: "All Dance Events", file: "../dance_events.json" },
 ];
-const SUPABASE_PUBLIC_FIELDS = "key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on";
+const SUPABASE_PUBLIC_FIELDS = "key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url";
 // Country Swing (added 2026-07-24, Sean): its own distinct dance/category — deliberately NOT
 // a bucket for Country/Western, two-step, or line-dance styles (Sean: "any country dancing is
 // completely different than Country Swing. Don't group any country dances in with it.").
@@ -1641,7 +1641,7 @@ function comboPosterEntries(items) {
       date: (d.next instanceof Date && !isNaN(d.next)) ? d.next : null,
       venue: (ev && typeof ev.venue === "string") ? ev.venue.trim() : "",
       cost: (ev && typeof ev.cost === "string") ? ev.cost.trim() : "",
-      logoSrc: logoFor(ev && ev.key) || null
+      logoSrc: (ev && typeof ev.flyer_url === "string" && ev.flyer_url) || logoFor(ev && ev.key) || null
     };
   });
 }
@@ -1879,7 +1879,7 @@ function card(d, { showWhen, isPast }) {
 
   const art = document.createElement("div");
   art.className = "card-art";
-  const logoPath = logoFor(ev.key);
+  const logoPath = (typeof ev.flyer_url === "string" && ev.flyer_url) || logoFor(ev.key);
   if (typeof logoPath === "string" && logoPath) {
     // Wrapped in a real <button> (not a click handler on the <img>) so it's keyboard-
     // operable and has correct semantics for free, matching the venue-button pattern above.

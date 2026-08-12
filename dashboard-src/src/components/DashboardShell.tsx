@@ -41,7 +41,7 @@ const AssignmentsPage = lazy(() => import("../pages/AssignmentsPage"));
 const ActivityPage = lazy(() => import("../pages/ActivityPage"));
 const SourcesPage = lazy(() => import("../pages/SourcesPage"));
 const CrawlersPage = lazy(() => import("../pages/CrawlersPage"));
-const ExperimentalPage = lazy(() => import("../pages/ExperimentalPage"));
+const ExperimentalPage = lazy(() => import("../pages/OwnerDashboardPage"));
 
 const drawerWidth = 260;
 

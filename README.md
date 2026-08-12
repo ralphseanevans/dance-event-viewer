@@ -53,12 +53,13 @@ assignments, activity, crawler runs, and source history. New sign-ins are inacti
 The live dashboard supports Google and email-link sign-in, paginated event and source-history
 records, complete recurring-event exclusions and WCS inclusion controls, and searchable volunteer-to-event
 assignment linking. Linked Google accounts show their Google profile photo in the header; email-only
-accounts retain the initial fallback. The owner-only Experimental Dashboard presents existing events
-as flyer cards with immediate, read-back-verified draft-series linking, front-page-style event/style/
-state/local-area filters, and a responsive owner/bulk-series side panel where series ownership remains
-manageable. A verified link remains visible in the card's Draft Event Series control with a
-`Recommended` label. Experimental resolves flyers through the same exact/pattern `logo-map.json` path as the
-public cards, with the database flyer URL retained as a fallback; Volunteer Admin authority remains separate.
+accounts retain the initial fallback. The owner-only Experimental Dashboard mirrors the public
+viewer’s Timeline/Calendar/Map, search, filters, cards, spacing, and responsive rhythm while adding
+a sticky desktop management panel and mobile tools drawer. It supports autosaving private event
+drafts, separate preview/publish, occurrence-only cancellation, verified flyer changes through
+event-scoped Supabase Storage, recommendation confirmation, owner/coach maintenance, and safeguarded
+two-mode Event Series deletion. Existing experimental review modules remain below the manager;
+Volunteer Admin authority remains separate.
 Page modules are loaded on demand so the initial dashboard bundle stays lean.
 See the project-root `Secure_Dashboard_Implementation_Plan_2026-08-08.md`.
 

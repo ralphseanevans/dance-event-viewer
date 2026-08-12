@@ -31,7 +31,7 @@ export interface DashboardEvent {
   last_confirmed: string;
   flyer_url: string | null;
   exclude_dates: unknown;
-  record_status: "active" | "draft" | "archived";
+  record_status: "active" | "draft" | "cancelled" | "archived";
   version: number;
   created_at: string;
   updated_at: string;

@@ -589,7 +589,7 @@ main { max-width: var(--maxw); margin: 0 auto; }
 .card {
   position: relative;
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, #ffbd59 72%, var(--border));
   border-radius: var(--radius);
   padding: 16px 18px;
   display: flex; flex-direction: column; gap: 8px;
