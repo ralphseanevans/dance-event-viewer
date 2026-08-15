@@ -12404,6 +12404,26 @@
       "source_url": null,
       "unverified": false,
       "verified_on": "2026-08-04"
+    },
+    {
+      "key": "good-ole-social-dance-2026-08-14",
+      "name": "Good Ole Social Dance",
+      "style": "Mixed",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-08-14",
+      "end_date": "2026-08-14",
+      "start_time": "19:00",
+      "end_time": "22:00",
+      "venue": "Sanders Beach-Corinne Jones Resource Center, 913 South I Street, Pensacola, FL 32502",
+      "state": "FL",
+      "cost": "$15 cash",
+      "source_url": "https://www.facebook.com/letsdancepensacola",
+      "unverified": false,
+      "verified_on": "2026-08-14"
     }
   ]
 }

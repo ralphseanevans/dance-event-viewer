@@ -1,9 +1,20 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-05T01:02:53Z",
+  "generated_at": "2026-08-15T01:07:25Z",
   "since": "2026-07-22",
   "_notes": "Derived, public-safe site activity log for the authenticated dashboard Site log panel. Built by Operations\\Tools\\build_site_log.ps1 from the local master dance_events.json. Source-obfuscated on purpose: no scanner names, source types, source details, flyer/source URLs, notes, or contact fields. Entries begin at \"since\" and accumulate. Not the same thing as the public viewer Activity Pulse (visitor behavior).",
   "entries": [
+    {
+      "id": "discover:good-ole-social-dance-2026-08-14",
+      "ts": "2026-08-15T01:07:25Z",
+      "ts_precision": "exact",
+      "kind": "event_discovered",
+      "key": "good-ole-social-dance-2026-08-14",
+      "name": "Good Ole Social Dance",
+      "venue": "Sanders Beach-Corinne Jones Resource Center, 913 South I Street, Pensacola, FL 32502",
+      "style": "Mixed",
+      "state": "FL"
+    },
     {
       "id": "discover:starlite-ballroom-tuesday-ballroom-latin-class",
       "ts": "2026-08-05T00:02:33Z",
