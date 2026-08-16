@@ -571,17 +571,27 @@ main { max-width: var(--maxw); margin: 0 auto; }
   text-transform: uppercase; letter-spacing: .1em;
   border-bottom: 1px solid var(--border); padding-bottom: 6px;
 }
-/* First timeline heading row (e.g. TODAY) carries the "Share multiple" button on its
+/* First timeline date-heading row carries the "Share multiple" button on its
    right side (2026-07-20, Sean). The label span keeps the heading's uppercase styling;
    the button opts back out of the inherited transform/tracking. */
 .bucket-heading--action {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
 }
-/* TODAY heading enlarged 50% vs other bucket headings (1.05rem base -> 1.575rem), Sean 2026-07-20 */
-.bucket-heading--action .bucket-heading-label { min-width: 0; font-size: 1.575rem; line-height: 1.1; }
+/* First upcoming date heading enlarged 50% vs the later headings (1.05rem base -> 1.575rem). */
+.bucket-heading--action .bucket-heading-label {
+  min-width: 0; display: flex; align-items: baseline; gap: .55em; flex-wrap: wrap;
+  font-size: 1.575rem; line-height: 1.1;
+}
+.bucket-heading-primary { font-weight: 700; }
+.bucket-heading-detail { font-size: .667em; color: var(--text-dim); letter-spacing: .06em; }
 .bucket-heading--action .share-several-toggle {
   flex: none; align-self: center;
   text-transform: none; letter-spacing: normal; color: var(--text-dim);
+}
+@media (max-width: 560px) {
+  .bucket-heading--action { align-items: flex-start; flex-direction: column; }
+  .bucket-heading--action .bucket-heading-label { width: 100%; }
+  .bucket-heading--action .share-several-toggle { width: 100%; min-height: 44px; }
 }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--gap); }

@@ -1229,7 +1229,7 @@ function makeShareMultipleBtn() {
   t.addEventListener("click", () => setSelectMode(!state.selectMode));
   return t;
 }
-/* First timeline bucket heading (currently "TODAY") carries the Share-multiple button on
+/* First timeline date heading carries the Share-multiple button on
    its right side (2026-07-20, Sean); reset _comboPlaced each render() so it lands once. */
 function bucketHeadingEl(label) {
   const h = document.createElement("h2");
@@ -1239,7 +1239,17 @@ function bucketHeadingEl(label) {
     h.classList.add("bucket-heading--action");
     const span = document.createElement("span");
     span.className = "bucket-heading-label";
-    span.textContent = label;
+    const labelParts = label.split(/\s+·\s+/);
+    const primary = document.createElement("span");
+    primary.className = "bucket-heading-primary";
+    primary.textContent = labelParts.shift() || label;
+    span.appendChild(primary);
+    if (labelParts.length) {
+      const detail = document.createElement("span");
+      detail.className = "bucket-heading-detail";
+      detail.textContent = labelParts.join(" · ");
+      span.appendChild(detail);
+    }
     h.append(span, makeShareMultipleBtn());
   } else {
     h.textContent = label;
@@ -2382,16 +2392,40 @@ function render() {
 
 function bucketize(items, today) {
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const endOfWeek = new Date(t0); endOfWeek.setDate(t0.getDate() + (6 - t0.getDay()));           // Saturday
-  const endOfNextWeek = new Date(endOfWeek); endOfNextWeek.setDate(endOfWeek.getDate() + 7);
-  const buckets = [["Today", []], ["This Week", []], ["Next Week", []], ["Later", []]];
+  const byDate = new Map();
   for (const d of items) {
-    if (d.next.getTime() === t0.getTime()) buckets[0][1].push(d);
-    else if (d.next <= endOfWeek) buckets[1][1].push(d);
-    else if (d.next <= endOfNextWeek) buckets[2][1].push(d);
-    else buckets[3][1].push(d);
+    const date = new Date(d.next.getFullYear(), d.next.getMonth(), d.next.getDate());
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    if (!byDate.has(key)) byDate.set(key, { date, items: [] });
+    byDate.get(key).items.push(d);
   }
-  return buckets;
+  return [...byDate.values()]
+    .sort((a, b) => a.date - b.date)
+    .map(group => [timelineDateLabel(group.date, group.items, t0), group.items]);
+}
+
+/* Timeline headings start conversationally, then become date-led as events get farther
+   away: "Tonight · Sunday, August 16", "Tomorrow · Monday, August 17", weekday names,
+   "Next Sunday", then "August 30 · Sunday". One group per actual date means days with
+   no dances simply do not appear. */
+function timelineDateLabel(date, items, today) {
+  const dayDistance = Math.round((
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) -
+    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+  ) / 86400000);
+  const weekday = date.toLocaleDateString(undefined, { weekday: "long" });
+  const monthDayOptions = { month: "long", day: "numeric" };
+  if (date.getFullYear() !== today.getFullYear()) monthDayOptions.year = "numeric";
+  const monthDay = date.toLocaleDateString(undefined, monthDayOptions);
+
+  if (dayDistance === 0) {
+    const todayWord = comboTodayWord(items);
+    return `${todayWord[0].toUpperCase()}${todayWord.slice(1)} · ${weekday}, ${monthDay}`;
+  }
+  if (dayDistance === 1) return `Tomorrow · ${weekday}, ${monthDay}`;
+  if (dayDistance >= 2 && dayDistance <= 6) return `${weekday} · ${monthDay}`;
+  if (dayDistance >= 7 && dayDistance <= 13) return `Next ${weekday} · ${monthDay}`;
+  return `${monthDay} · ${weekday}`;
 }
 
 /* ---------- UI wiring ---------- */

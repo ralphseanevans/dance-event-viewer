@@ -259,7 +259,10 @@ state these boundaries explicitly.
 
 ## Views & filters
 
-- **Timeline** (default): events grouped by next occurrence — Today / This Week / Next Week / Later.
+- **Timeline** (default): events grouped under each actual upcoming date, with natural
+  near-term headings such as **Tonight · Saturday, August 15**, **Tomorrow · Sunday,
+  August 16**, weekday names for the following days, **Next Saturday** one week out,
+  and date-first headings farther away. Dates with no matching dances are skipped.
 - **Grid**: flat cards sorted by next occurrence.
 - **Calendar** (added 2026-07-11, replaces the old Schedule view): a traditional month
   grid — correct day counts incl. leap years, days under the right weekday, today
