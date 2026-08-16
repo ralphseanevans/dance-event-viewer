@@ -101,15 +101,16 @@ h1 { margin: 0; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,
   border-bottom-left-radius: 13px;
 }
 .style-route-label {
-  margin: 0 0 -12px -2px;
+  margin: 0 0 -15px -2px;
   padding-left: 14px;
-  font-size: 13px;
-  font-weight: 780;
-  letter-spacing: .12em;
+  font-size: clamp(28px,3.5vw,46px);
+  font-weight: 700;
+  line-height: .95;
+  letter-spacing: -.03em;
   text-transform: uppercase;
 }
 .style-choices {
-  margin: 30px 0 0 calc(var(--route-origin) + var(--route-run));
+  margin: 43px 0 0 calc(var(--route-origin) + var(--route-run));
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -351,8 +352,8 @@ button.calendar-day { cursor: pointer; }
   .style-picker { --route-run: 76px; }
   .style-route { min-height: 88px; }
   .style-route-line { height: 68px; }
-  .style-route-label { margin-bottom: -11px; padding-left: 11px; font-size: 11px; }
-  .style-choices { margin-top: 26px; gap: 18px; }
+  .style-route-label { margin-bottom: -13px; padding-left: 11px; }
+  .style-choices { margin-top: 39px; gap: 18px; }
   .style-choice {
     max-width: calc(100vw - var(--route-origin) - var(--route-run) - 28px);
     font-size: 27px;

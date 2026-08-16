@@ -17,6 +17,8 @@
 - Added a vertical, scroll-revealed list of location-specific dance-style filters. Styles
   remain muted until selected, turn white when active, and filter the event stream and
   its sticky calendar without leaving the page.
+- Promoted **West Coast Swing** to the first position and enlarged the **STYLES** route
+  label slightly beyond the style-name scale.
 
 ## 2026-08-04 - Mint Reactor theme
 

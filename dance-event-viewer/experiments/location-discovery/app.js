@@ -83,7 +83,11 @@
       .filter((item) => item.date)
       .sort((a, b) => a.date - b.date || (a.event.start_time || '').localeCompare(b.event.start_time || ''));
 
-    const availableStyles = Array.from(new Set(decoratedForCities.map((item) => item.event.style).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+    const availableStyles = Array.from(new Set(decoratedForCities.map((item) => item.event.style).filter(Boolean))).sort((a, b) => {
+      if (a === 'West Coast Swing') return -1;
+      if (b === 'West Coast Swing') return 1;
+      return a.localeCompare(b);
+    });
     Array.from(selectedStyles).forEach((style) => { if (!availableStyles.includes(style)) selectedStyles.delete(style); });
     stylePicker.hidden = false;
     renderStyleChoices(availableStyles);
