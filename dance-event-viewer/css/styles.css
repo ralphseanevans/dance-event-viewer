@@ -624,11 +624,16 @@ main { max-width: var(--maxw); margin: 0 auto; }
   background: rgba(255, 95, 162, .14);
 }
 .card-action-share.copied { color: var(--accent); border-color: var(--accent); }
-.card-art { min-height: 0; }               /* per-event graphic (from logo-map.json) */
+.card-art {
+  min-height: 0;
+  margin: -16px -18px 0;
+  overflow: hidden;
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+}                                         /* full-bleed per-event graphic */
 .card-art img {
-  display: block; margin: 0 auto;
-  max-width: 100%; max-height: 360px; width: auto;
-  border-radius: 8px; object-fit: contain;
+  display: block; margin: 0;
+  width: 100%; height: auto; max-height: none;
+  border-radius: 0; object-fit: contain;
 }
 .card-art-trigger {
   display: block; width: 100%; background: none; border: none; padding: 0; margin: 0;
