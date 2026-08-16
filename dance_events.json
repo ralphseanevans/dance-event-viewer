@@ -6650,7 +6650,7 @@
       "exclude_monthly_rules": null,
       "exclude_dates": null,
       "start_date": null,
-      "end_date": null,
+      "end_date": "2026-08-15",
       "start_time": "17:30",
       "end_time": "21:30",
       "venue": "The Pensacola Coastals Dance Studio, 433 S Hwy 29, Cantonment, FL",
@@ -6658,7 +6658,7 @@
       "cost": "$5 for a class or social, $10 for the whole night",
       "source_url": null,
       "unverified": false,
-      "verified_on": "2026-07-12"
+      "verified_on": "2026-08-16"
     },
     {
       "key": "southern-national-2026-10-15",
