@@ -2,6 +2,7 @@
   'use strict';
 
   const DAY_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const SOLO_STYLES = ['Ballet','Jazz','Hip Hop','Contemporary','Heels','Pom','Musical Theatre','Dance Fit','Line Dance','Belly Dance'];
   const cityButtons = Array.from(document.querySelectorAll('[data-city]'));
   const results = document.getElementById('results');
   const resultList = document.getElementById('resultList');
@@ -17,6 +18,8 @@
   let activeDate = null;
   let dateObserver = null;
   let styleObserver = null;
+  let styleRevealStartedAt = 0;
+  let soloStylesOpen = false;
 
   Promise.all([
     loadEvents(),
@@ -66,7 +69,9 @@
     cityButtons.forEach((button) => button.setAttribute('aria-pressed', String(selected.has(button.dataset.city))));
     if (!selected.size) {
       selectedStyles.clear();
+      soloStylesOpen = false;
       stylePicker.hidden = true;
+      stylePicker.classList.remove('is-opening');
       styleChoices.replaceChildren();
       results.hidden = true;
       resultList.replaceChildren();
@@ -89,9 +94,11 @@
       return a.localeCompare(b);
     });
     Array.from(selectedStyles).forEach((style) => { if (!availableStyles.includes(style)) selectedStyles.delete(style); });
+    const wasHidden = stylePicker.hidden;
     stylePicker.hidden = false;
     renderStyleChoices(availableStyles);
     updateStyleRouteOrigin();
+    if (wasHidden) restartStylePickerIntro();
 
     const decorated = selectedStyles.size
       ? decoratedForCities.filter((item) => selectedStyles.has(item.event.style))
@@ -126,15 +133,25 @@
   }
 
   function renderStyleChoices(styles) {
-    const existing = Array.from(styleChoices.querySelectorAll('.style-choice')).map((button) => button.dataset.style);
-    if (existing.length === styles.length && existing.every((style, index) => style === styles[index])) {
-      styleChoices.querySelectorAll('.style-choice').forEach((button) => button.setAttribute('aria-pressed', String(selectedStyles.has(button.dataset.style))));
+    const soloStyles = styles.filter((style) => SOLO_STYLES.includes(style));
+    const primaryStyles = styles.filter((style) => !SOLO_STYLES.includes(style));
+    const orderedStyles = [...primaryStyles, ...(soloStyles.length ? ['__solo__', ...soloStyles] : [])];
+    const existing = Array.from(styleChoices.querySelectorAll('[data-style]')).map((button) => button.dataset.style);
+    if (existing.length === orderedStyles.length && existing.every((style, index) => style === orderedStyles[index])) {
+      styleChoices.querySelectorAll('.style-choice:not(.solo-styles-toggle), .solo-style-choice').forEach((button) => button.setAttribute('aria-pressed', String(selectedStyles.has(button.dataset.style))));
+      const soloToggle = styleChoices.querySelector('.solo-styles-toggle');
+      const soloOptions = styleChoices.querySelector('.solo-style-options');
+      if (soloToggle && soloOptions) {
+        soloToggle.setAttribute('aria-expanded', String(soloStylesOpen));
+        soloToggle.classList.toggle('has-selection', soloStyles.some((style) => selectedStyles.has(style)));
+        soloOptions.hidden = !soloStylesOpen;
+      }
       return;
     }
 
     if (styleObserver) styleObserver.disconnect();
     styleChoices.replaceChildren();
-    styles.forEach((style, index) => {
+    primaryStyles.forEach((style, index) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'style-choice';
@@ -149,7 +166,51 @@
       });
       styleChoices.appendChild(button);
     });
+    if (soloStyles.length) {
+      const soloGroup = document.createElement('div');
+      soloGroup.className = 'solo-style-group';
+      const soloToggle = document.createElement('button');
+      soloToggle.type = 'button';
+      soloToggle.className = 'style-choice solo-styles-toggle';
+      soloToggle.dataset.style = '__solo__';
+      soloToggle.style.setProperty('--style-index', primaryStyles.length);
+      soloToggle.setAttribute('aria-expanded', String(soloStylesOpen));
+      soloToggle.classList.toggle('has-selection', soloStyles.some((style) => selectedStyles.has(style)));
+      soloToggle.innerHTML = 'Solo Styles <span aria-hidden="true">+</span>';
+      const soloOptions = document.createElement('div');
+      soloOptions.className = 'solo-style-options';
+      soloOptions.hidden = !soloStylesOpen;
+      soloToggle.addEventListener('click', () => {
+        soloStylesOpen = !soloStylesOpen;
+        soloToggle.setAttribute('aria-expanded', String(soloStylesOpen));
+        soloOptions.hidden = !soloStylesOpen;
+      });
+      soloStyles.forEach((style, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'solo-style-choice';
+        button.dataset.style = style;
+        button.setAttribute('aria-pressed', String(selectedStyles.has(style)));
+        button.style.setProperty('--solo-index', index);
+        button.textContent = style;
+        button.addEventListener('click', () => {
+          if (selectedStyles.has(style)) selectedStyles.delete(style);
+          else selectedStyles.add(style);
+          render();
+        });
+        soloOptions.appendChild(button);
+      });
+      soloGroup.append(soloToggle, soloOptions);
+      styleChoices.appendChild(soloGroup);
+    }
+    styleRevealStartedAt = performance.now();
     observeStyleChoices();
+  }
+
+  function restartStylePickerIntro() {
+    stylePicker.classList.remove('is-opening');
+    void stylePicker.offsetWidth;
+    stylePicker.classList.add('is-opening');
   }
 
   function updateStyleRouteOrigin() {
@@ -164,12 +225,19 @@
   function observeStyleChoices() {
     const buttons = Array.from(styleChoices.querySelectorAll('.style-choice'));
     if (!('IntersectionObserver' in window)) {
-      buttons.forEach((button) => button.classList.add('is-visible'));
+      buttons.forEach((button, index) => {
+        button.style.setProperty('--style-delay', `${1720 + index * 140}ms`);
+        button.classList.add('is-visible');
+      });
       return;
     }
     styleObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
+      const entering = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => Number(a.target.style.getPropertyValue('--style-index')) - Number(b.target.style.getPropertyValue('--style-index')));
+      const remainingIntro = Math.max(0, 1720 - (performance.now() - styleRevealStartedAt));
+      entering.forEach((entry, index) => {
+        entry.target.style.setProperty('--style-delay', `${Math.round(remainingIntro + index * 140)}ms`);
         entry.target.classList.add('is-visible');
         observer.unobserve(entry.target);
       });
