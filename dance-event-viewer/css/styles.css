@@ -567,7 +567,7 @@ body {
 main { max-width: var(--maxw); margin: 0 auto; }
 
 .bucket-heading {
-  margin: 13px 0 12px; font-size: 1.05rem; color: var(--accent);
+  margin: 13px 0 12px; font-size: 1.575rem; color: var(--accent);
   text-transform: uppercase; letter-spacing: .1em;
   border-bottom: 1px solid var(--border); padding-bottom: 6px;
 }
@@ -577,7 +577,7 @@ main { max-width: var(--maxw); margin: 0 auto; }
 .bucket-heading--action {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
 }
-/* First upcoming date heading enlarged 50% vs the later headings (1.05rem base -> 1.575rem). */
+/* Every date heading uses the same prominent 1.575rem scale. */
 .bucket-heading--action .bucket-heading-label {
   min-width: 0; display: flex; align-items: baseline; gap: .55em; flex-wrap: wrap;
   font-size: 1.575rem; line-height: 1.1;
