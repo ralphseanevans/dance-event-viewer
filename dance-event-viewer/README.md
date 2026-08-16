@@ -286,9 +286,10 @@ Every card has a **share** button (⤴) that offers one dance via the native sha
 **Share several** (Sean's request: "share multiple dances at one time… make it look good
 together… (three dances all this weekend!) … without cluttering the chat"):
 
-- The **✦ Share several** button (next to the view switcher) turns on *select mode*: each
-  card shows a **+** toggle and the whole card becomes tappable to add/remove it. A floating
-  bar tracks the count.
+- The **✦ Create Multiple Event Dance Card** button on the first date heading turns on
+  *select mode*: the button becomes the message **Select the dances below (+ sign)**, each
+  card shows a **+** toggle, and the whole card becomes tappable to add/remove it. A floating
+  bar tracks the count; **Cancel** clears the selection and exits select mode.
 - **Share these** opens one combined post with a smart headline computed from the picked
   dances' next dates. A single window reads *"Three dances tonight!"* / *"Two dances this
   weekend!"*; a **split set gets a compound headline** — *"Three dances tonight & one

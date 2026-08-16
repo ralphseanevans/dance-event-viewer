@@ -588,10 +588,16 @@ main { max-width: var(--maxw); margin: 0 auto; }
   flex: none; align-self: center;
   text-transform: none; letter-spacing: normal; color: var(--text-dim);
 }
+.bucket-heading--action .share-several-guidance {
+  flex: none; align-self: center;
+  text-transform: none; letter-spacing: normal; color: var(--text-dim);
+  font-size: .95rem; font-weight: 600;
+}
 @media (max-width: 560px) {
   .bucket-heading--action { align-items: flex-start; flex-direction: column; }
   .bucket-heading--action .bucket-heading-label { width: 100%; }
   .bucket-heading--action .share-several-toggle { width: 100%; min-height: 44px; }
+  .bucket-heading--action .share-several-guidance { width: 100%; }
 }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--gap); }

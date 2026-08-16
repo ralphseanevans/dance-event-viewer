@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#101211">
   <title>Find a Dance Near You — Experimental</title>
-  <link rel="stylesheet" href="styles.css?v=20260816-supabase-layout-2">
+  <link rel="stylesheet" href="styles.css?v=596bb4f0">
 </head>
 <body>
   <header class="site-header">
@@ -29,6 +29,13 @@
         <button class="place-choice" type="button" data-city="Mobile" aria-pressed="false">Mobile</button>
         <a class="place-choice" href="../../">Other</a>
       </div>
+      <div id="stylePicker" class="style-picker" hidden>
+        <div class="style-route" aria-hidden="true">
+          <span class="style-route-line"></span>
+          <span class="style-route-label">Styles</span>
+        </div>
+        <div id="styleChoices" class="style-choices" aria-label="Filter by dance style"></div>
+      </div>
       <div id="results" class="results" hidden>
         <div class="results-layout">
           <aside id="scrollCalendar" class="scroll-calendar" aria-label="Dates in the event list">
@@ -46,7 +53,7 @@
     </section>
   </main>
 
-  <script src="../../js/supabase-config.js"></script>
-  <script src="app.js"></script>
+  <script src="../../js/supabase-config.js?v=d191cb0e"></script>
+  <script src="app.js?v=a044d4ed"></script>
 </body>
 </html>

@@ -5,14 +5,18 @@
   const cityButtons = Array.from(document.querySelectorAll('[data-city]'));
   const results = document.getElementById('results');
   const resultList = document.getElementById('resultList');
+  const stylePicker = document.getElementById('stylePicker');
+  const styleChoices = document.getElementById('styleChoices');
   const calendarMonth = document.getElementById('calendarMonth');
   const calendarDays = document.getElementById('calendarDays');
   const selected = new Set();
+  const selectedStyles = new Set();
   let events = [];
   let logoMap = { logos: {}, patterns: [] };
   let visibleDates = [];
   let activeDate = null;
   let dateObserver = null;
+  let styleObserver = null;
 
   Promise.all([
     loadEvents(),
@@ -20,7 +24,10 @@
   ]).then(([eventData, mapData]) => {
     events = Array.isArray(eventData) ? eventData : [];
     logoMap = mapData || logoMap;
+    if (selected.size) render();
   }).catch(() => { events = []; });
+
+  window.addEventListener('resize', updateStyleRouteOrigin);
 
   cityButtons.forEach((button) => {
     button.addEventListener('click', () => {
@@ -58,6 +65,9 @@
   function render() {
     cityButtons.forEach((button) => button.setAttribute('aria-pressed', String(selected.has(button.dataset.city))));
     if (!selected.size) {
+      selectedStyles.clear();
+      stylePicker.hidden = true;
+      styleChoices.replaceChildren();
       results.hidden = true;
       resultList.replaceChildren();
       calendarDays.replaceChildren();
@@ -67,11 +77,21 @@
     }
 
     const today = atMidnight(new Date());
-    const decorated = events
+    const decoratedForCities = events
       .filter((event) => Array.from(selected).some((city) => new RegExp(`\\b${city}\\b`, 'i').test(event.venue || '')))
       .map((event) => ({ event, date: nextOccurrence(event, today) }))
       .filter((item) => item.date)
       .sort((a, b) => a.date - b.date || (a.event.start_time || '').localeCompare(b.event.start_time || ''));
+
+    const availableStyles = Array.from(new Set(decoratedForCities.map((item) => item.event.style).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+    Array.from(selectedStyles).forEach((style) => { if (!availableStyles.includes(style)) selectedStyles.delete(style); });
+    stylePicker.hidden = false;
+    renderStyleChoices(availableStyles);
+    updateStyleRouteOrigin();
+
+    const decorated = selectedStyles.size
+      ? decoratedForCities.filter((item) => selectedStyles.has(item.event.style))
+      : decoratedForCities;
 
     const groups = new Map();
     decorated.forEach((item) => {
@@ -99,6 +119,58 @@
     results.classList.remove('reveal');
     void results.offsetWidth;
     results.classList.add('reveal');
+  }
+
+  function renderStyleChoices(styles) {
+    const existing = Array.from(styleChoices.querySelectorAll('.style-choice')).map((button) => button.dataset.style);
+    if (existing.length === styles.length && existing.every((style, index) => style === styles[index])) {
+      styleChoices.querySelectorAll('.style-choice').forEach((button) => button.setAttribute('aria-pressed', String(selectedStyles.has(button.dataset.style))));
+      return;
+    }
+
+    if (styleObserver) styleObserver.disconnect();
+    styleChoices.replaceChildren();
+    styles.forEach((style, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'style-choice';
+      button.dataset.style = style;
+      button.style.setProperty('--style-index', index);
+      button.setAttribute('aria-pressed', String(selectedStyles.has(style)));
+      button.textContent = style;
+      button.addEventListener('click', () => {
+        if (selectedStyles.has(style)) selectedStyles.delete(style);
+        else selectedStyles.add(style);
+        render();
+      });
+      styleChoices.appendChild(button);
+    });
+    observeStyleChoices();
+  }
+
+  function updateStyleRouteOrigin() {
+    const active = cityButtons.find((button) => selected.has(button.dataset.city));
+    if (!active) return;
+    const desired = active.offsetLeft + active.offsetWidth * .82;
+    const run = window.innerWidth <= 560 ? 76 : 118;
+    const maximum = Math.max(74, stylePicker.clientWidth - run - (window.innerWidth <= 560 ? 154 : 240));
+    stylePicker.style.setProperty('--route-origin', `${Math.round(Math.min(desired, maximum))}px`);
+  }
+
+  function observeStyleChoices() {
+    const buttons = Array.from(styleChoices.querySelectorAll('.style-choice'));
+    if (!('IntersectionObserver' in window)) {
+      buttons.forEach((button) => button.classList.add('is-visible'));
+      return;
+    }
+    styleObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: .12 });
+    buttons.forEach((button) => styleObserver.observe(button));
   }
 
   function makeDateBlock(date, dayEvents, index) {
@@ -162,6 +234,7 @@
   function makeEventTile(event) {
     const tile = document.createElement('article');
     tile.className = 'event-tile';
+    if (event.style) tile.dataset.style = event.style;
     const flyer = document.createElement('div');
     flyer.className = 'flyer-wrap';
     const flyerUrl = logoFor(event.key);

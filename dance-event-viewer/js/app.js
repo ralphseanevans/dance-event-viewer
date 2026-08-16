@@ -1218,15 +1218,22 @@ function buildComboText(items, headline, url) {
 }
 
 let _comboPlaced = false;
-function makeShareMultipleBtn() {
+function makeShareMultipleControl() {
+  if (state.selectMode) {
+    const guidance = document.createElement("span");
+    guidance.id = "share-several-guidance";
+    guidance.className = "share-several-guidance";
+    guidance.textContent = "Select the dances below (+ sign)";
+    return guidance;
+  }
   const t = document.createElement("button");
   t.type = "button";
   t.id = "share-several-toggle";
   t.className = "past-toggle share-several-toggle";
-  t.setAttribute("aria-pressed", String(state.selectMode));
+  t.setAttribute("aria-pressed", "false");
   t.title = "Step 1: start a Dance Card, then tap the dances you want on it — one graphic instead of posting each dance separately.";
-  t.textContent = state.selectMode ? "✕ Done selecting" : "✦ Create Multiple Event Dance Card";
-  t.addEventListener("click", () => setSelectMode(!state.selectMode));
+  t.textContent = "✦ Create Multiple Event Dance Card";
+  t.addEventListener("click", () => setSelectMode(true));
   return t;
 }
 /* First timeline date heading carries the Share-multiple button on
@@ -1250,7 +1257,7 @@ function bucketHeadingEl(label) {
       detail.textContent = labelParts.join(" · ");
       span.appendChild(detail);
     }
-    h.append(span, makeShareMultipleBtn());
+    h.append(span, makeShareMultipleControl());
   } else {
     h.textContent = label;
   }
@@ -1259,11 +1266,6 @@ function bucketHeadingEl(label) {
 function setSelectMode(on) {
   state.selectMode = on;
   document.body.classList.toggle("selecting", on);
-  const t = document.getElementById("share-several-toggle");
-  if (t) {
-    t.setAttribute("aria-pressed", String(on));
-    t.textContent = on ? "✕ Done selecting" : "✦ Create Multiple Event Dance Card";
-  }
   if (!on) shareSelection.clear();
   updateComboBar();
   render();
@@ -1278,7 +1280,7 @@ function updateComboBar() {
   const shareBtn = bar.querySelector("#combo-share-btn");
   if (shareBtn) shareBtn.disabled = n < 1;
   const clearBtn = bar.querySelector("#combo-clear-btn");
-  if (clearBtn) clearBtn.disabled = n === 0;
+  if (clearBtn) clearBtn.disabled = false;
   const atcBtn = bar.querySelector("#combo-atc-btn");   // add-to-calendar (2026-08-03)
   if (atcBtn) atcBtn.disabled = n < 1;
 }
@@ -1737,7 +1739,7 @@ async function handleComboShareImage(items, btn) {
    edits to the page markup. */
 function ensureComboUI() {
   // "Share multiple" now renders on the first timeline heading row — see
-  // makeShareMultipleBtn() / bucketHeadingEl() (relocated 2026-07-20, Sean).
+  // makeShareMultipleControl() / bucketHeadingEl() (relocated 2026-07-20, Sean).
   if (!document.getElementById("combo-bar")) {
     const bar = document.createElement("div");
     bar.id = "combo-bar"; bar.className = "combo-bar"; bar.hidden = true;
@@ -1748,21 +1750,8 @@ function ensureComboUI() {
     const spacer = document.createElement("span"); spacer.className = "combo-bar-spacer";
     const clearBtn = document.createElement("button");
     clearBtn.type = "button"; clearBtn.id = "combo-clear-btn"; clearBtn.className = "combo-bar-btn combo-bar-clear";
-    clearBtn.textContent = "Clear"; clearBtn.disabled = true;
-    clearBtn.addEventListener("click", () => {
-      const keys = [...shareSelection];
-      shareSelection.clear();
-      for (const k of keys) {
-        const esc = (window.CSS && CSS.escape) ? CSS.escape(k) : k;
-        document.querySelectorAll(`.card[data-key="${esc}"]`).forEach(c => c.classList.remove("is-selected"));
-        document.querySelectorAll(`.card-action-select[data-key="${esc}"]`).forEach(b => {
-          b.setAttribute("aria-pressed", "false");
-          b.setAttribute("aria-label", "Add to share set");
-          b.textContent = "+";
-        });
-      }
-      updateComboBar();
-    });
+    clearBtn.textContent = "Cancel"; clearBtn.disabled = false;
+    clearBtn.addEventListener("click", () => setSelectMode(false));
     const shareBtn = document.createElement("button");
     shareBtn.type = "button"; shareBtn.id = "combo-share-btn"; shareBtn.className = "combo-bar-btn combo-bar-share";
     shareBtn.textContent = "Create Dance Card"; shareBtn.disabled = true;

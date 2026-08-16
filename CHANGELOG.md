@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-16 - Clearer multi-event selection
+
+### Changed
+
+- Replaced the active **Done selecting** control with the non-interactive guidance
+  **Select the dances below (+ sign)**.
+- Renamed the floating bar's **Clear** action to **Cancel** and made it exit selection
+  mode, clear selected dances, hide the bar, and restore the normal card actions.
+
+## 2026-08-16 - Experimental style path
+
+### Added
+
+- Added an angled **Styles** connector beneath the Experimental Viewer's location tabs.
+- Added a vertical, scroll-revealed list of location-specific dance-style filters. Styles
+  remain muted until selected, turn white when active, and filter the event stream and
+  its sticky calendar without leaving the page.
+
 ## 2026-08-04 - Mint Reactor theme
 
 ### Added
