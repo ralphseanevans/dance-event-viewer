@@ -1,9 +1,31 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-15T01:07:25Z",
+  "generated_at": "2026-08-16T07:20:41Z",
   "since": "2026-07-22",
   "_notes": "Derived, public-safe site activity log for the authenticated dashboard Site log panel. Built by Operations\\Tools\\build_site_log.ps1 from the local master dance_events.json. Source-obfuscated on purpose: no scanner names, source types, source details, flyer/source URLs, notes, or contact fields. Entries begin at \"since\" and accumulate. Not the same thing as the public viewer Activity Pulse (visitor behavior).",
   "entries": [
+    {
+      "id": "discover:tl-dance-line-dance-lessons-rodeo-wednesdays",
+      "ts": "2026-08-16T07:20:41Z",
+      "ts_precision": "exact",
+      "kind": "event_discovered",
+      "key": "tl-dance-line-dance-lessons-rodeo-wednesdays",
+      "name": "Line Dance Lessons with Tina & Lionel",
+      "venue": "The Rodeo, 2249 Carey Street, Slidell, LA",
+      "style": "Line Dance",
+      "state": "LA"
+    },
+    {
+      "id": "discover:tl-dance-west-coast-swing-dance-mandeville-2026-08-15",
+      "ts": "2026-08-16T07:20:41Z",
+      "ts_precision": "exact",
+      "kind": "event_discovered",
+      "key": "tl-dance-west-coast-swing-dance-mandeville-2026-08-15",
+      "name": "West Coast Swing Dance",
+      "venue": "Daiquiris and Creams of Mandeville, 1737 Florida Street, Mandeville, LA",
+      "style": "West Coast Swing",
+      "state": "LA"
+    },
     {
       "id": "discover:good-ole-social-dance-2026-08-14",
       "ts": "2026-08-15T01:07:25Z",

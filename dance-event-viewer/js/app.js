@@ -1438,13 +1438,19 @@ function openComboShareModal(items) {
   emailBtn.type = "button"; emailBtn.className = "combo-btn combo-btn-email";
   emailBtn.textContent = "✨ Email me a designed graphic";
   emailBtn.addEventListener("click", () => openPosterEmailPanel(items, headline, pop, actions));
-  actions.append(imgBtn, copyBtn, linkBtn, emailBtn);
+  const closeBottom = document.createElement("button");
+  closeBottom.type = "button";
+  closeBottom.className = "combo-btn combo-btn-close";
+  closeBottom.textContent = "Close";
+  closeBottom.setAttribute("aria-label", "Close Dance Card");
+  actions.append(imgBtn, copyBtn, linkBtn, emailBtn, closeBottom);
   pop.appendChild(actions);
 
   backdrop.appendChild(pop);
   const done = () => { backdrop.remove(); document.removeEventListener("keydown", esc); if (comboBar && state.selectMode) comboBar.hidden = false; };
   const esc = (e) => { if (e.key === "Escape") done(); };
   close.addEventListener("click", done);
+  closeBottom.addEventListener("click", done);
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) done(); });
   document.addEventListener("keydown", esc);
   document.body.appendChild(backdrop);
@@ -2675,7 +2681,7 @@ function renderCalendar(main, visible) {
   wrap.appendChild(calHeader());
   const dated = visible.filter(hasDate);
   wrap.appendChild(calLegend(dated));
-  if (cal.mode === "year") renderYear(wrap, dated); else renderMonth(wrap, dated);
+  renderMonth(wrap, dated);
   const undated = visible.filter(d => !hasDate(d));
   if (undated.length) {
     const p = document.createElement("p");
@@ -2732,30 +2738,44 @@ function calHeader() {
   h.className = "cal-header";
   const nav = document.createElement("div");
   nav.className = "cal-nav";
-  const title = document.createElement("span");
-  title.className = "cal-title";
-  if (cal.mode === "month") {
-    nav.appendChild(calBtn("«", () => { cal.year--; render(); }, "Previous year"));
-    nav.appendChild(calBtn("‹", () => { cal.month--; if (cal.month < 0) { cal.month = 11; cal.year--; } render(); }, "Previous month"));
-    title.textContent = `${MONTH_NAMES[cal.month]} ${cal.year}`;
-    nav.appendChild(title);
-    nav.appendChild(calBtn("›", () => { cal.month++; if (cal.month > 11) { cal.month = 0; cal.year++; } render(); }, "Next month"));
-    nav.appendChild(calBtn("»", () => { cal.year++; render(); }, "Next year"));
-  } else {
-    nav.appendChild(calBtn("‹", () => { cal.year--; render(); }, "Previous year"));
-    title.textContent = String(cal.year);
-    nav.appendChild(title);
-    nav.appendChild(calBtn("›", () => { cal.year++; render(); }, "Next year"));
+
+  const monthSelect = document.createElement("select");
+  monthSelect.className = "cal-select";
+  monthSelect.setAttribute("aria-label", "Calendar month");
+  MONTH_NAMES.forEach((name, month) => {
+    const option = document.createElement("option");
+    option.value = String(month);
+    option.textContent = name;
+    option.selected = month === cal.month;
+    monthSelect.appendChild(option);
+  });
+  monthSelect.addEventListener("change", () => {
+    cal.month = Number(monthSelect.value);
+    cal.mode = "month";
+    render();
+  });
+
+  const yearSelect = document.createElement("select");
+  yearSelect.className = "cal-select cal-select-year";
+  yearSelect.setAttribute("aria-label", "Calendar year");
+  const currentYear = new Date().getFullYear();
+  const firstYear = Math.min(currentYear - 2, cal.year);
+  const lastYear = Math.max(currentYear + 10, cal.year);
+  for (let year = firstYear; year <= lastYear; year++) {
+    const option = document.createElement("option");
+    option.value = String(year);
+    option.textContent = String(year);
+    option.selected = year === cal.year;
+    yearSelect.appendChild(option);
   }
-  const right = document.createElement("div");
-  right.className = "cal-nav";
-  right.appendChild(calBtn("Today", () => { const now = new Date(); cal.year = now.getFullYear(); cal.month = now.getMonth(); render(); }));
-  const mBtn = calBtn("Month", () => { cal.mode = "month"; render(); });
-  const yBtn = calBtn("Year", () => { cal.mode = "year"; render(); });
-  mBtn.setAttribute("aria-pressed", String(cal.mode === "month"));
-  yBtn.setAttribute("aria-pressed", String(cal.mode === "year"));
-  right.appendChild(mBtn); right.appendChild(yBtn);
-  h.appendChild(nav); h.appendChild(right);
+  yearSelect.addEventListener("change", () => {
+    cal.year = Number(yearSelect.value);
+    cal.mode = "month";
+    render();
+  });
+
+  nav.append(monthSelect, yearSelect);
+  h.appendChild(nav);
   return h;
 }
 

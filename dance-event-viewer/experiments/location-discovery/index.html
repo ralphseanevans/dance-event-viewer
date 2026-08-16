@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#101211">
+  <title>Find a Dance Near You — Experimental</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../" aria-label="Dance Event Viewer home">
+      <span class="brand-mark" aria-hidden="true">D</span>
+      <span>Dance Event Viewer</span>
+    </a>
+    <span class="experiment-badge">Experimental</span>
+    <a class="viewer-link" href="../../">Current viewer <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <h1 id="page-title">Find a dance<br>near you.</h1>
+    </section>
+
+    <section class="location-picker" aria-label="Choose dance areas">
+      <div class="place-choices" aria-label="Location choices">
+        <button class="place-choice" type="button" data-city="Pensacola" aria-pressed="false">Pensacola</button>
+        <button class="place-choice" type="button" data-city="Mobile" aria-pressed="false">Mobile</button>
+        <a class="place-choice" href="../../">Other</a>
+      </div>
+      <div id="results" class="results" hidden>
+        <div class="results-layout">
+          <aside id="scrollCalendar" class="scroll-calendar" aria-label="Dates in the event list">
+            <div class="calendar-sticky">
+              <p id="calendarMonth" class="calendar-month"></p>
+              <div class="calendar-weekdays" aria-hidden="true">
+                <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+              </div>
+              <div id="calendarDays" class="calendar-days"></div>
+            </div>
+          </aside>
+          <div id="resultList" class="result-list" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
