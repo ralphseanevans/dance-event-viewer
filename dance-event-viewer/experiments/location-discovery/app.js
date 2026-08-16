@@ -15,10 +15,10 @@
   let dateObserver = null;
 
   Promise.all([
-    fetch('../../../dance_events.json').then(checkResponse).then((response) => response.json()),
+    loadEvents(),
     fetch('../../logo-map.json').then(checkResponse).then((response) => response.json()).catch(() => ({ logos: {}, patterns: [] }))
   ]).then(([eventData, mapData]) => {
-    events = Array.isArray(eventData.events) ? eventData.events : [];
+    events = Array.isArray(eventData) ? eventData : [];
     logoMap = mapData || logoMap;
   }).catch(() => { events = []; });
 
@@ -34,6 +34,25 @@
   function checkResponse(response) {
     if (!response.ok) throw new Error('Data unavailable');
     return response;
+  }
+
+  async function loadEvents() {
+    const config = window.DANCE_EVENT_VIEWER_SUPABASE;
+    if (config?.enabled && config.url && config.publishableKey && config.table) {
+      try {
+        const fields = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url';
+        const response = await fetch(`${config.url}/rest/v1/${config.table}?select=${fields}&order=key.asc&limit=1000`, {
+          headers: { apikey: config.publishableKey },
+          cache: 'no-store'
+        });
+        return await checkResponse(response).json();
+      } catch (error) {
+        console.warn('Supabase unavailable; using the generated fallback.', error);
+      }
+    }
+    const response = await fetch('../../../dance_events.json', { cache: 'no-store' });
+    const data = await checkResponse(response).json();
+    return Array.isArray(data.events) ? data.events : [];
   }
 
   function render() {

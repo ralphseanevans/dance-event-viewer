@@ -919,6 +919,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://danceeventviewer.net/e/good-ole-social-dance-2026-08-14.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://danceeventviewer.net/e/kick-it-old-school-2026-08-28.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
@@ -2017,6 +2023,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://danceeventviewer.net/e/starlite-ballroom-tuesday-ballroom-latin-class.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://danceeventviewer.net/e/summer-salsa-bachata-social-2026-07-17.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
@@ -2222,6 +2234,18 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/the-block-latin-night-thursdays.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://danceeventviewer.net/e/tl-dance-line-dance-lessons-rodeo-wednesdays.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://danceeventviewer.net/e/tl-dance-west-coast-swing-dance-mandeville-2026-08-15.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -3716,30 +3740,6 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/wsdc-westie-weekend-2027.html</loc>
-    <lastmod>2026-08-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/starlite-ballroom-tuesday-ballroom-latin-class.html</loc>
-    <lastmod>2026-08-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/good-ole-social-dance-2026-08-14.html</loc>
-    <lastmod>2026-08-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/tl-dance-west-coast-swing-dance-mandeville-2026-08-15.html</loc>
-    <lastmod>2026-08-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/tl-dance-line-dance-lessons-rodeo-wednesdays.html</loc>
     <lastmod>2026-08-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

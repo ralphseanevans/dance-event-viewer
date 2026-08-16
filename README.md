@@ -1,5 +1,7 @@
 # Dance Event Viewer
 
+> **Current event storage (2026-08-16):** Supabase `private.events` is authoritative and synchronizes active rows to `public.event_listings`, which the viewer reads first. `dance_events.json` is generated from that public table for outage fallback and static recovery; never edit it as a source. Routine event changes do not require a GitHub publish.
+
 Community viewer for partner-dance events (West Coast Swing and more) in the
 Southern United States. Live site: https://danceeventviewer.net/dance-event-viewer/
 
