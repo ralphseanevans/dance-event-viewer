@@ -88,7 +88,7 @@
       .filter((item) => item.date)
       .sort((a, b) => a.date - b.date || (a.event.start_time || '').localeCompare(b.event.start_time || ''));
 
-    const availableStyles = Array.from(new Set(decoratedForCities.map((item) => item.event.style).filter(Boolean))).sort((a, b) => {
+    const availableStyles = Array.from(new Set(decoratedForCities.flatMap((item) => styleFacets(item.event.style)))).sort((a, b) => {
       if (a === 'West Coast Swing') return -1;
       if (b === 'West Coast Swing') return 1;
       return a.localeCompare(b);
@@ -100,9 +100,17 @@
     updateStyleRouteOrigin();
     if (wasHidden) restartStylePickerIntro();
 
-    const decorated = selectedStyles.size
-      ? decoratedForCities.filter((item) => selectedStyles.has(item.event.style))
-      : decoratedForCities;
+    if (!selectedStyles.size) {
+      results.hidden = true;
+      results.classList.remove('reveal');
+      resultList.replaceChildren();
+      calendarDays.replaceChildren();
+      calendarMonth.textContent = '';
+      if (dateObserver) dateObserver.disconnect();
+      return;
+    }
+
+    const decorated = decoratedForCities.filter((item) => styleFacets(item.event.style).some((style) => selectedStyles.has(style)));
 
     const groups = new Map();
     decorated.forEach((item) => {
@@ -130,6 +138,19 @@
     results.classList.remove('reveal');
     void results.offsetWidth;
     results.classList.add('reveal');
+  }
+
+  function styleFacets(style) {
+    const value = String(style || '').trim();
+    if (!value) return [];
+    if (/^Ballroom\s*\(\s*Lead\s*\/\s*Follow\s*\)$/i.test(value) ||
+        /^Ballroom\s*(?:\/\s*Social|\(\s*Social\s*\)|Social)$/i.test(value)) {
+      return ['Ballroom'];
+    }
+    if (/^Lindy Hop\s*\/\s*Blues$/i.test(value)) return ['Lindy Hop', 'Blues'];
+    if (/^Line Dance\s*\/\s*East Coast Swing$/i.test(value)) return ['Line Dance', 'East Coast Swing'];
+    if (/^Swing\s*\/\s*Detroit Ballroom$/i.test(value)) return ['Swing'];
+    return [value];
   }
 
   function renderStyleChoices(styles) {
