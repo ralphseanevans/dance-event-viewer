@@ -237,7 +237,9 @@
   function updateStyleRouteOrigin() {
     const active = cityButtons.find((button) => selected.has(button.dataset.city));
     if (!active) return;
-    const desired = active.offsetLeft + active.offsetWidth * .82;
+    const activeRect = active.getBoundingClientRect();
+    const pickerRect = stylePicker.getBoundingClientRect();
+    const desired = activeRect.right - pickerRect.left;
     const run = window.innerWidth <= 560 ? 76 : 118;
     const maximum = Math.max(74, stylePicker.clientWidth - run - (window.innerWidth <= 560 ? 154 : 240));
     stylePicker.style.setProperty('--route-origin', `${Math.round(Math.min(desired, maximum))}px`);
