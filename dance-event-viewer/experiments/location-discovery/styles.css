@@ -51,9 +51,32 @@ main {
 .hero { max-width: 760px; }
 h1 { margin: 0; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,.18); font-size: clamp(58px, 7.2vw, 104px); line-height: .92; letter-spacing: -.07em; font-weight: 760; }
 
-.location-picker { margin-top: 58px; }
+.location-picker { position: relative; isolation: isolate; margin-top: 58px; }
+
+.selected-style-route {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+}
+.selected-style-route[hidden] { display: none; }
+.selected-style-route line {
+  fill: none;
+  stroke: var(--mint);
+  stroke-width: 2;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+}
+.selected-style-route .selected-style-trunk { transition: stroke-dashoffset .08s linear; }
+.selected-style-route .selected-style-branch { transition: stroke-dashoffset .52s cubic-bezier(.42,0,.2,1); }
 
 .place-choices {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -83,6 +106,8 @@ h1 { margin: 0; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,
   --route-run: 118px;
   margin-top: -2px;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 .style-picker[hidden] { display: none; }
 .style-route {
@@ -216,6 +241,7 @@ h1 { margin: 0; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,
   margin-top: 76px;
   padding-top: 28px;
   border-top: 1px solid rgba(255,255,255,.18);
+  z-index: 1;
 }
 
 .results.reveal { animation: results-reveal .38s ease both; }
@@ -449,4 +475,5 @@ button.calendar-day { cursor: pointer; }
   .style-choice { opacity: 1; transform: none; }
   .style-route-line::before, .style-route-line::after { transform: none; }
   .style-route-label, .solo-style-choice { opacity: 1; transform: none; }
+  .selected-style-route line { transition: none !important; }
 }

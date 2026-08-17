@@ -8,6 +8,8 @@
   const resultList = document.getElementById('resultList');
   const stylePicker = document.getElementById('stylePicker');
   const styleChoices = document.getElementById('styleChoices');
+  const locationPicker = document.querySelector('.location-picker');
+  const selectedStyleRoute = document.getElementById('selectedStyleRoute');
   const calendarMonth = document.getElementById('calendarMonth');
   const calendarDays = document.getElementById('calendarDays');
   const selected = new Set();
@@ -20,6 +22,10 @@
   let styleObserver = null;
   let styleRevealStartedAt = 0;
   let soloStylesOpen = false;
+  let selectedRouteFrame = null;
+  const drawnStyleBranches = new Set();
+  const selectedRouteResizeObserver = 'ResizeObserver' in window ? new ResizeObserver(scheduleSelectedStyleRoute) : null;
+  selectedRouteResizeObserver?.observe(locationPicker);
 
   Promise.all([
     loadEvents(),
@@ -30,7 +36,11 @@
     if (selected.size) render();
   }).catch(() => { events = []; });
 
-  window.addEventListener('resize', updateStyleRouteOrigin);
+  window.addEventListener('resize', () => {
+    updateStyleRouteOrigin();
+    scheduleSelectedStyleRoute();
+  });
+  window.addEventListener('scroll', scheduleSelectedStyleRoute, { passive: true });
 
   cityButtons.forEach((button) => {
     button.addEventListener('click', () => {
@@ -73,6 +83,7 @@
       stylePicker.hidden = true;
       stylePicker.classList.remove('is-opening');
       styleChoices.replaceChildren();
+      hideSelectedStyleRoute();
       results.hidden = true;
       resultList.replaceChildren();
       calendarDays.replaceChildren();
@@ -101,6 +112,7 @@
     if (wasHidden) restartStylePickerIntro();
 
     if (!selectedStyles.size) {
+      hideSelectedStyleRoute();
       results.hidden = true;
       results.classList.remove('reveal');
       resultList.replaceChildren();
@@ -138,6 +150,7 @@
     results.classList.remove('reveal');
     void results.offsetWidth;
     results.classList.add('reveal');
+    scheduleSelectedStyleRoute();
   }
 
   function styleFacets(style) {
@@ -243,6 +256,98 @@
     const run = window.innerWidth <= 560 ? 76 : 118;
     const maximum = Math.max(74, stylePicker.clientWidth - run - (window.innerWidth <= 560 ? 154 : 240));
     stylePicker.style.setProperty('--route-origin', `${Math.round(Math.min(desired, maximum))}px`);
+    scheduleSelectedStyleRoute();
+  }
+
+  function hideSelectedStyleRoute() {
+    if (selectedRouteFrame) cancelAnimationFrame(selectedRouteFrame);
+    selectedRouteFrame = null;
+    selectedStyleRoute.setAttribute('hidden', '');
+    selectedStyleRoute.replaceChildren();
+    drawnStyleBranches.clear();
+  }
+
+  function scheduleSelectedStyleRoute() {
+    if (selectedRouteFrame) return;
+    selectedRouteFrame = requestAnimationFrame(() => {
+      selectedRouteFrame = null;
+      updateSelectedStyleRoute();
+    });
+  }
+
+  function updateSelectedStyleRoute() {
+    if (!selectedStyles.size || results.hidden || stylePicker.hidden) {
+      hideSelectedStyleRoute();
+      return;
+    }
+
+    const pickerRect = locationPicker.getBoundingClientRect();
+    const choicesRect = styleChoices.getBoundingClientRect();
+    const resultsRect = results.getBoundingClientRect();
+    const visibleButtons = Array.from(styleChoices.querySelectorAll('[data-style][aria-pressed="true"]'))
+      .filter((button) => button.dataset.style !== '__solo__' && button.getClientRects().length)
+      .map((button) => ({ button, rect: button.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.width > 0 && rect.height > 0);
+    if (!visibleButtons.length) {
+      hideSelectedStyleRoute();
+      return;
+    }
+
+    const width = Math.max(1, locationPicker.clientWidth);
+    const height = Math.max(1, locationPicker.scrollHeight);
+    const styleX = choicesRect.left - pickerRect.left;
+    const branchRun = Math.min(window.innerWidth <= 560 ? 76 : 172, Math.max(44, styleX - 16));
+    const trunkX = Math.round(styleX - branchRun);
+    const branchPoints = visibleButtons.map(({ button, rect }) => ({
+      style: button.dataset.style,
+      x: Math.round(rect.left - pickerRect.left - 10),
+      y: Math.round(rect.top - pickerRect.top + rect.height / 2)
+    }));
+    const trunkTop = Math.min(...branchPoints.map((point) => point.y));
+    const trunkBottom = Math.max(trunkTop, Math.round(resultsRect.top - pickerRect.top));
+    const trunkLength = Math.max(1, trunkBottom - trunkTop);
+    const pickerDocumentTop = pickerRect.top + window.scrollY;
+    const completionPoint = pickerDocumentTop + trunkBottom + 72;
+    const viewportBottom = window.scrollY + window.innerHeight;
+    const progress = Math.max(0, Math.min(1, (viewportBottom - (pickerDocumentTop + trunkTop)) / Math.max(1, completionPoint - (pickerDocumentTop + trunkTop))));
+
+    selectedStyleRoute.removeAttribute('hidden');
+    selectedStyleRoute.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    selectedStyleRoute.setAttribute('width', String(width));
+    selectedStyleRoute.setAttribute('height', String(height));
+    selectedStyleRoute.style.width = `${width}px`;
+    selectedStyleRoute.style.height = `${height}px`;
+    selectedStyleRoute.replaceChildren();
+
+    const trunk = makeRouteLine(trunkX, trunkTop, trunkX, trunkBottom, 'selected-style-trunk');
+    trunk.style.strokeDasharray = String(trunkLength);
+    trunk.style.strokeDashoffset = String(trunkLength * (1 - progress));
+    selectedStyleRoute.appendChild(trunk);
+
+    const currentStyles = new Set(branchPoints.map((point) => point.style));
+    drawnStyleBranches.forEach((style) => { if (!currentStyles.has(style)) drawnStyleBranches.delete(style); });
+    branchPoints.forEach((point) => {
+      const length = Math.max(1, point.x - trunkX);
+      const branch = makeRouteLine(trunkX, point.y, point.x, point.y, 'selected-style-branch');
+      branch.dataset.style = point.style;
+      branch.style.strokeDasharray = String(length);
+      branch.style.strokeDashoffset = drawnStyleBranches.has(point.style) ? '0' : String(length);
+      selectedStyleRoute.appendChild(branch);
+      if (!drawnStyleBranches.has(point.style)) {
+        requestAnimationFrame(() => { branch.style.strokeDashoffset = '0'; });
+        drawnStyleBranches.add(point.style);
+      }
+    });
+  }
+
+  function makeRouteLine(x1, y1, x2, y2, className) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('class', className);
+    line.setAttribute('x1', String(x1));
+    line.setAttribute('y1', String(y1));
+    line.setAttribute('x2', String(x2));
+    line.setAttribute('y2', String(y2));
+    return line;
   }
 
   function observeStyleChoices() {
