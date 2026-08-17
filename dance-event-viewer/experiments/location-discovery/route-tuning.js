@@ -15,10 +15,38 @@
   let trunkLength = 1;
   let lastTime = performance.now();
   let applying = false;
+  let syncingMixed = false;
 
-  function removeBallroomChoice() {
-    styleChoices.querySelectorAll('[data-style]').forEach((button) => {
-      if (/^ballroom$/i.test(button.dataset.style || button.textContent || '')) button.remove();
+  function ballroomButton() {
+    return Array.from(styleChoices.querySelectorAll('[data-style]')).find((button) => /^ballroom$/i.test(button.dataset.style || button.textContent || ''));
+  }
+
+  function mixedButton() {
+    return Array.from(styleChoices.querySelectorAll('[data-style]')).find((button) => /^mixed$/i.test(button.dataset.style || button.textContent || ''));
+  }
+
+  function hideBallroomChoice() {
+    const button = ballroomButton();
+    if (button) {
+      button.hidden = true;
+      button.setAttribute('aria-hidden', 'true');
+      button.tabIndex = -1;
+    }
+  }
+
+  function syncMixedWithBallroom() {
+    if (syncingMixed) return;
+    const mixed = mixedButton();
+    const ballroom = ballroomButton();
+    if (!mixed || !ballroom) return;
+    const mixedPressed = mixed.getAttribute('aria-pressed') === 'true';
+    const ballroomPressed = ballroom.getAttribute('aria-pressed') === 'true';
+    if (mixedPressed === ballroomPressed) return;
+    syncingMixed = true;
+    ballroom.click();
+    requestAnimationFrame(() => {
+      syncingMixed = false;
+      hideBallroomChoice();
     });
   }
 
@@ -45,6 +73,12 @@
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('class', 'selected-style-continuation');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('stroke-linecap', 'square');
+    path.setAttribute('vector-effect', 'non-scaling-stroke');
+    path.style.color = 'var(--mint)';
     path.setAttribute('d', [
       `M ${x} ${startY}`,
       `L ${x} ${Math.max(startY, endY - loopRadius * 1.2)}`,
@@ -59,10 +93,11 @@
     if (applying) return;
     applying = true;
     try {
-      removeBallroomChoice();
+      hideBallroomChoice();
       const trunk = route.querySelector('.selected-style-trunk');
       if (!trunk) return;
       captureOriginalTarget();
+      trunk.style.transition = 'none';
       trunk.style.strokeDashoffset = String(Math.max(0, trunkLength - currentPixels));
       if (!route.querySelector('.selected-style-continuation') && !results.hidden && resultList.children.length) {
         route.appendChild(makeContinuationPath(trunk));
@@ -102,9 +137,18 @@
     requestAnimationFrame(animate);
   }
 
+  styleChoices.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-style]');
+    if (!button || !/^mixed$/i.test(button.dataset.style || button.textContent || '')) return;
+    requestAnimationFrame(() => requestAnimationFrame(syncMixedWithBallroom));
+  }, true);
+
   const observer = new MutationObserver(() => {
     if (applying) return;
-    requestAnimationFrame(decorateRoute);
+    requestAnimationFrame(() => {
+      decorateRoute();
+      hideBallroomChoice();
+    });
   });
   observer.observe(route, { childList: true });
   observer.observe(styleChoices, { childList: true, subtree: true });
@@ -116,5 +160,6 @@
   window.addEventListener('resize', () => requestAnimationFrame(decorateRoute));
 
   decorateRoute();
+  hideBallroomChoice();
   requestAnimationFrame(animate);
 })();
