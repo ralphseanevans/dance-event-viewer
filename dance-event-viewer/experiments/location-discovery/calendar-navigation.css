@@ -1,0 +1,89 @@
+.calendar-sticky {
+  position: relative;
+}
+
+.calendar-month-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.calendar-month-button {
+  position: absolute;
+  top: 50%;
+  width: 46px;
+  height: 64px;
+  margin-top: -32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mint);
+  cursor: pointer;
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  opacity: .9;
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.calendar-month-button:hover,
+.calendar-month-button:focus-visible {
+  opacity: 1;
+  transform: scale(1.08);
+  outline: none;
+}
+
+.calendar-month-previous {
+  left: -64px;
+}
+
+.calendar-month-next {
+  right: -64px;
+}
+
+.calendar-month-triangle {
+  width: 0;
+  height: 0;
+  border-top: 18px solid transparent;
+  border-bottom: 18px solid transparent;
+}
+
+.calendar-month-previous .calendar-month-triangle {
+  border-right: 26px solid currentColor;
+}
+
+.calendar-month-next .calendar-month-triangle {
+  border-left: 26px solid currentColor;
+}
+
+@media (max-width: 780px) {
+  .calendar-month-button {
+    top: auto;
+    bottom: -54px;
+    width: 42px;
+    height: 42px;
+    margin-top: 0;
+  }
+
+  .calendar-month-previous {
+    left: 12px;
+  }
+
+  .calendar-month-next {
+    right: 12px;
+  }
+
+  .calendar-month-triangle {
+    border-top-width: 13px;
+    border-bottom-width: 13px;
+  }
+
+  .calendar-month-previous .calendar-month-triangle {
+    border-right-width: 19px;
+  }
+
+  .calendar-month-next .calendar-month-triangle {
+    border-left-width: 19px;
+  }
+}
