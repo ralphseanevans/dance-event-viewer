@@ -12464,6 +12464,26 @@
       "source_url": "https://dancejamproductions.com/westieweekend/",
       "unverified": false,
       "verified_on": "2026-07-12"
+    },
+    {
+      "key": "bachata-weekender-julie-hansen-2026-10-16",
+      "name": "Bachata Weekender with Julie Hansen",
+      "style": "Bachata",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-16",
+      "end_date": "2026-10-18",
+      "start_time": "19:00",
+      "end_time": null,
+      "venue": "Bric à Brac, 824 Gulf Shore Dr, Destin, FL",
+      "state": "FL",
+      "cost": "Early bird 20% discount until Sept 15 (ticket pricing via QR link on flyer)",
+      "source_url": null,
+      "unverified": false,
+      "verified_on": "2026-08-18"
     }
   ]
 }

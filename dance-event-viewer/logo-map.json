@@ -1,6 +1,10 @@
 {
   "_notes": "Maps event keys (from dance_events.json) to logo/flyer images, paths relative to index.html. Exact 'logos' matches win; otherwise the first 'patterns' entry whose 'contains' substring appears in the event key is used â€” this is what keeps logos attached when a series rolls over to a new key after a crawl (e.g. west-coast-wednesdays-in-august-2026). To link a new logo: drop the image in graphics/logos/ (WITH a file extension) and add an exact line, plus a pattern line if the event recurs under changing keys. Unmapped events show no image. Rebuilt 2026-07-11 (v2: patterns added per Sean; IMG_9893/9897 updated to their .png replacements; extensionless uploads renamed with detected extensions).",
   "logos": {
+    "bachata-weekender-julie-hansen-2026-10-16": [
+      "../graphics/logos/upload-bachata-weekender-julie-hansen-2026-10-16-page1-28ea327b.jpg",
+      "../graphics/logos/upload-bachata-weekender-julie-hansen-2026-10-16-page2-c897237c.jpg"
+    ],
     "monday-night-west-coast-swing-dance-party-ragon-hall": "../graphics/logos/IMG_9897.JPG",
     "kick-it-old-school-2026-08-28": "../graphics/logos/upload-kick-it-old-school-2026-08-28-54979d79.jpg",
     "first-friday-live-band-dance-night-seaside-swing-outs": "../graphics/logos/IMG_9895.JPG",

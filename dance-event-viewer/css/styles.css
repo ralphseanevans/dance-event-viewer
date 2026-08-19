@@ -888,6 +888,33 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
   width: auto; height: auto; object-fit: contain; border-radius: 8px;
 }
 
+/* Multi-page flyer support (added 2026-08-18). The card thumbnail carries a small
+   "1 / N" pill when an event has more than one page; the lightbox grows prev/next
+   arrows and a page counter. Single-image events use none of this. */
+.card-art-trigger { position: relative; }
+.card-art-count {
+  position: absolute; bottom: 8px; right: 8px;
+  background: rgba(0, 0, 0, .66); color: #fff;
+  font-size: .72rem; font-weight: 600; line-height: 1;
+  padding: 4px 8px; border-radius: 999px; pointer-events: none;
+  letter-spacing: .02em;
+}
+.lightbox-pop.has-pages { padding: 20px 52px 40px; }
+.lightbox-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(0, 0, 0, .5); color: #fff; border: none;
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  font-size: 1.6rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.lightbox-nav:hover { background: rgba(0, 0, 0, .72); }
+.lightbox-nav:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lightbox-prev { left: 8px; }
+.lightbox-next { right: 8px; }
+.lightbox-count {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  color: var(--text-dim); font-size: .82rem; font-weight: 600;
+}
+
 @media (max-width: 640px) {
   .cal-cell { min-height: 64px; padding: 4px; border-radius: 6px; }
   .cal-chip { font-size: .58rem; padding: 1px 4px; }

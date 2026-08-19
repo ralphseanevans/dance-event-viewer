@@ -432,7 +432,9 @@ async function loadLogoMap() {
     const j = JSON.parse(await res.text());
     if (j && typeof j.logos === "object" && j.logos !== null && !Array.isArray(j.logos)) state.logos = j.logos;
     state.logoPatterns = Array.isArray(j?.patterns)
-      ? j.patterns.filter(p => p && typeof p.contains === "string" && p.contains && typeof p.logo === "string" && p.logo)
+      ? j.patterns.filter(p => p && typeof p.contains === "string" && p.contains
+          && ((typeof p.logo === "string" && p.logo)
+              || (Array.isArray(p.logo) && p.logo.some(s => typeof s === "string" && s))))
       : [];
   } catch (err) { state.logos = {}; state.logoPatterns = []; }
 }
@@ -450,12 +452,38 @@ async function loadWebEvents() {
     state.webEvents = Array.isArray(j?.events) ? j.events : [];
   } catch (err) { state.webEvents = []; }
 }
+/* Resolve ALL images mapped to an event key, in display order (added 2026-08-18
+   for multi-page flyers). A logo-map entry — exact `logos[key]` or a matching
+   `patterns[].logo` — may be a single string (one image, the original shape) or
+   an array of strings (multiple pages). Always returns an array (0..n), so a
+   single-image event yields a one-element list and renders exactly as before. */
+function logoListFor(key) {
+  if (typeof key !== "string" || !key) return [];
+  const norm = (v) => Array.isArray(v)
+    ? v.filter(s => typeof s === "string" && s)
+    : (typeof v === "string" && v ? [v] : []);
+  const exact = norm(state.logos[key]);
+  if (exact.length) return exact;
+  for (const p of state.logoPatterns) {
+    if (key.includes(p.contains)) { const arr = norm(p.logo); if (arr.length) return arr; }
+  }
+  return [];
+}
+/* Back-compat single-image resolver: first mapped image or null. Used by the
+   share-poster renderer and anywhere one representative image is enough. */
 function logoFor(key) {
-  if (typeof key !== "string" || !key) return null;
-  const exact = state.logos[key];
-  if (typeof exact === "string" && exact) return exact;
-  for (const p of state.logoPatterns) if (key.includes(p.contains)) return p.logo;
-  return null;
+  const list = logoListFor(key);
+  return list.length ? list[0] : null;
+}
+/* Every flyer/poster image to show for an event, deduped, in display order: the
+   Supabase `flyer_url` (if present) first, then any logo-map image(s). Lets one
+   event carry multiple pages while single-image events return exactly one entry. */
+function flyersFor(ev) {
+  const out = [];
+  const push = (s) => { if (typeof s === "string" && s && !out.includes(s)) out.push(s); };
+  if (ev && typeof ev.flyer_url === "string" && ev.flyer_url) push(ev.flyer_url);
+  for (const s of logoListFor(ev && ev.key)) push(s);
+  return out;
 }
 
 /* ---------- Map view helpers (added 2026-07-12) ---------- */
@@ -1884,21 +1912,34 @@ function card(d, { showWhen, isPast }) {
 
   const art = document.createElement("div");
   art.className = "card-art";
-  const logoPath = (typeof ev.flyer_url === "string" && ev.flyer_url) || logoFor(ev.key);
-  if (typeof logoPath === "string" && logoPath) {
+  // An event may have one flyer or several pages (multi-page support added
+  // 2026-08-18). Single-image events render exactly as before; multi-page events
+  // show page 1 with a "1 / N" pill and open a paged lightbox on click.
+  const flyers = flyersFor(ev);
+  if (flyers.length) {
     // Wrapped in a real <button> (not a click handler on the <img>) so it's keyboard-
     // operable and has correct semantics for free, matching the venue-button pattern above.
     const trigger = document.createElement("button");
     trigger.type = "button";
     trigger.className = "card-art-trigger";
-    trigger.setAttribute("aria-label", `Enlarge flyer for ${ev.name.trim()}`);
+    const multi = flyers.length > 1;
+    trigger.setAttribute("aria-label", multi
+      ? `Enlarge ${flyers.length} flyer pages for ${ev.name.trim()}`
+      : `Enlarge flyer for ${ev.name.trim()}`);
     const img = document.createElement("img");
-    img.src = encodeURI(logoPath);
+    img.src = encodeURI(flyers[0]);
     img.alt = "";                                  // decorative — the name is in the heading
     img.loading = "lazy";
     img.addEventListener("error", () => art.remove());
     trigger.appendChild(img);
-    trigger.addEventListener("click", () => openImageLightbox(logoPath, ev.name.trim()));
+    if (multi) {
+      const count = document.createElement("span");
+      count.className = "card-art-count";
+      count.textContent = `1 / ${flyers.length}`;
+      count.setAttribute("aria-hidden", "true");
+      trigger.appendChild(count);
+    }
+    trigger.addEventListener("click", () => openImageLightbox(flyers, ev.name.trim()));
     art.appendChild(trigger);
   }
   el.appendChild(art);
@@ -3023,22 +3064,58 @@ function openAddressPopup(address, coords) {
 // behaves consistently across every view that renders a card (Timeline, Grid, List,
 // Calendar chip popup, Map venue card).
 function openImageLightbox(src, label) {
+  // `src` may be a single image path (original shape) or an array of pages
+  // (multi-page flyers, added 2026-08-18). With more than one image the dialog
+  // grows prev/next controls, a "n / total" indicator, and ←/→ keyboard paging;
+  // a single image behaves exactly as before.
+  const images = (Array.isArray(src) ? src : [src]).filter(s => typeof s === "string" && s);
+  if (!images.length) return;
+  const multi = images.length > 1;
+  let idx = 0;
+
   const backdrop = document.createElement("div");
   backdrop.className = "cal-pop-backdrop";
   const pop = document.createElement("div");
-  pop.className = "lightbox-pop";
+  pop.className = multi ? "lightbox-pop has-pages" : "lightbox-pop";
   pop.setAttribute("role", "dialog"); pop.setAttribute("aria-modal", "true");
   pop.setAttribute("aria-label", label ? `Enlarged flyer for ${label}` : "Enlarged flyer");
   const close = document.createElement("button");
   close.type = "button"; close.className = "pop-close"; close.textContent = "×";
   close.setAttribute("aria-label", "Close");
   const img = document.createElement("img");
-  img.src = encodeURI(src);
-  img.alt = label || "";
   pop.appendChild(close); pop.appendChild(img);
+
+  let prev, next, counter;
+  const show = (i) => {
+    idx = (i + images.length) % images.length;
+    img.src = encodeURI(images[idx]);
+    img.alt = label
+      ? (multi ? `${label} — page ${idx + 1} of ${images.length}` : label)
+      : "";
+    if (counter) counter.textContent = `${idx + 1} / ${images.length}`;
+  };
+  if (multi) {
+    prev = document.createElement("button");
+    prev.type = "button"; prev.className = "lightbox-nav lightbox-prev";
+    prev.textContent = "‹"; prev.setAttribute("aria-label", "Previous page");
+    next = document.createElement("button");
+    next.type = "button"; next.className = "lightbox-nav lightbox-next";
+    next.textContent = "›"; next.setAttribute("aria-label", "Next page");
+    counter = document.createElement("span");
+    counter.className = "lightbox-count"; counter.setAttribute("aria-live", "polite");
+    prev.addEventListener("click", (e) => { e.stopPropagation(); show(idx - 1); });
+    next.addEventListener("click", (e) => { e.stopPropagation(); show(idx + 1); });
+    pop.appendChild(prev); pop.appendChild(next); pop.appendChild(counter);
+  }
+  show(0);
+
   backdrop.appendChild(pop);
   const done = () => { backdrop.remove(); document.removeEventListener("keydown", esc); };
-  const esc = (e) => { if (e.key === "Escape") done(); };
+  const esc = (e) => {
+    if (e.key === "Escape") done();
+    else if (multi && e.key === "ArrowLeft") { e.preventDefault(); show(idx - 1); }
+    else if (multi && e.key === "ArrowRight") { e.preventDefault(); show(idx + 1); }
+  };
   close.addEventListener("click", done);
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) done(); });
   document.addEventListener("keydown", esc);
