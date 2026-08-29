@@ -10,6 +10,7 @@ import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import EventFilterBar, { PUBLIC_STYLE_ORDER, publicStyleCategory, type LocalArea, type RelationshipFilter } from "../components/EventFilterBar";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
+import { resolveFlyerUrl } from "./EventFormatting";
 import DataQualityInbox from "./DataQualityInbox";
 import DraftReviewExperiment from "./DraftReviewExperiment";
 import VolunteerPreviewExperiment from "./VolunteerPreviewExperiment";
@@ -42,13 +43,6 @@ function formatDate(event: DashboardEvent): string {
     if (!Number.isNaN(parsed.getTime())) return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(parsed);
   }
   return event.day_of_week || event.monthly_rule || "Schedule pending";
-}
-
-function resolveFlyerUrl(value: string | null | undefined): string {
-  const url = value?.trim();
-  if (!url || typeof window === "undefined") return url ?? "";
-  if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
-  return new URL(url, new URL("../", window.location.href)).href;
 }
 
 function publicFlyerUrl(event: DashboardEvent, map: PublicFlyerMap): string {
