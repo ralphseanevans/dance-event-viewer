@@ -620,6 +620,11 @@ main { max-width: var(--maxw); margin: 0 auto; }
   position: absolute;
   top: 10px; right: 10px;
   display: flex; gap: 6px;
+  /* 2026-09-27 (Sean-approved): the flyer's .card-art-trigger became position:relative for
+     multi-page flyers (2026-08-18) and, being later in the DOM, painted over these buttons,
+     so taps on the heart/share/calendar/"+" opened the lightbox instead. Lift the corner
+     controls above the flyer; the flyer itself still opens the lightbox everywhere else. */
+  z-index: 10;
 }
 .card-action-btn {
   width: 28px; height: 28px;
@@ -658,6 +663,18 @@ main { max-width: var(--maxw); margin: 0 auto; }
 .card-art-trigger img { transition: opacity .15s ease; }
 .card-art-trigger:hover img { opacity: .82; }
 .card-art-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Neutral stand-in when a flyer image fails to load (2026-09-27): small, quiet, never a broken icon. */
+.flyer-missing {
+  /* Tall enough that the card's top-right action buttons sit over empty space and the
+     label shows below them instead of underneath. */
+  display: flex; align-items: flex-end; justify-content: center;
+  min-height: 96px; padding: 10px 10px 14px;
+  color: var(--text-dim); font-size: .8rem; letter-spacing: .02em;
+  background: rgba(255, 255, 255, .04);
+  border-bottom: 1px dashed var(--border);
+}
+.lightbox-pop .flyer-missing { min-width: 220px; min-height: 120px; border: 1px dashed var(--border); border-radius: 8px; }
+.lightbox-pop img[hidden], .lightbox-pop .flyer-missing[hidden] { display: none; }
 .card h3 { font-size: 1.08rem; line-height: 1.3; }
 .card .when { color: var(--accent); font-weight: 600; font-size: .95rem; }
 .card .schedule { color: var(--text); font-size: .95rem; }
@@ -1185,7 +1202,12 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 /* The per-card select control is hidden until "Share several" is on; while selecting,
    it becomes the ONLY corner action so the choice is unambiguous. */
 .card-action-select { display: none; }
-body.selecting .card-action-select { display: flex; }
+body.selecting .card-action-select {
+  display: flex;
+  /* 44px touch target for the Dance Card "+" while selecting (it is the only corner control then). */
+  width: 44px;
+  height: 44px;
+}
 body.selecting .card-action-favorite,
 body.selecting .card-action-share { display: none; }
 .card-action-select[aria-pressed="true"] {

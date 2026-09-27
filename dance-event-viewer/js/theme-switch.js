@@ -47,9 +47,16 @@
     if (persist) { try { localStorage.setItem(STORE_KEY, theme); } catch (e) {} }
     // Only explicitly mapped themes load separate artwork. Every other palette retains
     // the current Moonlit Ember hero, so adding themes does not invent missing assets.
-    var banner = BANNERS[theme] || BANNERS.ember;
-    var img = document.getElementById("brand-img");
-    if (img && banner) { img.setAttribute("src", banner.src); img.setAttribute("alt", banner.alt); }
+    // 2026-09-27: index.html's inline DEV_APPLY_BANNER loads only the active theme's WebP
+    // banner (srcset); reuse it so a theme change fetches just that one image. BANNERS below
+    // is kept only as a fallback if that inline helper is ever missing.
+    if (typeof window.DEV_APPLY_BANNER === "function") {
+      window.DEV_APPLY_BANNER(theme);
+    } else {
+      var banner = BANNERS[theme] || BANNERS.ember;
+      var img = document.getElementById("brand-img");
+      if (img && banner) { img.setAttribute("src", banner.src); img.setAttribute("alt", banner.alt); }
+    }
     var opts = document.querySelectorAll(".theme-option");
     for (var i = 0; i < opts.length; i++) {
       opts[i].setAttribute("aria-checked",

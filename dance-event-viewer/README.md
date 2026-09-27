@@ -49,7 +49,11 @@ per theme; the menu wiring lives in **`js/theme-switch.js`**. Each theme also sw
 **hero banner graphic** (handled in `theme-switch.js`): `assets/dance-event-viewer-banner.png`
 (warm) for Ember, and `assets/dance-event-viewer-banner-classic.png` (the original
 blue/pink banner, recovered from the initial-publish git commit) for Classic; the other
-palettes retain the Ember banner. To add another theme, add its palette + tokens to
+palettes retain the Ember banner. Since 2026-09-27 the page loads a **responsive WebP**
+copy of the active theme's banner (`assets/dance-event-viewer-banner*-{720,1120,2172}.webp`,
+chosen by `srcset`/`sizes` from the inline `DEV_BANNERS` map in `index.html`, which
+`theme-switch.js` reuses via `DEV_APPLY_BANNER`); the original PNGs stay in `assets/` as
+sources and as a fallback. Regenerate the WebP sizes if a banner PNG changes. To add another theme, add its palette + tokens to
 `moonlit-ember-theme.css`, its name to `VALID` in `theme-switch.js`, and an option button
 in `index.html`.
 
@@ -136,6 +140,36 @@ wrapped in an HTML comment; uncomment that block to restore the artwork.
 The **Theme** control and **Submit an Event** link share one compact header-action row
 immediately above the Dance Event Viewer banner. Theme stays left-aligned and Submit an
 Event stays right-aligned at desktop and phone widths.
+
+## Card controls, flyer images, status line, activity feed (2026-09-27)
+
+- **Card buttons:** `.card-actions` (select, favorite ♡, share, add-to-calendar) sits at
+  `z-index: 10` so the flyer's lightbox trigger can no longer paint over it; tapping ♡
+  favorites the event without opening the flyer. In **Share several** mode the select
+  checkbox is a 44×44 px touch target.
+- **Flyer URLs:** `safeImageUrl()` in `js/app.js` percent-encodes only characters that
+  are illegal in a URL and leaves existing `%XX` escapes exactly as stored (no
+  `encodeURI()` — it double-encoded `%20`/`%3A`, which broke signed Eventbrite
+  `img.evbuc.com/https%3A%2F%2F...` URLs with a 403), and upgrades `http://` images to
+  `https://`. Stored data is never modified. A flyer that still fails to load shows a small
+  **"Flyer unavailable"** placeholder instead of silently disappearing. The same rule is
+  used by the private event-page generator.
+- **Dance-type chip (Kinds):** when every type is showing, clicking one chip now shows
+  **only that type** (e.g. *Recurring (28)* shows those 28). Further clicks add/remove
+  types; clearing the last one returns to all types. This replaces the 2026-07-29
+  "click hides that type" behavior at Sean's request.
+- **Status line:** when a state, town, or map area is selected (not National), the count
+  reads e.g. *"12 events shown in Pensacola, FL (of 690 incl. national)"*, so the number
+  is clearly scoped.
+- **Live activity feed (`js/activity-pulse.js`):** the browser no longer prunes old
+  `/activity` entries (that query downloaded the whole history on every visit). It only
+  listens for new entries (`startAt(now)`) and ignores any stale item; clean-up of old
+  entries is a server/admin task. Presence handling is unchanged.
+- **Favicon & 404:** `/favicon.ico` (the teal "V" from the Mint Reactor banner) is linked
+  from every page, and a styled repo-root `404.html` (noindex, absolute links) replaces
+  GitHub's default not-found page.
+- **Share image:** `og:image` uses `assets/og-card.jpg` (1200×630 JPEG, ~74 KB); the old
+  `og-card.png` is kept.
 
 ## Published copy (2026-07-11)
 

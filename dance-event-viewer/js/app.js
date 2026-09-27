@@ -45,6 +45,15 @@ function isRegional(ev) { return SOUTHEAST.includes(ev.state); }
    scope past the Southeast-only default — otherwise choosing "California" would match the
    filter yet still show nothing (2026-07-23, Sean). */
 function locScopeActive() { return !!(state.sel.country || state.sel.state || state.sel.town || state.mapStates.size); }
+// Human label for the chosen place, used by the status line (2026-09-27).
+function locScopeLabel() {
+  if (state.sel.town) return state.sel.town;
+  if (state.sel.state) return state.sel.state;
+  const picked = [...state.mapStates];
+  if (picked.length === 1) return picked[0];
+  if (picked.length > 1) return `${picked.length} selected states`;
+  return state.sel.country || "";
+}
 const OTHER = "Other";
 const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
@@ -487,6 +496,33 @@ function flyersFor(ev) {
   return out;
 }
 
+/* Flyer URL hygiene at render time (2026-09-27, Sean-approved). Stored data is never edited.
+   - Percent-encode ONLY characters that are not legal in a URL, leaving existing %XX escapes
+     alone, so an already-encoded URL (e.g. "salsa-dancers%20-1-.jpg", Eventbrite's
+     "https%3A%2F%2F..." path) is not double-encoded into %2520/%253A and silently dropped.
+     A stray "%" that is not followed by two hex digits is encoded as %25.
+   - Upgrade http:// image URLs to https:// so they don't trigger mixed-content warnings. */
+function safeImageUrl(url) {
+  let s = typeof url === "string" ? url.trim() : "";
+  if (!s) return "";
+  if (/^http:\/\//i.test(s)) s = "https://" + s.slice(7);
+  try {
+    return s.replace(/%(?![0-9A-Fa-f]{2})|[^A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=%]/gu,
+      c => (c === "%" ? "%25" : encodeURIComponent(c)));
+  } catch (e) {
+    return s;   // never throw from rendering; the <img> error handler shows the placeholder
+  }
+}
+/* Small neutral stand-in when a flyer image can't load (replaces the old silent removal). */
+function flyerPlaceholder() {
+  const ph = document.createElement("div");
+  ph.className = "flyer-missing";
+  ph.setAttribute("role", "img");
+  ph.setAttribute("aria-label", "Flyer image unavailable");
+  ph.textContent = "Flyer unavailable";
+  return ph;
+}
+
 /* ---------- Map view helpers (added 2026-07-12) ---------- */
 async function loadVenueCoords() {
   // Optional decoration: failure or absence never affects event data or other views.
@@ -643,8 +679,8 @@ const AREA_LABELS = { "Pensacola area": "Pensacola", "Mobile area": "Mobile", "D
 const SINGLE_SELECT_GROUPS = [];
 /* Groups whose "All …" chip reads as "every value selected" rather than "nothing selected"
    (2026-07-29, Sean). The stored state is still the empty Set — that's what the filter
-   predicate and URL already treat as unfiltered — the difference is how chips paint and how
-   the first click behaves. */
+   predicate and URL already treat as unfiltered — the difference is how chips paint (all lit).
+   Since 2026-09-27 the first click selects only the clicked type (see toggleValue). */
 const ALL_MEANS_EVERY_GROUPS = ["kinds"];
 const GROUP_VALUES = {};
 function allMeansEvery(group) { return ALL_MEANS_EVERY_GROUPS.includes(group); }
@@ -680,8 +716,10 @@ function toggleValue(group, v) {
   else if (allMeansEvery(group)) {
     const vals = GROUP_VALUES[group] || [];
     if (set.size === 0) {
-      // Un-pressing one chip out of the implicit "all" state keeps every other type selected.
-      for (const x of vals) if (x !== v) set.add(x);
+      // 2026-09-27 (Sean-approved): from the implicit "all" state, clicking a type selects ONLY
+      // that type, matching the Style and Day chips ("Recurring (28)" now shows the 28 recurring
+      // events). Previously this click removed that type and showed the other one instead.
+      set.add(v);
     } else if (wasSelected) {
       set.delete(v);
     } else {
@@ -1928,10 +1966,12 @@ function card(d, { showWhen, isPast }) {
       ? `Enlarge ${flyers.length} flyer pages for ${ev.name.trim()}`
       : `Enlarge flyer for ${ev.name.trim()}`);
     const img = document.createElement("img");
-    img.src = encodeURI(flyers[0]);
+    img.src = safeImageUrl(flyers[0]);
     img.alt = "";                                  // decorative — the name is in the heading
     img.loading = "lazy";
-    img.addEventListener("error", () => art.remove());
+    img.decoding = "async";
+    // A broken flyer now leaves a small neutral placeholder instead of vanishing silently.
+    img.addEventListener("error", () => { art.textContent = ""; art.appendChild(flyerPlaceholder()); }, { once: true });
     trigger.appendChild(img);
     if (multi) {
       const count = document.createElement("span");
@@ -2405,6 +2445,8 @@ function render() {
   const totalHosted = state.events.filter(d => inScope(d) && notPast(d) && inUniverse(d)).length;
   const moreNational = (state.showNational || locScopeActive()) ? 0 : state.events.filter(d => !isRegional(d.ev) && notPast(d) && inUniverse(d) && isVerifiedShown(d)).length;
   const hint = moreNational ? ` · ${moreNational} more nationwide — turn on “National events” to see them` : "";
+  const placeLabel = locScopeLabel();
+  const placeScoped = !state.showNational && locScopeActive() && !!placeLabel;
 
   if (!shown) {
     const empty = document.createElement("div");
@@ -2413,7 +2455,13 @@ function render() {
       ? "No events match these filters."
       : "No upcoming events match these filters. Try clearing a filter, turning on “Show Past Events” or “National events”, or open the Calendar to browse by month.";
     main.appendChild(empty);
-    setStatus(`0 of ${totalHosted} events shown${hint}`, false);
+    setStatus(placeScoped
+      ? `0 events shown in ${placeLabel} (of ${totalHosted} incl. national${state.showPast ? ", including past" : ""})`
+      : `0 of ${totalHosted} events shown${hint}`, false);
+  } else if (placeScoped) {
+    // 2026-09-27 (Sean-approved wording): a chosen state/town/map selection already pulls in
+    // national events (inScope above), so don't call that total "Southern".
+    setStatus(`${shown} event${shown === 1 ? "" : "s"} shown in ${placeLabel} (of ${totalHosted} incl. national${state.showPast ? ", including past" : ""})`, false);
   } else {
     const scopeWord = state.showNational ? "" : " Southern";
     setStatus(`${shown} of ${totalHosted}${scopeWord} event${totalHosted === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}${hint}`, false);
@@ -3084,12 +3132,19 @@ function openImageLightbox(src, label) {
   close.type = "button"; close.className = "pop-close"; close.textContent = "×";
   close.setAttribute("aria-label", "Close");
   const img = document.createElement("img");
-  pop.appendChild(close); pop.appendChild(img);
+  img.decoding = "async";
+  // Neutral placeholder for a page whose image fails to load (kept hidden until needed).
+  const missing = flyerPlaceholder();
+  missing.hidden = true;
+  img.addEventListener("error", () => { img.hidden = true; missing.hidden = false; });
+  pop.appendChild(close); pop.appendChild(img); pop.appendChild(missing);
 
   let prev, next, counter;
   const show = (i) => {
     idx = (i + images.length) % images.length;
-    img.src = encodeURI(images[idx]);
+    img.hidden = false;
+    if (missing) missing.hidden = true;
+    img.src = safeImageUrl(images[idx]);
     img.alt = label
       ? (multi ? `${label} — page ${idx + 1} of ${images.length}` : label)
       : "";

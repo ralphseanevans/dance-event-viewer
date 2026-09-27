@@ -42,7 +42,8 @@
   var MIN_EMIT_INTERVAL_MS = 4000;     // per-session throttle across ALL signal types (batches rapid clicks)
   var EVENT_DEBOUNCE_MS = 3 * 60 * 1000;   // don't re-signal the same event from the same session for 3 min
   var MERGE_WINDOW_MS = 2500;          // buffer window for merging identical messages into "Two dancers are..."
-  var PRUNE_AGE_MS = 10 * 60 * 1000;   // client-side trim: remove Firebase nodes older than this on load
+  var STALE_AGE_MS = 10 * 60 * 1000;   // entries older than this are ignored, never displayed
+                                        // (was PRUNE_AGE_MS for a client-side delete, removed 2026-09-27)
   // Bug fix (2026-07-13): originally listened from (now - 5 minutes) so a newly-loaded page could show
   // a bit of recent history. Under real test volume this backfired badly — a burst of historical
   // child_added events on page load could fill the render queue faster than it drains (each visible
@@ -221,6 +222,8 @@
     if (!s || typeof s !== "object") return;
     if (typeof s.sessionId !== "string" || typeof s.type !== "string") return;
     if (s.sessionId === sessionId) return;   // self-exclusion — never show a visitor their own activity
+    // Ignore stale entries (e.g. a delayed or clock-skewed write): only recent activity is shown.
+    if (typeof s.ts === "number" && Date.now() - s.ts > STALE_AGE_MS) return;
     var text = templateFor(s);
     if (!text) return;   // unrecognized type, or a value/eventId that doesn't resolve — drop silently
     bufferMessage(text);
@@ -311,16 +314,15 @@
     var activityRef = db.ref("activity");
     window.__activityPulseRef = activityRef;
 
-    // One-time client-side prune of stale nodes (Firebase has no native TTL) — non-critical,
-    // wrapped defensively; if the security rule doesn't allow removal yet this just no-ops.
-    try {
-      activityRef.orderByChild("ts").endAt(Date.now() - PRUNE_AGE_MS).once("value", function (snap) {
-        snap.forEach(function (child) { child.ref.remove().catch(function () {}); });
-      });
-    } catch (e) { /* non-critical */ }
-
+    // 2026-09-27 (Sean-approved): the one-time client-side prune that lived here was removed.
+    // Its orderByChild("ts").endAt(now - 10 min) query downloaded every stale /activity node
+    // (~890 per visit) and then fired one remove() per node, all rejected by the database
+    // rules with permission_denied. Stale-node cleanup belongs server-side (tracked separately);
+    // the client now only reads recent entries and ignores anything stale.
+    //
     // Only truly new signals from this moment forward — see the bug note above for why this
-    // isn't `startAt(Date.now() - 5min)` anymore.
+    // isn't `startAt(Date.now() - 5min)` anymore. The rules already index /activity on "ts"
+    // (verified read-only 2026-09-27), so this query is filtered server-side.
     activityRef.orderByChild("ts").startAt(Date.now()).on("child_added", handleIncoming);
 
     // Listen for the semantic signals app.js dispatches at the moment of an actual
