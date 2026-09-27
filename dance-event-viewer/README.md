@@ -130,7 +130,8 @@ GitHub credentials. The aircraft layer is click-through and viewport-clipped, an
 
 Sean's **United States 250th anniversary artwork** is temporarily disabled so the page
 does not download or animate the large flag image. Its source files remain in `assets/`
-for an easy future restoration, but `index.html` contains no anniversary feature markup.
+for an easy future restoration. Since 2026-09-27 the footer markup in `index.html` is kept
+wrapped in an HTML comment; uncomment that block to restore the artwork.
 
 The **Theme** control and **Submit an Event** link share one compact header-action row
 immediately above the Dance Event Viewer banner. Theme stays left-aligned and Submit an
