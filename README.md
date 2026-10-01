@@ -48,6 +48,10 @@ The public viewer stays plain HTML/CSS/JS. The new administrative client is sepa
 `dashboard-src/` contains pinned Refine 5, React 18, Supabase, and Material UI 6 source;
 `npm run typecheck` validates it and `npm run build` writes static output to
 `dance-event-viewer/dashboard/`. Only the Supabase URL and publishable key ship to the browser.
+`npm test` runs the Vitest unit suite in `dashboard-src/tests/` (jsdom; `npm run coverage`
+adds a v8 coverage report). The suite covers the framework-free logic: data-quality findings,
+event form/time/flyer formatting, and the auth and access-control providers with Supabase mocked.
+Node 22.12+ is required — Vite 8's rolldown binding refuses to install on Node 20.
 
 Supabase RLS is authoritative: inactive users see no event data, volunteers can read and edit
 only actively assigned events, and the active owner admin manages all events, people,

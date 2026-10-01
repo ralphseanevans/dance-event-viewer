@@ -42,12 +42,16 @@ import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined";
 import ImageNotSupportedOutlinedIcon from "@mui/icons-material/ImageNotSupportedOutlined";
 import type { DashboardEvent, DashboardProfile } from "../types";
 import { supabaseClient } from "../supabase";
-
-const editableFields = [
-  "name", "style", "event_type", "day_of_week", "monthly_rule", "start_date", "end_date",
-  "start_time", "end_time", "venue", "state", "cost", "source_url", "notes", "last_confirmed", "flyer_url",
-  "exclude_dates", "exclude_monthly_rules",
-] as const;
+import {
+  editableFields,
+  eventToForm,
+  formatStringList,
+  formatTime,
+  formatTimeRange,
+  parseStringList,
+  resolveFlyerUrl,
+  type EventFormState,
+} from "./EventFormatting";
 
 const PAGE_SIZE = 24;
 const VIEW_MODE_KEY = "dance-dashboard-events-view";
@@ -55,40 +59,7 @@ const SHOW_FLYERS_KEY = "dance-dashboard-show-flyers";
 
 type ViewMode = "cards" | "spreadsheet";
 
-type FormState = Record<(typeof editableFields)[number], string> & { event_key: string; record_status: string; in_wcs_list: boolean };
-
-function formatStringList(value: unknown): string {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").join(", ") : "";
-}
-
-function parseStringList(value: string): string[] | null {
-  const items = value.split(",").map((item) => item.trim()).filter(Boolean);
-  return items.length ? items : null;
-}
-
-function formatTime(value: string | null | undefined): string {
-  const text = value?.trim();
-  if (!text) return "";
-  const match = text.match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/);
-  if (!match) return text;
-  const hour = Number(match[1]);
-  if (hour > 23) return text;
-  return `${hour % 12 || 12}:${match[2]} ${hour < 12 ? "AM" : "PM"}`;
-}
-
-function formatTimeRange(event: DashboardEvent): string {
-  const start = formatTime(event.start_time);
-  const end = formatTime(event.end_time);
-  if (start && end) return `${start} - ${end}`;
-  return start || end;
-}
-
-function resolveFlyerUrl(value: string | null | undefined): string {
-  const url = value?.trim();
-  if (!url || typeof window === "undefined") return url ?? "";
-  if (/^(?:https?:|data:|blob:)/i.test(url)) return url;
-  return new URL(url, new URL("../", window.location.href)).href;
-}
+type FormState = EventFormState;
 
 function FlyerPreview({ url, label, compact = false }: { url: string | null | undefined; label: string; compact?: boolean }) {
   const [broken, setBroken] = useState(false);
@@ -114,32 +85,6 @@ function storedViewMode(): ViewMode {
 
 function storedShowFlyers(): boolean {
   try { return localStorage.getItem(SHOW_FLYERS_KEY) !== "false"; } catch { return true; }
-}
-
-function eventToForm(event?: DashboardEvent | null): FormState {
-  return {
-    event_key: event?.event_key ?? "",
-    name: event?.name ?? "",
-    style: event?.style ?? "West Coast Swing",
-    event_type: event?.event_type ?? "one_time",
-    day_of_week: event?.day_of_week ?? "",
-    monthly_rule: event?.monthly_rule ?? "",
-    exclude_monthly_rules: formatStringList(event?.exclude_monthly_rules),
-    start_date: event?.start_date ?? "",
-    end_date: event?.end_date ?? "",
-    start_time: event?.start_time ?? "",
-    end_time: event?.end_time ?? "",
-    venue: event?.venue ?? "",
-    state: event?.state ?? "",
-    cost: event?.cost ?? "",
-    source_url: event?.source_url ?? "",
-    notes: event?.notes ?? "",
-    last_confirmed: event?.last_confirmed ?? new Date().toISOString().slice(0, 10),
-    flyer_url: event?.flyer_url ?? "",
-    exclude_dates: formatStringList(event?.exclude_dates),
-    record_status: event?.record_status ?? "draft",
-    in_wcs_list: event?.in_wcs_list ?? false,
-  };
 }
 
 export default function EventsPage({ profile }: { profile: DashboardProfile }) {
