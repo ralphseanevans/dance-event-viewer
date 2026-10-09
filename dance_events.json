@@ -7539,8 +7539,14 @@
       "exclude_dates": [
         "2026-08-16",
         "2026-08-23",
-        "2026-08-30",
-        "2026-10-11"
+        "2026-08-30"
+      ],
+      "canceled_dates": [
+        {
+          "date": "2026-10-11",
+          "cancel_status": "confirmed",
+          "reason": "weather"
+        }
       ],
       "start_date": null,
       "end_date": null,
@@ -9766,8 +9772,13 @@
       "day_of_week": "Friday",
       "monthly_rule": null,
       "exclude_monthly_rules": null,
-      "exclude_dates": [
-        "2026-10-09"
+      "exclude_dates": null,
+      "canceled_dates": [
+        {
+          "date": "2026-10-09",
+          "cancel_status": "confirmed",
+          "reason": "weather"
+        }
       ],
       "start_date": null,
       "end_date": null,

@@ -13,6 +13,10 @@ const SOURCES = [
   { id: "dance", label: "All Dance Events", file: "../dance_events.json" },
 ];
 const SUPABASE_PUBLIC_FIELDS = "key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url";
+// Cancel banners (2026-10-09): extra columns requested alongside the base select. Until
+// docs/migrations/canceled_dates.sql has run, PostgREST rejects unknown columns (HTTP 400),
+// so loadData() retries once with the base list above — the live site never breaks.
+const SUPABASE_CANCEL_FIELDS = "canceled_dates,cancel_status";
 // Country Swing (added 2026-07-24, Sean): its own distinct dance/category — deliberately NOT
 // a bucket for Country/Western, two-step, or line-dance styles (Sean: "any country dancing is
 // completely different than Country Swing. Don't group any country dances in with it.").
@@ -496,6 +500,66 @@ function flyersFor(ev) {
   return out;
 }
 
+/* ---------- Cancel banners (2026-10-09, Sean-approved) ----------
+   A canceled event or occurrence keeps showing, with a yellow bar across its graphic
+   (css/cancel-banner.css). Exactly three variants, chosen by `cancel_status`; anything
+   missing or unknown is "likely". Visible text lives in the CSS modifier classes; keep these
+   strings in sync with them. Data shapes (all optional — events without them are untouched):
+     whole event:     ev.cancel_status = "confirmed" | "likely" | "owner"
+                      (legacy ev.canceled === true / ev.cancelled === true → "likely")
+     one occurrence:  ev.canceled_dates = [{ date: "YYYY-MM-DD", cancel_status, reason }]
+                      (a bare "YYYY-MM-DD" string is accepted too → "likely")
+   Unlike exclude_dates (which hides a date), a canceled date still appears on the calendar.
+   See docs/cancel-banners.md. */
+const CANCEL_BANNER_LABELS = Object.freeze({
+  confirmed: "CONFIRMED CANCELED",
+  likely: "LIKELY CANCELED",
+  owner: "CANCELED BY OWNER",
+});
+const CANCEL_STATUS_DEFAULT = "likely";
+function normCancelStatus(s) {
+  const k = typeof s === "string" ? s.trim().toLowerCase() : "";
+  return Object.prototype.hasOwnProperty.call(CANCEL_BANNER_LABELS, k) ? k : CANCEL_STATUS_DEFAULT;
+}
+function isoDay(dt) {
+  return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+}
+/* The cancellation that applies to `ev` (optionally on occurrence date `dt`), or null.
+   Returns { status, label, reason }. Never throws on malformed data. */
+function cancellationFor(ev, dt) {
+  if (!ev) return null;
+  const make = (status, reason) => {
+    const s = normCancelStatus(status);
+    return { status: s, label: CANCEL_BANNER_LABELS[s], reason: typeof reason === "string" ? reason : null };
+  };
+  if (typeof ev.cancel_status === "string" && ev.cancel_status.trim()) return make(ev.cancel_status, ev.cancel_reason);
+  if (ev.canceled === true || ev.cancelled === true) return make(null, ev.cancel_reason);
+  const list = ev.canceled_dates;
+  if (dt instanceof Date && !isNaN(dt) && Array.isArray(list) && list.length) {
+    const iso = isoDay(dt);
+    for (const c of list) {
+      if (c === iso) return make(null, null);
+      if (c && typeof c === "object" && c.date === iso) return make(c.cancel_status, c.reason);
+    }
+  }
+  return null;
+}
+/* The one reusable helper: mark an image wrapper as canceled. Adds the CSS classes, a
+   screen-reader sentence, and (for wrappers that are buttons) a prefixed aria-label. */
+function applyCancelBanner(wrapper, cancel) {
+  if (!wrapper || !cancel) return false;
+  wrapper.classList.add("is-canceled", `cancel-banner--${cancel.status}`);
+  wrapper.dataset.cancelStatus = cancel.status;
+  const sentence = `${cancel.label.charAt(0)}${cancel.label.slice(1).toLowerCase()}`;   // "Confirmed canceled"
+  const sr = document.createElement("span");
+  sr.className = "cancel-banner-sr";
+  sr.textContent = `${sentence}.`;
+  wrapper.appendChild(sr);
+  const label = wrapper.getAttribute("aria-label");
+  if (label) wrapper.setAttribute("aria-label", `${sentence}: ${label}`);
+  return true;
+}
+
 /* Flyer URL hygiene at render time (2026-09-27, Sean-approved). Stored data is never edited.
    - Percent-encode ONLY characters that are not legal in a URL, leaving existing %XX escapes
      alone, so an already-encoded URL (e.g. "salsa-dancers%20-1-.jpg", Eventbrite's
@@ -573,11 +637,15 @@ async function loadData() {
     const supabase = window.DANCE_EVENT_VIEWER_SUPABASE;
     if (supabase?.enabled && supabase.url && supabase.publishableKey && supabase.table) {
       try {
-        const endpoint = `${supabase.url}/rest/v1/${encodeURIComponent(supabase.table)}?select=${encodeURIComponent(SUPABASE_PUBLIC_FIELDS)}`;
-        const response = await fetch(endpoint, {
+        const listingsUrl = (fields) => `${supabase.url}/rest/v1/${encodeURIComponent(supabase.table)}?select=${encodeURIComponent(fields)}`;
+        const fetchListings = (fields) => fetch(listingsUrl(fields), {
           cache: "no-store",
           headers: { apikey: supabase.publishableKey }
         });
+        let response = await fetchListings(`${SUPABASE_PUBLIC_FIELDS},${SUPABASE_CANCEL_FIELDS}`);
+        // 400 = a requested column doesn't exist yet (cancel-banner migration not applied):
+        // retry with the original field list so listings still load from Supabase.
+        if (response.status === 400) response = await fetchListings(SUPABASE_PUBLIC_FIELDS);
         if (!response.ok) throw new Error(`Supabase HTTP ${response.status}`);
         const events = await response.json();
         if (!Array.isArray(events)) throw new Error("Supabase returned a non-array listing response");
@@ -1931,8 +1999,10 @@ function cardActions(ev) {
 }
 
 /* ---------- rendering (whitelist only, textContent only) ---------- */
-function card(d, { showWhen, isPast }) {
+function card(d, { showWhen, isPast, date } = {}) {
   const { ev } = d;
+  // Which occurrence this card shows: the calendar passes the clicked day; lists use d.next.
+  const cancel = cancellationFor(ev, date instanceof Date ? date : d.next);
   const el = document.createElement("article");
   el.className = "card";
   if (isPast) el.classList.add("is-past");
@@ -1980,7 +2050,8 @@ function card(d, { showWhen, isPast }) {
       count.setAttribute("aria-hidden", "true");
       trigger.appendChild(count);
     }
-    trigger.addEventListener("click", () => openImageLightbox(flyers, ev.name.trim()));
+    applyCancelBanner(trigger, cancel);
+    trigger.addEventListener("click", () => openImageLightbox(flyers, ev.name.trim(), cancel));
     art.appendChild(trigger);
   }
   el.appendChild(art);
@@ -1995,6 +2066,12 @@ function card(d, { showWhen, isPast }) {
   if (ev.type === "tentative") {
     const b = document.createElement("span");
     b.className = "badge warn"; b.textContent = "Unconfirmed";
+    badges.appendChild(b);
+  }
+  // No flyer to carry the cancel bar: say it in a badge instead.
+  if (cancel && !flyers.length) {
+    const b = document.createElement("span");
+    b.className = "badge cancel-badge"; b.textContent = cancel.label;
     badges.appendChild(b);
   }
   if (isPast) {
@@ -2935,6 +3012,16 @@ function renderMonth(wrap, dated) {
       chip.textContent = item.ev.name;
       chip.title = item.ev.name;
       const dt = new Date(y, m, d);
+      // A canceled occurrence stays on the calendar (unlike exclude_dates), marked as such.
+      const chipCancel = cancellationFor(item.ev, dt);
+      if (chipCancel) {
+        chip.classList.add("is-canceled-chip");
+        chip.dataset.cancelStatus = chipCancel.status;
+        chip.title = `${chipCancel.label} — ${item.ev.name}`;
+        const sr = document.createElement("span");
+        sr.className = "cancel-banner-sr"; sr.textContent = ` (${chipCancel.label.toLowerCase()})`;
+        chip.appendChild(sr);
+      }
       chip.addEventListener("click", () => openEventPopup(item, dt));
       cell.appendChild(chip);
     }
@@ -3112,7 +3199,7 @@ function openAddressPopup(address, coords) {
 // Reuses the same backdrop/dialog/Escape pattern as the other popups above so it
 // behaves consistently across every view that renders a card (Timeline, Grid, List,
 // Calendar chip popup, Map venue card).
-function openImageLightbox(src, label) {
+function openImageLightbox(src, label, cancel) {
   // `src` may be a single image path (original shape) or an array of pages
   // (multi-page flyers, added 2026-08-18). With more than one image the dialog
   // grows prev/next controls, a "n / total" indicator, and ←/→ keyboard paging;
@@ -3137,7 +3224,26 @@ function openImageLightbox(src, label) {
   const missing = flyerPlaceholder();
   missing.hidden = true;
   img.addEventListener("error", () => { img.hidden = true; missing.hidden = false; });
-  pop.appendChild(close); pop.appendChild(img); pop.appendChild(missing);
+  pop.appendChild(close);
+  if (cancel) {
+    // Canceled: wrap the image so the cancel bar sits on the picture itself. The wrapper
+    // needs a definite width for the width-scaled label, taken from the image's shape.
+    const artWrap = document.createElement("div");
+    artWrap.className = "lightbox-art";
+    applyCancelBanner(artWrap, cancel);
+    artWrap.setAttribute("role", "group");
+    artWrap.setAttribute("aria-label", cancel.label.charAt(0) + cancel.label.slice(1).toLowerCase());
+    img.addEventListener("load", () => {
+      if (img.naturalWidth && img.naturalHeight) {
+        artWrap.style.setProperty("--cancel-ar", String(img.naturalWidth / img.naturalHeight));
+        artWrap.style.setProperty("--cancel-nw", `${img.naturalWidth}px`);
+      }
+    });
+    artWrap.prepend(img);
+    pop.appendChild(artWrap); pop.appendChild(missing);
+  } else {
+    pop.appendChild(img); pop.appendChild(missing);
+  }
 
   let prev, next, counter;
   const show = (i) => {
@@ -3196,7 +3302,7 @@ function openEventPopup(item, dt) {
   when.className = "pop-date";
   when.textContent = dt.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   pop.appendChild(close); pop.appendChild(when);
-  pop.appendChild(card(item, { showWhen: false }));
+  pop.appendChild(card(item, { showWhen: false, date: dt }));
   backdrop.appendChild(pop);
   const done = () => { backdrop.remove(); document.removeEventListener("keydown", esc); };
   const esc = (e) => { if (e.key === "Escape") done(); };
