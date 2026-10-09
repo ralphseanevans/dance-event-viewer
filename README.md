@@ -42,6 +42,8 @@ work worth keeping into a deliberate branch-backed worktree instead.
 
 Spot a wrong listing? Use the "Wrong info?" link on any event card.
 
+**Canceled events (2026-10-09):** mark one date of a series with `canceled_dates: [{"date":"YYYY-MM-DD","cancel_status":"confirmed|likely|owner","reason":"weather"}]`, or a whole event with `cancel_status`. The event keeps showing with a yellow CONFIRMED CANCELED / LIKELY CANCELED / CANCELED BY OWNER bar over its flyer (unlike `exclude_dates`, which hides the date). See `docs/cancel-banners.md`.
+
 ## Secure dashboard
 
 The public viewer stays plain HTML/CSS/JS. The new administrative client is separate:

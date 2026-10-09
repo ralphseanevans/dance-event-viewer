@@ -1,0 +1,86 @@
+/* Cancel banner (2026-10-09, Sean-approved spec). One reusable, pure-CSS overlay for any
+   event graphic: a semi-transparent yellow bar across the vertical middle of the image.
+   Images are never edited; the bar is a ::after on the image wrapper, so the flyer still
+   shows through.
+
+   Usage (any page — cards, lightbox, static e/ pages):
+     <div class="is-canceled cancel-banner--confirmed">   wrapper sized to the image
+       <img src="…">
+       <span class="cancel-banner-sr">This event is canceled (confirmed).</span>
+     </div>
+
+   Variants (keep in sync with CANCEL_BANNER_LABELS in js/app.js):
+     .cancel-banner--confirmed  CONFIRMED CANCELED
+     .cancel-banner--likely     LIKELY CANCELED   (default when no modifier is present)
+     .cancel-banner--owner      CANCELED BY OWNER
+   See docs/cancel-banners.md. */
+.is-canceled {
+  position: relative;
+  /* Lets the label scale with the image's width (cqw) instead of the viewport. The wrapper
+     must get its width from its container (e.g. width: 100%), not from its content. */
+  container-type: inline-size;
+}
+.is-canceled::after {
+  content: "LIKELY CANCELED";
+  content: "LIKELY CANCELED" / "";      /* visible only; screen readers get .cancel-banner-sr */
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 18%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3%;
+  background: rgba(255, 214, 0, 0.6);
+  border-top: 2px solid #b8860b;
+  border-bottom: 2px solid #b8860b;
+  color: #1a1a1a;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .03em;
+  text-align: center;
+  white-space: nowrap;                  /* never wraps; size below keeps it inside the width */
+  /* Fallback for browsers without container query units, then the width-scaled size.
+     6.2cqw fits the longest label ("CONFIRMED CANCELED") in ~94% of the image width. */
+  font-size: clamp(10px, 3.6vw, 40px);
+  font-size: clamp(8px, 6.2cqw, 72px);
+  pointer-events: none;                 /* taps still reach the flyer button underneath */
+  z-index: 2;
+}
+.cancel-banner--confirmed::after { content: "CONFIRMED CANCELED"; content: "CONFIRMED CANCELED" / ""; }
+.cancel-banner--likely::after    { content: "LIKELY CANCELED";    content: "LIKELY CANCELED" / ""; }
+.cancel-banner--owner::after     { content: "CANCELED BY OWNER";  content: "CANCELED BY OWNER" / ""; }
+
+/* Screen-reader announcement (self-contained so static pages need only this file). */
+.cancel-banner-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Text badge for canceled events that have no flyer to put the bar on. */
+.badge.cancel-badge {
+  background: rgba(255, 214, 0, 0.85); color: #1a1a1a;
+  border: 1px solid #b8860b; font-weight: 700;
+}
+
+/* Enlarged-flyer lightbox: the image is shrink-to-fit there, so app.js sets --cancel-ar
+   (the image's width/height) and the wrapper takes a definite width from it. */
+.lightbox-art.is-canceled {
+  display: block;
+  flex: none;
+  /* The smallest of: the dialog's content width, the 540px/80vh height cap converted to a
+     width via the image's aspect ratio, and the image's natural width (never upscale). */
+  width: min(calc(min(92vw, 640px) - 40px), calc(min(540px, 80vh) * var(--cancel-ar, 0.75)), var(--cancel-nw, 640px));
+  border-radius: 8px; overflow: hidden;
+}
+.lightbox-pop.has-pages .lightbox-art.is-canceled {
+  width: min(calc(min(92vw, 640px) - 104px), calc(min(540px, 80vh) * var(--cancel-ar, 0.75)), var(--cancel-nw, 640px));
+}
+.lightbox-art.is-canceled > img { width: 100%; max-height: none; }
+
+/* Calendar day chip for a canceled occurrence: still listed, visibly struck through. */
+.cal-chip.is-canceled-chip {
+  text-decoration: line-through;
+  box-shadow: inset 3px 0 0 #ffd600;
+  opacity: .85;
+}
