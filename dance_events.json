@@ -9776,7 +9776,7 @@
       "canceled_dates": [
         {
           "date": "2026-10-09",
-          "cancel_status": "confirmed",
+          "cancel_status": "likely",
           "reason": "weather"
         }
       ],

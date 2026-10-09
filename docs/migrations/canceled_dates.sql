@@ -104,12 +104,12 @@ commit;
 --  where event_key = 'sensual-sundays-bachata-pensacola-coastals';
 --
 -- Wild Greg's Country Swing, Fri 2026-10-09 — "this Friday's event is canceled due to the
--- hurricane" (Sean's listing correction email 2026-10-09 15:14 CT; PR #6). 'confirmed'.
+-- hurricane" (Sean's listing correction email 2026-10-09 15:14 CT; PR #6). 'likely'.
 -- exclude_dates becomes NULL when emptied, matching how dance_events.json stored it before PR #6.
 -- update private.events
 --    set exclude_dates  = nullif(exclude_dates - '2026-10-09', '[]'::jsonb),
 --        canceled_dates = coalesce(canceled_dates, '[]'::jsonb)
---                         || '[{"date":"2026-10-09","cancel_status":"confirmed","reason":"weather"}]'::jsonb
+--                         || '[{"date":"2026-10-09","cancel_status":"likely","reason":"weather"}]'::jsonb
 --  where event_key = 'ttdgc-wild-gregs-country-swing-friday';
 --
 -- Note on the data bot's planned statement: `exclude_dates - '2026-10-11'` leaves [] if it was
