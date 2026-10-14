@@ -15,6 +15,7 @@
 // For a dry run, pass --out to a temp dir so committed pages are untouched.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
+import { mapsSearchUrl } from './lib.mjs';
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const root = opt('--root') || (args[0] && !args[0].startsWith('--') ? args[0] : '.');
@@ -221,7 +222,7 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
   <p class="meta"><a href="/dance-event-viewer/">&larr; Dance Event Viewer — dance events across the South</a></p>
   <h1>${esc(ev.name)}</h1>
   ${sched(ev) ? `<p class="meta"><strong>When:</strong> ${esc(sched(ev))}</p>` : ''}
-  ${ev.venue ? `<p class="meta"><strong>Where:</strong> ${esc(ev.venue)}</p>` : ''}
+  ${ev.venue ? `<p class="meta"><strong>Where:</strong> ${esc(ev.venue)}${mapsSearchUrl(ev.venue, ev.state) ? ` · <a href="${esc(mapsSearchUrl(ev.venue, ev.state))}" target="_blank" rel="noopener noreferrer">Directions / map</a>` : ''}</p>` : ''}
   ${ev.cost ? `<p class="meta"><strong>Cost:</strong> ${esc(ev.cost)}</p>` : ''}
   ${ev.style ? `<p class="meta"><strong>Style:</strong> ${esc(ev.style)}</p>` : ''}
   ${cancelNote}${flyer}
