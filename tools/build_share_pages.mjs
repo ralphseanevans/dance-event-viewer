@@ -15,6 +15,7 @@
 // For a dry run, pass --out to a temp dir so committed pages are untouched.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
+import { mapsSearchUrl } from './lib.mjs';
 import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor } from './event_schedule.mjs';
 import { buildHubPages, sitemapFor } from './build_hub_pages.mjs';
 const args = process.argv.slice(2);
@@ -245,7 +246,7 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
   <h1>${esc(ev.name)}</h1>
   ${past ? '<p class="meta"><strong>This event has passed</strong></p>' : ''}
   ${sched(ev) ? `<p class="meta"><strong>When:</strong> ${esc(sched(ev))}</p>` : ''}
-  ${ev.venue ? `<p class="meta"><strong>Where:</strong> ${esc(placeFor(ev).where)}</p>` : ''}
+  ${ev.venue ? `<p class="meta"><strong>Where:</strong> ${esc(placeFor(ev).where)}${mapsSearchUrl(ev.venue, ev.state) ? ` · <a href="${esc(mapsSearchUrl(ev.venue, ev.state))}" target="_blank" rel="noopener noreferrer">Directions / map</a>` : ''}</p>` : ''}
   ${ev.cost ? `<p class="meta"><strong>Cost:</strong> ${esc(ev.cost)}</p>` : ''}
   ${ev.style ? `<p class="meta"><strong>Style:</strong> ${esc(ev.style)}</p>` : ''}
   ${cancelNote}${flyer}${cancelReason}

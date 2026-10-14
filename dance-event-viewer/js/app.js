@@ -226,8 +226,28 @@ function locationOf(ev) {
   // Local hubs the area chips depend on (also backfill town when the venue had no parseable tail).
   if (/pensacola/i.test(v)) { loc.area = "Pensacola area"; if (loc.town === "Unlisted") loc.town = "Pensacola"; }
   else if (/mobile/i.test(v)) { loc.area = "Mobile area"; if (loc.town === "Unlisted") loc.town = "Mobile"; }
-  else if (/destin/i.test(v)) { loc.area = "Destin area"; if (loc.town === "Unlisted") loc.town = "Destin"; }  // 2026-08-18 (Sean): dedicated Destin area toggle
+  else if (/\bdestin\b/i.test(v) || isDestinAreaVenue(v, code)) { loc.area = "Destin area"; if (loc.town === "Unlisted") loc.town = "Destin"; }  // 2026-08-18 (Sean): dedicated Destin area toggle
   return loc;
+}
+/* Destin area = Destin plus the Emerald Coast / 30A / south Walton + Okaloosa towns around it
+   (2026-10-14: Luna Ballroom in Santa Rosa Beach, FL 32459 was falling into "Elsewhere").
+   Town names match as whole words only; ZIPs match only as the ZIP after a trailing "FL",
+   so street numbers (e.g. "32550 Hwy 98") never qualify. Both require the event to be in FL,
+   so look-alikes elsewhere (Seaside OR/CA, Freeport TX/NY, Valparaiso IN) stay out. */
+const DESTIN_AREA_TOWNS = [
+  "Santa Rosa Beach", "Miramar Beach", "Sandestin", "Seaside", "WaterColor", "Grayton Beach",
+  "Blue Mountain Beach", "Dune Allen", "Seagrove Beach", "Inlet Beach", "Rosemary Beach",
+  "Alys Beach", "Watersound", "Freeport", "DeFuniak Springs", "Niceville", "Fort Walton Beach",
+  "Ft\\.? Walton Beach", "Okaloosa Island", "Mary Esther", "Shalimar", "Valparaiso", "Crestview"
+];
+const DESTIN_AREA_TOWN_RE = new RegExp(`\\b(?:${DESTIN_AREA_TOWNS.map(t => t.replace(/ /g, "\\s+")).join("|")})\\b`, "i");
+const DESTIN_AREA_ZIPS = new Set(["32459", "32550", "32461", "32413", "32439", "32433", "32541",
+  "32547", "32548", "32549", "32569", "32579", "32578", "32580", "32536", "32539"]);
+function isDestinAreaVenue(v, code) {
+  if (typeof v !== "string" || !v || code !== "FL") return false;
+  if (DESTIN_AREA_TOWN_RE.test(v)) return true;
+  const z = v.match(/\bFL\s+(\d{5})(?:-\d{4})?\s*$/i);
+  return !!(z && DESTIN_AREA_ZIPS.has(z[1]));
 }
 function kindOf(ev) {
   return (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring")
@@ -699,6 +719,19 @@ function jitterFor(seed) {
   const b = ((h >> 10) % 1000) / 1000 - 0.5;
   return { dLat: a * 0.02, dLon: b * 0.02 };
 }
+/* Google Maps link for a venue (2026-10-14). Uses the documented cross-platform
+   format https://www.google.com/maps/search/?api=1&query=... which opens the Maps
+   app on phones and maps.google.com on desktop. The venue string usually already
+   holds the full street address; parenthetical notes like "(East Hill neighborhood)"
+   are dropped so they don't confuse the search, and the state is appended only when it's missing. */
+function mapsSearchUrl(venue, stateCode) {
+  const v = typeof venue === "string" ? venue.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").replace(/\s+,/g, ",").trim() : "";
+  if (!v) return null;
+  const st = typeof stateCode === "string" ? stateCode.trim() : "";
+  const needsState = st && !new RegExp(`\\b${st.replace(/[^A-Za-z]/g, "")}\\b`, "i").test(v);
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(needsState ? `${v}, ${st}` : v);
+}
+
 /* Resolve map coordinates for an event: exact venue-string match first (from
    venue-coords.json), then a city-level fallback derived the same way the
    Location filter already derives area/town — never guessed beyond that. */
@@ -2222,6 +2255,14 @@ function card(d, { showWhen, isPast, date } = {}) {
       p.className = "venue"; p.textContent = ev.venue.trim();
       el.appendChild(p);
     }
+    const mapsHref = mapsSearchUrl(ev.venue, ev.state);
+    if (mapsHref) {
+      const a = document.createElement("a");
+      a.className = "card-link maps-link";
+      a.href = mapsHref; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = "Directions / map ↗";
+      el.appendChild(a);
+    }
   }
   if (typeof ev.cost === "string" && ev.cost.trim()) {
     const p = document.createElement("p");
@@ -3300,6 +3341,14 @@ function openAddressPopup(address, coords) {
   else {
     canvas.textContent = "Loading map…";
     ensureLeaflet().then(drawAddressMap).catch(() => { if (canvas.isConnected) canvas.textContent = "Map unavailable right now."; });
+  }
+  const mapsHref = mapsSearchUrl(address);
+  if (mapsHref) {
+    const a = document.createElement("a");
+    a.className = "card-link maps-link";
+    a.href = mapsHref; a.target = "_blank"; a.rel = "noopener noreferrer";
+    a.textContent = "Open in Google Maps ↗";
+    pop.appendChild(a);
   }
 
   const done = () => {

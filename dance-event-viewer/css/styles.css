@@ -815,6 +815,13 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .support-btn:hover { filter: brightness(1.2); }
 .support-btn:focus-visible { outline: 2px solid var(--accent-pink); outline-offset: 2px; }
 
+/* Pensacola dance guides: small crawlable link list in the footer. */
+.footer-guides { margin-top: 18px; }
+.footer-guides h2 { font-size: .9rem; margin: 0 0 6px; color: var(--text); }
+.footer-guides ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.footer-guides a { color: var(--text-dim); }
+.footer-guides a:hover { color: var(--text); }
+
 /* Low-key link to the review dashboard — small, dim, blends into the footer (Sean 2026-07-20). */
 .footer-tools { margin-top: 22px; text-align: center; }
 .footer-tools .tools-link {
