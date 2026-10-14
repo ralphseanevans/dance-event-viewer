@@ -2132,14 +2132,16 @@ function shortTitle(ev) {
   if (typeof ev.short_title === "string" && ev.short_title.trim()) return ev.short_title.trim();
   let t = full
     .replace(/\s*[([][^)\]]*[)\]]/g, " ")                 // parentheticals
-    .split(/\s+[|\u2013\u2014-]\s+|\s*\|\s*|\s+@\s+|\s+at\s+the\s+/i)[0]   // " - venue", "| city"
+    .split(/\s+(?:-{1,2}|[|\u2013\u2014])\s+|\s*\|\s*|\s+@\s+/)[0]   // " - venue", "| city"
+    .replace(/(\S.{6,}?)\s+at\s+(?:the\s+)?[A-Z0-9][^]*$/, "$1")      // trailing " at Venue"
     .replace(/[,\s]+(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s*)?(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*[-\u2013]\s*\d{1,2})?,?(?:\s*\d{4})?|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{4})\s*$/i, "")
     .replace(/[\s,:;\u2013\u2014-]+$/, "").replace(/\s{2,}/g, " ").trim();
   if (!t) t = full;
   if (t.length > SHORT_TITLE_MAX) {
     const cut = t.slice(0, SHORT_TITLE_MAX + 1);
     const sp = cut.lastIndexOf(" ");
-    t = (sp > 15 ? cut.slice(0, sp) : t.slice(0, SHORT_TITLE_MAX)).replace(/[\s,:;\u2013\u2014&-]+$/, "") + "\u2026";
+    t = (sp > 15 ? cut.slice(0, sp) : t.slice(0, SHORT_TITLE_MAX))
+      .replace(/(?:[\s,:;+&\u2013\u2014-]|\s(?:at|with|and|of|the|for|in))+$/i, "") + "\u2026";
   }
   return t;
 }
