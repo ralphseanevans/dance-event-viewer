@@ -2047,7 +2047,7 @@ function card(d, { showWhen, isPast, date } = {}) {
       : `Enlarge flyer for ${ev.name.trim()}`);
     const img = document.createElement("img");
     img.src = safeImageUrl(flyers[0]);
-    img.alt = "";                                  // decorative — the name is in the heading
+    img.alt = `${ev.name.trim()} flyer`;
     img.loading = "lazy";
     img.decoding = "async";
     art.classList.add("has-flyer");

@@ -79,6 +79,7 @@ All run from the repo root with Node 20+. None of them write to Supabase.
 | `node tools/export_supabase_public.mjs <out.json>` | Reads `public.event_listings` with the publishable key and writes the fallback JSON |
 | `node tools/build_share_pages.mjs [--root .] [--out <dir>]` | Builds event pages, supported Pensacola style hubs, sitemap and the viewer's marked upcoming-links block, with cancel banners |
 | `node tools/build_hub_pages.mjs [--root .] [--out <dir>]` | Builds supported Pensacola style hubs and the same viewer/event/hub sitemap from local JSON; does not build event pages |
+| `node tools/check_site.mjs [--root .] [--live]` | Checks robots, sitemap, event-page links/images/JSON-LD, and optionally live sitemap URLs |
 | `node tools/verify_supabase_event.mjs <key> [expected.json]` | Read-back check of one public row |
 | `node tools/export_public.mjs <master.json> <out.json>` | Sanitizes a private master export into the public shape (leak check) |
 

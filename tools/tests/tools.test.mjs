@@ -9,6 +9,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compareMasterTransition, copyAndVerifyBackup, exportPublic, load, save, validateDance, PUBLIC_FIELDS } from '../lib.mjs';
 import { exportEvents, readConfig } from '../export_supabase_public.mjs';
+import { checkSite } from '../check_site.mjs';
 
 const TOOLS = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REPO = resolve(TOOLS, '..');
@@ -371,4 +372,54 @@ test('share pages: writes only to --out and marks cancellations', () => {
       { stdio: 'ignore', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-10' } });
     assert.doesNotMatch(readFileSync(join(out, 'e', 'weekly-friday.html'), 'utf8'), /is-canceled|EventCancelled/);
   } finally { rmSync(root, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }); }
+});
+
+// ---- check_site.mjs (offline fixtures) ----
+test('site checker accepts valid robots, sitemap, event links, images, and JSON-LD', async () => {
+  const root = tmp();
+  try {
+    mkdirSync(join(root, 'e'));
+    mkdirSync(join(root, 'dance-event-viewer', 'assets'), { recursive: true });
+    writeFileSync(join(root, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://danceeventviewer.net/sitemap.xml\n');
+    writeFileSync(join(root, 'sitemap.xml'), '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://danceeventviewer.net/e/fixture.html</loc></url></urlset>');
+    writeFileSync(join(root, 'e', 'fixture.html'), '<!doctype html><script type="application/ld+json">{"@type":"Event"}</script><a href="/dance-event-viewer/">Calendar</a><img src="/dance-event-viewer/assets/flyer.jpg" alt="Fixture Dance flyer">');
+    writeFileSync(join(root, 'dance-event-viewer', 'index.html'), '<html></html>');
+    writeFileSync(join(root, 'dance-event-viewer', 'assets', 'flyer.jpg'), 'fixture');
+    const result = await checkSite(root);
+    assert.deepEqual(result.errors, []);
+    assert.equal(result.sitemapUrls, 1);
+    assert.equal(result.eventPages, 1);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('site checker reports missing local assets, missing alt, invalid JSON-LD, and robots issues', async () => {
+  const root = tmp();
+  try {
+    mkdirSync(join(root, 'e'));
+    writeFileSync(join(root, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
+    writeFileSync(join(root, 'sitemap.xml'), '<urlset><url><loc>https://danceeventviewer.net/e/bad.html</loc></url><oops></urlset>');
+    writeFileSync(join(root, 'e', 'bad.html'), '<script type="application/ld+json">{oops}</script><a href="missing.html">x</a><img src="flyer.jpg">');
+    const result = await checkSite(root);
+    const errors = result.errors.join('\n');
+    assert.match(errors, /robots.txt: does not allow/);
+    assert.match(errors, /mismatched closing tag/);
+    assert.match(errors, /missing\.html has no local file/);
+    assert.match(errors, /img 1 is missing alt/);
+    assert.match(errors, /invalid JSON-LD/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('site checker live mode uses HEAD and flags non-200 responses', async () => {
+  const root = tmp();
+  try {
+    mkdirSync(join(root, 'e'));
+    writeFileSync(join(root, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://danceeventviewer.net/sitemap.xml');
+    writeFileSync(join(root, 'sitemap.xml'), '<urlset><url><loc>https://danceeventviewer.net/e/live.html</loc></url></urlset>');
+    writeFileSync(join(root, 'e', 'live.html'), '<html></html>');
+    const calls = [];
+    const result = await checkSite(root, { live: true, fetcher: async (url, options) => { calls.push({ url, options }); return new Response(null, { status: 404 }); } });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].options.method, 'HEAD');
+    assert.match(result.errors.join('\n'), /returned HTTP 404/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
