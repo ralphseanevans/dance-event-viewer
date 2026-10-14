@@ -437,6 +437,31 @@ function pastOccurrenceDate(ev) {
   return null;
 }
 
+/* How far back "Past events" reaches for still-running recurring series (2026-10-13).
+   Ended one-time events and ended series keep their existing unbounded behavior. */
+const PAST_LOOKBACK_DAYS = 90;
+/* Most recent occurrence of an ongoing recurring series strictly before `today`, within
+   PAST_LOOKBACK_DAYS, or null. Reuses nextOccurrence() (so exclusions/start/end bounds apply
+   identically) by asking, day by day going back, whether the series meets on that day. */
+function prevOccurrence(ev, today) {
+  if (!/_recurring$/.test(ev.type || "")) return null;
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  for (let k = 1; k <= PAST_LOOKBACK_DAYS; k++) {
+    const day = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - k);
+    const n = nextOccurrence(ev, day);
+    if (n && n.getTime() === day.getTime()) return day;
+  }
+  return null;
+}
+let _scrollToUpcoming = false;
+/* aria-pressed + an explicit action label for screen readers ("Show/Hide past events"). */
+function syncPastToggle() {
+  const b = document.getElementById("past-toggle");
+  if (!b) return;
+  b.setAttribute("aria-pressed", String(state.showPast));
+  b.setAttribute("aria-label", state.showPast ? "Hide past events" : "Show past events");
+}   // set when "Past events" is switched on — render() then scrolls to today
+
 /* ---------- data loading ---------- */
 async function loadLogoMap() {
   // Optional decoration: failure or absence of the map never affects event data.
@@ -2470,54 +2495,67 @@ function render() {
       .sort((a, b) => a.next - b.next);
 
     // Past events (elapsed one-time events, ended recurring series) are hidden by
-    // default — see state.showPast. When shown, they render greyed-out (.is-past)
-    // in their own trailing bucket/section, sorted most-recently-past first.
+    // default — see state.showPast. When shown (2026-10-13, Sean), they render greyed-out
+    // (.is-past) in a "Past" section ABOVE the upcoming ones, oldest first, so scrolling up
+    // from today walks back in time. Still-running recurring series also contribute their
+    // most recent occurrence within PAST_LOOKBACK_DAYS (flagged pastOcc: not counted again
+    // in the "N of M shown" line, since the series itself is already counted as upcoming).
     const pastList = state.showPast
       ? visible
-          .filter(d => isPastEvent(d, today))
-          .map(d => ({ ...d, next: pastOccurrenceDate(d.ev) }))
-          .filter(d => d.next)
-          .sort((a, b) => b.next - a.next)
+          .map(d => {
+            if (isPastEvent(d, today)) return { ...d, next: pastOccurrenceDate(d.ev) };
+            const prev = prevOccurrence(d.ev, today);
+            return prev ? { ...d, next: prev, pastOcc: true } : null;
+          })
+          .filter(d => d && d.next)
+          .sort((a, b) => a.next - b.next)
       : [];
+    const countPast = d => { if (!d.pastOcc) shown++; };
+    const markUpcoming = el => { if (pastList.length && !main.querySelector("[data-upcoming-start]")) el.dataset.upcomingStart = "1"; };
 
     if (state.view === "grid") {
-      const grid = document.createElement("div");
-      grid.className = "cards";
-      for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
-      main.appendChild(grid);
       if (pastList.length) {
         const h = document.createElement("h2");
         h.className = "bucket-heading"; h.textContent = "Past";
         main.appendChild(h);
         const pastGrid = document.createElement("div");
         pastGrid.className = "cards";
-        for (const d of pastList) { pastGrid.appendChild(card(d, { showWhen: true, isPast: true })); shown++; }
+        for (const d of pastList) { pastGrid.appendChild(card(d, { showWhen: true, isPast: true })); countPast(d); }
         main.appendChild(pastGrid);
+        const uh = document.createElement("h2");
+        uh.className = "bucket-heading"; uh.textContent = "Upcoming";
+        markUpcoming(uh); main.appendChild(uh);
       }
+      const grid = document.createElement("div");
+      grid.className = "cards";
+      for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
+      main.appendChild(grid);
     } else if (state.view === "list") {
       const buckets = bucketize(withNext, today);
-      if (pastList.length) buckets.push(["Past", pastList]);
+      if (pastList.length) buckets.unshift(["Past", pastList]);
       for (const [label, items] of buckets) {
         if (!items.length) continue;
         const isPast = label === "Past";
         const h = bucketHeadingEl(label);
+        if (!isPast) markUpcoming(h);
         main.appendChild(h);
         const ul = document.createElement("ul");
         ul.className = "list-rows";
-        for (const d of items) { ul.appendChild(listRow(d, isPast)); shown++; }
+        for (const d of items) { ul.appendChild(listRow(d, isPast)); if (isPast) countPast(d); else shown++; }
         main.appendChild(ul);
       }
     } else {
       const buckets = bucketize(withNext, today);
-      if (pastList.length) buckets.push(["Past", pastList]);
+      if (pastList.length) buckets.unshift(["Past", pastList]);
       for (const [label, items] of buckets) {
         if (!items.length) continue;
         const isPast = label === "Past";
         const h = bucketHeadingEl(label);
+        if (!isPast) markUpcoming(h);
         main.appendChild(h);
         const grid = document.createElement("div");
         grid.className = "cards";
-        for (const d of items) { grid.appendChild(card(d, { showWhen: true, isPast })); shown++; }
+        for (const d of items) { grid.appendChild(card(d, { showWhen: true, isPast })); if (isPast) countPast(d); else shown++; }
         main.appendChild(grid);
       }
     }
@@ -2557,6 +2595,12 @@ function render() {
   } else {
     const scopeWord = state.showNational ? "" : " Southern";
     setStatus(`${shown} of ${totalHosted}${scopeWord} event${totalHosted === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}${hint}`, false);
+  }
+  if (_scrollToUpcoming) {
+    _scrollToUpcoming = false;
+    // Keep the view anchored at today: past items sit above, reachable by scrolling up.
+    const up = main.querySelector("[data-upcoming-start]");
+    if (up) requestAnimationFrame(() => up.scrollIntoView({ block: "start" }));
   }
   updateFilterUI();
 }
@@ -2684,10 +2728,12 @@ function init() {
   });
   setFiltersOpen(state.filtersOpen);
   const pastToggle = document.getElementById("past-toggle");
-  pastToggle.setAttribute("aria-pressed", String(state.showPast));
+  syncPastToggle();
+  if (state.showPast) _scrollToUpcoming = true;   // e.g. ?past=1 link: still open at today
   pastToggle.addEventListener("click", () => {
     state.showPast = !state.showPast;
-    pastToggle.setAttribute("aria-pressed", String(state.showPast));
+    _scrollToUpcoming = state.showPast;
+    syncPastToggle();
     savePrefs();
     render();
   });
@@ -2771,7 +2817,7 @@ function init() {
     applyUrl();
     document.getElementById("traveling-toggle")?.setAttribute("aria-pressed", String(state.showNational));
     document.getElementById("unverified-toggle")?.setAttribute("aria-pressed", String(state.showUnverified));
-    document.getElementById("past-toggle")?.setAttribute("aria-pressed", String(state.showPast));
+    syncPastToggle();
     buildLocSelects();
     if (window.DEV_STATE_MAP && window.DEV_STATE_MAP.refreshHighlight) window.DEV_STATE_MAP.refreshHighlight();
     render();
