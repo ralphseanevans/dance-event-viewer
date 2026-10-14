@@ -167,6 +167,7 @@ const state = {
   mapStates: new Set(),
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
   pastExpanded: false,   // "Past events (N)" section starts collapsed (2026-10-14, Sean)
+  pastPending: false,    // "Past events" chip selected but not yet applied — see runSearch()
   showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline
                           // listings only count/show current events unless this is turned on.
   showNational: false,   // "Traveling? Show national events" (2026-07-17, Phase 0) — out-of-region
@@ -471,8 +472,10 @@ function prevOccurrence(ev, today) {
 function syncPastToggle() {
   const b = document.getElementById("past-toggle");
   if (!b) return;
-  b.setAttribute("aria-pressed", String(state.showPast));
-  b.setAttribute("aria-label", state.showPast ? "Hide past events" : "Show past events");
+  b.setAttribute("aria-pressed", String(state.pastPending));
+  b.setAttribute("aria-label", state.pastPending
+    ? (state.showPast ? "Hide past events" : "Past events selected — press Search to load them")
+    : "Show past events (then press Search)");
 }   // set when "Past events" is switched on — render() then scrolls to today
 
 /* Collapsible "Past events (N)" section (2026-10-14, Sean). Collapsed by default; the
@@ -1069,14 +1072,14 @@ function applyUrl() {
     state.mapStates = new Set(p.get("states").split("|").filter(Boolean));
     if (state.mapStates.size) any = true;
   }
-  if (p.get("past") === "1") { state.showPast = true; any = true; }
+  if (p.get("past") === "1") { state.pastPending = true; any = true; }   // selected, loads on Search
   state.showNational = p.get("travel") === "1";
   state.showUnverified = p.get("unverified") === "1";
   // Shared-set link: show exactly the listed events, regardless of region/past, so the
   // recipient always sees the dances that were shared with them (2026-07-17).
   if (p.has("events")) {
     state.eventKeys = new Set(p.get("events").split("|").filter(Boolean));
-    if (state.eventKeys.size) { state.showPast = true; state.showNational = true; any = true; }
+    if (state.eventKeys.size) { state.showPast = state.pastPending = true; state.showNational = true; any = true; }
   } else {
     state.eventKeys = new Set();
   }
@@ -2697,7 +2700,8 @@ function loadPrefs() {
     if (["timeline", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
     else if (["grid", "list"].includes(p.view)) state.view = "timeline";
     // filtersOpen intentionally NOT restored (Sean, 2026-07-12) — panel starts collapsed.
-    if (typeof p.showPast === "boolean") state.showPast = p.showPast;
+    // showPast intentionally NOT restored (2026-10-14, Sean): past events are never built on
+    // page load, only after the user selects "Past events" and applies the search.
   } catch (e) { /* ignore bad prefs */ }
 }
 function setFiltersOpen(open) {
@@ -2751,11 +2755,14 @@ function init() {
   setFiltersOpen(state.filtersOpen);
   const pastToggle = document.getElementById("past-toggle");
   syncPastToggle();
+  // Past events load on demand (2026-10-14, Sean): the chip only SELECTS them; the past list
+  // is computed and rendered when the search is applied (button / Enter). Deselecting hides
+  // them right away.
   pastToggle.addEventListener("click", () => {
-    state.showPast = !state.showPast;
+    state.pastPending = !state.pastPending;
     syncPastToggle();
-    savePrefs();
-    render();
+    if (!state.pastPending && state.showPast) { state.showPast = false; savePrefs(); render(); }
+    else if (state.pastPending && !state.showPast) setStatus("Past events selected — press Search (🔍) or Enter to load them.", false);
   });
   // "Traveling? Show national events" — scope toggle; may arrive pre-set from a shared
   // ?travel=1 URL, so aria syncs from state here (2026-07-17 redesign).
@@ -2786,6 +2793,7 @@ function init() {
     let searchTimer = null;
     const runSearch = () => {
       state.search = searchInput.value.trim().toLowerCase();
+      if (state.showPast !== state.pastPending) { state.showPast = state.pastPending; savePrefs(); }
       const clearBtn = document.getElementById("event-search-clear");
       if (clearBtn) clearBtn.hidden = !state.search;
       render();
