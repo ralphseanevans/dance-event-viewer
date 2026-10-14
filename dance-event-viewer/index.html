@@ -98,8 +98,8 @@
       projectId: "dance-event-viewer"
     };
   </script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
   <!-- Soft, theme-matched club lighting behind the interface. The beams drift slowly;
@@ -503,23 +503,23 @@
     <img class="blue-angels-flight" src="assets/blue-angels-low-poly-640.webp" width="640" height="234" loading="lazy" decoding="async" alt="">
   </div>
 
-  <script src="js/dance-poster.js?v=11955ed6"></script>
+  <script defer src="js/dance-poster.js?v=11955ed6"></script>
   <!-- Add to Calendar (2026-08-03): per-card 📅 button (Google link + .ics download with
        real recurrence rules). Loaded BEFORE app.js so window.DEV_ADD_TO_CAL exists when
        the first cards render. Bulk "Export these (.ics)" button disabled for now (Sean's
        call, same day) — see js/add-to-calendar.js, ensureBulkButton() left intact. -->
-  <script src="js/add-to-calendar.js?v=52b9e656"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
-  <script src="js/supabase-config.js?v=d191cb0e"></script>
-  <script src="js/app.js?v=91220d89"></script>
+  <script defer src="js/add-to-calendar.js?v=52b9e656"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
+  <script defer src="js/supabase-config.js?v=d191cb0e"></script>
+  <script defer src="js/app.js?v=91220d89"></script>
   <!-- Choose-location state map (2026-08-03): reads/writes app.js's state.sel.state
        directly (same global scope, loaded after app.js). Its own data file
        (js/us-states-map-data.js, ~145KB of state path data) is fetched lazily on
        first open, not here. -->
-  <script src="js/state-map-picker.js?v=462d2614"></script>
+  <script defer src="js/state-map-picker.js?v=462d2614"></script>
   <!-- Recent searches from everyone (2026-08-03): references SUBMIT_ENDPOINT, a
        top-level const in app.js — must load after it. -->
-  <script src="js/recent-searches.js?v=a9bbdbf1"></script>
-  <script src="js/activity-pulse.js?v=52182654"></script>
+  <script defer src="js/recent-searches.js?v=a9bbdbf1"></script>
+  <script defer src="js/activity-pulse.js?v=52182654"></script>
 </body>
 </html>
