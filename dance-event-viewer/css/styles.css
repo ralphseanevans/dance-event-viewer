@@ -87,6 +87,22 @@ body {
   opacity: .38;
   animation: banner-glint 8s ease-in-out infinite;
 }
+.brand-label {
+  margin: 10px 0 2px;
+  color: var(--text-dim);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.title-block h1 {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  line-height: 1.2;
+  text-align: center;
+}
 @keyframes banner-drift {
   from { transform: scale(1.005) translate3d(-.35%, .15%, 0); filter: brightness(.98) saturate(1); }
   to { transform: scale(1.018) translate3d(.35%, -.15%, 0); filter: brightness(1.04) saturate(1.04); }
