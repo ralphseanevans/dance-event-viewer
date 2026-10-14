@@ -3203,6 +3203,14 @@ function openAddressPopup(address, coords) {
   } else {
     canvas.textContent = "Map unavailable right now.";
   }
+  const mapsHref = mapsSearchUrl(address);
+  if (mapsHref) {
+    const a = document.createElement("a");
+    a.className = "card-link maps-link";
+    a.href = mapsHref; a.target = "_blank"; a.rel = "noopener noreferrer";
+    a.textContent = "Open in Google Maps ↗";
+    pop.appendChild(a);
+  }
 
   const done = () => {
     backdrop.remove();
