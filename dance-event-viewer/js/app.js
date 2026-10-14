@@ -166,6 +166,7 @@ const state = {
   // two never fight over what "the" selected state is. See js/state-map-picker.js.
   mapStates: new Set(),
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
+  pastExpanded: false,   // "Past events (N)" section starts collapsed (2026-10-14, Sean)
   showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline
                           // listings only count/show current events unless this is turned on.
   showNational: false,   // "Traveling? Show national events" (2026-07-17, Phase 0) — out-of-region
@@ -466,7 +467,6 @@ function prevOccurrence(ev, today) {
   }
   return null;
 }
-let _scrollToUpcoming = false;
 /* aria-pressed + an explicit action label for screen readers ("Show/Hide past events"). */
 function syncPastToggle() {
   const b = document.getElementById("past-toggle");
@@ -474,6 +474,46 @@ function syncPastToggle() {
   b.setAttribute("aria-pressed", String(state.showPast));
   b.setAttribute("aria-label", state.showPast ? "Hide past events" : "Show past events");
 }   // set when "Past events" is switched on — render() then scrolls to today
+
+/* Collapsible "Past events (N)" section (2026-10-14, Sean). Collapsed by default; the
+   expanded/collapsed choice survives re-renders in state.pastExpanded. Items are rendered
+   lazily — nothing is built until the section is first opened. */
+function pastSectionEl(items, kind) {
+  const sec = document.createElement("section");
+  sec.className = "past-section";
+  const h = document.createElement("h2");
+  h.className = "bucket-heading past-section-heading";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "past-section-toggle";
+  btn.id = "past-section-toggle";
+  btn.setAttribute("aria-controls", "past-section-body");
+  const label = document.createElement("span");
+  label.textContent = `Past events (${items.length})`;
+  const chev = document.createElement("span");
+  chev.className = "past-section-chevron";
+  chev.setAttribute("aria-hidden", "true");
+  chev.textContent = "›";
+  btn.append(label, chev);
+  h.appendChild(btn);
+  const body = document.createElement(kind === "list" ? "ul" : "div");
+  body.id = "past-section-body";
+  body.className = kind === "list" ? "list-rows past-section-body" : "cards past-section-body";
+  let built = false;
+  const apply = () => {
+    const open = !!state.pastExpanded;
+    btn.setAttribute("aria-expanded", String(open));
+    body.hidden = !open;
+    if (open && !built) {
+      built = true;
+      for (const d of items) body.appendChild(kind === "list" ? listRow(d, true) : card(d, { showWhen: true, isPast: true }));
+    }
+  };
+  btn.addEventListener("click", () => { state.pastExpanded = !state.pastExpanded; apply(); });
+  apply();
+  sec.append(h, body);
+  return sec;
+}
 
 /* ---------- data loading ---------- */
 async function loadLogoMap() {
@@ -2524,52 +2564,27 @@ function render() {
           .sort((a, b) => a.next - b.next)
       : [];
     const countPast = d => { if (!d.pastOcc) shown++; };
-    const markUpcoming = el => { if (pastList.length && !main.querySelector("[data-upcoming-start]")) el.dataset.upcomingStart = "1"; };
 
+    // Past items live in ONE collapsible "Past events (N)" section above everything else
+    // (2026-10-14, Sean): collapsed by default, and its cards are only built on first expand.
+    if (pastList.length) {
+      for (const d of pastList) countPast(d);
+      main.appendChild(pastSectionEl(pastList, state.view === "list" ? "list" : "cards"));
+    }
     if (state.view === "grid") {
-      if (pastList.length) {
-        const h = document.createElement("h2");
-        h.className = "bucket-heading"; h.textContent = "Past";
-        main.appendChild(h);
-        const pastGrid = document.createElement("div");
-        pastGrid.className = "cards";
-        for (const d of pastList) { pastGrid.appendChild(card(d, { showWhen: true, isPast: true })); countPast(d); }
-        main.appendChild(pastGrid);
-        const uh = document.createElement("h2");
-        uh.className = "bucket-heading"; uh.textContent = "Upcoming";
-        markUpcoming(uh); main.appendChild(uh);
-      }
       const grid = document.createElement("div");
       grid.className = "cards";
       for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
       main.appendChild(grid);
-    } else if (state.view === "list") {
-      const buckets = bucketize(withNext, today);
-      if (pastList.length) buckets.unshift(["Past", pastList]);
-      for (const [label, items] of buckets) {
-        if (!items.length) continue;
-        const isPast = label === "Past";
-        const h = bucketHeadingEl(label);
-        if (!isPast) markUpcoming(h);
-        main.appendChild(h);
-        const ul = document.createElement("ul");
-        ul.className = "list-rows";
-        for (const d of items) { ul.appendChild(listRow(d, isPast)); if (isPast) countPast(d); else shown++; }
-        main.appendChild(ul);
-      }
     } else {
-      const buckets = bucketize(withNext, today);
-      if (pastList.length) buckets.unshift(["Past", pastList]);
-      for (const [label, items] of buckets) {
+      const isList = state.view === "list";
+      for (const [label, items] of bucketize(withNext, today)) {
         if (!items.length) continue;
-        const isPast = label === "Past";
-        const h = bucketHeadingEl(label);
-        if (!isPast) markUpcoming(h);
-        main.appendChild(h);
-        const grid = document.createElement("div");
-        grid.className = "cards";
-        for (const d of items) { grid.appendChild(card(d, { showWhen: true, isPast })); if (isPast) countPast(d); else shown++; }
-        main.appendChild(grid);
+        main.appendChild(bucketHeadingEl(label));
+        const box = document.createElement(isList ? "ul" : "div");
+        box.className = isList ? "list-rows" : "cards";
+        for (const d of items) { box.appendChild(isList ? listRow(d, false) : card(d, { showWhen: true })); shown++; }
+        main.appendChild(box);
       }
     }
   }
@@ -2608,12 +2623,6 @@ function render() {
   } else {
     const scopeWord = state.showNational ? "" : " Southern";
     setStatus(`${shown} of ${totalHosted}${scopeWord} event${totalHosted === 1 ? "" : "s"} shown${state.showPast ? " (including past)" : ""}${hint}`, false);
-  }
-  if (_scrollToUpcoming) {
-    _scrollToUpcoming = false;
-    // Keep the view anchored at today: past items sit above, reachable by scrolling up.
-    const up = main.querySelector("[data-upcoming-start]");
-    if (up) requestAnimationFrame(() => up.scrollIntoView({ block: "start" }));
   }
   updateFilterUI();
 }
@@ -2742,10 +2751,8 @@ function init() {
   setFiltersOpen(state.filtersOpen);
   const pastToggle = document.getElementById("past-toggle");
   syncPastToggle();
-  if (state.showPast) _scrollToUpcoming = true;   // e.g. ?past=1 link: still open at today
   pastToggle.addEventListener("click", () => {
     state.showPast = !state.showPast;
-    _scrollToUpcoming = state.showPast;
     syncPastToggle();
     savePrefs();
     render();
