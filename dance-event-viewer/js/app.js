@@ -224,8 +224,28 @@ function locationOf(ev) {
   // Local hubs the area chips depend on (also backfill town when the venue had no parseable tail).
   if (/pensacola/i.test(v)) { loc.area = "Pensacola area"; if (loc.town === "Unlisted") loc.town = "Pensacola"; }
   else if (/mobile/i.test(v)) { loc.area = "Mobile area"; if (loc.town === "Unlisted") loc.town = "Mobile"; }
-  else if (/destin/i.test(v)) { loc.area = "Destin area"; if (loc.town === "Unlisted") loc.town = "Destin"; }  // 2026-08-18 (Sean): dedicated Destin area toggle
+  else if (/\bdestin\b/i.test(v) || isDestinAreaVenue(v, code)) { loc.area = "Destin area"; if (loc.town === "Unlisted") loc.town = "Destin"; }  // 2026-08-18 (Sean): dedicated Destin area toggle
   return loc;
+}
+/* Destin area = Destin plus the Emerald Coast / 30A / south Walton + Okaloosa towns around it
+   (2026-10-14: Luna Ballroom in Santa Rosa Beach, FL 32459 was falling into "Elsewhere").
+   Town names match as whole words only; ZIPs match only as the ZIP after a trailing "FL",
+   so street numbers (e.g. "32550 Hwy 98") never qualify. Both require the event to be in FL,
+   so look-alikes elsewhere (Seaside OR/CA, Freeport TX/NY, Valparaiso IN) stay out. */
+const DESTIN_AREA_TOWNS = [
+  "Santa Rosa Beach", "Miramar Beach", "Sandestin", "Seaside", "WaterColor", "Grayton Beach",
+  "Blue Mountain Beach", "Dune Allen", "Seagrove Beach", "Inlet Beach", "Rosemary Beach",
+  "Alys Beach", "Watersound", "Freeport", "DeFuniak Springs", "Niceville", "Fort Walton Beach",
+  "Ft\\.? Walton Beach", "Okaloosa Island", "Mary Esther", "Shalimar", "Valparaiso", "Crestview"
+];
+const DESTIN_AREA_TOWN_RE = new RegExp(`\\b(?:${DESTIN_AREA_TOWNS.map(t => t.replace(/ /g, "\\s+")).join("|")})\\b`, "i");
+const DESTIN_AREA_ZIPS = new Set(["32459", "32550", "32461", "32413", "32439", "32433", "32541",
+  "32547", "32548", "32549", "32569", "32579", "32578", "32580", "32536", "32539"]);
+function isDestinAreaVenue(v, code) {
+  if (typeof v !== "string" || !v || code !== "FL") return false;
+  if (DESTIN_AREA_TOWN_RE.test(v)) return true;
+  const z = v.match(/\bFL\s+(\d{5})(?:-\d{4})?\s*$/i);
+  return !!(z && DESTIN_AREA_ZIPS.has(z[1]));
 }
 function kindOf(ev) {
   return (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring")
@@ -558,6 +578,16 @@ function applyCancelBanner(wrapper, cancel) {
   const label = wrapper.getAttribute("aria-label");
   if (label) wrapper.setAttribute("aria-label", `${sentence}: ${label}`);
   return true;
+}
+/* Optional friendly note (canceled_dates[].reason / cancel_reason) shown right under the
+   cancel bar or badge. textContent only, so it is always escaped. Nothing when no reason. */
+function cancelReasonNote(cancel) {
+  const text = cancel && typeof cancel.reason === "string" ? cancel.reason.trim() : "";
+  if (!text) return null;
+  const p = document.createElement("p");
+  p.className = "cancel-reason";
+  p.textContent = text;
+  return p;
 }
 
 /* Flyer URL hygiene at render time (2026-09-27, Sean-approved). Stored data is never edited.
@@ -2050,9 +2080,10 @@ function card(d, { showWhen, isPast, date } = {}) {
       : `Enlarge flyer for ${ev.name.trim()}`);
     const img = document.createElement("img");
     img.src = safeImageUrl(flyers[0]);
-    img.alt = "";                                  // decorative — the name is in the heading
+    img.alt = `${ev.name.trim()} flyer`;
     img.loading = "lazy";
     img.decoding = "async";
+    art.classList.add("has-flyer");
     // A broken flyer now leaves a small neutral placeholder instead of vanishing silently.
     img.addEventListener("error", () => { art.textContent = ""; art.appendChild(flyerPlaceholder()); }, { once: true });
     trigger.appendChild(img);
@@ -2066,6 +2097,8 @@ function card(d, { showWhen, isPast, date } = {}) {
     applyCancelBanner(trigger, cancel);
     trigger.addEventListener("click", () => openImageLightbox(flyers, ev.name.trim(), cancel));
     art.appendChild(trigger);
+    const note = cancelReasonNote(cancel);
+    if (note) art.appendChild(note);
   }
   el.appendChild(art);
 
@@ -2087,12 +2120,14 @@ function card(d, { showWhen, isPast, date } = {}) {
     b.className = "badge cancel-badge"; b.textContent = cancel.label;
     badges.appendChild(b);
   }
+  const badgeNote = cancel && !flyers.length ? cancelReasonNote(cancel) : null;
   if (isPast) {
     const b = document.createElement("span");
     b.className = "badge past"; b.textContent = "Past";
     badges.appendChild(b);
   }
   if (badges.children.length) el.appendChild(badges);
+  if (badgeNote) el.appendChild(badgeNote);
 
   const h = document.createElement("h3");
   h.textContent = ev.name.trim();
@@ -3100,15 +3135,41 @@ function renderYear(wrap, dated) {
    event with no resolvable location at all is listed below the map, never
    given a fake pin. */
 let mapInstance = null;
+let leafletPromise = null;
+function ensureLeaflet() {
+  if (typeof L !== "undefined") return Promise.resolve();
+  if (leafletPromise) return leafletPromise;
+  leafletPromise = new Promise((resolve, reject) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    const styles = document.querySelector('link[href^="css/styles.css"]');
+    document.head.insertBefore(css, styles || null);
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Leaflet failed to load"));
+    document.head.appendChild(script);
+  }).catch((error) => {
+    leafletPromise = null;
+    throw error;
+  });
+  return leafletPromise;
+}
 function renderMap(main, visible) {
   const wrap = document.createElement("section");
   wrap.setAttribute("aria-label", "Event map");
   if (typeof L === "undefined") {
     const p = document.createElement("p");
     p.className = "empty-state";
-    p.textContent = "The map library didn't load (offline, or a network block). Try another view, or reload the page.";
+    p.textContent = "Loading map…";
     wrap.appendChild(p);
     main.appendChild(wrap);
+    ensureLeaflet().then(() => {
+      if (state.view === "map" && main.isConnected) render();
+    }).catch(() => {
+      if (p.isConnected) p.textContent = "The map library didn't load (offline, or a network block). Try another view, or reload the page.";
+    });
     return;
   }
   const canvas = document.createElement("div");
@@ -3194,14 +3255,18 @@ function openAddressPopup(address, coords) {
   backdrop.appendChild(pop);
   document.body.appendChild(backdrop);
 
-  if (typeof L !== "undefined") {
+  const drawAddressMap = () => {
+    if (!backdrop.isConnected || typeof L === "undefined") return;
     if (addressMapInstance) { addressMapInstance.remove(); addressMapInstance = null; }
     addressMapInstance = L.map(canvas, { scrollWheelZoom: false }).setView([coords.lat, coords.lon], 15);
     L.tileLayer(MAP_TILE_URL, { attribution: MAP_TILE_ATTRIB, maxZoom: 19 }).addTo(addressMapInstance);
     L.circleMarker([coords.lat, coords.lon], { radius: 9, color: "#4cc2ff", weight: 2, fillColor: "#4cc2ff", fillOpacity: 0.6 }).addTo(addressMapInstance);
     setTimeout(() => addressMapInstance && addressMapInstance.invalidateSize(), 50);
-  } else {
-    canvas.textContent = "Map unavailable right now.";
+  };
+  if (typeof L !== "undefined") drawAddressMap();
+  else {
+    canvas.textContent = "Loading map…";
+    ensureLeaflet().then(drawAddressMap).catch(() => { if (canvas.isConnected) canvas.textContent = "Map unavailable right now."; });
   }
   const mapsHref = mapsSearchUrl(address);
   if (mapsHref) {
@@ -3270,6 +3335,8 @@ function openImageLightbox(src, label, cancel) {
     });
     artWrap.prepend(img);
     pop.appendChild(artWrap); pop.appendChild(missing);
+    const lbNote = cancelReasonNote(cancel);
+    if (lbNote) pop.appendChild(lbNote);
   } else {
     pop.appendChild(img); pop.appendChild(missing);
   }

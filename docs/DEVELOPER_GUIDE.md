@@ -77,7 +77,9 @@ All run from the repo root with Node 20+. None of them write to Supabase.
 |---|---|
 | `node --test tools/tests/` | Runs the tool tests (fixtures and mocked fetch, no network) |
 | `node tools/export_supabase_public.mjs <out.json>` | Reads `public.event_listings` with the publishable key and writes the fallback JSON |
-| `node tools/build_share_pages.mjs [--root .] [--out <dir>]` | Builds `e/<key>.html` landing pages and `sitemap.xml`, with cancel banners |
+| `node tools/build_share_pages.mjs [--root .] [--out <dir>]` | Builds event pages, supported Pensacola style hubs, sitemap and the viewer's marked upcoming-links block, with cancel banners |
+| `node tools/build_hub_pages.mjs [--root .] [--out <dir>]` | Builds supported Pensacola style hubs and the same viewer/event/hub sitemap from local JSON; does not build event pages |
+| `node tools/check_site.mjs [--root .] [--live]` | Checks robots, sitemap, event-page links/images/JSON-LD, and optionally live sitemap URLs |
 | `node tools/verify_supabase_event.mjs <key> [expected.json]` | Read-back check of one public row |
 | `node tools/export_public.mjs <master.json> <out.json>` | Sanitizes a private master export into the public shape (leak check) |
 
@@ -89,6 +91,28 @@ node tools/export_supabase_public.mjs "$tmp/dance_events.json"
 diff <(jq -S . dance_events.json) <(jq -S . "$tmp/dance_events.json") | head
 node tools/build_share_pages.mjs --out "$tmp"
 ```
+
+The share-page builder keeps past pages as archives with a passed-event note and
+upcoming links, but omits them from the sitemap. Sitemap `lastmod` comes only from
+each event's `verified_on`; the viewer and hubs have none. `SHARE_PAGES_TODAY=YYYY-MM-DD`
+pins the date for deterministic previews/tests. The viewer's static links are
+rewritten only between `<!-- upcoming-events:start -->` / `<!-- upcoming-events:end -->`;
+with `--out`, the updated `dance-event-viewer/index.html` also goes to that directory.
+Event metadata uses conservative PostalAddress parsing and date-specific offsets
+only for states in one time zone (AZ is fixed at -07:00); split-zone states omit offsets.
+
+Both builders use the pure recurrence/cancellation helpers in `tools/event_schedule.mjs`.
+The share-page command also builds `/pensacola/west-coast-swing/`,
+`/pensacola/line-dancing/` (including country/western), and `/pensacola/latin-bachata/`
+when each has at least two upcoming local listings. Hub selection requires a venue/city
+mention of Pensacola, Gulf Breeze, Pace, Milton, Cantonment, Navarre or Perdido. A
+recurring series counts once. Hubs show next dates, venues, recurring schedules,
+cancellation labels and ItemList JSON-LD, using the existing GA4 measurement ID.
+Skipped hubs are reported and only their generated `index.html` is removed from
+the output directory. The standalone hub command writes hubs and the full sitemap;
+run the share-page command to also generate the linked event pages. Pure hub
+selection, rendering and sitemap functions are exported from `tools/build_hub_pages.mjs`.
+Keyword mappings and the public competitor review are in [seo-keywords.md](seo-keywords.md).
 
 Other pieces: `dashboard-src/` is the source for the organizer dashboard
 (`npm ci && npm run build` inside it). `tools/apps-script/` is a copy of the submission
