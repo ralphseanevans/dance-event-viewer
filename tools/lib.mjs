@@ -181,3 +181,14 @@ export function exportPublic(dance) {
   if (leaks.length) throw new Error(`LEAK CHECK FAILED: ${leaks.join(', ')}`);
   return out;
 }
+
+// Google Maps search link for a venue, same rule as mapsSearchUrl() in
+// dance-event-viewer/js/app.js: the documented ?api=1 format (opens the Maps app on
+// phones), parenthetical notes dropped, state appended only when it's missing.
+export function mapsSearchUrl(venue, stateCode) {
+  const v = typeof venue === 'string' ? venue.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim() : '';
+  if (!v) return null;
+  const st = typeof stateCode === 'string' ? stateCode.trim() : '';
+  const needsState = st && !new RegExp(`\\b${st.replace(/[^A-Za-z]/g, '')}\\b`, 'i').test(v);
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(needsState ? `${v}, ${st}` : v);
+}
