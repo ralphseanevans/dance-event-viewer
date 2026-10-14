@@ -7,6 +7,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mapsSearchUrl } from '../lib.mjs';
 import { compareMasterTransition, copyAndVerifyBackup, exportPublic, load, save, validateDance, PUBLIC_FIELDS } from '../lib.mjs';
 import { exportEvents, readConfig } from '../export_supabase_public.mjs';
 
@@ -172,10 +173,22 @@ test('share pages: writes only to --out and marks cancellations', () => {
     const normalHtml = readFileSync(join(out, 'e', 'normal.html'), 'utf8');
     assert.doesNotMatch(normalHtml, /is-canceled|EventCancelled|cancel-banner\.css/);
     assert.match(normalHtml, /EventScheduled/);
+    assert.match(normalHtml, /href="https:\/\/www\.google\.com\/maps\/search\/\?api=1&amp;query=Club%2C%20Mobile%2C%20AL"/);
     assert.equal((readFileSync(join(out, 'sitemap.xml'), 'utf8').match(/<loc>/g) || []).length, 4);
     // After the canceled Friday, the next Friday is a normal occurrence again.
     execFileSync(process.execPath, [join(TOOLS, 'build_share_pages.mjs'), '--root', root, '--out', out],
       { stdio: 'pipe', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-10' } });
     assert.doesNotMatch(readFileSync(join(out, 'e', 'weekly-friday.html'), 'utf8'), /is-canceled|EventCancelled/);
   } finally { rmSync(root, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }); }
+});
+
+// ---- mapsSearchUrl (Google Maps directions links) ----
+test('mapsSearchUrl: encodes the full address, drops notes, adds a missing state', () => {
+  const base = 'https://www.google.com/maps/search/?api=1&query=';
+  assert.equal(mapsSearchUrl('CowBoys of Dothan, 4657 S. Oates St, Dothan, AL 36301', 'AL'),
+    base + 'CowBoys%20of%20Dothan%2C%204657%20S.%20Oates%20St%2C%20Dothan%2C%20AL%2036301');
+  assert.equal(mapsSearchUrl('Hall (East Hill neighborhood), Pensacola', 'FL'), base + 'Hall%2C%20Pensacola%2C%20FL');
+  assert.equal(mapsSearchUrl('Bar & Grill #2, Mobile, AL', 'AL'), base + 'Bar%20%26%20Grill%20%232%2C%20Mobile%2C%20AL');
+  assert.equal(mapsSearchUrl('   ', 'AL'), null);
+  assert.equal(mapsSearchUrl(undefined, 'AL'), null);
 });
