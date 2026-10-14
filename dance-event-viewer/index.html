@@ -65,10 +65,7 @@
   {"@context":"https://schema.org","@type":"WebSite","name":"Dance Event Viewer","url":"https://danceeventviewer.net/dance-event-viewer/","description":"Find dance events across the South — West Coast Swing socials, classes, and workshops in Florida, Georgia, Alabama, Mississippi, Louisiana, Tennessee, and the Carolinas, plus national events."}
   </script>
 
-  <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. Loaded BEFORE
-       styles.css so our dark-theme overrides (in styles.css) win over Leaflet's own defaults. -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <!-- Leaflet CSS and JS load only if the visitor opens a map. -->
 
   <!-- Martian Mono: used only by the Mint Reactor theme. The stylesheet is tiny and the
        font files themselves are downloaded lazily — browsers fetch them only when an

@@ -3080,15 +3080,41 @@ function renderYear(wrap, dated) {
    event with no resolvable location at all is listed below the map, never
    given a fake pin. */
 let mapInstance = null;
+let leafletPromise = null;
+function ensureLeaflet() {
+  if (typeof L !== "undefined") return Promise.resolve();
+  if (leafletPromise) return leafletPromise;
+  leafletPromise = new Promise((resolve, reject) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    const styles = document.querySelector('link[href^="css/styles.css"]');
+    document.head.insertBefore(css, styles || null);
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Leaflet failed to load"));
+    document.head.appendChild(script);
+  }).catch((error) => {
+    leafletPromise = null;
+    throw error;
+  });
+  return leafletPromise;
+}
 function renderMap(main, visible) {
   const wrap = document.createElement("section");
   wrap.setAttribute("aria-label", "Event map");
   if (typeof L === "undefined") {
     const p = document.createElement("p");
     p.className = "empty-state";
-    p.textContent = "The map library didn't load (offline, or a network block). Try another view, or reload the page.";
+    p.textContent = "Loading map…";
     wrap.appendChild(p);
     main.appendChild(wrap);
+    ensureLeaflet().then(() => {
+      if (state.view === "map" && main.isConnected) render();
+    }).catch(() => {
+      if (p.isConnected) p.textContent = "The map library didn't load (offline, or a network block). Try another view, or reload the page.";
+    });
     return;
   }
   const canvas = document.createElement("div");
@@ -3174,14 +3200,18 @@ function openAddressPopup(address, coords) {
   backdrop.appendChild(pop);
   document.body.appendChild(backdrop);
 
-  if (typeof L !== "undefined") {
+  const drawAddressMap = () => {
+    if (!backdrop.isConnected || typeof L === "undefined") return;
     if (addressMapInstance) { addressMapInstance.remove(); addressMapInstance = null; }
     addressMapInstance = L.map(canvas, { scrollWheelZoom: false }).setView([coords.lat, coords.lon], 15);
     L.tileLayer(MAP_TILE_URL, { attribution: MAP_TILE_ATTRIB, maxZoom: 19 }).addTo(addressMapInstance);
     L.circleMarker([coords.lat, coords.lon], { radius: 9, color: "#4cc2ff", weight: 2, fillColor: "#4cc2ff", fillOpacity: 0.6 }).addTo(addressMapInstance);
     setTimeout(() => addressMapInstance && addressMapInstance.invalidateSize(), 50);
-  } else {
-    canvas.textContent = "Map unavailable right now.";
+  };
+  if (typeof L !== "undefined") drawAddressMap();
+  else {
+    canvas.textContent = "Loading map…";
+    ensureLeaflet().then(drawAddressMap).catch(() => { if (canvas.isConnected) canvas.textContent = "Map unavailable right now."; });
   }
 
   const done = () => {
