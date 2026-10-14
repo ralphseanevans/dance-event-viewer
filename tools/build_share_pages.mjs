@@ -120,15 +120,15 @@ function descriptionFor(ev){
 // Cancel banners: same rules as cancellationFor() in dance-event-viewer/js/app.js.
 const CANCEL_BANNER_LABELS = { confirmed: 'CONFIRMED CANCELED', likely: 'LIKELY CANCELED', owner: 'CANCELED BY OWNER' };
 const normCancelStatus = s => { const k = typeof s === 'string' ? s.trim().toLowerCase() : ''; return CANCEL_BANNER_LABELS[k] ? k : 'likely'; };
-// Returns { status, label, whole } or null. `day` is an optional YYYY-MM-DD occurrence.
+// Returns { status, label, whole, reason } or null. `day` is an optional YYYY-MM-DD occurrence.
 function cancellationFor(ev, day){
   if (!ev) return null;
-  const make = (status, whole) => { const s = normCancelStatus(status); return { status: s, label: CANCEL_BANNER_LABELS[s], whole }; };
-  if (typeof ev.cancel_status === 'string' && ev.cancel_status.trim()) return make(ev.cancel_status, true);
-  if (ev.canceled === true || ev.cancelled === true) return make(null, true);
+  const make = (status, whole, reason) => { const s = normCancelStatus(status); return { status: s, label: CANCEL_BANNER_LABELS[s], whole, reason: typeof reason === 'string' && reason.trim() ? reason.trim() : null }; };
+  if (typeof ev.cancel_status === 'string' && ev.cancel_status.trim()) return make(ev.cancel_status, true, ev.cancel_reason);
+  if (ev.canceled === true || ev.cancelled === true) return make(null, true, ev.cancel_reason);
   if (day && Array.isArray(ev.canceled_dates)) for (const c of ev.canceled_dates) {
     if (c === day) return make(null, false);
-    if (c && typeof c === 'object' && c.date === day) return make(c.cancel_status, false);
+    if (c && typeof c === 'object' && c.date === day) return make(c.cancel_status, false, c.reason);
   }
   return null;
 }
@@ -270,6 +270,7 @@ for (const ev of data.events) {
   const flyer = cancel
     ? `<div class="flyer-frame is-canceled cancel-banner--${cancel.status}"><img class="flyer" src="${esc(imgUrl)}" alt="${esc(ev.name)} flyer"><span class="cancel-banner-sr">${esc(sentence)}.</span></div>`
     : `<img class="flyer" src="${esc(imgUrl)}" alt="${esc(ev.name)} flyer">`;
+  const cancelReason = cancel && cancel.reason ? `<p class="cancel-reason">${esc(cancel.reason)}</p>` : '';
   const srcLink = (typeof ev.source_url === 'string' && /^https?:\/\//i.test(ev.source_url.trim()))
     ? `<p class="src"><a href="${esc(ev.source_url.trim())}" rel="noopener nofollow" target="_blank">Event details from the organizer</a></p>` : '';
   writeFileSync(join(out, 'e', ev.key + '.html'),
@@ -303,6 +304,7 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
   .flyer-frame{margin:12px 0}
   .flyer-frame img.flyer{display:block;width:100%;margin:0}
   .cancel-note{color:#ffd54a}
+  .flyer-frame + .cancel-reason{margin-top:-4px}
   .cta{display:inline-block;background:#2dd4a7;color:#062019;font-weight:600;padding:12px 22px;border-radius:999px;text-decoration:none;margin:16px 0}
   .cta:hover{filter:brightness(1.1)}
   a{color:#7fd8c0}
@@ -320,7 +322,7 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
   ${ev.venue ? `<p class="meta"><strong>Where:</strong> ${esc(placeFor(ev).where)}</p>` : ''}
   ${ev.cost ? `<p class="meta"><strong>Cost:</strong> ${esc(ev.cost)}</p>` : ''}
   ${ev.style ? `<p class="meta"><strong>Style:</strong> ${esc(ev.style)}</p>` : ''}
-  ${cancelNote}${flyer}
+  ${cancelNote}${flyer}${cancelReason}
   <p><a class="cta" href="/dance-event-viewer/">Open the full calendar</a></p>
   ${srcLink}${relatedLinks(ev, past ? upcoming : data.events, past)}
   <footer>Listed on <a href="/dance-event-viewer/">Dance Event Viewer</a> — West Coast Swing and partner dance events across the South.</footer>
