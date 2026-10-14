@@ -11,10 +11,12 @@
 // Usage (from the repo root):
 //   node tools/build_share_pages.mjs [--root .] [--out <dir>]
 // --root is where dance_events.json, dance-event-viewer/logo-map.json and e/img live.
-// --out is where pages, sitemap.xml and the marked viewer index are written.
+// --out is where event/hub pages, sitemap.xml and the marked viewer index are written.
 // For a dry run, pass --out to a temp dir so committed pages are untouched.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
+import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor } from './event_schedule.mjs';
+import { buildHubPages, sitemapFor } from './build_hub_pages.mjs';
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const root = opt('--root') || (args[0] && !args[0].startsWith('--') ? args[0] : '.');
@@ -25,7 +27,6 @@ const data = JSON.parse(readFileSync(join(root, 'dance_events.json'), 'utf8'));
 const lm = JSON.parse(readFileSync(join(root, 'dance-event-viewer', 'logo-map.json'), 'utf8'));
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const DAYS_FMT = { weekday:'short', month:'short', day:'numeric', year:'numeric' };
-const WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 // SHARE_PAGES_TODAY=YYYY-MM-DD pins "today" (used by the tests).
 const today = process.env.SHARE_PAGES_TODAY ? new Date(process.env.SHARE_PAGES_TODAY + 'T12:00:00') : new Date();
 today.setHours(12, 0, 0, 0);
@@ -46,8 +47,6 @@ function logoFor(key){
   for (const p of lm.patterns || []) if (key.includes(p.contains)) return first(p.logo);
   return null;
 }
-function iso(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-
 // Only parse comma-separated city/state tails and numbered street addresses.
 // Keep uncertain venues intact as the Place name rather than guessing a city.
 function placeFor(ev){
@@ -117,81 +116,8 @@ function descriptionFor(ev){
   return (/\s/.test(description[155]) ? cut : cut.slice(0, Math.max(0, cut.lastIndexOf(' ')))).trimEnd();
 }
 
-// Cancel banners: same rules as cancellationFor() in dance-event-viewer/js/app.js.
-const CANCEL_BANNER_LABELS = { confirmed: 'CONFIRMED CANCELED', likely: 'LIKELY CANCELED', owner: 'CANCELED BY OWNER' };
-const normCancelStatus = s => { const k = typeof s === 'string' ? s.trim().toLowerCase() : ''; return CANCEL_BANNER_LABELS[k] ? k : 'likely'; };
-// Returns { status, label, whole, reason } or null. `day` is an optional YYYY-MM-DD occurrence.
-function cancellationFor(ev, day){
-  if (!ev) return null;
-  const make = (status, whole, reason) => { const s = normCancelStatus(status); return { status: s, label: CANCEL_BANNER_LABELS[s], whole, reason: typeof reason === 'string' && reason.trim() ? reason.trim() : null }; };
-  if (typeof ev.cancel_status === 'string' && ev.cancel_status.trim()) return make(ev.cancel_status, true, ev.cancel_reason);
-  if (ev.canceled === true || ev.cancelled === true) return make(null, true, ev.cancel_reason);
-  if (day && Array.isArray(ev.canceled_dates)) for (const c of ev.canceled_dates) {
-    if (c === day) return make(null, false);
-    if (c && typeof c === 'object' && c.date === day) return make(c.cancel_status, false, c.reason);
-  }
-  return null;
-}
-
-// Ordinal-weekday parsing for monthly rules and weekly exclusions ("3rd Saturday").
-function parseOrdinalRule(rule){
-  const m = /(1st|2nd|3rd|4th|5th|first|second|third|fourth|fifth|last)\s+(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/i.exec(String(rule || ''));
-  if (!m) return null;
-  const ordMap = { '1st':1, first:1, '2nd':2, second:2, '3rd':3, third:3, '4th':4, fourth:4, '5th':5, fifth:5, last:-1 };
-  return { ord: ordMap[m[1].toLowerCase()], weekday: WEEKDAYS.findIndex(w => w.toLowerCase() === m[2].toLowerCase()) };
-}
-function nthWeekdayOfMonth(year, month, ord, weekday){ // month 0-based
-  if (ord === -1) {
-    const last = new Date(year, month + 1, 0, 12);
-    const diff = (last.getDay() - weekday + 7) % 7;
-    return new Date(year, month + 1, 0 - diff, 12);
-  }
-  const first = new Date(year, month, 1, 12);
-  const offset = (weekday - first.getDay() + 7) % 7;
-  const d = new Date(year, month, 1 + offset + (ord - 1) * 7, 12);
-  return d.getMonth() === first.getMonth() ? d : null;
-}
-function matchesOrdinalRule(date, rule){
-  const r = parseOrdinalRule(rule);
-  if (!r) return false;
-  const n = nthWeekdayOfMonth(date.getFullYear(), date.getMonth(), r.ord, r.weekday);
-  return !!n && iso(n) === iso(date);
-}
-// Next occurrence on/after today for JSON-LD startDate. Returns YYYY-MM-DD or null.
-function nextOccurrence(ev){
-  const excluded = new Set(Array.isArray(ev.exclude_dates) ? ev.exclude_dates : []);
-  const ended = d => ev.end_date && iso(d) > ev.end_date;
-  const from = ev.start_date && ev.start_date > iso(today) ? new Date(ev.start_date + 'T12:00:00') : today;
-  if (ev.type === 'weekly_recurring' && ev.day_of_week) {
-    const wd = WEEKDAYS.findIndex(w => w.toLowerCase() === String(ev.day_of_week).toLowerCase());
-    if (wd < 0) return null;
-    const d = new Date(from);
-    d.setDate(d.getDate() + ((wd - d.getDay() + 7) % 7));
-    for (let i = 0; i < 8; i++) { // skip excluded dates / excluded ordinal weeks
-      const excludedByRule = (ev.exclude_monthly_rules || []).some(r => matchesOrdinalRule(d, r));
-      if (!excluded.has(iso(d)) && !excludedByRule) return ended(d) ? null : iso(d);
-      d.setDate(d.getDate() + 7);
-    }
-    return null;
-  }
-  if (ev.type === 'monthly_recurring' && ev.monthly_rule) {
-    const r = parseOrdinalRule(ev.monthly_rule);
-    if (!r) return null;
-    for (let i = 0; i < 4; i++) {
-      const d = nthWeekdayOfMonth(from.getFullYear(), from.getMonth() + i, r.ord, r.weekday);
-      if (d && d >= from && !excluded.has(iso(d))) return ended(d) ? null : iso(d);
-    }
-    return null;
-  }
-  return ev.start_date || null; // one_time / tentative: use the published date even if past
-}
-function isPast(ev){
-  if (ev.type === 'one_time' || ev.type === 'tentative') {
-    const lastDay = ev.end_date || ev.start_date;
-    return !!lastDay && lastDay < iso(today);
-  }
-  return /recurring$/.test(ev.type) && !nextOccurrence(ev);
-}
+const nextOccurrence = ev => nextEventOccurrence(ev, today);
+const isPast = ev => eventIsPast(ev, today);
 // Ongoing multi-day events remain discoverable until their published end date.
 const upcoming = data.events.filter(ev => !isPast(ev) && nextOccurrence(ev)).sort((a, b) =>
   nextOccurrence(a).localeCompare(nextOccurrence(b)) || a.key.localeCompare(b.key));
@@ -332,18 +258,9 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
   if (!past) urls.push({ pageUrl, verified: /^\d{4}-\d{2}-\d{2}$/.test(ev.verified_on || '') ? ev.verified_on : null });
 }
 
-// sitemap.xml — the viewer first, followed by event pages that have not passed.
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${SITE}/dance-event-viewer/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-${urls.map(({ pageUrl, verified }) => `  <url>\n    <loc>${esc(pageUrl)}</loc>\n${verified ? `    <lastmod>${verified}</lastmod>\n` : ''}    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>`).join('\n')}
-</urlset>
-`;
-writeFileSync(join(out, 'sitemap.xml'), sitemap);
+// Build supported hubs and include them alongside upcoming event pages.
+const hubs = buildHubPages(data.events, today, out);
+writeFileSync(join(out, 'sitemap.xml'), sitemapFor(data.events, today));
 
 // Preserve all viewer markup outside the opt-in block; --out never changes root.
 const viewerPath = join(root, 'dance-event-viewer', 'index.html');
@@ -356,4 +273,4 @@ if (existsSync(viewerPath)) {
       () => `<!-- upcoming-events:start -->\n${upcomingSection(upcoming)}\n  <!-- upcoming-events:end -->`));
   }
 }
-console.log(`built ${n} event pages in ${join(out, 'e')}/ and sitemap.xml with ${urls.length + 1} URLs`);
+console.log(`built ${n} event pages in ${join(out, 'e')}/ and sitemap.xml with ${urls.length + hubs.length + 1} URLs`);
