@@ -95,7 +95,7 @@ test('export_public.mjs CLI writes a sanitized file', () => {
   try {
     const src = join(dir, 'master.json'); save(src, master([masterEvent(1, { cancel_status: 'owner' })]));
     const out = join(dir, 'out', 'public.json'); mkdirSync(join(dir, 'out'));
-    execFileSync(process.execPath, [join(TOOLS, 'export_public.mjs'), src, out], { stdio: 'pipe' });
+    execFileSync(process.execPath, [join(TOOLS, 'export_public.mjs'), src, out], { stdio: 'ignore' });
     const ev = JSON.parse(readFileSync(out, 'utf8')).events[0];
     assert.equal(ev.cancel_status, 'owner'); assert.ok(!('notes' in ev));
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -148,6 +148,197 @@ test('Supabase export: refuses empty, duplicate, unexpected fields, bad cancel d
 });
 
 // ---- build_share_pages.mjs (fixture root, temp output) ----
+function withSharePages(events, check, { viewer, logos = {}, composed = [], today = '2026-10-08' } = {}) {
+  const root = tmp(); const out = tmp();
+  try {
+    mkdirSync(join(root, 'dance-event-viewer'));
+    writeFileSync(join(root, 'dance-event-viewer', 'logo-map.json'), JSON.stringify({ logos, patterns: [] }));
+    writeFileSync(join(root, 'dance_events.json'), JSON.stringify({ events }));
+    if (viewer !== undefined) writeFileSync(join(root, 'dance-event-viewer', 'index.html'), viewer);
+    if (composed.length) {
+      mkdirSync(join(root, 'e', 'img'), { recursive: true });
+      for (const key of composed) writeFileSync(join(root, 'e', 'img', `${key}.jpg`), 'fixture image');
+    }
+    execFileSync(process.execPath, [join(TOOLS, 'build_share_pages.mjs'), '--root', root, '--out', out],
+      { stdio: 'ignore', env: { ...process.env, SHARE_PAGES_TODAY: today, TZ: 'UTC' } });
+    check({ root, out, page: key => readFileSync(join(out, 'e', `${key}.html`), 'utf8'),
+      sitemap: readFileSync(join(out, 'sitemap.xml'), 'utf8') });
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }); }
+}
+const shareEvent = (key, extra = {}) => ({ ...publicRow(key), name: key, style: 'West Coast Swing',
+  type: 'one_time', start_date: '2026-10-15', ...extra });
+const jsonLd = html => JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/s.exec(html)[1]);
+const meta = (html, attribute, name) => new RegExp(`<meta ${attribute}="${name}" content="([^"]*)">`).exec(html)[1];
+
+test('share sitemap: verified lastmod only; passed pages remain archived but are excluded', () => {
+  const events = [
+    shareEvent('verified', { verified_on: '2026-09-02', state: 'PA' }),
+    shareEvent('unverified'),
+    shareEvent('invalid-verification', { verified_on: 'unknown' }),
+    shareEvent('past-one', { start_date: '2026-10-06', end_date: '2026-10-07', state: 'PA' }),
+    shareEvent('past-tentative', { type: 'tentative', start_date: '2026-10-07' }),
+    shareEvent('ended-weekly', { type: 'weekly_recurring', day_of_week: 'Friday', start_date: null, end_date: '2026-10-07' }),
+    shareEvent('ended-monthly', { type: 'monthly_recurring', monthly_rule: 'First Friday', start_date: null, end_date: '2026-09-30' }),
+    shareEvent('ongoing', { start_date: '2026-10-07', end_date: '2026-10-09' }),
+    shareEvent('today', { start_date: '2026-10-08' }),
+    shareEvent('future-series', { type: 'weekly_recurring', day_of_week: 'Friday', start_date: '2026-11-01' }),
+  ];
+  withSharePages(events, ({ sitemap, page }) => {
+    const entries = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map(m => m[1]);
+    assert.equal(entries.length, 7);
+    assert.doesNotMatch(entries[0], /lastmod/);
+    assert.match(entries.find(e => e.includes('/e/verified.html')), /<lastmod>2026-09-02<\/lastmod>/);
+    assert.equal((sitemap.match(/<lastmod>/g) || []).length, 1);
+    assert.doesNotMatch(sitemap, /past-one|past-tentative|ended-weekly|ended-monthly/);
+    for (const key of ['past-one', 'past-tentative', 'ended-weekly', 'ended-monthly']) {
+      const html = page(key);
+      assert.match(html, /This event has passed/);
+      assert.match(html, /Upcoming dances nearby/);
+      const related = html.split('<section class="related">')[1];
+      assert.doesNotMatch(related, /href="\/e\/(?:past-one|past-tentative|ended-weekly|ended-monthly)\.html/);
+    }
+    const nearby = page('past-one').split('<section class="related">')[1];
+    assert.ok(nearby.indexOf('/e/verified.html') < nearby.indexOf('/e/ongoing.html'), 'same state precedes same style');
+    assert.equal(jsonLd(page('past-one')).startDate, '2026-10-06');
+    assert.equal(jsonLd(page('past-tentative')).startDate, '2026-10-07');
+    assert.doesNotMatch(page('ended-weekly'), /application\/ld\+json/);
+    assert.doesNotMatch(page('ended-monthly'), /application\/ld\+json/);
+    assert.doesNotMatch(page('today'), /This event has passed/);
+    assert.doesNotMatch(page('ongoing'), /This event has passed/);
+    assert.equal(jsonLd(page('future-series')).startDate, '2026-11-06');
+  });
+});
+
+test('share metadata: PostalAddress parsing, conservative fallback and state deduplication', () => {
+  withSharePages([
+    shareEvent('street', { venue: 'Fixture Hall, 123 Main St, Pittsburgh, PA 15222', state: 'PA', cost: '$12' }),
+    shareEvent('city-only', { venue: 'Fixture Hall, Pittsburgh, PA, PA', state: 'PA' }),
+    shareEvent('uncertain', { venue: 'Fixture Hall - near Pittsburgh', state: 'PA' }),
+    shareEvent('no-state', { venue: 'Fixture Hall' }),
+  ], ({ page }) => {
+    const street = jsonLd(page('street'));
+    assert.deepEqual(street.location, { '@type': 'Place', name: 'Fixture Hall', address: {
+      '@type': 'PostalAddress', streetAddress: '123 Main St', addressLocality: 'Pittsburgh',
+      addressRegion: 'PA', postalCode: '15222', addressCountry: 'US',
+    } });
+    assert.equal(street.description, 'West Coast Swing dance in Pittsburgh, PA: Thu, Oct 15, 2026. Fixture Hall. $12.');
+    const city = page('city-only');
+    assert.doesNotMatch(city, /PA, PA/);
+    assert.match(city, /<strong>Where:<\/strong> Fixture Hall, Pittsburgh, PA<\/p>/);
+    assert.deepEqual(jsonLd(city).location.address, { '@type': 'PostalAddress', addressLocality: 'Pittsburgh', addressRegion: 'PA', addressCountry: 'US' });
+    const uncertain = jsonLd(page('uncertain')).location;
+    assert.equal(uncertain.name, 'Fixture Hall - near Pittsburgh');
+    assert.deepEqual(uncertain.address, { '@type': 'PostalAddress', addressRegion: 'PA', addressCountry: 'US' });
+    assert.deepEqual(jsonLd(page('no-state')).location.address, { '@type': 'PostalAddress', addressCountry: 'US' });
+  });
+});
+
+test('share JSON-LD: DST offsets for each date, fixed AZ, split-zone omission and date-only dates', () => {
+  const skipped = ['FL', 'TN', 'KY', 'IN', 'MI', 'TX', 'KS', 'NE', 'ND', 'SD', 'OR', 'ID', 'AK', 'NV'];
+  const events = [
+    shareEvent('summer', { state: 'PA', start_date: '2026-07-15', start_time: '19:00', end_time: '21:00' }),
+    shareEvent('winter', { state: 'AL', start_date: '2026-12-15', start_time: '19:00' }),
+    shareEvent('cross-dst', { state: 'PA', start_date: '2026-10-31', end_date: '2026-11-01', start_time: '19:00', end_time: '19:00' }),
+    shareEvent('spring', { state: 'CO', start_date: '2026-03-08', start_time: '00:30', end_time: '19:00' }),
+    shareEvent('az', { state: 'AZ', start_date: '2026-07-15', start_time: '19:00' }),
+    shareEvent('date-only', { state: 'PA', end_date: '2026-10-16' }),
+    ...skipped.map(state => shareEvent(state, { state, start_time: '19:00', end_time: '21:00' })),
+  ];
+  withSharePages(events, ({ page }) => {
+    assert.equal(jsonLd(page('summer')).startDate, '2026-07-15T19:00:00-04:00');
+    assert.equal(jsonLd(page('summer')).endDate, '2026-07-15T21:00:00-04:00');
+    assert.equal(jsonLd(page('winter')).startDate, '2026-12-15T19:00:00-06:00');
+    assert.equal(jsonLd(page('cross-dst')).startDate, '2026-10-31T19:00:00-04:00');
+    assert.equal(jsonLd(page('cross-dst')).endDate, '2026-11-01T19:00:00-05:00');
+    assert.equal(jsonLd(page('spring')).startDate, '2026-03-08T00:30:00-07:00');
+    assert.equal(jsonLd(page('spring')).endDate, '2026-03-08T19:00:00-06:00');
+    assert.equal(jsonLd(page('az')).startDate, '2026-07-15T19:00:00-07:00');
+    assert.equal(jsonLd(page('date-only')).startDate, '2026-10-15');
+    assert.equal(jsonLd(page('date-only')).endDate, '2026-10-16');
+    for (const state of skipped) {
+      assert.equal(jsonLd(page(state)).startDate, '2026-10-15T19:00:00');
+      assert.equal(jsonLd(page(state)).endDate, '2026-10-15T21:00:00');
+    }
+  });
+});
+
+test('share OG: whole-word description limit, absolute matching flyer images, alt and offers', () => {
+  const longCost = '$10 for admission plus ' + 'optional workshop details '.repeat(20);
+  withSharePages([
+    shareEvent('composed', { name: 'Fixture & Friends', venue: 'Hall, Pittsburgh, PA', state: 'PA', cost: longCost, source_url: 'https://example.test/organizer' }),
+    shareEvent('logo', { cost: 'Free admission' }),
+    shareEvent('absolute-logo', { cost: '18+; 20% discount' }),
+    shareEvent('fallback', { cost: 'Donation requested' }),
+  ], ({ page }) => {
+    const html = page('composed');
+    const ld = jsonLd(html);
+    assert.ok(ld.description.length <= 155);
+    const full = 'West Coast Swing dance in Pittsburgh, PA: Thu, Oct 15, 2026. Hall. ' + longCost + '.';
+    assert.ok(full.startsWith(ld.description));
+    assert.equal(full[ld.description.length], ' ', 'description ends at a word boundary');
+    assert.equal(meta(html, 'name', 'description'), ld.description);
+    assert.equal(meta(html, 'property', 'og:description'), ld.description);
+    assert.equal(meta(html, 'property', 'og:title'), 'Fixture &amp; Friends — Dance Event Viewer');
+    assert.equal(meta(html, 'property', 'og:url'), ld.url);
+    assert.equal(meta(html, 'property', 'og:image:alt'), 'Fixture &amp; Friends flyer');
+    assert.equal(ld.offers.price, '10');
+    assert.ok(!('organizer' in ld));
+    const images = {
+      composed: 'https://danceeventviewer.net/e/img/composed.jpg',
+      logo: 'https://danceeventviewer.net/graphics/logos/fixture.jpg',
+      'absolute-logo': 'https://example.test/flyer.jpg',
+      fallback: 'https://danceeventviewer.net/dance-event-viewer/assets/og-card.png',
+    };
+    for (const [key, image] of Object.entries(images)) {
+      assert.deepEqual(jsonLd(page(key)).image, [image]);
+      assert.equal(meta(page(key), 'property', 'og:image'), image);
+    }
+    assert.equal(jsonLd(page('logo')).offers.price, '0');
+    assert.ok(!('offers' in jsonLd(page('absolute-logo'))));
+    assert.ok(!('offers' in jsonLd(page('fallback'))));
+    assert.equal((html.match(/googletagmanager\.com\/gtag\/js/g) || []).length, 1);
+    assert.match(html, /G-HC9F04RL9D/);
+  }, { logos: { logo: ['../graphics/logos/fixture.jpg'], 'absolute-logo': 'https://example.test/flyer.jpg' }, composed: ['composed'] });
+});
+
+test('share viewer: replace only marked block in --out, cap 60, sort upcoming dates and group states', () => {
+  const viewer = '<!DOCTYPE html><html lang="en"><head><title>Fixture</title></head><body><main><div id="results"></div>\n<!-- upcoming-events:start -->old links<!-- upcoming-events:end -->\n</main><footer>Keep footer</footer></body></html>';
+  const events = Array.from({ length: 65 }, (_, i) => shareEvent(`up-${i}`, {
+    name: `Dance & ${i}`, start_date: `2026-11-${String(i % 20 + 1).padStart(2, '0')}`, state: i % 2 ? 'PA' : 'AL',
+  })).reverse();
+  events.push(shareEvent('past', { start_date: '2026-10-07' }), shareEvent('undated', { start_date: null }));
+  withSharePages(events, ({ root, out }) => {
+    assert.equal(readFileSync(join(root, 'dance-event-viewer', 'index.html'), 'utf8'), viewer);
+    const html = readFileSync(join(out, 'dance-event-viewer', 'index.html'), 'utf8');
+    const marker = /<!-- upcoming-events:start -->[\s\S]*?<!-- upcoming-events:end -->/;
+    assert.equal(html.replace(marker, ''), viewer.replace(marker, ''));
+    assert.doesNotMatch(html, /old links|\/e\/past\.html|\/e\/undated\.html/);
+    assert.match(html, /<h2[^>]*>Upcoming dance events<\/h2>/);
+    assert.equal((html.match(/<a href="\/e\//g) || []).length, 60);
+    const groups = [...html.matchAll(/<h3>(.*?)<\/h3>\s*<ul>([\s\S]*?)<\/ul>/g)];
+    assert.equal(groups.length, 2);
+    const links = [];
+    for (const [, state, list] of groups) {
+      const dates = [...list.matchAll(/ — (\d{4}-\d{2}-\d{2})/g)].map(m => m[1]);
+      assert.deepEqual(dates, [...dates].sort());
+      for (const [, key] of list.matchAll(/href="\/e\/(.*?)\.html"/g)) {
+        assert.equal(events.find(e => e.key === key).state, state);
+        links.push(key);
+      }
+    }
+    const expected = events.filter(e => e.start_date >= '2026-10-08').sort((a, b) =>
+      a.start_date.localeCompare(b.start_date) || a.key.localeCompare(b.key)).slice(0, 60).map(e => e.key);
+    assert.deepEqual(links.sort(), expected.sort());
+    assert.match(html, /Dance &amp;/);
+  }, { viewer });
+  for (const unmarked of ['<main>Keep this viewer</main>', '<main><!-- upcoming-events:start -->Only one marker</main>']) {
+    withSharePages([], ({ out, root }) => {
+      assert.ok(!existsSync(join(out, 'dance-event-viewer', 'index.html')));
+      assert.equal(readFileSync(join(root, 'dance-event-viewer', 'index.html'), 'utf8'), unmarked);
+    }, { viewer: unmarked });
+  }
+});
+
 test('share pages: writes only to --out and marks cancellations', () => {
   const root = tmp(); const out = tmp();
   try {
@@ -159,7 +350,7 @@ test('share pages: writes only to --out and marks cancellations', () => {
     const normal = { ...publicRow('normal'), name: 'Normal', style: 'Latin', type: 'one_time', start_date: '2026-11-02', venue: 'Club, Mobile, AL', state: 'AL' };
     writeFileSync(join(root, 'dance_events.json'), JSON.stringify({ events: [weekly, oneOff, normal] }));
     execFileSync(process.execPath, [join(TOOLS, 'build_share_pages.mjs'), '--root', root, '--out', out],
-      { stdio: 'pipe', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-08' } });
+      { stdio: 'ignore', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-08' } });
     assert.ok(!existsSync(join(root, 'e')) && !existsSync(join(root, 'sitemap.xml')), 'root must stay untouched');
     assert.deepEqual(readdirSync(join(out, 'e')).sort(), ['normal.html', 'one-off.html', 'weekly-friday.html']);
     const weeklyHtml = readFileSync(join(out, 'e', 'weekly-friday.html'), 'utf8');
@@ -175,7 +366,7 @@ test('share pages: writes only to --out and marks cancellations', () => {
     assert.equal((readFileSync(join(out, 'sitemap.xml'), 'utf8').match(/<loc>/g) || []).length, 4);
     // After the canceled Friday, the next Friday is a normal occurrence again.
     execFileSync(process.execPath, [join(TOOLS, 'build_share_pages.mjs'), '--root', root, '--out', out],
-      { stdio: 'pipe', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-10' } });
+      { stdio: 'ignore', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-10' } });
     assert.doesNotMatch(readFileSync(join(out, 'e', 'weekly-friday.html'), 'utf8'), /is-canceled|EventCancelled/);
   } finally { rmSync(root, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }); }
 });
