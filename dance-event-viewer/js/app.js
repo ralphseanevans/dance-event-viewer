@@ -2040,6 +2040,7 @@ function card(d, { showWhen, isPast, date } = {}) {
     img.alt = "";                                  // decorative — the name is in the heading
     img.loading = "lazy";
     img.decoding = "async";
+    art.classList.add("has-flyer");
     // A broken flyer now leaves a small neutral placeholder instead of vanishing silently.
     img.addEventListener("error", () => { art.textContent = ""; art.appendChild(flyerPlaceholder()); }, { once: true });
     trigger.appendChild(img);
