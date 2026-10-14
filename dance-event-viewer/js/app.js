@@ -166,6 +166,8 @@ const state = {
   // two never fight over what "the" selected state is. See js/state-map-picker.js.
   mapStates: new Set(),
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
+  pastExpanded: false,   // "Past events (N)" section starts collapsed (2026-10-14, Sean)
+  pastPending: false,    // "Past events" chip selected but not yet applied — see runSearch()
   showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline
                           // listings only count/show current events unless this is turned on.
   showNational: false,   // "Traveling? Show national events" (2026-07-17, Phase 0) — out-of-region
@@ -269,6 +271,16 @@ function timeRange(ev) {
 }
 function fmtDate(dt) {
   return dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+/* Main date shown for an event occurrence. Multi-day one-time events read as a range
+   ("Thu, Apr 30 - Mon, May 4") so the visible date always matches the sort key (start). */
+function whenDateText(d) {
+  const ev = d.ev;
+  if (ev.type === "one_time" || ev.type === "tentative") {
+    const start = parseISO(ev.start_date), end = parseISO(ev.end_date);
+    if (start && end && end > start) return `${fmtDate(start)} – ${fmtDate(end)}`;
+  }
+  return fmtDate(d.next);
 }
 function monthlyRuleParts(rule) {
   if (typeof rule !== "string") return null;
@@ -449,12 +461,81 @@ function isPastEvent(d, today) {
 /* The date to display on a past event's card — its last known occurrence. */
 function pastOccurrenceDate(ev) {
   if (ev.type === "one_time" || ev.type === "tentative") {
-    return parseISO(ev.end_date) || parseISO(ev.start_date);
+    // Start date, not end: this is the past section's sort key AND the card's displayed
+    // date, so multi-day events (e.g. Pro/Am in Paradise, Apr 30 - May 4) sort and read
+    // by the same day. The card widens it to a range via whenDateText().
+    return parseISO(ev.start_date) || parseISO(ev.end_date);
   }
   if (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring") {
     return parseISO(ev.end_date);   // only reached when isPastEvent found an elapsed end_date
   }
   return null;
+}
+
+/* How far back "Past events" reaches for still-running recurring series (2026-10-13).
+   Ended one-time events and ended series keep their existing unbounded behavior. */
+const PAST_LOOKBACK_DAYS = 90;
+/* Most recent occurrence of an ongoing recurring series strictly before `today`, within
+   PAST_LOOKBACK_DAYS, or null. Reuses nextOccurrence() (so exclusions/start/end bounds apply
+   identically) by asking, day by day going back, whether the series meets on that day. */
+function prevOccurrence(ev, today) {
+  if (!/_recurring$/.test(ev.type || "")) return null;
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  for (let k = 1; k <= PAST_LOOKBACK_DAYS; k++) {
+    const day = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - k);
+    const n = nextOccurrence(ev, day);
+    if (n && n.getTime() === day.getTime()) return day;
+  }
+  return null;
+}
+/* aria-pressed + an explicit action label for screen readers ("Show/Hide past events"). */
+function syncPastToggle() {
+  const b = document.getElementById("past-toggle");
+  if (!b) return;
+  b.setAttribute("aria-pressed", String(state.pastPending));
+  b.setAttribute("aria-label", state.pastPending
+    ? (state.showPast ? "Hide past events" : "Past events selected — press Search to load them")
+    : "Show past events (then press Search)");
+}   // set when "Past events" is switched on — render() then scrolls to today
+
+/* Collapsible "Past events (N)" section (2026-10-14, Sean). Collapsed by default; the
+   expanded/collapsed choice survives re-renders in state.pastExpanded. Items are rendered
+   lazily — nothing is built until the section is first opened. */
+function pastSectionEl(items, kind) {
+  const sec = document.createElement("section");
+  sec.className = "past-section";
+  const h = document.createElement("h2");
+  h.className = "bucket-heading past-section-heading";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "past-section-toggle";
+  btn.id = "past-section-toggle";
+  btn.setAttribute("aria-controls", "past-section-body");
+  const label = document.createElement("span");
+  label.textContent = `Past events (${items.length})`;
+  const chev = document.createElement("span");
+  chev.className = "past-section-chevron";
+  chev.setAttribute("aria-hidden", "true");
+  chev.textContent = "›";
+  btn.append(label, chev);
+  h.appendChild(btn);
+  const body = document.createElement(kind === "list" ? "ul" : "div");
+  body.id = "past-section-body";
+  body.className = kind === "list" ? "list-rows past-section-body" : "cards past-section-body";
+  let built = false;
+  const apply = () => {
+    const open = !!state.pastExpanded;
+    btn.setAttribute("aria-expanded", String(open));
+    body.hidden = !open;
+    if (open && !built) {
+      built = true;
+      for (const d of items) body.appendChild(kind === "list" ? listRow(d, true) : card(d, { showWhen: true, isPast: true }));
+    }
+  };
+  btn.addEventListener("click", () => { state.pastExpanded = !state.pastExpanded; apply(); });
+  apply();
+  sec.append(h, body);
+  return sec;
 }
 
 /* ---------- data loading ---------- */
@@ -1024,14 +1105,14 @@ function applyUrl() {
     state.mapStates = new Set(p.get("states").split("|").filter(Boolean));
     if (state.mapStates.size) any = true;
   }
-  if (p.get("past") === "1") { state.showPast = true; any = true; }
+  if (p.get("past") === "1") { state.pastPending = true; any = true; }   // selected, loads on Search
   state.showNational = p.get("travel") === "1";
   state.showUnverified = p.get("unverified") === "1";
   // Shared-set link: show exactly the listed events, regardless of region/past, so the
   // recipient always sees the dances that were shared with them (2026-07-17).
   if (p.has("events")) {
     state.eventKeys = new Set(p.get("events").split("|").filter(Boolean));
-    if (state.eventKeys.size) { state.showPast = true; state.showNational = true; any = true; }
+    if (state.eventKeys.size) { state.showPast = state.pastPending = true; state.showNational = true; any = true; }
   } else {
     state.eventKeys = new Set();
   }
@@ -1358,7 +1439,7 @@ function comboHeadline(items, today) {
 function comboWhenLine(d) {
   if (d.next) {
     const tr = timeRange(d.ev);
-    return tr ? `${fmtDate(d.next)} · ${tr}` : fmtDate(d.next);
+    return tr ? `${whenDateText(d)} · ${tr}` : whenDateText(d);
   }
   return scheduleText(d.ev) || "";
 }
@@ -1659,7 +1740,7 @@ function buildPosterEventsPayload(items) {
     return {
       name: (typeof ev.name === "string" ? ev.name : "").trim(),
       day: d.next ? d.next.toLocaleDateString(undefined, { weekday: "long" }) : "",
-      date: d.next ? fmtDate(d.next) : "",
+      date: d.next ? whenDateText(d) : "",
       when: comboWhenLine(d),
       time: (typeof timeRange === "function" ? (timeRange(ev) || "") : ""),
       venue: (typeof ev.venue === "string" ? ev.venue.trim() : ""),
@@ -2140,17 +2221,17 @@ function card(d, { showWhen, isPast, date } = {}) {
     const link = typeof ev.source_url === "string" && /^https?:\/\//i.test(ev.source_url.trim())
       ? ev.source_url.trim() : null;
     if (tr) {
-      when.textContent = `${fmtDate(d.next)} · ${tr}`;
+      when.textContent = `${whenDateText(d)} · ${tr}`;
     } else if (link) {
       // No start/end time on record (e.g. multi-day WSDC conventions) — show the date,
       // then a link to the event's own page in place of the time (Sean, 2026-07-12).
-      when.append(`${fmtDate(d.next)} · `);
+      when.append(`${whenDateText(d)} · `);
       const a = document.createElement("a");
       a.href = link; a.target = "_blank"; a.rel = "noopener noreferrer";
       a.textContent = "View event ↗";
       when.appendChild(a);
     } else {
-      when.textContent = fmtDate(d.next);
+      when.textContent = whenDateText(d);
     }
     el.appendChild(when);
   }
@@ -2511,55 +2592,43 @@ function render() {
       .sort((a, b) => a.next - b.next);
 
     // Past events (elapsed one-time events, ended recurring series) are hidden by
-    // default — see state.showPast. When shown, they render greyed-out (.is-past)
-    // in their own trailing bucket/section, sorted most-recently-past first.
+    // default — see state.showPast. When shown (2026-10-13, Sean), they render greyed-out
+    // (.is-past) in a "Past" section ABOVE the upcoming ones, oldest first, so scrolling up
+    // from today walks back in time. Still-running recurring series also contribute their
+    // most recent occurrence within PAST_LOOKBACK_DAYS (flagged pastOcc: not counted again
+    // in the "N of M shown" line, since the series itself is already counted as upcoming).
     const pastList = state.showPast
       ? visible
-          .filter(d => isPastEvent(d, today))
-          .map(d => ({ ...d, next: pastOccurrenceDate(d.ev) }))
-          .filter(d => d.next)
-          .sort((a, b) => b.next - a.next)
+          .map(d => {
+            if (isPastEvent(d, today)) return { ...d, next: pastOccurrenceDate(d.ev) };
+            const prev = prevOccurrence(d.ev, today);
+            return prev ? { ...d, next: prev, pastOcc: true } : null;
+          })
+          .filter(d => d && d.next)
+          .sort((a, b) => a.next - b.next)
       : [];
+    const countPast = d => { if (!d.pastOcc) shown++; };
 
+    // Past items live in ONE collapsible "Past events (N)" section above everything else
+    // (2026-10-14, Sean): collapsed by default, and its cards are only built on first expand.
+    if (pastList.length) {
+      for (const d of pastList) countPast(d);
+      main.appendChild(pastSectionEl(pastList, state.view === "list" ? "list" : "cards"));
+    }
     if (state.view === "grid") {
       const grid = document.createElement("div");
       grid.className = "cards";
       for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
       main.appendChild(grid);
-      if (pastList.length) {
-        const h = document.createElement("h2");
-        h.className = "bucket-heading"; h.textContent = "Past";
-        main.appendChild(h);
-        const pastGrid = document.createElement("div");
-        pastGrid.className = "cards";
-        for (const d of pastList) { pastGrid.appendChild(card(d, { showWhen: true, isPast: true })); shown++; }
-        main.appendChild(pastGrid);
-      }
-    } else if (state.view === "list") {
-      const buckets = bucketize(withNext, today);
-      if (pastList.length) buckets.push(["Past", pastList]);
-      for (const [label, items] of buckets) {
-        if (!items.length) continue;
-        const isPast = label === "Past";
-        const h = bucketHeadingEl(label);
-        main.appendChild(h);
-        const ul = document.createElement("ul");
-        ul.className = "list-rows";
-        for (const d of items) { ul.appendChild(listRow(d, isPast)); shown++; }
-        main.appendChild(ul);
-      }
     } else {
-      const buckets = bucketize(withNext, today);
-      if (pastList.length) buckets.push(["Past", pastList]);
-      for (const [label, items] of buckets) {
+      const isList = state.view === "list";
+      for (const [label, items] of bucketize(withNext, today)) {
         if (!items.length) continue;
-        const isPast = label === "Past";
-        const h = bucketHeadingEl(label);
-        main.appendChild(h);
-        const grid = document.createElement("div");
-        grid.className = "cards";
-        for (const d of items) { grid.appendChild(card(d, { showWhen: true, isPast })); shown++; }
-        main.appendChild(grid);
+        main.appendChild(bucketHeadingEl(label));
+        const box = document.createElement(isList ? "ul" : "div");
+        box.className = isList ? "list-rows" : "cards";
+        for (const d of items) { box.appendChild(isList ? listRow(d, false) : card(d, { showWhen: true })); shown++; }
+        main.appendChild(box);
       }
     }
   }
@@ -2672,7 +2741,8 @@ function loadPrefs() {
     if (["timeline", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
     else if (["grid", "list"].includes(p.view)) state.view = "timeline";
     // filtersOpen intentionally NOT restored (Sean, 2026-07-12) — panel starts collapsed.
-    if (typeof p.showPast === "boolean") state.showPast = p.showPast;
+    // showPast intentionally NOT restored (2026-10-14, Sean): past events are never built on
+    // page load, only after the user selects "Past events" and applies the search.
   } catch (e) { /* ignore bad prefs */ }
 }
 function setFiltersOpen(open) {
@@ -2725,12 +2795,15 @@ function init() {
   });
   setFiltersOpen(state.filtersOpen);
   const pastToggle = document.getElementById("past-toggle");
-  pastToggle.setAttribute("aria-pressed", String(state.showPast));
+  syncPastToggle();
+  // Past events load on demand (2026-10-14, Sean): the chip only SELECTS them; the past list
+  // is computed and rendered when the search is applied (button / Enter). Deselecting hides
+  // them right away.
   pastToggle.addEventListener("click", () => {
-    state.showPast = !state.showPast;
-    pastToggle.setAttribute("aria-pressed", String(state.showPast));
-    savePrefs();
-    render();
+    state.pastPending = !state.pastPending;
+    syncPastToggle();
+    if (!state.pastPending && state.showPast) { state.showPast = false; savePrefs(); render(); }
+    else if (state.pastPending && !state.showPast) setStatus("Past events selected — press Search (🔍) or Enter to load them.", false);
   });
   // "Traveling? Show national events" — scope toggle; may arrive pre-set from a shared
   // ?travel=1 URL, so aria syncs from state here (2026-07-17 redesign).
@@ -2761,6 +2834,7 @@ function init() {
     let searchTimer = null;
     const runSearch = () => {
       state.search = searchInput.value.trim().toLowerCase();
+      if (state.showPast !== state.pastPending) { state.showPast = state.pastPending; savePrefs(); }
       const clearBtn = document.getElementById("event-search-clear");
       if (clearBtn) clearBtn.hidden = !state.search;
       render();
@@ -2812,7 +2886,7 @@ function init() {
     applyUrl();
     document.getElementById("traveling-toggle")?.setAttribute("aria-pressed", String(state.showNational));
     document.getElementById("unverified-toggle")?.setAttribute("aria-pressed", String(state.showUnverified));
-    document.getElementById("past-toggle")?.setAttribute("aria-pressed", String(state.showPast));
+    syncPastToggle();
     buildLocSelects();
     if (window.DEV_STATE_MAP && window.DEV_STATE_MAP.refreshHighlight) window.DEV_STATE_MAP.refreshHighlight();
     render();

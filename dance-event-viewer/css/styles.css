@@ -1576,3 +1576,17 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
   .state-shape { transition: fill .12s ease, stroke .12s ease; }
 }
 @media (max-width: 640px) { .loc-map { max-width: 100%; } }
+
+/* Collapsible "Past events (N)" section above Tonight (2026-10-14, Sean). The header keeps
+   .bucket-heading's look; the button inside just inherits it and adds a rotating chevron. */
+.past-section-heading { padding-bottom: 0; }
+.past-section-toggle {
+  all: unset; box-sizing: border-box; cursor: pointer; width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 0 6px; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit;
+}
+.past-section-toggle:hover { color: var(--text); }
+.past-section-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.past-section-chevron { color: var(--text-dim); font-size: 1.4rem; line-height: 1; transition: transform .15s ease; }
+.past-section-toggle[aria-expanded="true"] .past-section-chevron { transform: rotate(90deg); color: var(--accent); }
+.past-section-body[hidden] { display: none; }
