@@ -2,7 +2,7 @@
 -- notify_dashboard_signup trigger. NOT APPLIED. Project xyyxbwetagfexsqtokpk.
 --
 -- Prerequisites (see docs/security/rotate-signup-trigger-key.md):
---   * Vault secret named 'signup_trigger_key' exists (the sb_secret 'signup-trigger' key).
+--   * Vault secret named 'signup-trigger' exists (the sb_secret 'signup-trigger' key).
 --   * Edge function notify-dashboard-signup redeployed with the shared-secret check,
 --     verify_jwt = false, and function secret SIGNUP_TRIGGER_KEY set to the same value.
 -- Extensions verified present (read-only, 2026-10-13): pg_net 0.20.4 (schema extensions),
@@ -28,12 +28,12 @@ begin
   select ds.decrypted_secret
     into v_key
     from vault.decrypted_secrets ds
-   where ds.name = 'signup_trigger_key'
+   where ds.name = 'signup-trigger'
    limit 1;
 
   if v_key is null then
     -- Never block the signup insert; the row stays 'queued' for a retry.
-    raise warning 'notify_dashboard_signup: vault secret signup_trigger_key is missing';
+    raise warning 'notify_dashboard_signup: vault secret signup-trigger is missing';
     return new;
   end if;
 

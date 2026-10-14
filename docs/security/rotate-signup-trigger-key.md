@@ -22,19 +22,19 @@ field **credential**. Kos manages it. Never paste it into git, chat, or tickets.
 
 ## Steps for Sean (do them in this order)
 
-### 1. Put the key in Vault as `signup_trigger_key`
+### 1. Put the key in Vault as `signup-trigger`
 Option A – Vault UI: Dashboard → Project Settings → **Vault** (or Integrations → Vault) →
-**Add new secret** → Name `signup_trigger_key` → Secret: paste from 1Password → Save.
+**Add new secret** → Name `signup-trigger` → Secret: paste from 1Password → Save.
 
 Option B – SQL Editor (Dashboard → SQL Editor → New query). Replace the placeholder, run,
 then **delete the query text / don't save the snippet**:
 ```sql
-select vault.create_secret('<PASTE_FROM_1PASSWORD>', 'signup_trigger_key',
+select vault.create_secret('<PASTE_FROM_1PASSWORD>', 'signup-trigger',
                            'sb_secret signup-trigger key for notify-dashboard-signup');
 ```
 Check (shows the name only, not the value):
 ```sql
-select name, created_at from vault.secrets where name = 'signup_trigger_key';
+select name, created_at from vault.secrets where name = 'signup-trigger';
 ```
 
 ### 2. Deploy the edge function change FIRST, then the migration
