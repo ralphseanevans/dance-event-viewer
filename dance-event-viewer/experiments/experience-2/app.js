@@ -1,4 +1,4 @@
-import {FEED,todayKey,parseDate,searchEvents,timeLabel,escapeHTML as esc,safeURL} from './events.mjs';
+import {FEED,todayKey,parseDate,searchEvents,timeLabel,escapeHTML as esc,safeURL} from './events.mjs?v=20261014-content';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let events=[],results=[],shown=9,style='all',savedOnly=false,selectedStyle='West Coast Swing',openedEvent=null;
 let saved;try{const value=JSON.parse(localStorage.getItem('dev-experience-saved')||'[]');saved=new Set(Array.isArray(value)?value:[])}catch{saved=new Set()}
