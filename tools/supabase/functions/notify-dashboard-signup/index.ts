@@ -40,6 +40,21 @@ function getSecretKey(): string | undefined {
   return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? undefined;
 }
 
+// Key the database trigger sends in x-webhook-secret. Prefer the platform-injected
+// SUPABASE_SECRET_KEYS map (entry "signup-trigger"); fall back to SIGNUP_TRIGGER_KEY.
+function getTriggerKey(): string | undefined {
+  const modernKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (modernKeys) {
+    try {
+      const value = (JSON.parse(modernKeys) as Record<string, string>)["signup-trigger"];
+      if (value) return value;
+    } catch {
+      // fall through
+    }
+  }
+  return Deno.env.get("SIGNUP_TRIGGER_KEY") ?? undefined;
+}
+
 function adminHeaders(secretKey: string, returning = false): Record<string, string> {
   const headers: Record<string, string> = {
     apikey: secretKey,
@@ -97,9 +112,9 @@ Deno.serve(async (request: Request) => {
 
   // verify_jwt is OFF for this function (sb_secret keys are not JWTs), so the
   // function authenticates the database trigger itself with a shared secret.
-  const expectedSecret = Deno.env.get("SIGNUP_TRIGGER_KEY");
+  const expectedSecret = getTriggerKey();
   if (!expectedSecret) {
-    console.error("SIGNUP_TRIGGER_KEY is not configured.");
+    console.error("signup-trigger key not found in SUPABASE_SECRET_KEYS or SIGNUP_TRIGGER_KEY.");
     return new Response(JSON.stringify({ error: "Notification service is not configured" }), {
       status: 503,
       headers: jsonHeaders,
