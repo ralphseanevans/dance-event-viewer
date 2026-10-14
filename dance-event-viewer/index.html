@@ -40,11 +40,11 @@
       }
     })();
   </script>
-  <title>Dance Event Viewer — Dance Events Across the South</title>
+  <title>Southern Dance Events: West Coast Swing &amp; More | Dance Event Viewer</title>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <meta name="description" content="Find dance events across the South — West Coast Swing socials, classes, and workshops in Florida, Georgia, Alabama, Mississippi, Louisiana, Tennessee, and the Carolinas. Traveling? Browse national events too.">
   <link rel="canonical" href="https://danceeventviewer.net/dance-event-viewer/">
-  <meta property="og:title" content="Dance Event Viewer — Dance Events Across the South">
+  <meta property="og:title" content="Southern Dance Events: West Coast Swing &amp; More | Dance Event Viewer">
   <meta property="og:description" content="Find dance events across the South — West Coast Swing socials, classes, and workshops. Traveling? Browse national events too.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://danceeventviewer.net/dance-event-viewer/">
@@ -65,10 +65,7 @@
   {"@context":"https://schema.org","@type":"WebSite","name":"Dance Event Viewer","url":"https://danceeventviewer.net/dance-event-viewer/","description":"Find dance events across the South — West Coast Swing socials, classes, and workshops in Florida, Georgia, Alabama, Mississippi, Louisiana, Tennessee, and the Carolinas, plus national events."}
   </script>
 
-  <!-- Map view: Leaflet + free OpenStreetMap/CARTO tiles, no API key needed. Loaded BEFORE
-       styles.css so our dark-theme overrides (in styles.css) win over Leaflet's own defaults. -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <!-- Leaflet CSS and JS load only if the visitor opens a map. -->
 
   <!-- Martian Mono: used only by the Mint Reactor theme. The stylesheet is tiny and the
        font files themselves are downloaded lazily — browsers fetch them only when an
@@ -98,8 +95,8 @@
       projectId: "dance-event-viewer"
     };
   </script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
   <!-- Soft, theme-matched club lighting behind the interface. The beams drift slowly;
@@ -200,7 +197,7 @@
       </div>
     </div>
     <div id="brand-slot">
-      <img id="brand-img" width="2172" height="724" sizes="(max-width: 1140px) calc(100vw - 30px), 1106px"
+      <img id="brand-img" width="2172" height="724" fetchpriority="high" sizes="(max-width: 1140px) calc(100vw - 30px), 1106px"
         alt="Dance Event Viewer — a dancing couple under warm club lights">
       <!-- Banner loading (2026-09-27, Sean-approved page-weight fix): only the ACTIVE theme's
            banner downloads, as a WebP sized for how it is displayed (720/1120/2172 px wide).
@@ -318,7 +315,8 @@
       </div>
     </div>
     <div class="title-block">
-      <h1 class="visually-hidden">Dance Event Viewer</h1>
+      <p class="brand-label">Dance Event Viewer</p>
+      <h1>Dance Events Across the South</h1>
       <div class="title-row">
         <p class="tagline">Connecting Dancers in the South! &middot; good music &middot; great people</p>
       </div>
@@ -590,26 +588,26 @@
   </footer>
 
   <div class="blue-angels-flight-stage" aria-hidden="true">
-    <img class="blue-angels-flight" src="assets/blue-angels-low-poly-640.webp" alt="">
+    <img class="blue-angels-flight" src="assets/blue-angels-low-poly-640.webp" width="640" height="234" loading="lazy" decoding="async" alt="">
   </div>
 
-  <script src="js/dance-poster.js?v=11955ed6"></script>
+  <script defer src="js/dance-poster.js?v=11955ed6"></script>
   <!-- Add to Calendar (2026-08-03): per-card 📅 button (Google link + .ics download with
        real recurrence rules). Loaded BEFORE app.js so window.DEV_ADD_TO_CAL exists when
        the first cards render. Bulk "Export these (.ics)" button disabled for now (Sean's
        call, same day) — see js/add-to-calendar.js, ensureBulkButton() left intact. -->
-  <script src="js/add-to-calendar.js?v=52b9e656"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
-  <script src="js/supabase-config.js?v=d191cb0e"></script>
-  <script src="js/app.js?v=91220d89"></script>
+  <script defer src="js/add-to-calendar.js?v=52b9e656"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
+  <script defer src="js/supabase-config.js?v=d191cb0e"></script>
+  <script defer src="js/app.js?v=91220d89"></script>
   <!-- Choose-location state map (2026-08-03): reads/writes app.js's state.sel.state
        directly (same global scope, loaded after app.js). Its own data file
        (js/us-states-map-data.js, ~145KB of state path data) is fetched lazily on
        first open, not here. -->
-  <script src="js/state-map-picker.js?v=462d2614"></script>
+  <script defer src="js/state-map-picker.js?v=462d2614"></script>
   <!-- Recent searches from everyone (2026-08-03): references SUBMIT_ENDPOINT, a
        top-level const in app.js — must load after it. -->
-  <script src="js/recent-searches.js?v=a9bbdbf1"></script>
-  <script src="js/activity-pulse.js?v=52182654"></script>
+  <script defer src="js/recent-searches.js?v=a9bbdbf1"></script>
+  <script defer src="js/activity-pulse.js?v=52182654"></script>
 </body>
 </html>
