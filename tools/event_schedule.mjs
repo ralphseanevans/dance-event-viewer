@@ -5,15 +5,15 @@ function iso(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
 // Cancel banners: same rules as cancellationFor() in dance-event-viewer/js/app.js.
 const CANCEL_BANNER_LABELS = { confirmed: 'CONFIRMED CANCELED', likely: 'LIKELY CANCELED', owner: 'CANCELED BY OWNER' };
 const normCancelStatus = s => { const k = typeof s === 'string' ? s.trim().toLowerCase() : ''; return CANCEL_BANNER_LABELS[k] ? k : 'likely'; };
-// Returns { status, label, whole } or null. `day` is an optional YYYY-MM-DD occurrence.
+// Returns { status, label, whole, reason } or null. `day` is an optional YYYY-MM-DD occurrence.
 export function cancellationFor(ev, day){
   if (!ev) return null;
-  const make = (status, whole) => { const s = normCancelStatus(status); return { status: s, label: CANCEL_BANNER_LABELS[s], whole }; };
-  if (typeof ev.cancel_status === 'string' && ev.cancel_status.trim()) return make(ev.cancel_status, true);
-  if (ev.canceled === true || ev.cancelled === true) return make(null, true);
+  const make = (status, whole, reason) => { const s = normCancelStatus(status); return { status: s, label: CANCEL_BANNER_LABELS[s], whole, reason: typeof reason === 'string' && reason.trim() ? reason.trim() : null }; };
+  if (typeof ev.cancel_status === 'string' && ev.cancel_status.trim()) return make(ev.cancel_status, true, ev.cancel_reason);
+  if (ev.canceled === true || ev.cancelled === true) return make(null, true, ev.cancel_reason);
   if (day && Array.isArray(ev.canceled_dates)) for (const c of ev.canceled_dates) {
     if (c === day) return make(null, false);
-    if (c && typeof c === 'object' && c.date === day) return make(c.cancel_status, false);
+    if (c && typeof c === 'object' && c.date === day) return make(c.cancel_status, false, c.reason);
   }
   return null;
 }

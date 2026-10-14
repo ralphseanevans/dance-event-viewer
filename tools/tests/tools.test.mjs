@@ -345,7 +345,7 @@ test('share pages: writes only to --out and marks cancellations', () => {
     mkdirSync(join(root, 'dance-event-viewer'));
     writeFileSync(join(root, 'dance-event-viewer', 'logo-map.json'), JSON.stringify({ logos: {}, patterns: [] }));
     const weekly = { ...publicRow('weekly-friday'), name: 'Weekly Friday', style: 'West Coast Swing', type: 'weekly_recurring', day_of_week: 'Friday', start_time: '19:00', end_time: '21:00', venue: 'Hall, Pensacola, FL', state: 'FL',
-      canceled_dates: [{ date: '2026-10-09', cancel_status: 'likely', reason: 'weather' }] };
+      canceled_dates: [{ date: '2026-10-09', cancel_status: 'likely', reason: 'Storm <break> & rest' }] };
     const oneOff = { ...publicRow('one-off'), name: 'One Off', style: 'Latin', type: 'one_time', start_date: '2026-11-01', venue: 'Club, Mobile, AL', state: 'AL', cancel_status: 'owner' };
     const normal = { ...publicRow('normal'), name: 'Normal', style: 'Latin', type: 'one_time', start_date: '2026-11-02', venue: 'Club, Mobile, AL', state: 'AL' };
     writeFileSync(join(root, 'dance_events.json'), JSON.stringify({ events: [weekly, oneOff, normal] }));
@@ -357,9 +357,11 @@ test('share pages: writes only to --out and marks cancellations', () => {
     assert.match(weeklyHtml, /flyer-frame is-canceled cancel-banner--likely/);
     assert.match(weeklyHtml, /EventCancelled/);
     assert.match(weeklyHtml, /\/dance-event-viewer\/css\/cancel-banner\.css/);
+    assert.match(weeklyHtml, /<\/div><p class="cancel-reason">Storm &lt;break&gt; &amp; rest<\/p>/);
     const ownerHtml = readFileSync(join(out, 'e', 'one-off.html'), 'utf8');
     assert.match(ownerHtml, /cancel-banner--owner/);
     assert.match(ownerHtml, /Canceled by owner\./);
+    assert.doesNotMatch(ownerHtml, /class="cancel-reason"/);
     const normalHtml = readFileSync(join(out, 'e', 'normal.html'), 'utf8');
     assert.doesNotMatch(normalHtml, /is-canceled|EventCancelled|cancel-banner\.css/);
     assert.match(normalHtml, /EventScheduled/);
