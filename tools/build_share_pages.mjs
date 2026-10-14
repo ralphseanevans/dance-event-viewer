@@ -11,11 +11,12 @@
 // Usage (from the repo root):
 //   node tools/build_share_pages.mjs [--root .] [--out <dir>]
 // --root is where dance_events.json, dance-event-viewer/logo-map.json and e/img live.
-// --out is where pages, sitemap.xml and the marked viewer index are written.
+// --out is where event/hub pages, sitemap.xml and the marked viewer index are written.
 // For a dry run, pass --out to a temp dir so committed pages are untouched.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
 import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor } from './event_schedule.mjs';
+import { buildHubPages, sitemapFor } from './build_hub_pages.mjs';
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const root = opt('--root') || (args[0] && !args[0].startsWith('--') ? args[0] : '.');
@@ -255,18 +256,9 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
   if (!past) urls.push({ pageUrl, verified: /^\d{4}-\d{2}-\d{2}$/.test(ev.verified_on || '') ? ev.verified_on : null });
 }
 
-// sitemap.xml — the viewer first, followed by event pages that have not passed.
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${SITE}/dance-event-viewer/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-${urls.map(({ pageUrl, verified }) => `  <url>\n    <loc>${esc(pageUrl)}</loc>\n${verified ? `    <lastmod>${verified}</lastmod>\n` : ''}    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>`).join('\n')}
-</urlset>
-`;
-writeFileSync(join(out, 'sitemap.xml'), sitemap);
+// Build supported hubs and include them alongside upcoming event pages.
+const hubs = buildHubPages(data.events, today, out);
+writeFileSync(join(out, 'sitemap.xml'), sitemapFor(data.events, today));
 
 // Preserve all viewer markup outside the opt-in block; --out never changes root.
 const viewerPath = join(root, 'dance-event-viewer', 'index.html');
@@ -279,4 +271,4 @@ if (existsSync(viewerPath)) {
       () => `<!-- upcoming-events:start -->\n${upcomingSection(upcoming)}\n  <!-- upcoming-events:end -->`));
   }
 }
-console.log(`built ${n} event pages in ${join(out, 'e')}/ and sitemap.xml with ${urls.length + 1} URLs`);
+console.log(`built ${n} event pages in ${join(out, 'e')}/ and sitemap.xml with ${urls.length + hubs.length + 1} URLs`);
