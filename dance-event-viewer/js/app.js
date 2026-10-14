@@ -608,6 +608,19 @@ function jitterFor(seed) {
   const b = ((h >> 10) % 1000) / 1000 - 0.5;
   return { dLat: a * 0.02, dLon: b * 0.02 };
 }
+/* Google Maps link for a venue (2026-10-14). Uses the documented cross-platform
+   format https://www.google.com/maps/search/?api=1&query=... which opens the Maps
+   app on phones and maps.google.com on desktop. The venue string usually already
+   holds the full street address; parenthetical notes like "(East Hill neighborhood)"
+   are dropped so they don't confuse the search, and the state is appended only when it's missing. */
+function mapsSearchUrl(venue, stateCode) {
+  const v = typeof venue === "string" ? venue.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").replace(/\s+,/g, ",").trim() : "";
+  if (!v) return null;
+  const st = typeof stateCode === "string" ? stateCode.trim() : "";
+  const needsState = st && !new RegExp(`\\b${st.replace(/[^A-Za-z]/g, "")}\\b`, "i").test(v);
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(needsState ? `${v}, ${st}` : v);
+}
+
 /* Resolve map coordinates for an event: exact venue-string match first (from
    venue-coords.json), then a city-level fallback derived the same way the
    Location filter already derives area/town — never guessed beyond that. */
@@ -2125,6 +2138,14 @@ function card(d, { showWhen, isPast, date } = {}) {
       const p = document.createElement("p");
       p.className = "venue"; p.textContent = ev.venue.trim();
       el.appendChild(p);
+    }
+    const mapsHref = mapsSearchUrl(ev.venue, ev.state);
+    if (mapsHref) {
+      const a = document.createElement("a");
+      a.className = "card-link maps-link";
+      a.href = mapsHref; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = "Directions / map ↗";
+      el.appendChild(a);
     }
   }
   if (typeof ev.cost === "string" && ev.cost.trim()) {
