@@ -559,6 +559,16 @@ function applyCancelBanner(wrapper, cancel) {
   if (label) wrapper.setAttribute("aria-label", `${sentence}: ${label}`);
   return true;
 }
+/* Optional friendly note (canceled_dates[].reason / cancel_reason) shown right under the
+   cancel bar or badge. textContent only, so it is always escaped. Nothing when no reason. */
+function cancelReasonNote(cancel) {
+  const text = cancel && typeof cancel.reason === "string" ? cancel.reason.trim() : "";
+  if (!text) return null;
+  const p = document.createElement("p");
+  p.className = "cancel-reason";
+  p.textContent = text;
+  return p;
+}
 
 /* Flyer URL hygiene at render time (2026-09-27, Sean-approved). Stored data is never edited.
    - Percent-encode ONLY characters that are not legal in a URL, leaving existing %XX escapes
@@ -2053,6 +2063,8 @@ function card(d, { showWhen, isPast, date } = {}) {
     applyCancelBanner(trigger, cancel);
     trigger.addEventListener("click", () => openImageLightbox(flyers, ev.name.trim(), cancel));
     art.appendChild(trigger);
+    const note = cancelReasonNote(cancel);
+    if (note) art.appendChild(note);
   }
   el.appendChild(art);
 
@@ -2074,12 +2086,14 @@ function card(d, { showWhen, isPast, date } = {}) {
     b.className = "badge cancel-badge"; b.textContent = cancel.label;
     badges.appendChild(b);
   }
+  const badgeNote = cancel && !flyers.length ? cancelReasonNote(cancel) : null;
   if (isPast) {
     const b = document.createElement("span");
     b.className = "badge past"; b.textContent = "Past";
     badges.appendChild(b);
   }
   if (badges.children.length) el.appendChild(badges);
+  if (badgeNote) el.appendChild(badgeNote);
 
   const h = document.createElement("h3");
   h.textContent = ev.name.trim();
@@ -3241,6 +3255,8 @@ function openImageLightbox(src, label, cancel) {
     });
     artWrap.prepend(img);
     pop.appendChild(artWrap); pop.appendChild(missing);
+    const lbNote = cancelReasonNote(cancel);
+    if (lbNote) pop.appendChild(lbNote);
   } else {
     pop.appendChild(img); pop.appendChild(missing);
   }
