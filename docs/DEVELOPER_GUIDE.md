@@ -78,6 +78,7 @@ All run from the repo root with Node 20+. None of them write to Supabase.
 | `node --test tools/tests/` | Runs the tool tests (fixtures and mocked fetch, no network) |
 | `node tools/export_supabase_public.mjs <out.json>` | Reads `public.event_listings` with the publishable key and writes the fallback JSON |
 | `node tools/build_share_pages.mjs [--root .] [--out <dir>]` | Builds `e/<key>.html` landing pages and `sitemap.xml`, with cancel banners |
+| `node tools/check_site.mjs [--root .] [--live]` | Checks robots, sitemap, event-page links/images/JSON-LD, and optionally live sitemap URLs |
 | `node tools/verify_supabase_event.mjs <key> [expected.json]` | Read-back check of one public row |
 | `node tools/export_public.mjs <master.json> <out.json>` | Sanitizes a private master export into the public shape (leak check) |
 
