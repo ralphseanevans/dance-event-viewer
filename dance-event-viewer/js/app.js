@@ -250,6 +250,16 @@ function timeRange(ev) {
 function fmtDate(dt) {
   return dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
+/* Main date shown for an event occurrence. Multi-day one-time events read as a range
+   ("Thu, Apr 30 - Mon, May 4") so the visible date always matches the sort key (start). */
+function whenDateText(d) {
+  const ev = d.ev;
+  if (ev.type === "one_time" || ev.type === "tentative") {
+    const start = parseISO(ev.start_date), end = parseISO(ev.end_date);
+    if (start && end && end > start) return `${fmtDate(start)} – ${fmtDate(end)}`;
+  }
+  return fmtDate(d.next);
+}
 function monthlyRuleParts(rule) {
   if (typeof rule !== "string") return null;
   const m = /(first|1st|second|2nd|third|3rd|fourth|4th)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i.exec(rule);
@@ -429,7 +439,10 @@ function isPastEvent(d, today) {
 /* The date to display on a past event's card — its last known occurrence. */
 function pastOccurrenceDate(ev) {
   if (ev.type === "one_time" || ev.type === "tentative") {
-    return parseISO(ev.end_date) || parseISO(ev.start_date);
+    // Start date, not end: this is the past section's sort key AND the card's displayed
+    // date, so multi-day events (e.g. Pro/Am in Paradise, Apr 30 - May 4) sort and read
+    // by the same day. The card widens it to a range via whenDateText().
+    return parseISO(ev.start_date) || parseISO(ev.end_date);
   }
   if (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring") {
     return parseISO(ev.end_date);   // only reached when isPastEvent found an elapsed end_date
@@ -1350,7 +1363,7 @@ function comboHeadline(items, today) {
 function comboWhenLine(d) {
   if (d.next) {
     const tr = timeRange(d.ev);
-    return tr ? `${fmtDate(d.next)} · ${tr}` : fmtDate(d.next);
+    return tr ? `${whenDateText(d)} · ${tr}` : whenDateText(d);
   }
   return scheduleText(d.ev) || "";
 }
@@ -1651,7 +1664,7 @@ function buildPosterEventsPayload(items) {
     return {
       name: (typeof ev.name === "string" ? ev.name : "").trim(),
       day: d.next ? d.next.toLocaleDateString(undefined, { weekday: "long" }) : "",
-      date: d.next ? fmtDate(d.next) : "",
+      date: d.next ? whenDateText(d) : "",
       when: comboWhenLine(d),
       time: (typeof timeRange === "function" ? (timeRange(ev) || "") : ""),
       venue: (typeof ev.venue === "string" ? ev.venue.trim() : ""),
@@ -2132,17 +2145,17 @@ function card(d, { showWhen, isPast, date } = {}) {
     const link = typeof ev.source_url === "string" && /^https?:\/\//i.test(ev.source_url.trim())
       ? ev.source_url.trim() : null;
     if (tr) {
-      when.textContent = `${fmtDate(d.next)} · ${tr}`;
+      when.textContent = `${whenDateText(d)} · ${tr}`;
     } else if (link) {
       // No start/end time on record (e.g. multi-day WSDC conventions) — show the date,
       // then a link to the event's own page in place of the time (Sean, 2026-07-12).
-      when.append(`${fmtDate(d.next)} · `);
+      when.append(`${whenDateText(d)} · `);
       const a = document.createElement("a");
       a.href = link; a.target = "_blank"; a.rel = "noopener noreferrer";
       a.textContent = "View event ↗";
       when.appendChild(a);
     } else {
-      when.textContent = fmtDate(d.next);
+      when.textContent = whenDateText(d);
     }
     el.appendChild(when);
   }
