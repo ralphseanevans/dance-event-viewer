@@ -43,17 +43,22 @@ export function nextOccurrence(e,start,end){
 }
 export function styleMatches(e,style){
  const s=(e.style||'').toLowerCase();if(style==='all')return true;
- if(style==='Latin')return /salsa|bachata/.test(s);
+ if(style==='Latin')return /salsa|bachata|latin/.test(s);
  if(style==='Country')return /country|line/.test(s);
  return s.includes(style.toLowerCase());
 }
 export function placeMatches(e,place){
- if(place==='all')return true;if(place==='gulf')return /pensacola|mobile|destin|fort walton|gulf breeze|gulf shores|orange beach|daphne|fairhope|navarre|dauphin island|milton|pace,|foley|panama city|biloxi|gulfport|ocean springs/i.test(e.venue||'');
+ if(place==='all')return true;
+ if(place==='south')return ['FL','GA','AL','MS','LA','TN','SC','NC'].includes(e.state);
+ if(place==='pensacola')return /pensacola|gulf breeze|pace,|milton,/i.test(e.venue||'');
+ if(place==='mobile')return /mobile|daphne|fairhope|spanish fort|dauphin island/i.test(e.venue||'');
+ if(place==='emerald')return /destin|fort walton|niceville|mary esther/i.test(e.venue||'');
+ if(place==='gulf')return /pensacola|mobile|destin|fort walton|niceville|mary esther|gulf breeze|gulf shores|orange beach|daphne|fairhope|spanish fort|navarre|dauphin island|milton|pace,|foley|panama city|biloxi|gulfport|ocean springs/i.test(e.venue||'');
  return e.state===place;
 }
-export function searchEvents(events,{place='gulf',style='all',when='30',query='',savedOnly=false,saved=new Set(),today=todayKey()}={}){
+export function searchEvents(events,{place='gulf',style='all',when='30',query='',savedOnly=false,saved=new Set(),includeUnverified=false,today=todayKey()}={}){
  const [start,end]=dateRange(when,today);const terms=query.toLowerCase().trim().split(/\s+/).filter(Boolean);
- return events.filter(e=>e&&e.key&&placeMatches(e,place)&&styleMatches(e,style)&&(!savedOnly||saved.has(e.key))&&terms.every(t=>[e.name,e.venue,e.style,e.state].join(' ').toLowerCase().includes(t))).map(event=>({event,date:nextOccurrence(event,start,end)})).filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)||(a.event.start_time||'99').localeCompare(b.event.start_time||'99')||a.event.name.localeCompare(b.event.name));
+ return events.filter(e=>e&&e.key&&(includeUnverified||!e.unverified)&&placeMatches(e,place)&&styleMatches(e,style)&&(!savedOnly||saved.has(e.key))&&terms.every(t=>[e.name,e.venue,e.style,e.state].join(' ').toLowerCase().includes(t))).map(event=>({event,date:nextOccurrence(event,start,end)})).filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)||(a.event.start_time||'99').localeCompare(b.event.start_time||'99')||a.event.name.localeCompare(b.event.name));
 }
 export function timeLabel(value){if(!/^\d{1,2}:\d{2}/.test(value||''))return'Time not listed';const [h,m]=value.split(':').map(Number);return `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`}
 export const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
