@@ -1,0 +1,19 @@
+/* Google sign-in button / signed-in chip — matches the pill style of .submit-event-btn. */
+.auth-slot { display: inline-flex; align-items: center; }
+.auth-btn, .auth-signout {
+  background: transparent; color: var(--accent, #4cc2ff); cursor: pointer;
+  border: 1px solid var(--accent, #4cc2ff); border-radius: 999px;
+  padding: 4px 12px; font: inherit; font-size: .82rem;
+}
+.auth-btn:hover, .auth-signout:hover { filter: brightness(1.2); }
+.auth-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: .82rem;
+  color: var(--text-dim, #aaa); border: 1px solid currentColor; border-radius: 999px; padding: 2px 4px 2px 10px;
+}
+.auth-email { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-badge {
+  background: #d98cae; color: #1b1418; font-weight: 700; font-size: .7rem;
+  border-radius: 999px; padding: 1px 7px; text-transform: uppercase; letter-spacing: .04em;
+}
+.auth-signout { padding: 2px 9px; font-size: .75rem; }
+[data-admin-only][hidden] { display: none !important; }

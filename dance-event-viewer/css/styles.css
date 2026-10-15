@@ -1606,3 +1606,35 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
   .location-choice-row .chips { width: 100%; }
   .location-choice-row .loc-more { flex: 0 0 100%; width: 100%; text-align: left; min-height: 36px; }
 }
+
+/* ---------- Tile titles + lead tile (2026-10-14, Sean) ----------
+   Every tile: a short bold title on top, the full name and details below in smaller text.
+   The first upcoming event ("Up next") spans the whole grid row with a larger flyer,
+   accent border and soft accent wash; other tiles are unchanged in size. */
+.card h3.card-title { font-size: 1.2rem; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+.card .full-name { color: var(--text-dim); font-size: .85rem; line-height: 1.35; margin-top: -4px; overflow-wrap: anywhere; }
+.card--lead {
+  grid-column: 1 / -1;
+  flex-direction: row; align-items: stretch; gap: 0;
+  padding: 0;
+  border: 2px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent-soft), var(--bg-card) 65%);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 10px 28px rgba(0, 0, 0, .28);
+  min-width: 0;
+}
+.card--lead > .card-art { flex: 0 0 min(42%, 420px); margin: 0; border-radius: calc(var(--radius) - 2px) 0 0 calc(var(--radius) - 2px); }
+.card-lead-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 22px 26px; padding-right: 130px; }
+.card--lead h3.card-title { font-size: clamp(1.5rem, 2.6vw, 2.1rem); line-height: 1.15; }
+.card--lead .full-name { font-size: .95rem; }
+.card--lead .when { font-size: 1.1rem; }
+.card--lead .venue, .card--lead button.venue { font-size: 1rem; }
+.badge.lead-badge { background: var(--accent); color: #0b1220; }
+.card--lead .cancel-badge { font-size: .9rem; padding: 4px 12px; }
+@media (max-width: 700px) {
+  .card--lead { flex-direction: column; }
+  .card--lead > .card-art { flex: none; border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0; }
+  .card-lead-body { padding: 14px 16px 16px; }
+  .card--lead > .card-art:not(.has-flyer):empty + .card-lead-body,
+  .card--lead > .card-art:empty + .card-lead-body { padding-top: 48px; }
+  .card--lead h3.card-title { font-size: 1.45rem; }
+}
