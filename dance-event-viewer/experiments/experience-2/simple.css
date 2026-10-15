@@ -105,3 +105,4 @@ button.calendar-day.is-active{color:var(--red)}
 @media(prefers-reduced-motion:reduce){
 .viewer *,.flow-line{animation:none!important;transition:none!important}
 }
+.mode-switch[hidden],.place-choice[hidden]{display:none}
