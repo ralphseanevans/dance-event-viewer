@@ -1,4 +1,5 @@
 import heroClip from "./assets/hero-title-clip.js";
+import heroRepeatClip from "./assets/hero-repeat-clip.js";
 import {FEED,todayKey,parseDate,searchEvents,timeLabel,escapeHTML as esc,safeURL} from './events.mjs?v=20261014-content';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let events=[],results=[],shown=9,style='all',savedOnly=false,selectedStyle='West Coast Swing',openedEvent=null;
@@ -58,6 +59,12 @@ let motion=!matchMedia('(prefers-reduced-motion: reduce)').matches;
 const hero=$('.hero'),art=$('.hero-art'),heroVideo=$('#hero-video'),canvas=$('#atmosphere'),ctx=canvas.getContext('2d');let width=0,height=0,pointer={x:0,y:0},scrollY=0,frame=0,last=0;
 heroVideo.src=heroClip;
 heroVideo.loop=false;
+heroVideo.addEventListener("ended",()=>{
+ heroVideo.src=heroRepeatClip;
+ heroVideo.loop=true;
+ heroVideo.load();
+ syncHeroVideo();
+},{once:true});
 const dust=Array.from({length:38},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.1+.2,v:Math.random()*.00005+.000015}));
 function resize(){width=hero.clientWidth;height=hero.clientHeight;const ratio=Math.min(devicePixelRatio||1,2);canvas.width=width*ratio;canvas.height=height*ratio;ctx?.setTransform(ratio,0,0,ratio,0,0)}
 function draw(t){frame=0;if(!motion||document.hidden||scrollY>height)return;if(t-last<32){frame=requestAnimationFrame(draw);return}last=t;if(ctx){ctx.clearRect(0,0,width,height);ctx.fillStyle='#eee8da';dust.forEach(p=>{p.y-=p.v*32;if(p.y<0)p.y=1;ctx.globalAlpha=.18+p.r*.16;ctx.beginPath();ctx.arc(p.x*width+pointer.x*6,p.y*height,p.r,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1}art.style.setProperty('--mx',`${pointer.x*9}px`);art.style.setProperty('--my',`${pointer.y*7+Math.min(scrollY*.13,85)}px`);frame=requestAnimationFrame(draw)}
