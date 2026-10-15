@@ -9,7 +9,7 @@ import { createStickyCalendar } from './sticky-calendar.mjs?v=toggle-days-1';
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../../', import.meta.url);          // /dance-event-viewer/
 const SITE = new URL('../../../', import.meta.url);         // site root
-const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url,card_title,instructors,levels';
+const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url,card_title,instructors,levels,address_line_1,address_line_2,cost_display';
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -275,14 +275,26 @@ function tile({ ev, canceled, day }) {
   const row = (kind, text) => {
     const p = document.createElement('p'); p.className = 'tile-detail tile-' + kind;
     p.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[kind] + '</svg>';
-    const span = document.createElement('span'); span.textContent = text; p.appendChild(span); body.appendChild(p);
+    const span = document.createElement('span'); span.textContent = text; p.appendChild(span); body.appendChild(p); return span;
   };
   const date = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(day + 'T12:00:00'));
   if (Array.isArray(ev.levels) && ev.levels.length) row('level', ev.levels.join(', '));
   if (Array.isArray(ev.instructors) && ev.instructors.length) row('instructor', ev.instructors.join(', '));
   row('calendar', date + ' · ' + timeRange(ev));
-  row('location', ev.venue || 'Venue not listed');
-  row('ticket', ev.cost || 'Cover not listed');
+  const location = row('location', ev.address_line_1 || ev.venue || 'Venue not listed');
+  if (ev.address_line_2) {
+    const second = document.createElement('span'); second.className = 'tile-address-line';
+    second.textContent = ev.address_line_2; location.appendChild(second);
+  }
+  row('ticket', ev.cost_display || ev.cost || 'Cover not listed');
+  const detail = (label, text) => {
+    const details = document.createElement('details'); details.className = 'tile-extra';
+    const summary = document.createElement('summary'); summary.textContent = label;
+    const p = document.createElement('p'); p.textContent = text;
+    details.append(summary, p); body.appendChild(details);
+  };
+  if (ev.address_line_1 && ev.venue !== [ev.address_line_1, ev.address_line_2].filter(Boolean).join(', ')) detail('Full address', ev.venue);
+  if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
   const links = document.createElement('p'); links.className = 'tile-links';
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; links.appendChild(m); }
   const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; links.appendChild(o); }
