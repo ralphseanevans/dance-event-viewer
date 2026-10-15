@@ -231,3 +231,5 @@ html,body{overflow-x:clip}
 .topbar-title{display:flex;justify-content:space-between;align-items:baseline;gap:.4em;margin:0;white-space:nowrap;font-family:var(--display);font-weight:700;font-size:clamp(26px,8.2vw,112px);line-height:.95;letter-spacing:-.02em;color:var(--paper)}
 .topbar-title em{font-style:normal;color:var(--red)}
 .hero{padding-top:0}
+/* Headline moved out of the hero: the video gets the full width again, centered */
+@media(min-width:651px){.hero-art{left:0;right:0;width:100%;height:100%}.hero-art video{object-position:center bottom}.art-shade{background:linear-gradient(0deg,var(--ink),transparent 20%)}}
