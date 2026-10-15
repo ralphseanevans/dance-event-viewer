@@ -14,6 +14,7 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
   const prev = root.querySelector('.calendar-prev'), next = root.querySelector('.calendar-next');
   const grid = root.querySelector('.calendar-days');
   const flow = createFlowLine(grid);
+  let eventDate = null;
   let dates = [], shownMonth = null, active = null, tapped = null, observer = null;
   let selectedRanges = [], dragStart = null, dragEnd = null, dragPointer = null, didDrag = false, suppressClick = false, pendingStart = null;
 
@@ -49,6 +50,7 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
       const key = b.dataset.date;
       const inSelected = selectedRanges.some(r => key >= r.start && key <= r.end);
       const inPreview = preview && key >= preview.start && key <= preview.end;
+      b.classList.toggle('event-date', key === eventDate);
       b.setAttribute('aria-pressed', String(inSelected));
       b.classList.toggle('in-range', Boolean(inSelected || inPreview));
       b.classList.toggle('range-start', Boolean(selectedRanges.some(r => key === r.start) || (preview && key === preview.start)));
@@ -116,6 +118,9 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
   if ('ResizeObserver' in window) new ResizeObserver(setH).observe(sticky);
 
   return {
+    highlightEvent(day) {
+      eventDate = day; shownMonth = day.slice(0, 7); render(); setH();
+    },
     set(newDates, blocks, ranges = []) {
       dates = newDates; selectedRanges = Array.isArray(ranges) ? ranges : [];
       if (!dates.includes(tapped)) tapped = null; if (!dates.includes(active)) active = dates[0] || null;
