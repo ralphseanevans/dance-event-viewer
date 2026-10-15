@@ -137,7 +137,7 @@ button.calendar-day.is-active{color:var(--red)}
 .range-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 6px;border:1px solid var(--line);border-radius:999px;color:var(--paper);font-size:10px}
 .range-chip button{width:18px;height:18px;border:0;background:none;color:var(--muted);font-size:15px;line-height:1}
 .calendar-day.in-range{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
-.calendar-day.range-start,.calendar-day.range-end,.calendar-day.range-pending{border-radius:999px;background:var(--red);color:var(--ink)}
+.calendar-day.range-start,.calendar-day.range-end,.calendar-day.range-pending{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
 button.calendar-day{touch-action:none;user-select:none;-webkit-user-select:none}
 button.calendar-day.no-events{cursor:crosshair}
 
@@ -175,3 +175,6 @@ button.calendar-day.no-events{cursor:crosshair}
 @media(max-width:560px){
 .tile-flyer-preview{width:30%;max-width:120px;min-width:76px;margin:0 0 12px 14px;border-radius:12px}
 }
+
+/* All selected dates share one shade, even split-range endpoints and active dates. */
+button.calendar-day.in-range,button.calendar-day.range-start,button.calendar-day.range-end,button.calendar-day.range-pending{background:rgba(220,80,57,.2);color:var(--paper);box-shadow:none}
