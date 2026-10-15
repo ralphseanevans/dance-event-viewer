@@ -2671,6 +2671,12 @@ function render() {
   updateFilterUI();
 }
 
+/* Canceled occurrences go to the END of their day group (2026-10-14, DEV Design), keeping
+   the existing order otherwise (Array.prototype.sort is stable). */
+function sortCanceledLast(items) {
+  const isOff = d => !!cancellationFor(d.ev, d.next);
+  return items.slice().sort((a, b) => Number(isOff(a)) - Number(isOff(b)));
+}
 function bucketize(items, today) {
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const byDate = new Map();
@@ -2682,7 +2688,7 @@ function bucketize(items, today) {
   }
   return [...byDate.values()]
     .sort((a, b) => a.date - b.date)
-    .map(group => [timelineDateLabel(group.date, group.items, t0), group.items]);
+    .map(group => [timelineDateLabel(group.date, group.items, t0), sortCanceledLast(group.items)]);
 }
 
 /* Timeline headings start conversationally, then become date-led as events get farther
