@@ -9,7 +9,7 @@ import { createStickyCalendar } from './sticky-calendar.mjs?v=6dabd386';
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../../', import.meta.url);          // /dance-event-viewer/
 const SITE = new URL('../../../', import.meta.url);         // site root
-const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url';
+const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url,card_title,instructors,levels';
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -245,9 +245,11 @@ function tile({ ev, canceled, day }) {
   const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance';
   body.appendChild(style);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; body.appendChild(c); }
-  const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.name;
+  const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name;
   body.appendChild(name);
   const paths = {
+    instructor: '<circle cx="12" cy="7" r="4" fill="currentColor" stroke="none"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z" fill="currentColor" stroke="none"/>',
+    level: '<path d="M4 21v-5h4v5Zm6 0V10h4v11Zm6 0V3h4v18Z" fill="currentColor" stroke="none"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
     location: '<path fill="currentColor" stroke="none" d="M12 2a8 8 0 0 0-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 0 0-8-8m0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6"/>',
     ticket: '<path d="m3 13 10-10 3 3a3 3 0 0 0 4 4l1 1-10 10-3-3a3 3 0 0 0-4-4Z"/><path d="m13 7 1 1m2 2 1 1"/>'
@@ -258,6 +260,8 @@ function tile({ ev, canceled, day }) {
     const span = document.createElement('span'); span.textContent = text; p.appendChild(span); body.appendChild(p);
   };
   const date = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(day + 'T12:00:00'));
+  if (Array.isArray(ev.levels) && ev.levels.length) row('level', ev.levels.join(', '));
+  if (Array.isArray(ev.instructors) && ev.instructors.length) row('instructor', ev.instructors.join(', '));
   row('calendar', date + ' · ' + timeRange(ev));
   row('location', ev.venue || 'Venue not listed');
   row('ticket', ev.cost || 'Cover not listed');
