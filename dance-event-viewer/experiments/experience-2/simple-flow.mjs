@@ -256,6 +256,40 @@ function dateBlock(g) {
 }
 const resolve = p => (/^https?:/i.test(p) ? p : new URL(p.replace(/^\.\.\//, ''), /^\.\.\//.test(p) ? SITE : VIEWER).href);
 function safeUrl(s) { try { const u = new URL(s); return /^https?:$/.test(u.protocol) ? u.href : null; } catch { return null; } }
+// Trim only nearly uniform neutral outer borders; originals stay in the lightbox.
+function trimFlyerBorder(image) {
+  if (image.dataset.trimmed || !image.naturalWidth || image.naturalWidth > 3000 || image.naturalHeight > 4000) return;
+  image.dataset.trimmed = 'true';
+  try {
+    const w = image.naturalWidth, h = image.naturalHeight;
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true }); ctx.drawImage(image, 0, 0);
+    const pixels = ctx.getImageData(0, 0, w, h).data;
+    const neutral = (x, y, white) => {
+      const p = (y * w + x) * 4;
+      return pixels[p + 3] > 250 && (white
+        ? Math.min(pixels[p], pixels[p+1], pixels[p+2]) >= 248
+        : Math.max(pixels[p], pixels[p+1], pixels[p+2]) <= 10);
+    };
+    const row = (y, white) => { for (let x=0;x<w;x++) if (!neutral(x,y,white)) return false; return true; };
+    const col = (x, white) => { for (let y=0;y<h;y++) if (!neutral(x,y,white)) return false; return true; };
+    const edge = (size, check, reverse) => {
+      const limit = Math.floor(size * .12);
+      for (const white of [false, true]) {
+        let n=0;
+        while (n<=limit && check(reverse ? size-1-n : n, white)) n++;
+        // A border that continues beyond the cap may be intentional artwork.
+        if (n>2 && n<=limit) return Math.max(0,n-2);
+      }
+      return 0;
+    };
+    const left=edge(w,col,false), right=edge(w,col,true), top=edge(h,row,false), bottom=edge(h,row,true);
+    if (!(left || right || top || bottom)) return;
+    const cropped = document.createElement('canvas'); cropped.width=w-left-right; cropped.height=h-top-bottom;
+    cropped.getContext('2d').drawImage(canvas,left,top,cropped.width,cropped.height,0,0,cropped.width,cropped.height);
+    image.src=cropped.toDataURL('image/png');
+  } catch { /* Cross-origin images without pixel access retain their original preview. */ }
+}
 function tile({ ev, canceled, day }) {
   const a = document.createElement('article');
   a.className = 'event-tile' + (canceled ? ' is-canceled' : '');
@@ -303,7 +337,7 @@ function tile({ ev, canceled, day }) {
     a.classList.add('has-flyer');
     const preview = document.createElement('button'); preview.type = 'button'; preview.className = 'tile-flyer-preview';
     preview.setAttribute('aria-label', 'Enlarge flyer for ' + ev.name);
-    const image = document.createElement('img'); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
+    const image = document.createElement('img'); image.addEventListener('load', () => trimFlyerBorder(image)); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
     preview.appendChild(image);
     preview.addEventListener('click', () => openLightbox(flyers, ev.name, preview));
     body.prepend(preview);
