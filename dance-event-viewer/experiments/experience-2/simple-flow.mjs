@@ -4,7 +4,7 @@
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
 import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE } from './simple-core.mjs?v=9e76a810';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
-import { createStickyCalendar } from './sticky-calendar.mjs?v=6dabd386';
+import { createStickyCalendar } from './sticky-calendar.mjs?v=toggle-days-1';
 
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../../', import.meta.url);          // /dance-event-viewer/
@@ -31,6 +31,7 @@ const calendar = createStickyCalendar({
     if (state.dateRanges.length) { addDateRange({ start: day, end: day }); return; }
     document.getElementById(`simple-date-${day}`)?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
   },
+  onRemoveDay: day => removeDateDay(day),
   onRange: range => addDateRange(range)
 });
 
@@ -71,6 +72,23 @@ function syncRangeControls() {
   });
   list.hidden = state.dateRanges.length === 0;
   $('#clear-ranges').disabled = state.dateRanges.length === 0;
+}
+function removeDateDay(day) {
+  const adjacent = delta => {
+    const date = new Date(day + 'T12:00:00');
+    date.setDate(date.getDate() + delta);
+    return String(date.getFullYear()) + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+  };
+  state.dateRanges = state.dateRanges.flatMap(range => {
+    if (day < range.start || day > range.end) return [range];
+    const pieces = [];
+    if (range.start < day) pieces.push({ start: range.start, end: adjacent(-1) });
+    if (day < range.end) pieces.push({ start: adjacent(1), end: range.end });
+    return pieces;
+  });
+  state.pages = 1;
+  $('#calendar-range-status').textContent = 'Removed ' + rangeLabel({ start: day, end: day }) + '.';
+  syncRangeControls(); render();
 }
 function addDateRange(range) {
   const start = range.start < range.end ? range.start : range.end;
