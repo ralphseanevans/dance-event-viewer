@@ -37,9 +37,6 @@ button{color:inherit}
 .button span{font-size:21px;line-height:1}
 .button-red{background:var(--red);color:var(--ink)}
 .button-red:hover{background:#ed6b50}
-.ticker{background:var(--red);color:var(--ink);overflow:hidden;padding:15px 0;transform:rotate(-1.3deg) scale(1.015);position:relative;z-index:3}
-.ticker div{width:max-content;white-space:nowrap;font-family:var(--display);font-size:25px;letter-spacing:.01em;animation:marquee 50s linear infinite}
-.ticker b{font-size:21px;margin:0 34px;font-weight:400}
 .styles-section{padding:78px var(--pad) 95px;background:var(--paper);color:var(--ink);overflow:hidden}
 .section-top{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:28px;border-bottom:1px solid currentColor}
 .small-note{font-size:10px;opacity:.65}
@@ -139,7 +136,6 @@ dialog .button{margin-top:24px}
 .no-motion .hero-art{transform:none!important}
 .no-motion .reveal{opacity:1!important;transform:none!important}
 .noscript{padding:30px;text-align:center;background:var(--paper);color:var(--ink)}
-@keyframes marquee{to{transform:translateX(-50%)}}
 @keyframes rotate{to{transform:rotate(360deg)}}
 @media(min-width:1600px){.hero-art{right:0;width:72%}
 .hero-copy{width:60%}
@@ -167,9 +163,6 @@ dialog .button{margin-top:24px}
 .hero .button{padding:15px 20px;font-size:11px}
 .hero-art{width:110%;height:420px;right:-5%;bottom:24px;transform:none!important}
 .art-shade{background:linear-gradient(180deg,var(--ink),transparent 18%),linear-gradient(0deg,var(--ink),transparent 20%)}
-.ticker{padding:12px 0}
-.ticker div{font-size:20px}
-.ticker b{margin:0 24px}
 .styles-section{padding:50px var(--pad) 56px}
 .section-top{padding-bottom:20px}
 .eyebrow{font-size:8px}
