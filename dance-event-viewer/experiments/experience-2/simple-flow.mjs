@@ -104,10 +104,11 @@ el.styleChoices.addEventListener('click', e => {
   render({ tappedStyle: state.styles.has(s) ? s : null });
 });
 
-function styleButton(style, cls) {
+function styleButton(style, cls, available = true) {
   const b = document.createElement('button');
   b.type = 'button'; b.className = cls; b.dataset.style = style; b.textContent = style;
   b.setAttribute('aria-pressed', String(state.styles.has(style)));
+  if (!available) { b.disabled = true; b.classList.add('is-unavailable'); b.title = 'No upcoming events in the selected places'; }
   return b;
 }
 
@@ -118,24 +119,26 @@ function render({ tapped, tappedStyle } = {}) {
   const today = atMidnight(new Date());
   const markets = state.markets.size ? [...state.markets] : MARKETS.map(m => m.id);
   const items = upcomingIn(state.events, markets, today);
-  // Keep the complete style picker stable across place filters.
+  // Keep all nearby styles visible, but disable styles with no events in the selected places.
   const styleMarkets = MARKETS.map(m => m.id);
   const styleCatalog = upcomingIn(state.events, styleMarkets, today);
   const { partner, solo } = availableStyles(styleCatalog);
-  [...state.styles].forEach(s => { if (!partner.includes(s) && !solo.includes(s)) state.styles.delete(s); });
+  const { partner: availablePartner, solo: availableSolo } = availableStyles(items);
+  const availableHere = new Set([...availablePartner, ...availableSolo]);
+  [...state.styles].forEach(s => { if (!availableHere.has(s)) state.styles.delete(s); });
 
   // Styles step
   const wasHidden = el.styles.hidden;
   el.styles.hidden = false;
   if (wasHidden) { el.styles.classList.remove('is-opening'); void el.styles.offsetWidth; el.styles.classList.add('is-opening'); }
-  const kids = partner.map(s => styleButton(s, 'style-choice'));
+  const kids = partner.map(s => styleButton(s, 'style-choice', availableHere.has(s)));
   if (solo.length) {
     const t = document.createElement('button');
     t.type = 'button'; t.className = 'style-choice solo-toggle'; t.setAttribute('aria-expanded', String(state.soloOpen));
     t.classList.toggle('has-selection', solo.some(s => state.styles.has(s)));
     t.innerHTML = `${state.soloOpen ? 'Hide' : 'Show'} solo styles (${solo.length}) <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
     kids.push(t);
-    if (state.soloOpen) solo.forEach(s => kids.push(styleButton(s, 'style-choice solo-choice')));
+    if (state.soloOpen) solo.forEach(s => kids.push(styleButton(s, 'style-choice solo-choice', availableHere.has(s))));
   }
   if (!partner.length && !solo.length) { const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances listed here yet. Try another place.'; kids.push(p); }
   el.styleChoices.replaceChildren(...kids, lines.styles.line);
