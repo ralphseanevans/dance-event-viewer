@@ -118,3 +118,25 @@ button.calendar-day.is-active{color:var(--red)}
 .solo-toggle{font-size:14px}
 .solo-choice{margin-left:0;font-size:15px}
 }
+
+/* Multi-range calendar controls */
+.calendar-range{margin:0 0 8px;border-bottom:1px solid var(--line);padding-bottom:7px}
+.calendar-range summary{display:flex;align-items:center;justify-content:space-between;min-height:30px;color:var(--paper);font-size:12px;font-weight:600;cursor:pointer;list-style:none}
+.calendar-range summary::-webkit-details-marker{display:none}
+.calendar-range summary::after{content:"+";color:var(--red);font-size:17px}
+.calendar-range[open] summary::after{content:"−"}
+.range-help,.range-status{margin:6px 0;color:var(--muted);font-size:11px;line-height:1.4}
+.range-form{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0}
+.range-form label{display:grid;gap:4px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.range-form input{box-sizing:border-box;width:100%;min-width:0;padding:7px 5px;border:1px solid var(--line);border-radius:6px;background:#222321;color:var(--paper);font:12px var(--body);color-scheme:dark}
+.range-form button{min-height:30px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--paper);font:600 11px var(--body)}
+.range-form button[type="submit"]{border-color:var(--red);background:var(--red);color:var(--ink)}
+.range-form button:disabled{opacity:.45}
+.range-list{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}
+.range-list[hidden]{display:none}
+.range-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 6px;border:1px solid var(--line);border-radius:999px;color:var(--paper);font-size:10px}
+.range-chip button{width:18px;height:18px;border:0;background:none;color:var(--muted);font-size:15px;line-height:1}
+.calendar-day.in-range{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
+.calendar-day.range-start,.calendar-day.range-end,.calendar-day.range-pending{border-radius:999px;background:var(--red);color:var(--ink)}
+button.calendar-day{touch-action:none;user-select:none;-webkit-user-select:none}
+button.calendar-day.no-events{cursor:crosshair}
