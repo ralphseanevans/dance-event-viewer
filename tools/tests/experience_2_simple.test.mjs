@@ -1,6 +1,7 @@
 // Experimental Viewer 2 Simple mode: styles, scheduling, grouping. Run: node --test tools/tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as core from '../../dance-event-viewer/experiments/experience-2/simple-core.mjs';
 
 const today = new Date(2026, 9, 14); // Wed Oct 14 2026
@@ -46,4 +47,12 @@ test('flyers: flyer_url first, then logo-map pages, deduped', () => {
   const map = { logos: { k: ['a.png', 'b.png'] }, patterns: [{ contains: 'x', logo: 'p.png' }] };
   assert.deepEqual(core.flyersFor({ key: 'k', flyer_url: 'a.png' }, map), ['a.png', 'b.png']);
   assert.deepEqual(core.flyersFor({ key: 'zxz' }, map), ['p.png']);
+});
+test('page: Simple is the initial mode and is not persisted', () => {
+  const html = readFileSync(new URL('../../dance-event-viewer/experiments/experience-2/index.html', import.meta.url), 'utf8');
+  assert.match(html, /data-mode="simple"[^>]*aria-pressed="true"/);
+  const js = readFileSync(new URL('../../dance-event-viewer/experiments/experience-2/simple-flow.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(js, /localStorage|sessionStorage|URLSearchParams/);
+  const order = ['id="simple-where"', 'id="simple-styles"', 'id="simple-results"'].map(s => html.indexOf(s));
+  assert.ok(order.every((n, i) => n > 0 && (i === 0 || n > order[i - 1])), 'Where -> Styles -> When/cards order');
 });
