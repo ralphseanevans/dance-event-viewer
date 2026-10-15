@@ -436,3 +436,63 @@ test('site checker live mode uses HEAD and flags non-200 responses', async () =>
     assert.match(result.errors.join('\n'), /returned HTTP 404/);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+// ---- Map-link venue regression (2026-10-14): Latin Fever Thursdays at Diya Miami was
+// reported with a link searching "The Way You Move, Pensacola". Links must come from the
+// event's own venue only — no keyword/substring matching against other venues.
+const appMapsSearchUrl = (() => {
+  const src = readFileSync(join(TOOLS, '..', 'dance-event-viewer', 'js', 'app.js'), 'utf8');
+  const m = src.match(/function mapsSearchUrl\([\s\S]*?\n}\n/);
+  assert.ok(m, 'mapsSearchUrl() not found in app.js');
+  return new Function(`${m[0]}; return mapsSearchUrl;`)();
+})();
+const DIYA_URL = 'https://www.google.com/maps/search/?api=1&query=Diya%20Miami%2C%20Miami%20Beach%2C%20FL';
+
+test('maps link: fl-miamibeach-diya-latinfever-2026-07-23 searches Diya Miami (lib + app.js + data)', () => {
+  const data = JSON.parse(readFileSync(join(TOOLS, '..', 'dance_events.json'), 'utf8'));
+  const ev = data.events.find(e => e.key === 'fl-miamibeach-diya-latinfever-2026-07-23');
+  assert.ok(ev, 'event missing from dance_events.json');
+  assert.equal(ev.venue, 'Diya Miami, Miami Beach, FL');
+  for (const fn of [mapsSearchUrl, appMapsSearchUrl]) {
+    const url = fn(ev.venue, ev.state);
+    assert.equal(url, DIYA_URL);
+    assert.doesNotMatch(decodeURIComponent(url), /Way You Move|Pensacola/i);
+  }
+});
+
+test('maps link: no substring false matches — query is always the venue itself', () => {
+  const base = 'https://www.google.com/maps/search/?api=1&query=';
+  const cases = [
+    ['Move Studio, Miami, FL', 'FL'],            // contains "move"
+    ['Fever Lounge, Tampa, FL', 'FL'],           // contains "fever"
+    ['The Way You Move Dance Club, Mobile, AL', 'AL'],
+    ['Latin Fever Hall, Orlando', 'FL'],
+  ];
+  for (const [venue, st] of cases) {
+    for (const fn of [mapsSearchUrl, appMapsSearchUrl]) {
+      const q = decodeURIComponent(fn(venue, st).slice(base.length));
+      assert.ok(q.startsWith(venue), `${venue} -> ${q}`);
+      assert.doesNotMatch(q, /Pensacola|918 Winton/);
+    }
+  }
+  // app.js and lib.mjs must produce identical links.
+  for (const v of ['Hall (East Hill neighborhood), Pensacola', 'Diya Miami, Miami Beach, FL'])
+    assert.equal(appMapsSearchUrl(v, 'FL'), mapsSearchUrl(v, 'FL'));
+});
+
+test('site checker flags a share page whose maps link points at another venue', async () => {
+  const root = tmp();
+  try {
+    mkdirSync(join(root, 'e'));
+    writeFileSync(join(root, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://danceeventviewer.net/sitemap.xml\n');
+    writeFileSync(join(root, 'sitemap.xml'), '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://danceeventviewer.net/e/diya.html</loc></url></urlset>');
+    writeFileSync(join(root, 'dance_events.json'), JSON.stringify({ events: [{ key: 'diya', venue: 'Diya Miami, Miami Beach, FL', state: 'FL' }] }));
+    const wrong = 'https://www.google.com/maps/search/?api=1&amp;query=The%20Way%20You%20Move%2C%20Pensacola%2C%20FL';
+    writeFileSync(join(root, 'e', 'diya.html'), `<!doctype html><a href="${wrong}">Directions</a>`);
+    let result = await checkSite(root);
+    assert.ok(result.errors.some(e => /Google Maps link does not match/.test(e)), result.errors.join('\n'));
+    writeFileSync(join(root, 'e', 'diya.html'), `<!doctype html><a href="${DIYA_URL.replace('&', '&amp;')}">Directions</a>`);
+    result = await checkSite(root);
+    assert.deepEqual(result.errors, []);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
