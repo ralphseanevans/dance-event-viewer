@@ -4,7 +4,7 @@
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
 import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE } from './simple-core.mjs?v=9e76a810';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
-import { createStickyCalendar } from './sticky-calendar.mjs?v=toggle-days-1';
+import { createStickyCalendar } from './sticky-calendar.mjs?v=event-date-square-1';
 
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../../', import.meta.url);          // /dance-event-viewer/
@@ -293,6 +293,11 @@ function trimFlyerBorder(image) {
 function tile({ ev, canceled, day }) {
   const a = document.createElement('article');
   a.className = 'event-tile' + (canceled ? ' is-canceled' : '');
+  a.tabIndex = 0;
+  a.addEventListener('click', () => calendar.highlightEvent(day));
+  a.addEventListener('keydown', e => {
+    if (e.target === a && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); calendar.highlightEvent(day); }
+  });
   const body = document.createElement('div'); body.className = 'tile-body';
   const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance';
   body.appendChild(style);
