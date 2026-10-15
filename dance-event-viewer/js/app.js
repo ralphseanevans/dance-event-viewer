@@ -125,7 +125,8 @@ async function syncAccountFavorites(session) {
 async function initAccountFavorites() {
   const config = window.DANCE_EVENT_VIEWER_SUPABASE;
   if (!window.supabase?.createClient || !config?.enabled || !config.url || !config.publishableKey) return;
-  favoritesClient = window.supabase.createClient(config.url, config.publishableKey, {
+  /* Reuse the shared Google sign-in client from js/auth.js so only one auth client exists. */
+  favoritesClient = window.DEV_AUTH?.client || window.supabase.createClient(config.url, config.publishableKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: "pkce" }
   });
   const { data } = await favoritesClient.auth.getSession();

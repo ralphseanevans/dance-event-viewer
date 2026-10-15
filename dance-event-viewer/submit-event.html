@@ -25,6 +25,7 @@
   <script src="js/analytics.js?v=d88dcbe5"></script>
   <link rel="stylesheet" href="css/styles.css?v=c60e25b2">
   <link rel="stylesheet" href="css/submit-event.css?v=47f298f6">
+  <link rel="stylesheet" href="css/auth.css?v=1">
 </head>
 <body class="submit-page">
   <header class="site-header">
@@ -32,6 +33,7 @@
       <h1 class="visually-hidden">Submit an Event</h1>
       <p class="tagline">Submit an Event</p>
     </div>
+    <div class="header-actions"><span class="auth-slot" data-auth-slot></span></div>
   </header>
 
   <main class="submit-wrap">
@@ -265,6 +267,9 @@
     </form>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
+  <script src="js/supabase-config.js?v=8d81ed7e"></script>
+  <script src="js/auth.js?v=1"></script>
   <script src="js/submit-event.js?v=7a310080"></script>
 </body>
 </html>

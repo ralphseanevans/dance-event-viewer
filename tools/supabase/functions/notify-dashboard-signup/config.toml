@@ -1,0 +1,3 @@
+# Merge into supabase/config.toml if deploying with the CLI.
+[functions.notify-dashboard-signup]
+verify_jwt = false  # function checks x-webhook-secret itself
