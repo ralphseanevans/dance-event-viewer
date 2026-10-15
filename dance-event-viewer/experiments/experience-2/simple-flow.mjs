@@ -300,6 +300,13 @@ function tile({ ev, canceled, day }) {
   const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; links.appendChild(o); }
   const flyers = flyersFor(ev, state.logoMap).map(resolve);
   if (flyers.length) {
+    a.classList.add('has-flyer');
+    const preview = document.createElement('button'); preview.type = 'button'; preview.className = 'tile-flyer-preview';
+    preview.setAttribute('aria-label', 'Enlarge flyer for ' + ev.name);
+    const image = document.createElement('img'); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
+    preview.appendChild(image);
+    preview.addEventListener('click', () => openLightbox(flyers, ev.name, preview));
+    body.prepend(preview);
     const button = document.createElement('button'); button.type = 'button'; button.className = 'tile-flyer-link'; button.textContent = 'View flyer ↗';
     button.setAttribute('aria-label', 'View flyer for ' + ev.name);
     button.addEventListener('click', () => openLightbox(flyers, ev.name, button)); links.appendChild(button);
