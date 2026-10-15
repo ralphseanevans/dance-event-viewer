@@ -13,7 +13,7 @@ const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rul
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const state = { markets: new Set(), styles: new Set(), soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
+const state = { markets: new Set(), styles: new Set(), dateRanges: [], soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
 const el = {
   find: $('#find'), simple: $('#simple'), full: $('#full'), modes: $('.mode-switch'),
   where: $('#simple-where .place-choices'), styles: $('#simple-styles'), styleChoices: $('#simple-styles .style-choices'),
@@ -28,9 +28,66 @@ const calendar = createStickyCalendar({
       const i = state.allDays.indexOf(day);
       if (i >= 0) { state.pages = Math.ceil((i + 1) / GROUPS_PER_PAGE); render(); }
     }
+    if (state.dateRanges.length) { addDateRange({ start: day, end: day }); return; }
     document.getElementById(`simple-date-${day}`)?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
-  }
+  },
+  onRange: range => addDateRange(range)
 });
+
+const dateRangeForm = $('#calendar-range-form');
+dateRangeForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const start = $('#range-from').value, end = $('#range-to').value;
+  if (!start || !end) return;
+  addDateRange({ start, end });
+});
+$('#clear-ranges').addEventListener('click', () => {
+  state.dateRanges = []; state.pages = 1;
+  $('#calendar-range-status').textContent = 'Date ranges cleared.';
+  syncRangeControls(); render();
+});
+$('#calendar-range-list').addEventListener('click', e => {
+  const button = e.target.closest('[data-remove-range]'); if (!button) return;
+  state.dateRanges.splice(Number(button.dataset.removeRange), 1); state.pages = 1;
+  $('#calendar-range-status').textContent = 'Date range removed.';
+  syncRangeControls(); render();
+});
+function rangeLabel(range) {
+  const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const date = key => fmt.format(new Date(`${key}T12:00:00`));
+  return range.start === range.end ? date(range.start) : `${date(range.start)} – ${date(range.end)}`;
+}
+function syncRangeControls() {
+  const summary = $('#calendar-range-summary');
+  summary.textContent = state.dateRanges.length ? `Date ranges (${state.dateRanges.length})` : 'Enter date range';
+  const list = $('#calendar-range-list');
+  list.replaceChildren();
+  state.dateRanges.forEach((range, index) => {
+    const chip = document.createElement('span'); chip.className = 'range-chip';
+    const text = document.createElement('span'); text.textContent = rangeLabel(range);
+    const remove = document.createElement('button'); remove.type = 'button'; remove.dataset.removeRange = String(index);
+    remove.setAttribute('aria-label', `Remove ${rangeLabel(range)}`); remove.textContent = '×';
+    chip.append(text, remove); list.appendChild(chip);
+  });
+  list.hidden = state.dateRanges.length === 0;
+  $('#clear-ranges').disabled = state.dateRanges.length === 0;
+}
+function addDateRange(range) {
+  const start = range.start < range.end ? range.start : range.end;
+  const end = range.start < range.end ? range.end : range.start;
+  const ordered = [...state.dateRanges, { start, end }].sort((a, b) => a.start.localeCompare(b.start));
+  state.dateRanges = ordered.reduce((out, item) => {
+    const last = out.at(-1);
+    if (last && item.start <= last.end) last.end = item.end > last.end ? item.end : last.end;
+    else out.push({ ...item });
+    return out;
+  }, []);
+  state.pages = 1;
+  $('#range-from').value = ''; $('#range-to').value = '';
+  $('#calendar-range-status').textContent = `Added ${rangeLabel({ start, end })}.`;
+  syncRangeControls(); render();
+}
+syncRangeControls();
 
 // ---------- data: same order as the main viewer's loadData() ----------
 async function loadEvents() {
@@ -148,20 +205,24 @@ function render({ tapped, tappedStyle } = {}) {
 
   // Results are always available. Empty style selection means all available styles.
   const visibleStyles = state.styles.size ? [...state.styles] : [...partner, ...solo];
-  const groups = groupByDate(items, visibleStyles);
+  const allGroups = groupByDate(items, visibleStyles);
+  state.allDays = allGroups.map(g => g.day);
+  const groups = state.dateRanges.length
+    ? allGroups.filter(g => state.dateRanges.some(r => g.day >= r.start && g.day <= r.end))
+    : allGroups;
   const shown = groups.slice(0, GROUPS_PER_PAGE * state.pages);
   const wasResultsHidden = el.results.hidden;
   el.results.hidden = false;
   if (wasResultsHidden) { el.results.classList.remove('is-revealing'); void el.results.offsetWidth; el.results.classList.add('is-revealing'); }
   if (!shown.length) {
-    const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances for this pick yet.';
-    el.groups.replaceChildren(p); calendar.clear(); el.more.hidden = true; return;
+    const p = document.createElement('p'); p.className = 'simple-empty';
+    p.textContent = state.dateRanges.length ? 'No events fall within the selected date ranges.' : 'No upcoming dances for this pick yet.';
+    el.groups.replaceChildren(p); calendar.set(state.allDays, [], state.dateRanges); el.more.hidden = true; return;
   }
   const blocks = shown.map(dateBlock);
   el.groups.replaceChildren(...blocks);
   el.more.hidden = groups.length <= shown.length;
-  state.allDays = groups.map(g => g.day);
-  calendar.set(state.allDays, blocks);
+  calendar.set(state.allDays, blocks, state.dateRanges);
 }
 el.more.addEventListener('click', () => { state.pages++; render(); });
 
