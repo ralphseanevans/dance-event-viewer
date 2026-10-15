@@ -238,3 +238,8 @@ html,body{overflow-x:clip}
 
 /* Desktop: halve the hero height and scale the contained video with it. */
 @media(min-width:1001px){.hero{height:min(40svh,380px);min-height:270px;padding:0}.hero-art{height:100%}}
+
+/* Static panoramic coastal artwork: preserve the full composition and rounded frame. */
+.hero{display:block;height:auto;min-height:0;max-height:none;padding:0;background:#191919;overflow:hidden}
+.hero .hero-art{position:relative;inset:auto;width:100%;height:auto;margin:0;transform:none!important;will-change:auto}
+.hero .hero-art img{display:block;width:100%;height:auto;aspect-ratio:8/3;object-fit:contain;object-position:center;filter:none}
