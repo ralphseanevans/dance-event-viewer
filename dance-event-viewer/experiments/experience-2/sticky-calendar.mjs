@@ -15,7 +15,7 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
   const grid = root.querySelector('.calendar-days');
   const flow = createFlowLine(grid);
   let dates = [], shownMonth = null, active = null, tapped = null, observer = null;
-  let selectedRanges = [], dragStart = null, dragEnd = null, dragPointer = null, didDrag = false, suppressClick = false;
+  let selectedRanges = [], dragStart = null, dragEnd = null, dragPointer = null, didDrag = false, suppressClick = false, pendingStart = null;
 
   const months = () => [...new Set(dates.map(s => s.slice(0, 7)))];
   function render() {
@@ -52,13 +52,14 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
       b.classList.toggle('in-range', Boolean(inSelected || inPreview));
       b.classList.toggle('range-start', Boolean(selectedRanges.some(r => key === r.start) || (preview && key === preview.start)));
       b.classList.toggle('range-end', Boolean(selectedRanges.some(r => key === r.end) || (preview && key === preview.end)));
+      b.classList.toggle('range-pending', key === pendingStart);
     });
   }
   function finishDrag() {
     if (dragStart && dragEnd && dragStart !== dragEnd) {
       const range = { start: dragStart < dragEnd ? dragStart : dragEnd, end: dragStart < dragEnd ? dragEnd : dragStart };
       selectedRanges = [...selectedRanges, range];
-      didDrag = true; suppressClick = true; paintRange(); onRange?.(range);
+      pendingStart = null; didDrag = true; suppressClick = true; paintRange(); onRange?.(range);
       setTimeout(() => { suppressClick = false; }, 0);
     }
     dragStart = dragEnd = dragPointer = null;
@@ -77,8 +78,28 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
   grid.addEventListener('click', e => {
     const b = e.target.closest('button[data-date]'); if (!b) return;
     if (suppressClick) { e.preventDefault(); return; }
+    const rangeDetails = root.querySelector('#calendar-range-details');
+    if (rangeDetails?.open) {
+      if (!pendingStart) {
+        pendingStart = b.dataset.date;
+        const status = root.querySelector('#calendar-range-status');
+        if (status) status.textContent = 'Start selected: ' + fmtJump.format(d(pendingStart)) + '. Change month if needed, then choose an end date.';
+        paintRange();
+        return;
+      }
+      const end = b.dataset.date;
+      const range = { start: pendingStart < end ? pendingStart : end, end: pendingStart < end ? end : pendingStart };
+      pendingStart = null;
+      selectedRanges = [...selectedRanges, range];
+      paintRange();
+      onRange?.(range);
+      return;
+    }
     if (!b.classList.contains('has-events')) return;
     active = tapped = b.dataset.date; render(); onJump?.(active);
+  });
+  root.querySelector('#calendar-range-details')?.addEventListener('toggle', e => {
+    if (!e.currentTarget.open) { pendingStart = null; paintRange(); }
   });
   const step = dir => { const list = months(); const i = list.indexOf(shownMonth) + dir; if (list[i]) { shownMonth = list[i]; render(); } };
   prev.addEventListener('click', () => step(-1));
