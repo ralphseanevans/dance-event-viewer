@@ -57,18 +57,18 @@ button.calendar-day.is-active{color:var(--red)}
 .date-heading{margin:0 0 14px;font:700 clamp(26px,3vw,38px)/1 var(--display);text-transform:uppercase;letter-spacing:.01em}
 .day-events{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:14px}
 /* Event tiles: flat, page palette (ink with paper text, red accents) — no beige */
-.event-tile{display:flex;flex-direction:column;min-width:0;background:#222320;border:1px solid var(--line);color:var(--paper)}
+.event-tile{display:flex;flex-direction:column;min-width:0;background:var(--paper);border:1px solid rgba(24,25,24,.18);border-left:5px solid var(--red);color:var(--ink)}
 .event-tile.is-canceled{opacity:.62}
-.flyer-wrap{position:relative;display:block;width:100%;aspect-ratio:4/5;padding:0;border:0;border-bottom:1px solid var(--line);background:#111211;overflow:hidden;cursor:zoom-in;transition:transform .1s ease}
+.flyer-wrap{position:relative;display:block;width:100%;aspect-ratio:4/5;padding:0;border:0;border-bottom:1px solid rgba(24,25,24,.16);background:#ded6c7;overflow:hidden;cursor:zoom-in;transition:transform .1s ease}
 .flyer-wrap img{width:100%;height:100%;object-fit:contain;display:block}
 .flyer-wrap.no-flyer{display:grid;place-items:center;cursor:default;aspect-ratio:auto;min-height:72px;color:var(--muted);font:700 22px/1 var(--display);text-transform:uppercase}
 .flyer-count{position:absolute;right:8px;bottom:8px;padding:3px 7px;background:var(--ink);color:var(--paper);font-size:11px}
 .tile-body{padding:12px 14px 14px}
 .tile-cancel{margin:0 0 6px;color:var(--red);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
-.tile-name{margin:0 0 6px;font:600 17px/1.25 var(--body);color:var(--paper)}
-.tile-meta{margin:0 0 6px;font-size:13px;color:#cfc9bb}
+.tile-name{margin:0 0 6px;font:600 17px/1.25 var(--body);color:var(--ink)}
+.tile-meta{margin:0 0 6px;font-size:13px;color:#35352f}
 .tile-meta strong{color:var(--red);font-weight:700}
-.tile-venue{margin:0;font-size:12px;line-height:1.45;color:#a6a69d}
+.tile-venue{margin:0;font-size:12px;line-height:1.45;color:#5e5d55}
 .tile-links{display:flex;flex-wrap:wrap;gap:16px;margin:10px 0 0;font-size:12px;font-weight:600}
 .tile-links a{display:inline-block;border-bottom:1px solid var(--red);transition:color .15s ease,transform .1s ease}
 .simple-more{margin-top:8px;padding:14px 20px;border:1px solid var(--paper);background:none;color:var(--paper);font:600 12px/1 var(--body);transition:background .15s ease,color .15s ease,transform .1s ease}
