@@ -34,10 +34,6 @@ $('#saved-filter').addEventListener('click',()=>{savedOnly=!savedOnly;$('#saved-
 $$('.style-choice').forEach(b=>b.addEventListener('click',()=>{selectedStyle=b.dataset.style;$$('.style-choice').forEach(c=>{const active=c===b;c.classList.toggle('active',active);c.setAttribute('aria-pressed',String(active))});const title=b.children[1].childNodes[0].textContent;$('#style-cta').innerHTML=`Explore ${esc(title)} <span aria-hidden="true">↗</span>`;$('.style-orbit').style.filter=selectedStyle==='Latin'?'hue-rotate(-15deg)':selectedStyle==='Tango'?'hue-rotate(20deg)':'none'}));$('#style-cta').addEventListener('click',()=>setStyle(selectedStyle));
 function renderLocalInformation(snapshot,updated){
  const common={when:'30',includeUnverified:false};
- $('#southern-count').textContent=searchEvents(events,{...common,place:'south'}).length;
- $('#coast-count').textContent=searchEvents(events,{...common,place:'gulf'}).length;
- $('#wcs-count').textContent=searchEvents(events,{...common,place:'south',style:'West Coast Swing'}).length;
- if(snapshot)$('.hero-facts small').textContent=`Saved feed: ${updated} · next 30 days · unverified excluded`;
  const cities=[{key:'pensacola',name:'Pensacola',description:'Pensacola, Gulf Breeze, Pace & Milton'},{key:'mobile',name:'Mobile',description:'Mobile, the Eastern Shore & Dauphin Island'},{key:'emerald',name:'Emerald Coast',description:'Destin, Fort Walton Beach & nearby'}];
  $('#city-previews').innerHTML=cities.map((city,i)=>{
   const rows=searchEvents(events,{...common,place:city.key});const example=rows.find(r=>(r.event.style||'').includes('West Coast Swing'))||rows[0];
