@@ -1590,3 +1590,19 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
 .past-section-chevron { color: var(--text-dim); font-size: 1.4rem; line-height: 1; transition: transform .15s ease; }
 .past-section-toggle[aria-expanded="true"] .past-section-chevron { transform: rotate(90deg); color: var(--accent); }
 .past-section-body[hidden] { display: none; }
+
+/* Phone filter chips (2026-10-14, DEV Design, Sean-approved): below 600px the Dance style,
+   Day and Location rows WRAP instead of side-scrolling, so no chip is ever clipped. Each
+   chip stays on one line with a 44px tap target; "Choose location" gets its own line. */
+@media (max-width: 599.98px) {
+  .quick-filters .qf-group { flex-direction: column; align-items: stretch; gap: 6px; }
+  .quick-filters .qf-label { min-width: 0; }
+  .chips-scroll, .location-choice-row .chips { flex: 1 1 auto; width: 100%; flex-wrap: wrap; overflow-x: visible; padding-bottom: 0; }
+  .search-row > .search-box { flex: 1 1 100%; max-width: 100%; }
+  .search-input::placeholder { font-size: .8em; letter-spacing: -.01em; }
+  .quick-filters .chips { gap: 8px; }
+  .quick-filters .chip { white-space: nowrap; min-height: 44px; display: inline-flex; align-items: center; }
+  .location-choice-row { width: 100%; max-width: 100%; flex-wrap: wrap; overflow-x: visible; padding-bottom: 0; }
+  .location-choice-row .chips { width: 100%; }
+  .location-choice-row .loc-more { flex: 0 0 100%; width: 100%; text-align: left; min-height: 36px; }
+}
