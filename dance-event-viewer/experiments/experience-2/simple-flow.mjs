@@ -13,7 +13,7 @@ const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rul
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const state = { markets: new Set(), styles: new Set(), soloOpen: false, pages: 1, events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
+const state = { markets: new Set(), styles: new Set(), soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
 const el = {
   find: $('#find'), simple: $('#simple'), full: $('#full'), modes: $('.mode-switch'),
   where: $('#simple-where .place-choices'), styles: $('#simple-styles'), styleChoices: $('#simple-styles .style-choices'),
@@ -22,7 +22,14 @@ const el = {
 const lines = { mode: createFlowLine(el.modes), where: createFlowLine(el.where), styles: createFlowLine(el.styleChoices) };
 const calendar = createStickyCalendar({
   root: $('#simple-calendar'), scrollHost: el.results,
-  onJump: day => document.getElementById(`simple-date-${day}`)?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' })
+  onJump: day => {
+    // Every listed day is clickable; reveal more pages if that day is not rendered yet.
+    if (!document.getElementById(`simple-date-${day}`)) {
+      const i = state.allDays.indexOf(day);
+      if (i >= 0) { state.pages = Math.ceil((i + 1) / GROUPS_PER_PAGE); render(); }
+    }
+    document.getElementById(`simple-date-${day}`)?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+  }
 });
 
 // ---------- data: same order as the main viewer's loadData() ----------
@@ -143,7 +150,8 @@ function render({ tapped, tappedStyle } = {}) {
   const blocks = shown.map(dateBlock);
   el.groups.replaceChildren(...blocks);
   el.more.hidden = groups.length <= shown.length;
-  calendar.set(shown.map(g => g.day), blocks);
+  state.allDays = groups.map(g => g.day);
+  calendar.set(state.allDays, blocks);
 }
 el.more.addEventListener('click', () => { state.pages++; render(); });
 
