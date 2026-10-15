@@ -130,7 +130,7 @@ function render({ tapped, tappedStyle } = {}) {
     kids.push(t);
     if (state.soloOpen) solo.forEach(s => kids.push(styleButton(s, 'style-choice solo-choice')));
   }
-  if (!partner.length && !solo.length) { const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances listed here yet. Try another place, or Other.'; kids.push(p); }
+  if (!partner.length && !solo.length) { const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances listed here yet. Try another place.'; kids.push(p); }
   el.styleChoices.replaceChildren(...kids, lines.styles.line);
   if (tappedStyle) lines.styles.moveTo(el.styleChoices.querySelector(`[data-style="${CSS.escape(tappedStyle)}"]`));
   else if (tappedStyle === null || !state.styles.size) lines.styles.moveTo(el.styleChoices.querySelector('[aria-pressed="true"]'));
@@ -215,4 +215,4 @@ setMode('simple');
 Promise.all([loadEvents(), loadLogoMap()]).then(([events, logoMap]) => {
   state.events = events.filter(e => e && typeof e.name === 'string' && e.name.trim());
   state.logoMap = logoMap || state.logoMap; state.loaded = true; render();
-}).catch(() => { state.loaded = true; el.status.hidden = false; el.status.textContent = 'Listings are unavailable right now. Try Other for the full viewer.'; });
+}).catch(() => { state.loaded = true; el.status.hidden = false; el.status.textContent = 'Listings are unavailable right now. Please try again later.'; });
