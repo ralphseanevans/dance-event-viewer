@@ -245,3 +245,14 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 .style-route-label{margin:0;padding:0;}
 .selection-routes{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
 .selection-routes path{fill:none;stroke:var(--red);stroke-width:1.5;vector-effect:non-scaling-stroke;opacity:.65;}
+
+/* The tab-side rust layer holds the flyer; the paper face slides right. */
+.event-tile.has-flyer{--flyer-reveal:38%;--flyer-tab:30px;}
+.event-tile.has-flyer .tile-body{margin-left:0;transform:none;transition:width .5s cubic-bezier(.2,.72,.22,1),margin-left .5s cubic-bezier(.2,.72,.22,1);will-change:width,margin-left;}
+.event-tile.has-flyer.flyer-open .tile-body{width:calc(100% - var(--flyer-reveal));margin-left:var(--flyer-reveal);transform:none;}
+.event-tile.has-flyer .tile-flyer-preview{left:calc(var(--flyer-tab) + 8px);right:auto;width:calc((100% - var(--flyer-tab)) * .38 - 16px);top:8px;bottom:8px;background:transparent;}
+@media(max-width:560px){
+.event-tile.has-flyer{--flyer-reveal:40%;--flyer-tab:26px;}
+.event-tile.has-flyer.flyer-open .tile-body{width:calc(100% - var(--flyer-reveal));margin-left:var(--flyer-reveal);transform:none;}
+.event-tile.has-flyer .tile-flyer-preview{left:calc(var(--flyer-tab) + 6px);right:auto;width:calc((100% - var(--flyer-tab)) * .4 - 12px);top:6px;bottom:6px;}
+}
