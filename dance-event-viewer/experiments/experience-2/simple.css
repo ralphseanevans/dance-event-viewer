@@ -106,3 +106,13 @@ button.calendar-day.is-active{color:var(--red)}
 .viewer *,.flow-line{animation:none!important;transition:none!important}
 }
 .mode-switch[hidden],.place-choice[hidden]{display:none}
+/* Phone: compact horizontal wrap for style buttons so events stay close */
+@media(max-width:560px){
+.simple-styles{--route-origin:4px;--route-run:28px}
+.style-route{min-height:36px}.style-route-line{height:36px}
+.style-choices{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 8px;margin:16px 0 0}
+.style-choice{padding:6px 11px;border:1px solid var(--line);font-size:15px;line-height:1.2}
+.style-choice[aria-pressed="true"]{border-color:var(--red)}
+.solo-toggle{font-size:14px}
+.solo-choice{margin-left:0;font-size:15px}
+}
