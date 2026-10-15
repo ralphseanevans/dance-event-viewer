@@ -345,10 +345,20 @@ function tile({ ev, canceled, day }) {
     const image = document.createElement('img'); image.addEventListener('load', () => trimFlyerBorder(image)); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
     preview.appendChild(image);
     preview.addEventListener('click', () => openLightbox(flyers, ev.name, preview));
-    body.prepend(preview);
+    a.appendChild(preview);
+    const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'tile-flyer-tab';
+    toggle.textContent = 'Show flyer'; toggle.setAttribute('aria-expanded', 'false');
+    const setFlyerOpen = open => {
+      a.classList.toggle('flyer-open', open);
+      toggle.setAttribute('aria-expanded', String(open)); toggle.textContent = open ? 'Hide flyer' : 'Show flyer';
+      preview.inert = !open;
+    };
+    preview.inert = true;
+    toggle.addEventListener('click', () => setFlyerOpen(!a.classList.contains('flyer-open')));
+    a.appendChild(toggle);
     const button = document.createElement('button'); button.type = 'button'; button.className = 'tile-flyer-link'; button.textContent = 'View flyer ↗';
     button.setAttribute('aria-label', 'View flyer for ' + ev.name);
-    button.addEventListener('click', () => openLightbox(flyers, ev.name, button)); links.appendChild(button);
+    button.addEventListener('click', () => setFlyerOpen(!a.classList.contains('flyer-open')));
   }
   body.appendChild(links); a.appendChild(body);
   return a;
