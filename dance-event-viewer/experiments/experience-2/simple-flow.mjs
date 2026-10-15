@@ -70,7 +70,11 @@ function setMode(mode, { focusWhere = false } = {}) {
     const place = $('#place');
     if (place) { place.value = 'all'; place.dispatchEvent(new Event('change')); $('#filters')?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); place.focus({ preventScroll: true }); }
   }
-  if (simple) { lines.where.refresh(); lines.styles.refresh(); }
+  if (simple) {
+    // Fresh Simple state on every switch back (no stale styles/cards from before).
+    state.markets.clear(); state.styles.clear(); state.soloOpen = false; state.pages = 1; state.allDays = [];
+    lines.where.hide?.(); render(); lines.where.refresh(); lines.styles.refresh();
+  }
 }
 el.modes.addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode); });
 
