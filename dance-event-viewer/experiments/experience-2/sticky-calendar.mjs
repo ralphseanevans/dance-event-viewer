@@ -15,7 +15,7 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
   const grid = root.querySelector('.calendar-days');
   const flow = createFlowLine(grid);
   let dates = [], shownMonth = null, active = null, tapped = null, observer = null;
-  let selectedRange = null, dragStart = null, dragEnd = null, dragPointer = null, didDrag = false, suppressClick = false;
+  let selectedRanges = [], dragStart = null, dragEnd = null, dragPointer = null, didDrag = false, suppressClick = false;
 
   const months = () => [...new Set(dates.map(s => s.slice(0, 7)))];
   function render() {
@@ -42,21 +42,23 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
     paintRange();
   }
   function paintRange() {
-    const range = dragStart && dragEnd
+    const preview = dragStart && dragEnd
       ? { start: dragStart < dragEnd ? dragStart : dragEnd, end: dragStart < dragEnd ? dragEnd : dragStart }
-      : selectedRange;
+      : null;
     grid.querySelectorAll('button[data-date]').forEach(b => {
       const key = b.dataset.date;
-      const inRange = range && key >= range.start && key <= range.end;
-      b.classList.toggle('in-range', Boolean(inRange));
-      b.classList.toggle('range-start', Boolean(range && key === range.start));
-      b.classList.toggle('range-end', Boolean(range && key === range.end));
+      const inSelected = selectedRanges.some(r => key >= r.start && key <= r.end);
+      const inPreview = preview && key >= preview.start && key <= preview.end;
+      b.classList.toggle('in-range', Boolean(inSelected || inPreview));
+      b.classList.toggle('range-start', Boolean(selectedRanges.some(r => key === r.start) || (preview && key === preview.start)));
+      b.classList.toggle('range-end', Boolean(selectedRanges.some(r => key === r.end) || (preview && key === preview.end)));
     });
   }
   function finishDrag() {
     if (dragStart && dragEnd && dragStart !== dragEnd) {
-      selectedRange = { start: dragStart < dragEnd ? dragStart : dragEnd, end: dragStart < dragEnd ? dragEnd : dragStart };
-      didDrag = true; suppressClick = true; paintRange(); onRange?.(selectedRange);
+      const range = { start: dragStart < dragEnd ? dragStart : dragEnd, end: dragStart < dragEnd ? dragEnd : dragStart };
+      selectedRanges = [...selectedRanges, range];
+      didDrag = true; suppressClick = true; paintRange(); onRange?.(range);
       setTimeout(() => { suppressClick = false; }, 0);
     }
     dragStart = dragEnd = dragPointer = null;
@@ -88,8 +90,8 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
   if ('ResizeObserver' in window) new ResizeObserver(setH).observe(sticky);
 
   return {
-    set(newDates, blocks, range = null) {
-      dates = newDates; selectedRange = range;
+    set(newDates, blocks, ranges = []) {
+      dates = newDates; selectedRanges = Array.isArray(ranges) ? ranges : [];
       if (!dates.includes(tapped)) tapped = null; if (!dates.includes(active)) active = dates[0] || null;
       shownMonth = active ? active.slice(0, 7) : null; render(); setH();
       observer?.disconnect();
@@ -105,6 +107,6 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
       }, { rootMargin: '-35% 0px -55% 0px' });
       blocks.forEach(b => observer.observe(b));
     },
-    clear() { dates = []; active = tapped = null; selectedRange = null; shownMonth = null; observer?.disconnect(); grid.replaceChildren(flow.line); month.textContent = ''; }
+    clear() { dates = []; active = tapped = null; selectedRanges = []; shownMonth = null; observer?.disconnect(); grid.replaceChildren(flow.line); month.textContent = ''; }
   };
 }
