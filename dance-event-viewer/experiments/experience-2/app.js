@@ -2,7 +2,7 @@ import heroClip from "./assets/hero-title-clip.js";
 import heroRepeatClip from "./assets/hero-repeat-clip.js";
 import {FEED,todayKey,parseDate,searchEvents,timeLabel,escapeHTML as esc,safeURL} from './events.mjs?v=4ae3925d';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-let events=[],results=[],shown=9,style='all',savedOnly=false,selectedStyle='West Coast Swing',openedEvent=null;
+let events=[],results=[],shown=9,style='all',savedOnly=false,openedEvent=null;
 let saved;try{const value=JSON.parse(localStorage.getItem('dev-experience-saved')||'[]');saved=new Set(Array.isArray(value)?value:[])}catch{saved=new Set()}
 const formatDate=(key,opts)=>new Intl.DateTimeFormat('en-US',{timeZone:'UTC',...opts}).format(parseDate(key));
 function updateSaved(){ $('#saved-count').textContent=saved.size;try{localStorage.setItem('dev-experience-saved',JSON.stringify([...saved]))}catch{} }
@@ -31,7 +31,6 @@ $('.dialog-close').addEventListener('click',()=>$('#event-dialog').close());$('#
 $('#filters').addEventListener('submit',e=>{e.preventDefault();render()});let searchTimer;$('#search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>render(),160)});$('#include-unverified').addEventListener('change',()=>render());['place','when'].forEach(id=>$('#'+id).addEventListener('change',()=>render()));
 $$('.chip').forEach(b=>b.addEventListener('click',()=>setStyle(b.dataset.filter)));
 $('#saved-filter').addEventListener('click',()=>{savedOnly=!savedOnly;$('#saved-filter').setAttribute('aria-pressed',String(savedOnly));render()});$('#reset').addEventListener('click',resetFilters);$('#load-more').addEventListener('click',()=>{shown+=9;render(false)});
-$$('.style-choice').forEach(b=>b.addEventListener('click',()=>{selectedStyle=b.dataset.style;$$('.style-choice').forEach(c=>{const active=c===b;c.classList.toggle('active',active);c.setAttribute('aria-pressed',String(active))});const title=b.children[1].childNodes[0].textContent;$('#style-cta').innerHTML=`Explore ${esc(title)} <span aria-hidden="true">↗</span>`;$('.style-orbit').style.filter=selectedStyle==='Latin'?'hue-rotate(-15deg)':selectedStyle==='Tango'?'hue-rotate(20deg)':'none'}));$('#style-cta').addEventListener('click',()=>setStyle(selectedStyle));
 function renderLocalInformation(snapshot,updated){
  const common={when:'30',includeUnverified:false};
  const cities=[{key:'pensacola',name:'Pensacola',description:'Pensacola, Gulf Breeze, Pace & Milton'},{key:'mobile',name:'Mobile',description:'Mobile, the Eastern Shore & Dauphin Island'},{key:'emerald',name:'Emerald Coast',description:'Destin, Fort Walton Beach & nearby'}];
@@ -67,6 +66,6 @@ function draw(t){frame=0;if(!motion||document.hidden||scrollY>height)return;if(t
 function startMotion(){if(motion&&!frame&&!document.hidden&&scrollY<=height)frame=requestAnimationFrame(draw)}
 function syncHeroVideo(){if(motion&&!document.hidden&&scrollY<=height){if(heroVideo.paused&&!heroVideo.ended)heroVideo.play().catch(()=>{})}else heroVideo.pause()}
 function setMotion(value){motion=value;document.body.classList.toggle('no-motion',!motion);document.body.classList.toggle('js-motion',motion);if(!motion){cancelAnimationFrame(frame);frame=0;ctx?.clearRect(0,0,width,height)}else startMotion();syncHeroVideo()}
-const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}}),{threshold:.08});$$('.reveal').forEach(el=>observer.observe(el));
+
 hero.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const rect=hero.getBoundingClientRect();pointer={x:(e.clientX-rect.left)/width-.5,y:(e.clientY-rect.top)/height-.5}});hero.addEventListener('pointerleave',()=>{pointer={x:0,y:0}});window.addEventListener('scroll',()=>{scrollY=window.scrollY;const max=document.documentElement.scrollHeight-innerHeight;$('#scroll-progress').style.transform=`scaleX(${max>0?scrollY/max:0})`;startMotion();syncHeroVideo()},{passive:true});window.addEventListener('resize',resize);resize();setMotion(motion);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0}else startMotion();syncHeroVideo()});
