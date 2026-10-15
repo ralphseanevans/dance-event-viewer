@@ -167,6 +167,8 @@ const state = {
   // two never fight over what "the" selected state is. See js/state-map-picker.js.
   mapStates: new Set(),
   filtersOpen: false,    // filter panel starts collapsed — only the view switcher shows until expanded
+  pastExpanded: false,   // "Past events (N)" section starts collapsed (2026-10-14, Sean)
+  pastPending: false,    // "Past events" chip selected but not yet applied — see runSearch()
   showPast: false,       // hidden by default (2026-07-12, Sean) — the "of N" count and Timeline
                           // listings only count/show current events unless this is turned on.
   showNational: false,   // "Traveling? Show national events" (2026-07-17, Phase 0) — out-of-region
@@ -225,8 +227,28 @@ function locationOf(ev) {
   // Local hubs the area chips depend on (also backfill town when the venue had no parseable tail).
   if (/pensacola/i.test(v)) { loc.area = "Pensacola area"; if (loc.town === "Unlisted") loc.town = "Pensacola"; }
   else if (/mobile/i.test(v)) { loc.area = "Mobile area"; if (loc.town === "Unlisted") loc.town = "Mobile"; }
-  else if (/destin/i.test(v)) { loc.area = "Destin area"; if (loc.town === "Unlisted") loc.town = "Destin"; }  // 2026-08-18 (Sean): dedicated Destin area toggle
+  else if (/\bdestin\b/i.test(v) || isDestinAreaVenue(v, code)) { loc.area = "Destin area"; if (loc.town === "Unlisted") loc.town = "Destin"; }  // 2026-08-18 (Sean): dedicated Destin area toggle
   return loc;
+}
+/* Destin area = Destin plus the Emerald Coast / 30A / south Walton + Okaloosa towns around it
+   (2026-10-14: Luna Ballroom in Santa Rosa Beach, FL 32459 was falling into "Elsewhere").
+   Town names match as whole words only; ZIPs match only as the ZIP after a trailing "FL",
+   so street numbers (e.g. "32550 Hwy 98") never qualify. Both require the event to be in FL,
+   so look-alikes elsewhere (Seaside OR/CA, Freeport TX/NY, Valparaiso IN) stay out. */
+const DESTIN_AREA_TOWNS = [
+  "Santa Rosa Beach", "Miramar Beach", "Sandestin", "Seaside", "WaterColor", "Grayton Beach",
+  "Blue Mountain Beach", "Dune Allen", "Seagrove Beach", "Inlet Beach", "Rosemary Beach",
+  "Alys Beach", "Watersound", "Freeport", "DeFuniak Springs", "Niceville", "Fort Walton Beach",
+  "Ft\\.? Walton Beach", "Okaloosa Island", "Mary Esther", "Shalimar", "Valparaiso", "Crestview"
+];
+const DESTIN_AREA_TOWN_RE = new RegExp(`\\b(?:${DESTIN_AREA_TOWNS.map(t => t.replace(/ /g, "\\s+")).join("|")})\\b`, "i");
+const DESTIN_AREA_ZIPS = new Set(["32459", "32550", "32461", "32413", "32439", "32433", "32541",
+  "32547", "32548", "32549", "32569", "32579", "32578", "32580", "32536", "32539"]);
+function isDestinAreaVenue(v, code) {
+  if (typeof v !== "string" || !v || code !== "FL") return false;
+  if (DESTIN_AREA_TOWN_RE.test(v)) return true;
+  const z = v.match(/\bFL\s+(\d{5})(?:-\d{4})?\s*$/i);
+  return !!(z && DESTIN_AREA_ZIPS.has(z[1]));
 }
 function kindOf(ev) {
   return (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring")
@@ -250,6 +272,16 @@ function timeRange(ev) {
 }
 function fmtDate(dt) {
   return dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+/* Main date shown for an event occurrence. Multi-day one-time events read as a range
+   ("Thu, Apr 30 - Mon, May 4") so the visible date always matches the sort key (start). */
+function whenDateText(d) {
+  const ev = d.ev;
+  if (ev.type === "one_time" || ev.type === "tentative") {
+    const start = parseISO(ev.start_date), end = parseISO(ev.end_date);
+    if (start && end && end > start) return `${fmtDate(start)} – ${fmtDate(end)}`;
+  }
+  return fmtDate(d.next);
 }
 function monthlyRuleParts(rule) {
   if (typeof rule !== "string") return null;
@@ -430,12 +462,81 @@ function isPastEvent(d, today) {
 /* The date to display on a past event's card — its last known occurrence. */
 function pastOccurrenceDate(ev) {
   if (ev.type === "one_time" || ev.type === "tentative") {
-    return parseISO(ev.end_date) || parseISO(ev.start_date);
+    // Start date, not end: this is the past section's sort key AND the card's displayed
+    // date, so multi-day events (e.g. Pro/Am in Paradise, Apr 30 - May 4) sort and read
+    // by the same day. The card widens it to a range via whenDateText().
+    return parseISO(ev.start_date) || parseISO(ev.end_date);
   }
   if (ev.type === "weekly_recurring" || ev.type === "monthly_recurring" || ev.type === "biweekly_recurring") {
     return parseISO(ev.end_date);   // only reached when isPastEvent found an elapsed end_date
   }
   return null;
+}
+
+/* How far back "Past events" reaches for still-running recurring series (2026-10-13).
+   Ended one-time events and ended series keep their existing unbounded behavior. */
+const PAST_LOOKBACK_DAYS = 90;
+/* Most recent occurrence of an ongoing recurring series strictly before `today`, within
+   PAST_LOOKBACK_DAYS, or null. Reuses nextOccurrence() (so exclusions/start/end bounds apply
+   identically) by asking, day by day going back, whether the series meets on that day. */
+function prevOccurrence(ev, today) {
+  if (!/_recurring$/.test(ev.type || "")) return null;
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  for (let k = 1; k <= PAST_LOOKBACK_DAYS; k++) {
+    const day = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - k);
+    const n = nextOccurrence(ev, day);
+    if (n && n.getTime() === day.getTime()) return day;
+  }
+  return null;
+}
+/* aria-pressed + an explicit action label for screen readers ("Show/Hide past events"). */
+function syncPastToggle() {
+  const b = document.getElementById("past-toggle");
+  if (!b) return;
+  b.setAttribute("aria-pressed", String(state.pastPending));
+  b.setAttribute("aria-label", state.pastPending
+    ? (state.showPast ? "Hide past events" : "Past events selected — press Search to load them")
+    : "Show past events (then press Search)");
+}   // set when "Past events" is switched on — render() then scrolls to today
+
+/* Collapsible "Past events (N)" section (2026-10-14, Sean). Collapsed by default; the
+   expanded/collapsed choice survives re-renders in state.pastExpanded. Items are rendered
+   lazily — nothing is built until the section is first opened. */
+function pastSectionEl(items, kind) {
+  const sec = document.createElement("section");
+  sec.className = "past-section";
+  const h = document.createElement("h2");
+  h.className = "bucket-heading past-section-heading";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "past-section-toggle";
+  btn.id = "past-section-toggle";
+  btn.setAttribute("aria-controls", "past-section-body");
+  const label = document.createElement("span");
+  label.textContent = `Past events (${items.length})`;
+  const chev = document.createElement("span");
+  chev.className = "past-section-chevron";
+  chev.setAttribute("aria-hidden", "true");
+  chev.textContent = "›";
+  btn.append(label, chev);
+  h.appendChild(btn);
+  const body = document.createElement(kind === "list" ? "ul" : "div");
+  body.id = "past-section-body";
+  body.className = kind === "list" ? "list-rows past-section-body" : "cards past-section-body";
+  let built = false;
+  const apply = () => {
+    const open = !!state.pastExpanded;
+    btn.setAttribute("aria-expanded", String(open));
+    body.hidden = !open;
+    if (open && !built) {
+      built = true;
+      for (const d of items) body.appendChild(kind === "list" ? listRow(d, true) : card(d, { showWhen: true, isPast: true }));
+    }
+  };
+  btn.addEventListener("click", () => { state.pastExpanded = !state.pastExpanded; apply(); });
+  apply();
+  sec.append(h, body);
+  return sec;
 }
 
 /* ---------- data loading ---------- */
@@ -560,6 +661,16 @@ function applyCancelBanner(wrapper, cancel) {
   if (label) wrapper.setAttribute("aria-label", `${sentence}: ${label}`);
   return true;
 }
+/* Optional friendly note (canceled_dates[].reason / cancel_reason) shown right under the
+   cancel bar or badge. textContent only, so it is always escaped. Nothing when no reason. */
+function cancelReasonNote(cancel) {
+  const text = cancel && typeof cancel.reason === "string" ? cancel.reason.trim() : "";
+  if (!text) return null;
+  const p = document.createElement("p");
+  p.className = "cancel-reason";
+  p.textContent = text;
+  return p;
+}
 
 /* Flyer URL hygiene at render time (2026-09-27, Sean-approved). Stored data is never edited.
    - Percent-encode ONLY characters that are not legal in a URL, leaving existing %XX escapes
@@ -609,6 +720,19 @@ function jitterFor(seed) {
   const b = ((h >> 10) % 1000) / 1000 - 0.5;
   return { dLat: a * 0.02, dLon: b * 0.02 };
 }
+/* Google Maps link for a venue (2026-10-14). Uses the documented cross-platform
+   format https://www.google.com/maps/search/?api=1&query=... which opens the Maps
+   app on phones and maps.google.com on desktop. The venue string usually already
+   holds the full street address; parenthetical notes like "(East Hill neighborhood)"
+   are dropped so they don't confuse the search, and the state is appended only when it's missing. */
+function mapsSearchUrl(venue, stateCode) {
+  const v = typeof venue === "string" ? venue.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").replace(/\s+,/g, ",").trim() : "";
+  if (!v) return null;
+  const st = typeof stateCode === "string" ? stateCode.trim() : "";
+  const needsState = st && !new RegExp(`\\b${st.replace(/[^A-Za-z]/g, "")}\\b`, "i").test(v);
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(needsState ? `${v}, ${st}` : v);
+}
+
 /* Resolve map coordinates for an event: exact venue-string match first (from
    venue-coords.json), then a city-level fallback derived the same way the
    Location filter already derives area/town — never guessed beyond that. */
@@ -982,14 +1106,14 @@ function applyUrl() {
     state.mapStates = new Set(p.get("states").split("|").filter(Boolean));
     if (state.mapStates.size) any = true;
   }
-  if (p.get("past") === "1") { state.showPast = true; any = true; }
+  if (p.get("past") === "1") { state.pastPending = true; any = true; }   // selected, loads on Search
   state.showNational = p.get("travel") === "1";
   state.showUnverified = p.get("unverified") === "1";
   // Shared-set link: show exactly the listed events, regardless of region/past, so the
   // recipient always sees the dances that were shared with them (2026-07-17).
   if (p.has("events")) {
     state.eventKeys = new Set(p.get("events").split("|").filter(Boolean));
-    if (state.eventKeys.size) { state.showPast = true; state.showNational = true; any = true; }
+    if (state.eventKeys.size) { state.showPast = state.pastPending = true; state.showNational = true; any = true; }
   } else {
     state.eventKeys = new Set();
   }
@@ -1316,7 +1440,7 @@ function comboHeadline(items, today) {
 function comboWhenLine(d) {
   if (d.next) {
     const tr = timeRange(d.ev);
-    return tr ? `${fmtDate(d.next)} · ${tr}` : fmtDate(d.next);
+    return tr ? `${whenDateText(d)} · ${tr}` : whenDateText(d);
   }
   return scheduleText(d.ev) || "";
 }
@@ -1617,7 +1741,7 @@ function buildPosterEventsPayload(items) {
     return {
       name: (typeof ev.name === "string" ? ev.name : "").trim(),
       day: d.next ? d.next.toLocaleDateString(undefined, { weekday: "long" }) : "",
-      date: d.next ? fmtDate(d.next) : "",
+      date: d.next ? whenDateText(d) : "",
       when: comboWhenLine(d),
       time: (typeof timeRange === "function" ? (timeRange(ev) || "") : ""),
       venue: (typeof ev.venue === "string" ? ev.venue.trim() : ""),
@@ -2038,9 +2162,10 @@ function card(d, { showWhen, isPast, date } = {}) {
       : `Enlarge flyer for ${ev.name.trim()}`);
     const img = document.createElement("img");
     img.src = safeImageUrl(flyers[0]);
-    img.alt = "";                                  // decorative — the name is in the heading
+    img.alt = `${ev.name.trim()} flyer`;
     img.loading = "lazy";
     img.decoding = "async";
+    art.classList.add("has-flyer");
     // A broken flyer now leaves a small neutral placeholder instead of vanishing silently.
     img.addEventListener("error", () => { art.textContent = ""; art.appendChild(flyerPlaceholder()); }, { once: true });
     trigger.appendChild(img);
@@ -2054,6 +2179,8 @@ function card(d, { showWhen, isPast, date } = {}) {
     applyCancelBanner(trigger, cancel);
     trigger.addEventListener("click", () => openImageLightbox(flyers, ev.name.trim(), cancel));
     art.appendChild(trigger);
+    const note = cancelReasonNote(cancel);
+    if (note) art.appendChild(note);
   }
   el.appendChild(art);
 
@@ -2075,12 +2202,14 @@ function card(d, { showWhen, isPast, date } = {}) {
     b.className = "badge cancel-badge"; b.textContent = cancel.label;
     badges.appendChild(b);
   }
+  const badgeNote = cancel && !flyers.length ? cancelReasonNote(cancel) : null;
   if (isPast) {
     const b = document.createElement("span");
     b.className = "badge past"; b.textContent = "Past";
     badges.appendChild(b);
   }
   if (badges.children.length) el.appendChild(badges);
+  if (badgeNote) el.appendChild(badgeNote);
 
   const h = document.createElement("h3");
   h.textContent = ev.name.trim();
@@ -2093,17 +2222,17 @@ function card(d, { showWhen, isPast, date } = {}) {
     const link = typeof ev.source_url === "string" && /^https?:\/\//i.test(ev.source_url.trim())
       ? ev.source_url.trim() : null;
     if (tr) {
-      when.textContent = `${fmtDate(d.next)} · ${tr}`;
+      when.textContent = `${whenDateText(d)} · ${tr}`;
     } else if (link) {
       // No start/end time on record (e.g. multi-day WSDC conventions) — show the date,
       // then a link to the event's own page in place of the time (Sean, 2026-07-12).
-      when.append(`${fmtDate(d.next)} · `);
+      when.append(`${whenDateText(d)} · `);
       const a = document.createElement("a");
       a.href = link; a.target = "_blank"; a.rel = "noopener noreferrer";
       a.textContent = "View event ↗";
       when.appendChild(a);
     } else {
-      when.textContent = fmtDate(d.next);
+      when.textContent = whenDateText(d);
     }
     el.appendChild(when);
   }
@@ -2126,6 +2255,14 @@ function card(d, { showWhen, isPast, date } = {}) {
       const p = document.createElement("p");
       p.className = "venue"; p.textContent = ev.venue.trim();
       el.appendChild(p);
+    }
+    const mapsHref = mapsSearchUrl(ev.venue, ev.state);
+    if (mapsHref) {
+      const a = document.createElement("a");
+      a.className = "card-link maps-link";
+      a.href = mapsHref; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = "Directions / map ↗";
+      el.appendChild(a);
     }
   }
   if (typeof ev.cost === "string" && ev.cost.trim()) {
@@ -2456,55 +2593,43 @@ function render() {
       .sort((a, b) => a.next - b.next);
 
     // Past events (elapsed one-time events, ended recurring series) are hidden by
-    // default — see state.showPast. When shown, they render greyed-out (.is-past)
-    // in their own trailing bucket/section, sorted most-recently-past first.
+    // default — see state.showPast. When shown (2026-10-13, Sean), they render greyed-out
+    // (.is-past) in a "Past" section ABOVE the upcoming ones, oldest first, so scrolling up
+    // from today walks back in time. Still-running recurring series also contribute their
+    // most recent occurrence within PAST_LOOKBACK_DAYS (flagged pastOcc: not counted again
+    // in the "N of M shown" line, since the series itself is already counted as upcoming).
     const pastList = state.showPast
       ? visible
-          .filter(d => isPastEvent(d, today))
-          .map(d => ({ ...d, next: pastOccurrenceDate(d.ev) }))
-          .filter(d => d.next)
-          .sort((a, b) => b.next - a.next)
+          .map(d => {
+            if (isPastEvent(d, today)) return { ...d, next: pastOccurrenceDate(d.ev) };
+            const prev = prevOccurrence(d.ev, today);
+            return prev ? { ...d, next: prev, pastOcc: true } : null;
+          })
+          .filter(d => d && d.next)
+          .sort((a, b) => a.next - b.next)
       : [];
+    const countPast = d => { if (!d.pastOcc) shown++; };
 
+    // Past items live in ONE collapsible "Past events (N)" section above everything else
+    // (2026-10-14, Sean): collapsed by default, and its cards are only built on first expand.
+    if (pastList.length) {
+      for (const d of pastList) countPast(d);
+      main.appendChild(pastSectionEl(pastList, state.view === "list" ? "list" : "cards"));
+    }
     if (state.view === "grid") {
       const grid = document.createElement("div");
       grid.className = "cards";
       for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
       main.appendChild(grid);
-      if (pastList.length) {
-        const h = document.createElement("h2");
-        h.className = "bucket-heading"; h.textContent = "Past";
-        main.appendChild(h);
-        const pastGrid = document.createElement("div");
-        pastGrid.className = "cards";
-        for (const d of pastList) { pastGrid.appendChild(card(d, { showWhen: true, isPast: true })); shown++; }
-        main.appendChild(pastGrid);
-      }
-    } else if (state.view === "list") {
-      const buckets = bucketize(withNext, today);
-      if (pastList.length) buckets.push(["Past", pastList]);
-      for (const [label, items] of buckets) {
-        if (!items.length) continue;
-        const isPast = label === "Past";
-        const h = bucketHeadingEl(label);
-        main.appendChild(h);
-        const ul = document.createElement("ul");
-        ul.className = "list-rows";
-        for (const d of items) { ul.appendChild(listRow(d, isPast)); shown++; }
-        main.appendChild(ul);
-      }
     } else {
-      const buckets = bucketize(withNext, today);
-      if (pastList.length) buckets.push(["Past", pastList]);
-      for (const [label, items] of buckets) {
+      const isList = state.view === "list";
+      for (const [label, items] of bucketize(withNext, today)) {
         if (!items.length) continue;
-        const isPast = label === "Past";
-        const h = bucketHeadingEl(label);
-        main.appendChild(h);
-        const grid = document.createElement("div");
-        grid.className = "cards";
-        for (const d of items) { grid.appendChild(card(d, { showWhen: true, isPast })); shown++; }
-        main.appendChild(grid);
+        main.appendChild(bucketHeadingEl(label));
+        const box = document.createElement(isList ? "ul" : "div");
+        box.className = isList ? "list-rows" : "cards";
+        for (const d of items) { box.appendChild(isList ? listRow(d, false) : card(d, { showWhen: true })); shown++; }
+        main.appendChild(box);
       }
     }
   }
@@ -2617,7 +2742,8 @@ function loadPrefs() {
     if (["timeline", "schedule", "calendar", "map"].includes(p.view)) state.view = p.view === "schedule" ? "calendar" : p.view;
     else if (["grid", "list"].includes(p.view)) state.view = "timeline";
     // filtersOpen intentionally NOT restored (Sean, 2026-07-12) — panel starts collapsed.
-    if (typeof p.showPast === "boolean") state.showPast = p.showPast;
+    // showPast intentionally NOT restored (2026-10-14, Sean): past events are never built on
+    // page load, only after the user selects "Past events" and applies the search.
   } catch (e) { /* ignore bad prefs */ }
 }
 function setFiltersOpen(open) {
@@ -2670,12 +2796,15 @@ function init() {
   });
   setFiltersOpen(state.filtersOpen);
   const pastToggle = document.getElementById("past-toggle");
-  pastToggle.setAttribute("aria-pressed", String(state.showPast));
+  syncPastToggle();
+  // Past events load on demand (2026-10-14, Sean): the chip only SELECTS them; the past list
+  // is computed and rendered when the search is applied (button / Enter). Deselecting hides
+  // them right away.
   pastToggle.addEventListener("click", () => {
-    state.showPast = !state.showPast;
-    pastToggle.setAttribute("aria-pressed", String(state.showPast));
-    savePrefs();
-    render();
+    state.pastPending = !state.pastPending;
+    syncPastToggle();
+    if (!state.pastPending && state.showPast) { state.showPast = false; savePrefs(); render(); }
+    else if (state.pastPending && !state.showPast) setStatus("Past events selected — press Search (🔍) or Enter to load them.", false);
   });
   // "Traveling? Show national events" — scope toggle; may arrive pre-set from a shared
   // ?travel=1 URL, so aria syncs from state here (2026-07-17 redesign).
@@ -2706,6 +2835,7 @@ function init() {
     let searchTimer = null;
     const runSearch = () => {
       state.search = searchInput.value.trim().toLowerCase();
+      if (state.showPast !== state.pastPending) { state.showPast = state.pastPending; savePrefs(); }
       const clearBtn = document.getElementById("event-search-clear");
       if (clearBtn) clearBtn.hidden = !state.search;
       render();
@@ -2757,7 +2887,7 @@ function init() {
     applyUrl();
     document.getElementById("traveling-toggle")?.setAttribute("aria-pressed", String(state.showNational));
     document.getElementById("unverified-toggle")?.setAttribute("aria-pressed", String(state.showUnverified));
-    document.getElementById("past-toggle")?.setAttribute("aria-pressed", String(state.showPast));
+    syncPastToggle();
     buildLocSelects();
     if (window.DEV_STATE_MAP && window.DEV_STATE_MAP.refreshHighlight) window.DEV_STATE_MAP.refreshHighlight();
     render();
@@ -3080,15 +3210,41 @@ function renderYear(wrap, dated) {
    event with no resolvable location at all is listed below the map, never
    given a fake pin. */
 let mapInstance = null;
+let leafletPromise = null;
+function ensureLeaflet() {
+  if (typeof L !== "undefined") return Promise.resolve();
+  if (leafletPromise) return leafletPromise;
+  leafletPromise = new Promise((resolve, reject) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    const styles = document.querySelector('link[href^="css/styles.css"]');
+    document.head.insertBefore(css, styles || null);
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Leaflet failed to load"));
+    document.head.appendChild(script);
+  }).catch((error) => {
+    leafletPromise = null;
+    throw error;
+  });
+  return leafletPromise;
+}
 function renderMap(main, visible) {
   const wrap = document.createElement("section");
   wrap.setAttribute("aria-label", "Event map");
   if (typeof L === "undefined") {
     const p = document.createElement("p");
     p.className = "empty-state";
-    p.textContent = "The map library didn't load (offline, or a network block). Try another view, or reload the page.";
+    p.textContent = "Loading map…";
     wrap.appendChild(p);
     main.appendChild(wrap);
+    ensureLeaflet().then(() => {
+      if (state.view === "map" && main.isConnected) render();
+    }).catch(() => {
+      if (p.isConnected) p.textContent = "The map library didn't load (offline, or a network block). Try another view, or reload the page.";
+    });
     return;
   }
   const canvas = document.createElement("div");
@@ -3174,14 +3330,26 @@ function openAddressPopup(address, coords) {
   backdrop.appendChild(pop);
   document.body.appendChild(backdrop);
 
-  if (typeof L !== "undefined") {
+  const drawAddressMap = () => {
+    if (!backdrop.isConnected || typeof L === "undefined") return;
     if (addressMapInstance) { addressMapInstance.remove(); addressMapInstance = null; }
     addressMapInstance = L.map(canvas, { scrollWheelZoom: false }).setView([coords.lat, coords.lon], 15);
     L.tileLayer(MAP_TILE_URL, { attribution: MAP_TILE_ATTRIB, maxZoom: 19 }).addTo(addressMapInstance);
     L.circleMarker([coords.lat, coords.lon], { radius: 9, color: "#4cc2ff", weight: 2, fillColor: "#4cc2ff", fillOpacity: 0.6 }).addTo(addressMapInstance);
     setTimeout(() => addressMapInstance && addressMapInstance.invalidateSize(), 50);
-  } else {
-    canvas.textContent = "Map unavailable right now.";
+  };
+  if (typeof L !== "undefined") drawAddressMap();
+  else {
+    canvas.textContent = "Loading map…";
+    ensureLeaflet().then(drawAddressMap).catch(() => { if (canvas.isConnected) canvas.textContent = "Map unavailable right now."; });
+  }
+  const mapsHref = mapsSearchUrl(address);
+  if (mapsHref) {
+    const a = document.createElement("a");
+    a.className = "card-link maps-link";
+    a.href = mapsHref; a.target = "_blank"; a.rel = "noopener noreferrer";
+    a.textContent = "Open in Google Maps ↗";
+    pop.appendChild(a);
   }
 
   const done = () => {
@@ -3242,6 +3410,8 @@ function openImageLightbox(src, label, cancel) {
     });
     artWrap.prepend(img);
     pop.appendChild(artWrap); pop.appendChild(missing);
+    const lbNote = cancelReasonNote(cancel);
+    if (lbNote) pop.appendChild(lbNote);
   } else {
     pop.appendChild(img); pop.appendChild(missing);
   }

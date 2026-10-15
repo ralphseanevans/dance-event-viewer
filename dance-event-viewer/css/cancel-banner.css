@@ -84,3 +84,16 @@
   box-shadow: inset 3px 0 0 #ffd600;
   opacity: .85;
 }
+
+/* Friendly note under the bar or badge (canceled_dates[].reason). Only rendered when set. */
+.cancel-reason {
+  margin: 6px 0 2px;
+  padding: 4px 8px;
+  background: rgba(255, 214, 0, 0.14);
+  border-left: 3px solid #b8860b;
+  border-radius: 4px;
+  color: #ffd54a;
+  font-size: .82rem;
+  font-style: italic;
+  line-height: 1.35;
+}

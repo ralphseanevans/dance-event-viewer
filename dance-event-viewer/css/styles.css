@@ -87,6 +87,22 @@ body {
   opacity: .38;
   animation: banner-glint 8s ease-in-out infinite;
 }
+.brand-label {
+  margin: 10px 0 2px;
+  color: var(--text-dim);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.title-block h1 {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  line-height: 1.2;
+  text-align: center;
+}
 @keyframes banner-drift {
   from { transform: scale(1.005) translate3d(-.35%, .15%, 0); filter: brightness(.98) saturate(1); }
   to { transform: scale(1.018) translate3d(.35%, -.15%, 0); filter: brightness(1.04) saturate(1.04); }
@@ -564,7 +580,14 @@ body {
 }
 .status-line.error { color: var(--danger); }
 
-main { max-width: var(--maxw); margin: 0 auto; }
+main { max-width: var(--maxw); min-height: min(45vh, 360px); margin: 0 auto; }
+
+.upcoming-events { position: relative; z-index: 1; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.upcoming-events h2 { font-size: 1.2rem; }
+.upcoming-events h3 { margin: 16px 0 8px; font-size: 1rem; }
+.upcoming-events ul { padding-left: 20px; line-height: 1.6; }
+.upcoming-events a { color: var(--accent); }
+.upcoming-events a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .bucket-heading {
   margin: 13px 0 12px; font-size: 1.575rem; color: var(--accent);
@@ -659,6 +682,13 @@ main { max-width: var(--maxw); margin: 0 auto; }
 .card-art-trigger {
   display: block; width: 100%; background: none; border: none; padding: 0; margin: 0;
   cursor: pointer; border-radius: 8px;
+}
+.card-art.has-flyer .card-art-trigger {
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+}
+.card-art.has-flyer .card-art-trigger img {
+  width: 100%; height: 100%; object-fit: contain;
 }
 .card-art-trigger img { transition: opacity .15s ease; }
 .card-art-trigger:hover img { opacity: .82; }
@@ -784,6 +814,13 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 }
 .support-btn:hover { filter: brightness(1.2); }
 .support-btn:focus-visible { outline: 2px solid var(--accent-pink); outline-offset: 2px; }
+
+/* Pensacola dance guides: small crawlable link list in the footer. */
+.footer-guides { margin-top: 18px; }
+.footer-guides h2 { font-size: .9rem; margin: 0 0 6px; color: var(--text); }
+.footer-guides ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.footer-guides a { color: var(--text-dim); }
+.footer-guides a:hover { color: var(--text); }
 
 /* Low-key link to the review dashboard — small, dim, blends into the footer (Sean 2026-07-20). */
 .footer-tools { margin-top: 22px; text-align: center; }
@@ -1539,3 +1576,17 @@ body.selecting .card.selectable:hover { border-color: var(--text-dim); }
   .state-shape { transition: fill .12s ease, stroke .12s ease; }
 }
 @media (max-width: 640px) { .loc-map { max-width: 100%; } }
+
+/* Collapsible "Past events (N)" section above Tonight (2026-10-14, Sean). The header keeps
+   .bucket-heading's look; the button inside just inherits it and adds a rotating chevron. */
+.past-section-heading { padding-bottom: 0; }
+.past-section-toggle {
+  all: unset; box-sizing: border-box; cursor: pointer; width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 0 6px; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit;
+}
+.past-section-toggle:hover { color: var(--text); }
+.past-section-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.past-section-chevron { color: var(--text-dim); font-size: 1.4rem; line-height: 1; transition: transform .15s ease; }
+.past-section-toggle[aria-expanded="true"] .past-section-chevron { transform: rotate(90deg); color: var(--accent); }
+.past-section-body[hidden] { display: none; }
