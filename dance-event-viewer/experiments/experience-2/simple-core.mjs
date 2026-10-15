@@ -18,7 +18,12 @@ export function styleFacets(style) {
   if (/^Lindy Hop\s*\/\s*Blues$/i.test(v)) return ['Lindy Hop', 'Blues'];
   if (/^Line Dance\s*\/\s*East Coast Swing$/i.test(v)) return ['Line Dance', 'East Coast Swing'];
   if (/^Swing\s*\/\s*Detroit Ballroom$/i.test(v)) return ['Swing'];
-  return [v];
+  // Generic clean-up so every city shows the same clean names: drop "(…)" qualifiers,
+  // split "A / B" combos, and fold Country Western variants into Country.
+  const clean = v.replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+  const parts = clean.split(/\s*\/\s*/).map(x => x.trim()).filter(Boolean)
+    .map(x => (/^Country(?:\s+Western)?\b/i.test(x) && !/swing/i.test(x) ? 'Country' : /^Ballroom\b/i.test(x) ? 'Ballroom' : x));
+  return parts.length ? [...new Set(parts)] : [v];
 }
 // West Coast Swing first, then A–Z; solo styles separate (shown behind the Solo toggle).
 export function orderStyles(styles) {

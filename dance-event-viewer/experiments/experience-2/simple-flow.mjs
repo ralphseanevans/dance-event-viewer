@@ -126,7 +126,7 @@ function render({ tapped, tappedStyle } = {}) {
     const t = document.createElement('button');
     t.type = 'button'; t.className = 'style-choice solo-toggle'; t.setAttribute('aria-expanded', String(state.soloOpen));
     t.classList.toggle('has-selection', solo.some(s => state.styles.has(s)));
-    t.innerHTML = `Solo styles <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
+    t.innerHTML = `${state.soloOpen ? 'Hide' : 'Show'} solo styles (${solo.length}) <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
     kids.push(t);
     if (state.soloOpen) solo.forEach(s => kids.push(styleButton(s, 'style-choice solo-choice')));
   }

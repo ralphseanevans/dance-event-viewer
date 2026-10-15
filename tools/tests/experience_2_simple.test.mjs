@@ -56,3 +56,13 @@ test('page: Simple is the initial mode and is not persisted', () => {
   const order = ['id="simple-where"', 'id="simple-styles"', 'id="simple-results"'].map(s => html.indexOf(s));
   assert.ok(order.every((n, i) => n > 0 && (i === 0 || n > order[i - 1])), 'Where -> Styles -> When/cards order');
 });
+
+test('styleFacets normalizes raw city values to clean names', async () => {
+  const core = await import('../../dance-event-viewer/experiments/experience-2/simple-core.mjs');
+  assert.deepEqual(core.styleFacets('Ballroom (Cha Cha / East Coast Swing)'), ['Ballroom']);
+  assert.deepEqual(core.styleFacets('Ballroom (cued)'), ['Ballroom']);
+  assert.deepEqual(core.styleFacets('Country Western (UCWDC)'), ['Country']);
+  assert.deepEqual(core.styleFacets('Salsa / Bachata'), ['Salsa', 'Bachata']);
+  assert.deepEqual(core.styleFacets('Ballroom / West Coast Swing'), ['Ballroom', 'West Coast Swing']);
+  assert.deepEqual(core.styleFacets('Country Swing'), ['Country Swing']);
+});
