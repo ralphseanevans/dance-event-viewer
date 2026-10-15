@@ -166,3 +166,12 @@ button.calendar-day.no-events{cursor:crosshair}
 .tile-extra summary{cursor:pointer;font-size:12px;text-decoration:underline;text-underline-offset:3px}
 .tile-extra p{margin:8px 0;white-space:pre-wrap}
 @media(max-width:560px){.tile-extra{margin-left:34px}}
+
+/* Flyer sits beside the card copy; on phones it floats at the top right. */
+.event-tile.has-flyer .tile-body{display:flow-root}
+.tile-flyer-preview{float:right;width:clamp(150px,22vw,260px);padding:0;margin:0 0 18px 24px;border:0;border-radius:16px;background:#c7bfad;overflow:hidden;cursor:zoom-in}
+.tile-flyer-preview img{display:block;width:100%;height:auto;border-radius:inherit}
+.tile-flyer-preview:focus-visible{outline:2px solid #ae543e;outline-offset:4px}
+@media(max-width:560px){
+.tile-flyer-preview{width:30%;max-width:120px;min-width:76px;margin:0 0 12px 14px;border-radius:12px}
+}
