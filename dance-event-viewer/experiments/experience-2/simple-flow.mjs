@@ -32,7 +32,18 @@ function drawCityRoutes() {
   routeFrame = 0;
   const heading = el.styles.querySelector('.style-route-label');
   if (!heading || !heading.getClientRects().length) { routes.replaceChildren(); routePaths.clear(); return; }
-  const host = routeHost.getBoundingClientRect(), end = heading.getBoundingClientRect();
+  const host = routeHost.getBoundingClientRect();
+  // Measure the final letter so the endpoint tracks typography and screen size.
+  const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+  let node, last;
+  while ((node = walker.nextNode())) if (node.textContent.trim()) last = node;
+  let end = heading.getBoundingClientRect();
+  if (last) {
+    const range = document.createRange();
+    const offset = last.textContent.trimEnd().length;
+    range.setStart(last, offset - 1); range.setEnd(last, offset);
+    end = range.getBoundingClientRect();
+  }
   routes.setAttribute('viewBox', `0 0 ${host.width} ${host.height}`);
   const active = new Set();
   el.where.querySelectorAll('[data-market][aria-pressed="true"]').forEach(button => {
