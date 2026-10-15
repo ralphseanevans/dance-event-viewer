@@ -97,3 +97,19 @@
   font-style: italic;
   line-height: 1.35;
 }
+
+/* Canceled card (2026-10-14, DEV Design, Sean-approved). The card itself is NOT faded:
+   its children are, except the red CANCELLED badge and the reason note, so both stay at
+   full strength. Same rules apply to any tile that reuses .card (e.g. a lead tile). */
+.card.card--canceled { border-color: transparent; }  /* canceled cards lose the border */
+.card.card--canceled > :not(.cancel-tag):not(.card-art):not(.cancel-reason),
+.card.card--canceled > .card-art > :not(.cancel-reason) { opacity: .5; }
+.card.card--canceled .when { text-decoration: line-through; text-decoration-thickness: 2px; }
+.cancel-tag {
+  align-self: flex-start; margin: 0;
+  background: #d32f2f; color: #fff; font-weight: 800; font-size: .82rem;
+  letter-spacing: .08em; line-height: 1.2; padding: 4px 10px; border-radius: 4px;
+}
+/* Lead tile (open PR #28 moves the card's details into .card-lead-body): same treatment. */
+.card.card--canceled > .card-lead-body > :not(.cancel-tag):not(.cancel-reason) { opacity: .5; }
+.card.card--lead.card--canceled { border-color: transparent; background: var(--bg-card); box-shadow: none; }

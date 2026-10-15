@@ -2153,6 +2153,7 @@ function card(d, { showWhen, isPast, date, lead } = {}) {
   const cancel = cancellationFor(ev, date instanceof Date ? date : d.next);
   const el = document.createElement("article");
   el.className = "card";
+  if (cancel) el.classList.add("card--canceled");
   if (isPast) el.classList.add("is-past");
   if (lead) { el.classList.add("card--lead"); if (cancel) el.classList.add("card--lead-canceled"); }
   if (typeof ev.key === "string" && ev.key) el.dataset.key = ev.key;
@@ -2208,9 +2209,23 @@ function card(d, { showWhen, isPast, date, lead } = {}) {
   }
   el.appendChild(art);
 
+  // Canceled occurrence (2026-10-14, DEV Design): a red CANCELLED badge replaces the style
+  // tag. It is a direct child of the card, outside every faded element, so it stays at full
+  // opacity while the rest of the card dims (see .card--canceled in css/cancel-banner.css).
+  if (cancel) {
+    const occ = date instanceof Date ? date : d.next;
+    const now = new Date();
+    const tonight = occ instanceof Date && !isPast && occ.getFullYear() === now.getFullYear()
+      && occ.getMonth() === now.getMonth() && occ.getDate() === now.getDate();
+    const tag = document.createElement("p");
+    tag.className = "cancel-tag";
+    tag.textContent = tonight ? "CANCELLED TONIGHT" : "CANCELLED";
+    tag.title = cancel.label;
+    el.appendChild(tag);
+  }
   const badges = document.createElement("div");
   badges.className = "badges";
-  if (d.category) {
+  if (d.category && !cancel) {
     const b = document.createElement("span");
     b.className = "badge"; b.textContent = d.category;
     badges.appendChild(b);
@@ -2218,12 +2233,6 @@ function card(d, { showWhen, isPast, date, lead } = {}) {
   if (ev.type === "tentative") {
     const b = document.createElement("span");
     b.className = "badge warn"; b.textContent = "Unconfirmed";
-    badges.appendChild(b);
-  }
-  // No flyer to carry the cancel bar: say it in a badge instead.
-  if (cancel && !flyers.length) {
-    const b = document.createElement("span");
-    b.className = "badge cancel-badge"; b.textContent = cancel.label;
     badges.appendChild(b);
   }
   const badgeNote = cancel && !flyers.length ? cancelReasonNote(cancel) : null;
@@ -2292,7 +2301,7 @@ function card(d, { showWhen, isPast, date, lead } = {}) {
       p.className = "venue"; p.textContent = ev.venue.trim();
       el.appendChild(p);
     }
-    const mapsHref = mapsSearchUrl(ev.venue, ev.state);
+    const mapsHref = cancel ? null : mapsSearchUrl(ev.venue, ev.state);   // no directions to a canceled night
     if (mapsHref) {
       const a = document.createElement("a");
       a.className = "card-link maps-link";
@@ -2307,7 +2316,8 @@ function card(d, { showWhen, isPast, date, lead } = {}) {
     el.appendChild(p);
   }
   // Public link (whitelisted): only rendered when source_url is an explicit http(s) URL.
-  if (typeof ev.source_url === "string" && /^https?:\/\//i.test(ev.source_url.trim())) {
+  // Never on a canceled occurrence — there is nothing to register for.
+  if (!cancel && typeof ev.source_url === "string" && /^https?:\/\//i.test(ev.source_url.trim())) {
     const a = document.createElement("a");
     a.className = "card-link";
     a.href = ev.source_url.trim();
@@ -2659,10 +2669,12 @@ function render() {
       for (const d of pastList) countPast(d);
       main.appendChild(pastSectionEl(pastList, state.view === "list" ? "list" : "cards"));
     }
+    // Lead tile = the first upcoming occurrence that is NOT canceled (2026-10-14, Sean).
+    const leadItem = withNext.find(d => !cancellationFor(d.ev, d.next)) || null;
     if (state.view === "grid") {
       const grid = document.createElement("div");
       grid.className = "cards";
-      for (const d of withNext) { grid.appendChild(card(d, { showWhen: true, lead: d === withNext[0] })); shown++; }
+      for (const d of withNext) { grid.appendChild(card(d, { showWhen: true, lead: d === leadItem })); shown++; }
       main.appendChild(grid);
     } else {
       const isList = state.view === "list";
@@ -2671,7 +2683,7 @@ function render() {
         main.appendChild(bucketHeadingEl(label));
         const box = document.createElement(isList ? "ul" : "div");
         box.className = isList ? "list-rows" : "cards";
-        for (const d of items) { box.appendChild(isList ? listRow(d, false) : card(d, { showWhen: true, lead: d === withNext[0] })); shown++; }
+        for (const d of items) { box.appendChild(isList ? listRow(d, false) : card(d, { showWhen: true, lead: d === leadItem })); shown++; }
         main.appendChild(box);
       }
     }
@@ -2715,6 +2727,12 @@ function render() {
   updateFilterUI();
 }
 
+/* Canceled occurrences go to the END of their day group (2026-10-14, DEV Design), keeping
+   the existing order otherwise (Array.prototype.sort is stable). */
+function sortCanceledLast(items) {
+  const isOff = d => !!cancellationFor(d.ev, d.next);
+  return items.slice().sort((a, b) => Number(isOff(a)) - Number(isOff(b)));
+}
 function bucketize(items, today) {
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const byDate = new Map();
@@ -2726,7 +2744,7 @@ function bucketize(items, today) {
   }
   return [...byDate.values()]
     .sort((a, b) => a.date - b.date)
-    .map(group => [timelineDateLabel(group.date, group.items, t0), group.items]);
+    .map(group => [timelineDateLabel(group.date, group.items, t0), sortCanceledLast(group.items)]);
 }
 
 /* Timeline headings start conversationally, then become date-led as events get farther
