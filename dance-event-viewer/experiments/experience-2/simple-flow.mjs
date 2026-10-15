@@ -20,6 +20,40 @@ const el = {
   results: $('#simple-results'), groups: $('#simple-groups'), more: $('#simple-more'), status: $('#simple-status')
 };
 const lines = { mode: createFlowLine(el.modes), where: createFlowLine(el.where), styles: createFlowLine(el.styleChoices) };
+// Draw a separate route from every selected city to the Styles heading.
+const routeHost = $('#simple');
+routeHost.style.position = 'relative';
+const routes = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+routes.classList.add('selection-routes'); routes.setAttribute('aria-hidden', 'true');
+routeHost.appendChild(routes);
+const routePaths = new Map();
+let routeFrame = 0;
+function drawCityRoutes() {
+  routeFrame = 0;
+  const heading = el.styles.querySelector('.style-route-label');
+  if (!heading || !heading.getClientRects().length) { routes.replaceChildren(); routePaths.clear(); return; }
+  const host = routeHost.getBoundingClientRect(), end = heading.getBoundingClientRect();
+  routes.setAttribute('viewBox', `0 0 ${host.width} ${host.height}`);
+  const active = new Set();
+  el.where.querySelectorAll('[data-market][aria-pressed="true"]').forEach(button => {
+    const id = button.dataset.market; active.add(id);
+    let path = routePaths.get(id);
+    const fresh = !path;
+    if (fresh) { path = document.createElementNS(routes.namespaceURI, 'path'); routes.appendChild(path); routePaths.set(id, path); }
+    const b = button.getBoundingClientRect();
+    const x = b.left + b.width / 2 - host.left, y = b.bottom - host.top + 3;
+    const ex = end.left + end.width / 2 - host.left, ey = end.top - host.top - 5;
+    const mid = y + Math.max(6, (ey - y) * .5);
+    path.setAttribute('d', `M ${x} ${y} V ${mid} H ${ex} V ${ey}`);
+    if (fresh && !reduced()) path.animate([{strokeDasharray: '1', strokeDashoffset: 1}, {strokeDasharray: '1', strokeDashoffset: 0}], {duration: 1200, easing: 'ease-in-out', fill: 'both'});
+    path.setAttribute('pathLength', '1');
+  });
+  for (const [id, path] of routePaths) if (!active.has(id)) { path.remove(); routePaths.delete(id); }
+}
+function scheduleCityRoutes() { if (!routeFrame) routeFrame = requestAnimationFrame(drawCityRoutes); }
+new ResizeObserver(scheduleCityRoutes).observe(routeHost);
+window.addEventListener('resize', scheduleCityRoutes);
+document.fonts?.ready.then(scheduleCityRoutes);
 const calendar = createStickyCalendar({
   root: $('#simple-calendar'), scrollHost: el.results,
   onJump: day => {
@@ -188,6 +222,7 @@ function styleButton(style, cls, available = true) {
 }
 
 function render({ tapped, tappedStyle } = {}) {
+  scheduleCityRoutes();
   el.where.querySelectorAll('[data-market]').forEach(b => { if (b.dataset.market !== 'other') b.setAttribute('aria-pressed', String(state.markets.has(b.dataset.market))); });
   if (!state.loaded) { el.status.hidden = false; el.status.textContent = 'Loading dances…'; return; }
   el.status.hidden = true;
