@@ -1,8 +1,8 @@
 import heroClip from "./assets/hero-title-clip.js";
 import heroRepeatClip from "./assets/hero-repeat-clip.js";
-import {FEED,todayKey,parseDate,searchEvents,timeLabel,escapeHTML as esc,safeURL} from './events.mjs?v=20261014-content';
+import {FEED,todayKey,parseDate,searchEvents,timeLabel,escapeHTML as esc,safeURL} from './events.mjs?v=4ae3925d';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-let events=[],results=[],shown=9,style='all',savedOnly=false,selectedStyle='West Coast Swing',openedEvent=null;
+let events=[],results=[],shown=9,style='all',savedOnly=false,openedEvent=null;
 let saved;try{const value=JSON.parse(localStorage.getItem('dev-experience-saved')||'[]');saved=new Set(Array.isArray(value)?value:[])}catch{saved=new Set()}
 const formatDate=(key,opts)=>new Intl.DateTimeFormat('en-US',{timeZone:'UTC',...opts}).format(parseDate(key));
 function updateSaved(){ $('#saved-count').textContent=saved.size;try{localStorage.setItem('dev-experience-saved',JSON.stringify([...saved]))}catch{} }
@@ -31,27 +31,13 @@ $('.dialog-close').addEventListener('click',()=>$('#event-dialog').close());$('#
 $('#filters').addEventListener('submit',e=>{e.preventDefault();render()});let searchTimer;$('#search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>render(),160)});$('#include-unverified').addEventListener('change',()=>render());['place','when'].forEach(id=>$('#'+id).addEventListener('change',()=>render()));
 $$('.chip').forEach(b=>b.addEventListener('click',()=>setStyle(b.dataset.filter)));
 $('#saved-filter').addEventListener('click',()=>{savedOnly=!savedOnly;$('#saved-filter').setAttribute('aria-pressed',String(savedOnly));render()});$('#reset').addEventListener('click',resetFilters);$('#load-more').addEventListener('click',()=>{shown+=9;render(false)});
-$$('.style-choice').forEach(b=>b.addEventListener('click',()=>{selectedStyle=b.dataset.style;$$('.style-choice').forEach(c=>{const active=c===b;c.classList.toggle('active',active);c.setAttribute('aria-pressed',String(active))});const title=b.children[1].childNodes[0].textContent;$('#style-cta').innerHTML=`Explore ${esc(title)} <span aria-hidden="true">↗</span>`;$('.style-orbit').style.filter=selectedStyle==='Latin'?'hue-rotate(-15deg)':selectedStyle==='Tango'?'hue-rotate(20deg)':'none'}));$('#style-cta').addEventListener('click',()=>setStyle(selectedStyle));
-function renderLocalInformation(snapshot,updated){
- const common={when:'30',includeUnverified:false};
- $('#southern-count').textContent=searchEvents(events,{...common,place:'south'}).length;
- $('#coast-count').textContent=searchEvents(events,{...common,place:'gulf'}).length;
- $('#wcs-count').textContent=searchEvents(events,{...common,place:'south',style:'West Coast Swing'}).length;
- if(snapshot)$('.hero-facts small').textContent=`Saved feed: ${updated} · next 30 days · unverified excluded`;
- const cities=[{key:'pensacola',name:'Pensacola',description:'Pensacola, Gulf Breeze, Pace & Milton'},{key:'mobile',name:'Mobile',description:'Mobile, the Eastern Shore & Dauphin Island'},{key:'emerald',name:'Emerald Coast',description:'Destin, Fort Walton Beach & nearby'}];
- $('#city-previews').innerHTML=cities.map((city,i)=>{
-  const rows=searchEvents(events,{...common,place:city.key});const example=rows.find(r=>(r.event.style||'').includes('West Coast Swing'))||rows[0];
-  return `<article class="city-preview"><div class="city-top"><span>0${i+1}</span><strong>${rows.length}<small>upcoming listings</small></strong></div><h3>${city.name}</h3><p>${city.description}</p><div class="city-example">${example?`<span>FROM THE CALENDAR · ${esc(formatDate(example.date,{month:'short',day:'numeric'}))}</span><strong>${esc(example.event.name)}</strong><small>${esc(rangeLabel(example.event))}</small>`:'<span>No upcoming listings in this area.</span>'}</div><button data-city="${city.key}">Explore ${city.name} <span aria-hidden="true">↗</span></button></article>`;
- }).join('');
-}
-$('#city-previews').addEventListener('click',e=>{const b=e.target.closest('[data-city]');if(!b)return;resetFilters();$('#place').value=b.dataset.city;render();$('#events').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})});
 async function load(){
  let data,isSnapshot=false;
  try{const response=await fetch(FEED,{cache:'no-store',signal:AbortSignal.timeout(14000)});if(!response.ok)throw new Error('Feed unavailable');data=await response.json();if(!Array.isArray(data.events))throw new Error('Invalid feed')}
- catch{isSnapshot=true;try{const response=await fetch('./events-snapshot.json');if(!response.ok)throw new Error('Snapshot unavailable');data=await response.json()}catch{$('#feed-status').textContent='Listings unavailable';$('#feed-status').classList.add('offline');$('#event-list').setAttribute('aria-busy','false');$('#event-list').innerHTML='<div class="empty">We couldn’t load the listings.<br><a class="text-link" href="https://danceeventviewer.net/dance-event-viewer/">Open Dance Event Viewer ↗</a></div>';$('#result-count').textContent='Unable to load events';$('#city-previews').innerHTML='<p class="empty">Local previews are unavailable. Use the full viewer for listings.</p>';return}}
+ catch{isSnapshot=true;try{const response=await fetch('./events-snapshot.json');if(!response.ok)throw new Error('Snapshot unavailable');data=await response.json()}catch{$('#feed-status').textContent='Listings unavailable';$('#feed-status').classList.add('offline');$('#event-list').setAttribute('aria-busy','false');$('#event-list').innerHTML='<div class="empty">We couldn’t load the listings.<br><a class="text-link" href="https://danceeventviewer.net/dance-event-viewer/">Open Dance Event Viewer ↗</a></div>';$('#result-count').textContent='Unable to load events';return}}
  events=data.events.filter(e=>e&&e.name&&e.key);const updated=data.generated_at?new Date(data.generated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'date unavailable';
  $('#feed-status').textContent=isSnapshot?'Saved listings · '+updated:'Live listings · '+updated;$('#feed-status').classList.toggle('offline',isSnapshot);
- renderLocalInformation(isSnapshot,updated);if(isSnapshot)$('#data-note').prepend(document.createTextNode(`Live feed unavailable. Showing a saved copy from ${updated}. `));render();
+ if(isSnapshot)$('#data-note').prepend(document.createTextNode(`Live feed unavailable. Showing a saved copy from ${updated}. `));render();
 }
 updateSaved();load();
 // Lightweight visual effects: 2D canvas and CSS, with no GPU compatibility gate.
@@ -70,15 +56,7 @@ function resize(){width=hero.clientWidth;height=hero.clientHeight;const ratio=Ma
 function draw(t){frame=0;if(!motion||document.hidden||scrollY>height)return;if(t-last<32){frame=requestAnimationFrame(draw);return}last=t;if(ctx){ctx.clearRect(0,0,width,height);ctx.fillStyle='#eee8da';dust.forEach(p=>{p.y-=p.v*32;if(p.y<0)p.y=1;ctx.globalAlpha=.18+p.r*.16;ctx.beginPath();ctx.arc(p.x*width+pointer.x*6,p.y*height,p.r,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1}art.style.setProperty('--mx',`${pointer.x*9}px`);art.style.setProperty('--my',`${pointer.y*7+Math.min(scrollY*.13,85)}px`);frame=requestAnimationFrame(draw)}
 function startMotion(){if(motion&&!frame&&!document.hidden&&scrollY<=height)frame=requestAnimationFrame(draw)}
 function syncHeroVideo(){if(motion&&!document.hidden&&scrollY<=height){if(heroVideo.paused&&!heroVideo.ended)heroVideo.play().catch(()=>{})}else heroVideo.pause()}
-function setMotion(value){motion=value;document.body.classList.toggle('no-motion',!motion);document.body.classList.toggle('js-motion',motion);$('#motion').setAttribute('aria-pressed',String(motion));$('#motion').innerHTML=(motion?'Ⅱ':'▶')+`<span class="sr-only"> ${motion?'Pause':'Play'} animation</span>`;$('#motion').title=(motion?'Pause':'Play')+' animation';if(!motion){cancelAnimationFrame(frame);frame=0;ctx?.clearRect(0,0,width,height)}else startMotion();syncHeroVideo()}
-$('#motion').addEventListener('click',()=>setMotion(!motion));const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}}),{threshold:.08});$$('.reveal').forEach(el=>observer.observe(el));
+function setMotion(value){motion=value;document.body.classList.toggle('no-motion',!motion);document.body.classList.toggle('js-motion',motion);if(!motion){cancelAnimationFrame(frame);frame=0;ctx?.clearRect(0,0,width,height)}else startMotion();syncHeroVideo()}
+
 hero.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const rect=hero.getBoundingClientRect();pointer={x:(e.clientX-rect.left)/width-.5,y:(e.clientY-rect.top)/height-.5}});hero.addEventListener('pointerleave',()=>{pointer={x:0,y:0}});window.addEventListener('scroll',()=>{scrollY=window.scrollY;const max=document.documentElement.scrollHeight-innerHeight;$('#scroll-progress').style.transform=`scaleX(${max>0?scrollY/max:0})`;startMotion();syncHeroVideo()},{passive:true});window.addEventListener('resize',resize);resize();setMotion(motion);
-// Optional original synthesized groove. Audio starts only on an explicit button press.
-let audioContext=null,audioTimer=null,soundOn=false,beat=0;
-function synthTick(){if(!audioContext||!soundOn)return;const c=audioContext,t=c.currentTime;
- if(beat%4===0){const o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(105,t);o.frequency.exponentialRampToValueAtTime(42,t+.14);g.gain.setValueAtTime(.17,t);g.gain.exponentialRampToValueAtTime(.001,t+.2);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+.22)}
- if(beat%2===0){const length=Math.floor(c.sampleRate*.04),b=c.createBuffer(1,length,c.sampleRate),a=b.getChannelData(0);for(let i=0;i<length;i++)a[i]=(Math.random()*2-1)*(1-i/length);const source=c.createBufferSource(),filter=c.createBiquadFilter(),g=c.createGain();source.buffer=b;filter.type='highpass';filter.frequency.value=7500;g.gain.value=beat%4===2?.023:.012;source.connect(filter);filter.connect(g);g.connect(c.destination);source.start(t)}
- if(beat%16===0){[130.81,155.56,196].forEach(f=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(.012,t+.14);g.gain.exponentialRampToValueAtTime(.001,t+1.8);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+1.9)})}beat=(beat+1)%32;
-}
-async function setSound(value){if(!value){soundOn=false;clearInterval(audioTimer);audioTimer=null;audioContext?.suspend();$('#sound').setAttribute('aria-pressed','false');$('#sound-label').textContent='Sound off';return}try{audioContext ||=new (window.AudioContext||window.webkitAudioContext)();await audioContext.resume();soundOn=true;beat=0;synthTick();audioTimer=setInterval(synthTick,60000/108/4);$('#sound').setAttribute('aria-pressed','true');$('#sound-label').textContent='Sound on'}catch{$('#sound-label').textContent='Audio unavailable';soundOn=false}}
-$('#sound').addEventListener('click',()=>setSound(!soundOn));document.addEventListener('visibilitychange',()=>{if(document.hidden){if(soundOn)setSound(false);cancelAnimationFrame(frame);frame=0}else startMotion();syncHeroVideo()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0}else startMotion();syncHeroVideo()});

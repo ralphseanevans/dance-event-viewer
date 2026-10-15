@@ -1,0 +1,107 @@
+/* Exp2 Simple mode + mode switch. Flat (no shadows, gradients, bevels), page palette
+   (ink / paper / red), 150–200ms transform/opacity transitions, clicky pressed states. */
+.viewer{--tap:.97;--ease:cubic-bezier(.4,0,.2,1);padding:28px var(--pad) 56px;background:var(--ink);color:var(--paper);border-top:1px solid var(--line)}
+.viewer button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.viewer :focus-visible{outline:2px solid var(--red);outline-offset:4px}
+.flow-line{position:absolute;left:0;top:0;width:1px;height:2px;background:var(--red);transform-origin:0 0;pointer-events:none;opacity:0;transition:transform .18s var(--ease),opacity .15s ease;will-change:transform}
+/* Mode switch: always above everything else in the viewer */
+.mode-switch{display:inline-flex;gap:22px;margin:0 0 26px;padding-bottom:6px}
+.mode-btn{border:0;background:none;color:var(--muted);padding:6px 0;font:600 12px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;transition:color .15s ease,transform .1s ease}
+.mode-btn[aria-pressed="true"]{color:var(--paper)}
+.step-label{margin:0 0 8px;font:600 10px/1.7 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+/* Where: Exp1 .place-choice, red accent */
+.place-choices{display:flex;flex-wrap:wrap;align-items:center;gap:6px 30px;padding-bottom:4px}
+.place-choice{min-height:48px;padding:0;border:0;border-bottom:2px solid transparent;background:none;color:#8d8d84;font:700 clamp(30px,4.2vw,54px)/1 var(--display);letter-spacing:-.01em;text-transform:uppercase;cursor:pointer;transition:color .18s ease,border-color .18s ease,transform .1s ease}
+.place-choice[aria-pressed="true"]{color:var(--paper);border-bottom-color:rgba(220,80,57,.45)}
+.place-choice.is-other{color:var(--muted);font-size:clamp(22px,2.6vw,32px)}
+@media(hover:hover){.place-choice:hover,.style-choice:hover,.mode-btn:hover{color:var(--paper)}}
+.place-choice:active,.style-choice:active,.mode-btn:active,.calendar-day.has-events:active,.calendar-head button:active,.simple-more:active,.flyer-wrap:active,.tile-links a:active{transform:scale(var(--tap));transition-duration:.08s}
+/* Styles: Exp1 connector (vertical then horizontal draw), then the list */
+.simple-styles{--route-origin:clamp(18px,6vw,120px);--route-run:clamp(56px,9vw,118px);margin-top:-2px}
+.simple-styles[hidden],.simple-results[hidden]{display:none}
+.style-route{display:flex;align-items:flex-end;min-height:56px;margin-left:var(--route-origin);color:var(--red)}
+.style-route-line{position:relative;flex:0 0 auto;width:var(--route-run);height:56px}
+.style-route-line::before,.style-route-line::after{content:"";position:absolute;left:0;background:var(--red);transform-origin:left top}
+.style-route-line::before{top:0;width:2px;height:100%}
+.style-route-line::after{bottom:0;width:100%;height:2px}
+.style-route-label{margin:0 0 -12px -2px;padding-left:12px;font:700 clamp(24px,3vw,40px)/.95 var(--display);text-transform:uppercase}
+.simple-styles.is-opening .style-route-line::before{animation:draw-y .2s var(--ease) both}
+.simple-styles.is-opening .style-route-line::after{animation:draw-x .2s var(--ease) .18s both}
+.simple-styles.is-opening .style-route-label,.simple-styles.is-opening .style-choices{animation:fade-up .2s ease .3s both}
+.style-choices{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin:26px 0 0 calc(var(--route-origin) + var(--route-run))}
+.style-choice{padding:2px 0 4px;border:0;background:none;color:#8d8d84;font:600 clamp(22px,2.4vw,30px)/1.1 var(--body);letter-spacing:-.02em;text-align:left;transition:color .18s ease,transform .1s ease}
+.style-choice[aria-pressed="true"]{color:var(--paper)}
+.solo-toggle{display:inline-flex;gap:10px;color:var(--muted);font-size:clamp(17px,1.8vw,22px)}
+.solo-toggle span{color:var(--red)}
+.solo-toggle.has-selection{color:var(--paper)}
+.solo-choice{margin-left:18px;font-size:clamp(18px,2vw,24px)}
+.simple-empty,.simple-status{color:var(--muted);margin:14px 0}
+/* When + cards */
+.simple-results{margin-top:40px;padding-top:22px;border-top:1px solid var(--line);display:grid;grid-template-columns:240px minmax(0,1fr);gap:36px;align-items:start}
+.simple-results.is-revealing{animation:fade-up .2s ease both}
+.scroll-calendar{align-self:stretch;min-width:0}
+.calendar-sticky{position:sticky;top:var(--sticky-offset,16px);padding:12px 0;background:var(--ink);border-bottom:1px solid var(--line)}
+.calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.calendar-month-label{margin:0;font:700 20px/1 var(--display);letter-spacing:.02em;text-transform:uppercase}
+.calendar-head button{width:32px;height:32px;border:1px solid var(--line);background:none;color:var(--paper);font-size:11px;transition:transform .1s ease,color .15s ease,border-color .15s ease}
+.calendar-head button:disabled{opacity:.3;cursor:default}
+.calendar-weekdays,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center}
+.calendar-weekdays{font-size:10px;color:var(--muted);margin-bottom:4px}
+.calendar-days{position:relative}
+.calendar-day,.calendar-blank{height:30px;display:grid;place-items:center;font-size:13px}
+.calendar-day{color:#5d5e57}
+button.calendar-day{border:0;background:none;color:var(--paper);font-weight:600;cursor:pointer;transition:color .15s ease,transform .1s ease}
+button.calendar-day.is-active{color:var(--red)}
+.simple-list{min-width:0}
+.date-block{scroll-margin-top:24px;padding:4px 0 26px}
+.date-heading{margin:0 0 14px;font:700 clamp(26px,3vw,38px)/1 var(--display);text-transform:uppercase;letter-spacing:.01em}
+.day-events{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:14px}
+/* Event tiles: flat, page palette (ink with paper text, red accents) — no beige */
+.event-tile{display:flex;flex-direction:column;min-width:0;background:#222320;border:1px solid var(--line);color:var(--paper)}
+.event-tile.is-canceled{opacity:.62}
+.flyer-wrap{position:relative;display:block;width:100%;aspect-ratio:4/5;padding:0;border:0;border-bottom:1px solid var(--line);background:#111211;overflow:hidden;cursor:zoom-in;transition:transform .1s ease}
+.flyer-wrap img{width:100%;height:100%;object-fit:contain;display:block}
+.flyer-wrap.no-flyer{display:grid;place-items:center;cursor:default;aspect-ratio:auto;min-height:72px;color:var(--muted);font:700 22px/1 var(--display);text-transform:uppercase}
+.flyer-count{position:absolute;right:8px;bottom:8px;padding:3px 7px;background:var(--ink);color:var(--paper);font-size:11px}
+.tile-body{padding:12px 14px 14px}
+.tile-cancel{margin:0 0 6px;color:var(--red);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.tile-name{margin:0 0 6px;font:600 17px/1.25 var(--body);color:var(--paper)}
+.tile-meta{margin:0 0 6px;font-size:13px;color:#cfc9bb}
+.tile-meta strong{color:var(--red);font-weight:700}
+.tile-venue{margin:0;font-size:12px;line-height:1.45;color:#a6a69d}
+.tile-links{display:flex;flex-wrap:wrap;gap:16px;margin:10px 0 0;font-size:12px;font-weight:600}
+.tile-links a{display:inline-block;border-bottom:1px solid var(--red);transition:color .15s ease,transform .1s ease}
+.simple-more{margin-top:8px;padding:14px 20px;border:1px solid var(--paper);background:none;color:var(--paper);font:600 12px/1 var(--body);transition:background .15s ease,color .15s ease,transform .1s ease}
+.simple-more[hidden]{display:none}
+/* Flyer lightbox (dark, flat) */
+#simple-lightbox{max-width:min(92vw,900px);width:auto;padding:44px 12px 12px;background:var(--ink);color:var(--paper);border:1px solid var(--line)}
+#simple-lightbox::backdrop{background:rgba(10,10,10,.82)}
+#simple-lightbox img{display:block;max-width:100%;max-height:78svh;margin:0 auto}
+#simple-lightbox .lb-close{position:absolute;top:8px;right:10px;width:32px;height:32px;border:0;background:none;color:var(--paper);font-size:24px}
+#simple-lightbox .lb-bar{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:8px}
+#simple-lightbox .lb-nav{width:40px;height:32px;border:1px solid var(--line);background:none;color:var(--paper)}
+#simple-lightbox .lb-nav[hidden]{display:none}
+@keyframes draw-y{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes draw-x{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes fade-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* ≤820px: compact full-width sticky calendar bar at the top */
+@media(max-width:820px){
+.simple-results{display:block;margin-top:30px}
+.scroll-calendar{display:contents}
+.calendar-sticky{top:0;z-index:5;margin:0 calc(var(--pad) * -1) 18px;padding:8px var(--pad)}
+.calendar-head{margin-bottom:4px}
+.calendar-head button{width:28px;height:28px}
+.calendar-day,.calendar-blank{height:26px;font-size:12px}
+.calendar-weekdays{margin-bottom:2px}
+.date-block{scroll-margin-top:calc(var(--cal-h,220px) + 10px)}
+}
+@media(max-width:560px){
+.viewer{padding-top:22px}
+.place-choices{gap:2px 22px}
+.place-choice{min-height:42px;font-size:30px}
+.style-choices{gap:8px}
+.style-choice{font-size:22px}
+}
+@media(prefers-reduced-motion:reduce){
+.viewer *,.flow-line{animation:none!important;transition:none!important}
+}
