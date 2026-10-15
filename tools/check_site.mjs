@@ -3,6 +3,7 @@
 // Usage: node tools/check_site.mjs [--root .] [--live]
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, join, dirname, sep } from 'node:path';
+import { mapsSearchUrl } from './lib.mjs';
 
 const SITE_HOST = 'danceeventviewer.net';
 const SITE_ORIGIN = `https://${SITE_HOST}`;
@@ -149,6 +150,13 @@ export async function checkSite(rootPath = '.', { live = false, fetcher = fetch 
     pageFiles = readdirSync(pagesDir, { withFileTypes: true })
       .filter(entry => entry.isFile() && entry.name.endsWith('.html'))
       .map(entry => join(pagesDir, entry.name));
+    // Map-link guard (2026-10-14): a share page's Google Maps link must be built from
+    // THAT event's own venue (exact key lookup in dance_events.json), never another venue.
+    let venueByKey = null;
+    try {
+      const data = JSON.parse(readFileSync(join(root, 'dance_events.json'), 'utf8').replace(/\u0000+\s*$/g, '').trim());
+      venueByKey = new Map((data.events || []).map(ev => [ev.key, ev]));
+    } catch { venueByKey = null; }
     for (const pageFile of pageFiles) {
       const page = pageFile.slice(root.length + 1);
       const html = readFileSync(pageFile, 'utf8');
@@ -158,6 +166,13 @@ export async function checkSite(rootPath = '.', { live = false, fetcher = fetch 
         const resolved = resolveInternal(ref.value, page, root);
         if (resolved?.error) errors.push(`${page}: ${ref.key} ${resolved.error}`);
         else if (resolved && !existsSync(resolved.target)) errors.push(`${page}: ${ref.key} ${ref.value} has no local file`);
+      }
+      const mapsLink = html.match(/href="(https:\/\/www\.google\.com\/maps\/[^"]*)"/);
+      const ev = venueByKey?.get(pageFile.slice(pagesDir.length + 1).replace(/\.html$/, ''));
+      if (mapsLink && ev) {
+        const expected = mapsSearchUrl(ev.venue, ev.state);
+        if (mapsLink[1].replace(/&amp;/g, '&') !== expected)
+          errors.push(`${page}: Google Maps link does not match the event's venue "${ev.venue}"`);
       }
       const jsonLdRe = /<script\b(?=[^>]*\btype\s*=\s*(["'])application\/ld\+json\1)[^>]*>([\s\S]*?)<\/script\s*>/gi;
       let block;
