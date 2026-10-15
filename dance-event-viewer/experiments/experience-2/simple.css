@@ -207,3 +207,23 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 .event-tile.has-flyer.flyer-open .tile-detail{font-size:16px;gap:8px}
 .event-tile.has-flyer .tile-flyer-preview{width:calc(40% - 12px);right:6px;top:6px;bottom:6px}
 }
+
+/* Reveal the flyer by sliding the warm card face right over a rust-red layer. */
+.event-tile.has-flyer{background:#ae543e}
+.event-tile.has-flyer .tile-body{transition:width .38s cubic-bezier(.2,.72,.22,1),transform .38s cubic-bezier(.2,.72,.22,1),border-radius .25s ease;will-change:width,transform}
+.event-tile.has-flyer.flyer-open .tile-body{width:62%;transform:translateX(clamp(28px,5vw,68px))}
+.event-tile.has-flyer .tile-flyer-preview{transition:opacity .2s ease .16s,visibility 0s linear .16s}
+@media(max-width:560px){
+.event-tile.has-flyer.flyer-open .tile-body{width:60%;transform:translateX(26px)}
+}
+@media(prefers-reduced-motion:reduce){
+.event-tile.has-flyer .tile-body,.event-tile.has-flyer .tile-flyer-preview{transition:none!important}
+}
+
+/* Large flyer viewer on desktop; edge-to-edge viewing on phones. */
+#simple-lightbox{box-sizing:border-box;width:min(82vw,1100px);max-width:none;max-height:90svh;border-radius:14px}
+#simple-lightbox img{max-width:100%;max-height:80svh}
+@media(max-width:560px){
+#simple-lightbox{width:100vw;height:100svh;max-width:none;max-height:none;margin:0;padding:48px 12px 12px;border:0;border-radius:0}
+#simple-lightbox img{max-width:100%;max-height:calc(100svh - 76px)}
+}
