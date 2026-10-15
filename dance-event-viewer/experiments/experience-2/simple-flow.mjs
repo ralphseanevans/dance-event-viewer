@@ -2,7 +2,7 @@
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE } from './simple-core.mjs?v=1de21578';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE } from './simple-core.mjs?v=9e76a810';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { createStickyCalendar } from './sticky-calendar.mjs?v=36ada0a8';
 
@@ -13,7 +13,7 @@ const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rul
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const state = { markets: new Set(), styles: new Set(), soloOpen: false, pages: 1, events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
+const state = { markets: new Set(), styles: new Set(), soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
 const el = {
   find: $('#find'), simple: $('#simple'), full: $('#full'), modes: $('.mode-switch'),
   where: $('#simple-where .place-choices'), styles: $('#simple-styles'), styleChoices: $('#simple-styles .style-choices'),
@@ -22,7 +22,14 @@ const el = {
 const lines = { mode: createFlowLine(el.modes), where: createFlowLine(el.where), styles: createFlowLine(el.styleChoices) };
 const calendar = createStickyCalendar({
   root: $('#simple-calendar'), scrollHost: el.results,
-  onJump: day => document.getElementById(`simple-date-${day}`)?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' })
+  onJump: day => {
+    // Every listed day is clickable; reveal more pages if that day is not rendered yet.
+    if (!document.getElementById(`simple-date-${day}`)) {
+      const i = state.allDays.indexOf(day);
+      if (i >= 0) { state.pages = Math.ceil((i + 1) / GROUPS_PER_PAGE); render(); }
+    }
+    document.getElementById(`simple-date-${day}`)?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+  }
 });
 
 // ---------- data: same order as the main viewer's loadData() ----------
@@ -63,7 +70,11 @@ function setMode(mode, { focusWhere = false } = {}) {
     const place = $('#place');
     if (place) { place.value = 'all'; place.dispatchEvent(new Event('change')); $('#filters')?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); place.focus({ preventScroll: true }); }
   }
-  if (simple) { lines.where.refresh(); lines.styles.refresh(); }
+  if (simple) {
+    // Fresh Simple state on every switch back (no stale styles/cards from before).
+    state.markets.clear(); state.styles.clear(); state.soloOpen = false; state.pages = 1; state.allDays = [];
+    lines.where.hide?.(); render(); lines.where.refresh(); lines.styles.refresh();
+  }
 }
 el.modes.addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode); });
 
@@ -119,11 +130,11 @@ function render({ tapped, tappedStyle } = {}) {
     const t = document.createElement('button');
     t.type = 'button'; t.className = 'style-choice solo-toggle'; t.setAttribute('aria-expanded', String(state.soloOpen));
     t.classList.toggle('has-selection', solo.some(s => state.styles.has(s)));
-    t.innerHTML = `Solo styles <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
+    t.innerHTML = `${state.soloOpen ? 'Hide' : 'Show'} solo styles (${solo.length}) <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
     kids.push(t);
     if (state.soloOpen) solo.forEach(s => kids.push(styleButton(s, 'style-choice solo-choice')));
   }
-  if (!partner.length && !solo.length) { const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances listed here yet. Try another place, or Other.'; kids.push(p); }
+  if (!partner.length && !solo.length) { const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances listed here yet. Try another place.'; kids.push(p); }
   el.styleChoices.replaceChildren(...kids, lines.styles.line);
   if (tappedStyle) lines.styles.moveTo(el.styleChoices.querySelector(`[data-style="${CSS.escape(tappedStyle)}"]`));
   else if (tappedStyle === null || !state.styles.size) lines.styles.moveTo(el.styleChoices.querySelector('[aria-pressed="true"]'));
@@ -143,7 +154,8 @@ function render({ tapped, tappedStyle } = {}) {
   const blocks = shown.map(dateBlock);
   el.groups.replaceChildren(...blocks);
   el.more.hidden = groups.length <= shown.length;
-  calendar.set(shown.map(g => g.day), blocks);
+  state.allDays = groups.map(g => g.day);
+  calendar.set(state.allDays, blocks);
 }
 el.more.addEventListener('click', () => { state.pages++; render(); });
 
@@ -207,4 +219,4 @@ setMode('simple');
 Promise.all([loadEvents(), loadLogoMap()]).then(([events, logoMap]) => {
   state.events = events.filter(e => e && typeof e.name === 'string' && e.name.trim());
   state.logoMap = logoMap || state.logoMap; state.loaded = true; render();
-}).catch(() => { state.loaded = true; el.status.hidden = false; el.status.textContent = 'Listings are unavailable right now. Try Other for the full viewer.'; });
+}).catch(() => { state.loaded = true; el.status.hidden = false; el.status.textContent = 'Listings are unavailable right now. Please try again later.'; });
