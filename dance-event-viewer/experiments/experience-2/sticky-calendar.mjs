@@ -9,7 +9,7 @@ const fmtJump = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long
 const d = s => new Date(`${s}T12:00:00`);
 const iso = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
 
-export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
+export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemoveDay }) {
   const month = root.querySelector('.calendar-month-label');
   const prev = root.querySelector('.calendar-prev'), next = root.querySelector('.calendar-next');
   const grid = root.querySelector('.calendar-days');
@@ -49,6 +49,7 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
       const key = b.dataset.date;
       const inSelected = selectedRanges.some(r => key >= r.start && key <= r.end);
       const inPreview = preview && key >= preview.start && key <= preview.end;
+      b.setAttribute('aria-pressed', String(inSelected));
       b.classList.toggle('in-range', Boolean(inSelected || inPreview));
       b.classList.toggle('range-start', Boolean(selectedRanges.some(r => key === r.start) || (preview && key === preview.start)));
       b.classList.toggle('range-end', Boolean(selectedRanges.some(r => key === r.end) || (preview && key === preview.end)));
@@ -78,6 +79,10 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
   grid.addEventListener('click', e => {
     const b = e.target.closest('button[data-date]'); if (!b) return;
     if (suppressClick) { e.preventDefault(); return; }
+    const key = b.dataset.date;
+    if (!pendingStart && selectedRanges.some(r => key >= r.start && key <= r.end)) {
+      onRemoveDay?.(key); return;
+    }
     const rangeDetails = root.querySelector('#calendar-range-details');
     if (rangeDetails?.open) {
       if (!pendingStart) {
@@ -114,14 +119,15 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
     set(newDates, blocks, ranges = []) {
       dates = newDates; selectedRanges = Array.isArray(ranges) ? ranges : [];
       if (!dates.includes(tapped)) tapped = null; if (!dates.includes(active)) active = dates[0] || null;
-      shownMonth = active ? active.slice(0, 7) : null; render(); setH();
+      if (!shownMonth || !months().includes(shownMonth)) shownMonth = active ? active.slice(0, 7) : null;
+      render(); setH();
       observer?.disconnect();
       // Scroll-spy keeps the month/active day in step with the list; the gliding
       // line itself follows taps only (assumption: line follows tapped selections).
       observer = new IntersectionObserver(entries => {
         const hit = entries.filter(x => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
         const key = hit?.target.dataset.date;
-        if (!key || key === active) return;
+        if (!key || key === active || selectedRanges.length || pendingStart) return;
         active = key; const mo = key.slice(0, 7);
         if (mo !== shownMonth) shownMonth = mo;
         render();
