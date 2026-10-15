@@ -2129,6 +2129,7 @@ function card(d, { showWhen, isPast, date } = {}) {
   const cancel = cancellationFor(ev, date instanceof Date ? date : d.next);
   const el = document.createElement("article");
   el.className = "card";
+  if (cancel) el.classList.add("card--canceled");
   if (isPast) el.classList.add("is-past");
   if (typeof ev.key === "string" && ev.key) el.dataset.key = ev.key;
   if (state.selectMode && typeof ev.key === "string" && shareSelection.has(ev.key)) el.classList.add("is-selected");
@@ -2183,9 +2184,23 @@ function card(d, { showWhen, isPast, date } = {}) {
   }
   el.appendChild(art);
 
+  // Canceled occurrence (2026-10-14, DEV Design): a red CANCELLED badge replaces the style
+  // tag. It is a direct child of the card, outside every faded element, so it stays at full
+  // opacity while the rest of the card dims (see .card--canceled in css/cancel-banner.css).
+  if (cancel) {
+    const occ = date instanceof Date ? date : d.next;
+    const now = new Date();
+    const tonight = occ instanceof Date && !isPast && occ.getFullYear() === now.getFullYear()
+      && occ.getMonth() === now.getMonth() && occ.getDate() === now.getDate();
+    const tag = document.createElement("p");
+    tag.className = "cancel-tag";
+    tag.textContent = tonight ? "CANCELLED TONIGHT" : "CANCELLED";
+    tag.title = cancel.label;
+    el.appendChild(tag);
+  }
   const badges = document.createElement("div");
   badges.className = "badges";
-  if (d.category) {
+  if (d.category && !cancel) {
     const b = document.createElement("span");
     b.className = "badge"; b.textContent = d.category;
     badges.appendChild(b);
@@ -2193,12 +2208,6 @@ function card(d, { showWhen, isPast, date } = {}) {
   if (ev.type === "tentative") {
     const b = document.createElement("span");
     b.className = "badge warn"; b.textContent = "Unconfirmed";
-    badges.appendChild(b);
-  }
-  // No flyer to carry the cancel bar: say it in a badge instead.
-  if (cancel && !flyers.length) {
-    const b = document.createElement("span");
-    b.className = "badge cancel-badge"; b.textContent = cancel.label;
     badges.appendChild(b);
   }
   const badgeNote = cancel && !flyers.length ? cancelReasonNote(cancel) : null;
@@ -2255,7 +2264,7 @@ function card(d, { showWhen, isPast, date } = {}) {
       p.className = "venue"; p.textContent = ev.venue.trim();
       el.appendChild(p);
     }
-    const mapsHref = mapsSearchUrl(ev.venue, ev.state);
+    const mapsHref = cancel ? null : mapsSearchUrl(ev.venue, ev.state);   // no directions to a canceled night
     if (mapsHref) {
       const a = document.createElement("a");
       a.className = "card-link maps-link";
@@ -2270,7 +2279,8 @@ function card(d, { showWhen, isPast, date } = {}) {
     el.appendChild(p);
   }
   // Public link (whitelisted): only rendered when source_url is an explicit http(s) URL.
-  if (typeof ev.source_url === "string" && /^https?:\/\//i.test(ev.source_url.trim())) {
+  // Never on a canceled occurrence — there is nothing to register for.
+  if (!cancel && typeof ev.source_url === "string" && /^https?:\/\//i.test(ev.source_url.trim())) {
     const a = document.createElement("a");
     a.className = "card-link";
     a.href = ev.source_url.trim();
