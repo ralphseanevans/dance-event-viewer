@@ -178,3 +178,11 @@ button.calendar-day.no-events{cursor:crosshair}
 
 /* All selected dates share one shade, even split-range endpoints and active dates. */
 button.calendar-day.in-range,button.calendar-day.range-start,button.calendar-day.range-end,button.calendar-day.range-pending{background:rgba(220,80,57,.2);color:var(--paper);box-shadow:none}
+
+/* Desktop flyers fill the card height with a narrow three-sided inset. */
+@media(min-width:821px){
+.event-tile.has-flyer{position:relative;min-height:360px}
+.event-tile.has-flyer .tile-body{padding-right:calc(38% + 24px)}
+.event-tile.has-flyer .tile-flyer-preview{position:absolute;float:none;top:8px;right:8px;bottom:8px;width:38%;max-width:none;min-width:0;margin:0;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.event-tile.has-flyer .tile-flyer-preview img{width:100%;height:100%;object-fit:contain}
+}
