@@ -221,3 +221,5 @@ html,body{overflow-x:clip}
 .hero h1{margin:6px 0 18px}
 .hero-art{position:relative;right:auto;bottom:auto;width:100%;height:min(300px,62vw);margin:0}
 #atmosphere{display:none}}
+/* Desktop/tablet: keep the hero video (and its final DANCE EVENT VIEWER stamp) in the right column so it never sits under the headline */
+@media(min-width:651px){.hero-art{right:0;width:52%}.hero-art video{object-position:right bottom}.hero-copy{width:48%}.art-shade{background:linear-gradient(90deg,var(--ink) 0%,transparent 18%),linear-gradient(0deg,var(--ink),transparent 20%)}}
