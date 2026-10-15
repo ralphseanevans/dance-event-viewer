@@ -31,22 +31,13 @@ $('.dialog-close').addEventListener('click',()=>$('#event-dialog').close());$('#
 $('#filters').addEventListener('submit',e=>{e.preventDefault();render()});let searchTimer;$('#search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>render(),160)});$('#include-unverified').addEventListener('change',()=>render());['place','when'].forEach(id=>$('#'+id).addEventListener('change',()=>render()));
 $$('.chip').forEach(b=>b.addEventListener('click',()=>setStyle(b.dataset.filter)));
 $('#saved-filter').addEventListener('click',()=>{savedOnly=!savedOnly;$('#saved-filter').setAttribute('aria-pressed',String(savedOnly));render()});$('#reset').addEventListener('click',resetFilters);$('#load-more').addEventListener('click',()=>{shown+=9;render(false)});
-function renderLocalInformation(snapshot,updated){
- const common={when:'30',includeUnverified:false};
- const cities=[{key:'pensacola',name:'Pensacola',description:'Pensacola, Gulf Breeze, Pace & Milton'},{key:'mobile',name:'Mobile',description:'Mobile, the Eastern Shore & Dauphin Island'},{key:'emerald',name:'Emerald Coast',description:'Destin, Fort Walton Beach & nearby'}];
- $('#city-previews').innerHTML=cities.map((city,i)=>{
-  const rows=searchEvents(events,{...common,place:city.key});const example=rows.find(r=>(r.event.style||'').includes('West Coast Swing'))||rows[0];
-  return `<article class="city-preview"><div class="city-top"><span>0${i+1}</span><strong>${rows.length}<small>upcoming listings</small></strong></div><h3>${city.name}</h3><p>${city.description}</p><div class="city-example">${example?`<span>FROM THE CALENDAR · ${esc(formatDate(example.date,{month:'short',day:'numeric'}))}</span><strong>${esc(example.event.name)}</strong><small>${esc(rangeLabel(example.event))}</small>`:'<span>No upcoming listings in this area.</span>'}</div><button data-city="${city.key}">Explore ${city.name} <span aria-hidden="true">↗</span></button></article>`;
- }).join('');
-}
-$('#city-previews').addEventListener('click',e=>{const b=e.target.closest('[data-city]');if(!b)return;resetFilters();$('#place').value=b.dataset.city;render();$('#events').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})});
 async function load(){
  let data,isSnapshot=false;
  try{const response=await fetch(FEED,{cache:'no-store',signal:AbortSignal.timeout(14000)});if(!response.ok)throw new Error('Feed unavailable');data=await response.json();if(!Array.isArray(data.events))throw new Error('Invalid feed')}
- catch{isSnapshot=true;try{const response=await fetch('./events-snapshot.json');if(!response.ok)throw new Error('Snapshot unavailable');data=await response.json()}catch{$('#feed-status').textContent='Listings unavailable';$('#feed-status').classList.add('offline');$('#event-list').setAttribute('aria-busy','false');$('#event-list').innerHTML='<div class="empty">We couldn’t load the listings.<br><a class="text-link" href="https://danceeventviewer.net/dance-event-viewer/">Open Dance Event Viewer ↗</a></div>';$('#result-count').textContent='Unable to load events';$('#city-previews').innerHTML='<p class="empty">Local previews are unavailable. Use the full viewer for listings.</p>';return}}
+ catch{isSnapshot=true;try{const response=await fetch('./events-snapshot.json');if(!response.ok)throw new Error('Snapshot unavailable');data=await response.json()}catch{$('#feed-status').textContent='Listings unavailable';$('#feed-status').classList.add('offline');$('#event-list').setAttribute('aria-busy','false');$('#event-list').innerHTML='<div class="empty">We couldn’t load the listings.<br><a class="text-link" href="https://danceeventviewer.net/dance-event-viewer/">Open Dance Event Viewer ↗</a></div>';$('#result-count').textContent='Unable to load events';return}}
  events=data.events.filter(e=>e&&e.name&&e.key);const updated=data.generated_at?new Date(data.generated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'date unavailable';
  $('#feed-status').textContent=isSnapshot?'Saved listings · '+updated:'Live listings · '+updated;$('#feed-status').classList.toggle('offline',isSnapshot);
- renderLocalInformation(isSnapshot,updated);if(isSnapshot)$('#data-note').prepend(document.createTextNode(`Live feed unavailable. Showing a saved copy from ${updated}. `));render();
+ if(isSnapshot)$('#data-note').prepend(document.createTextNode(`Live feed unavailable. Showing a saved copy from ${updated}. `));render();
 }
 updateSaved();load();
 // Lightweight visual effects: 2D canvas and CSS, with no GPU compatibility gate.
