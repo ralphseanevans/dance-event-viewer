@@ -83,7 +83,11 @@ el.where.addEventListener('click', e => {
   const b = e.target.closest('button[data-market]'); if (!b) return;
   if (b.dataset.market === 'other') { setMode('full', { focusWhere: true }); return; }
   const id = b.dataset.market;
-  if (state.markets.has(id)) state.markets.delete(id); else state.markets.add(id);
+  // With no explicit market selection, the default view covers all nearby markets.
+  // The first tap narrows to that market; subsequent taps add or remove markets.
+  if (!state.markets.size) state.markets.add(id);
+  else if (state.markets.has(id)) state.markets.delete(id);
+  else state.markets.add(id);
   state.pages = 1;
   // The line follows the latest tapped selection; if that was a deselect, fall back to another pick.
   lines.where.moveTo(state.markets.has(id) ? b : el.where.querySelector('[aria-pressed="true"]:not([data-market="' + id + '"])'));
@@ -109,15 +113,11 @@ function styleButton(style, cls) {
 
 function render({ tapped, tappedStyle } = {}) {
   el.where.querySelectorAll('[data-market]').forEach(b => { if (b.dataset.market !== 'other') b.setAttribute('aria-pressed', String(state.markets.has(b.dataset.market))); });
-  if (!state.markets.size) {
-    state.styles.clear(); state.soloOpen = false;
-    el.styles.hidden = true; el.results.hidden = true; el.groups.replaceChildren(); calendar.clear(); lines.styles.hide();
-    return;
-  }
   if (!state.loaded) { el.status.hidden = false; el.status.textContent = 'Loading dances…'; return; }
   el.status.hidden = true;
   const today = atMidnight(new Date());
-  const items = upcomingIn(state.events, [...state.markets], today);
+  const markets = state.markets.size ? [...state.markets] : MARKETS.map(m => m.id);
+  const items = upcomingIn(state.events, markets, today);
   const { partner, solo } = availableStyles(items);
   [...state.styles].forEach(s => { if (!partner.includes(s) && !solo.includes(s)) state.styles.delete(s); });
 
@@ -140,9 +140,9 @@ function render({ tapped, tappedStyle } = {}) {
   else if (tappedStyle === null || !state.styles.size) lines.styles.moveTo(el.styleChoices.querySelector('[aria-pressed="true"]'));
   else lines.styles.refresh();
 
-  // When + cards
-  if (!state.styles.size) { el.results.hidden = true; el.groups.replaceChildren(); calendar.clear(); return; }
-  const groups = groupByDate(items, [...state.styles]);
+  // Results are always available. Empty style selection means all available styles.
+  const visibleStyles = state.styles.size ? [...state.styles] : [...partner, ...solo];
+  const groups = groupByDate(items, visibleStyles);
   const shown = groups.slice(0, GROUPS_PER_PAGE * state.pages);
   const wasResultsHidden = el.results.hidden;
   el.results.hidden = false;
