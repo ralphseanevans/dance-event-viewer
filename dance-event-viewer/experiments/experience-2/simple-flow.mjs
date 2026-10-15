@@ -118,7 +118,10 @@ function render({ tapped, tappedStyle } = {}) {
   const today = atMidnight(new Date());
   const markets = state.markets.size ? [...state.markets] : MARKETS.map(m => m.id);
   const items = upcomingIn(state.events, markets, today);
-  const { partner, solo } = availableStyles(items);
+  // Keep the complete style picker stable across place filters.
+  const styleMarkets = MARKETS.map(m => m.id);
+  const styleCatalog = upcomingIn(state.events, styleMarkets, today);
+  const { partner, solo } = availableStyles(styleCatalog);
   [...state.styles].forEach(s => { if (!partner.includes(s) && !solo.includes(s)) state.styles.delete(s); });
 
   // Styles step
