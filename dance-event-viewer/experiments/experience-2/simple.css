@@ -189,3 +189,21 @@ button.calendar-day.in-range,button.calendar-day.range-start,button.calendar-day
 
 /* Event-card focus marker is separate from selected-date shading. */
 button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;border-radius:0}
+
+/* Fixed orange tab; the beige cover slides back to reveal the flyer underneath. */
+.event-tile.has-flyer{position:relative;min-height:360px;border-left:0;padding-left:30px;background:#c7bfad}
+.event-tile.has-flyer .tile-body{position:relative;z-index:1;display:flow-root;min-height:360px;width:100%;padding:24px 28px 22px;background:#d8d0bd;transition:width .3s ease;border-radius:0 16px 16px 0}
+.event-tile.has-flyer.flyer-open .tile-body{width:62%;border-radius:0 14px 14px 0}
+.event-tile.has-flyer .tile-flyer-preview{position:absolute;z-index:0;float:none;top:8px;right:8px;bottom:8px;width:calc(38% - 16px);min-width:0;max-width:none;margin:0;border-radius:12px;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .2s ease}
+.event-tile.has-flyer.flyer-open .tile-flyer-preview{opacity:1;visibility:visible}
+.event-tile.has-flyer .tile-flyer-preview img{width:100%;height:100%;object-fit:contain}
+.tile-flyer-tab{position:absolute;z-index:2;inset:0 auto 0 0;width:30px;padding:12px 5px;border:0;border-radius:0;background:#ae543e;color:#fff3df;font:600 11px/1.2 var(--body);writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.06em;text-transform:uppercase}
+@media(max-width:560px){
+.event-tile.has-flyer{min-height:0;padding-left:26px}
+.tile-flyer-tab{width:26px;font-size:10px}
+.event-tile.has-flyer .tile-body{min-height:280px;padding:20px 16px}
+.event-tile.has-flyer.flyer-open .tile-body{width:60%;padding:18px 12px}
+.event-tile.has-flyer.flyer-open .tile-name{font-size:24px}
+.event-tile.has-flyer.flyer-open .tile-detail{font-size:16px;gap:8px}
+.event-tile.has-flyer .tile-flyer-preview{width:calc(40% - 12px);right:6px;top:6px;bottom:6px}
+}
