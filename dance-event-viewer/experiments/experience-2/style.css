@@ -212,3 +212,13 @@ dialog h2{font-size:32px}
 .community-links small{font-size:9px}
 }
 html,body{overflow-x:clip}
+/* Cleanup (Oct 14 2026): hero sits near the top; no reserved empty height. */
+.header{height:72px}
+.hero{height:min(80svh,760px);min-height:540px;max-height:none;padding:88px var(--pad) 32px}
+.hero h1{margin:12px 0 24px}
+@media(max-width:1000px){.hero{height:auto;min-height:520px}}
+@media(max-width:650px){.header{height:60px}
+.hero{display:block;height:auto;min-height:0;padding:72px var(--pad) 0}
+.hero h1{margin:6px 0 18px}
+.hero-art{position:relative;right:auto;bottom:auto;width:100%;height:min(300px,62vw);margin:18px 0 0}
+#atmosphere{display:none}}
