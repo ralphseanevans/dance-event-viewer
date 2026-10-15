@@ -2124,13 +2124,37 @@ function cardActions(ev) {
 }
 
 /* ---------- rendering (whitelist only, textContent only) ---------- */
-function card(d, { showWhen, isPast, date } = {}) {
+/* Short bold tile title (2026-10-14, Sean): an explicit short_title wins; otherwise the
+   name is trimmed of " - " / " | " / " @ " suffixes, parentheticals and trailing dates,
+   then capped at ~40 chars on a word boundary. Display-only; event data is untouched. */
+const SHORT_TITLE_MAX = 40;
+function shortTitle(ev) {
+  const full = typeof ev.name === "string" ? ev.name.trim() : "";
+  if (typeof ev.short_title === "string" && ev.short_title.trim()) return ev.short_title.trim();
+  let t = full
+    .replace(/\s*[([][^)\]]*[)\]]/g, " ")                 // parentheticals
+    .split(/\s+(?:-{1,2}|[|\u2013\u2014])\s+|\s*\|\s*|\s+@\s+/)[0]   // " - venue", "| city"
+    .replace(/(\S.{6,}?)\s+at\s+(?:the\s+)?[A-Z0-9][^]*$/, "$1")      // trailing " at Venue"
+    .replace(/[,\s]+(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s*)?(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*[-\u2013]\s*\d{1,2})?,?(?:\s*\d{4})?|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{4})\s*$/i, "")
+    .replace(/[\s,:;\u2013\u2014-]+$/, "").replace(/\s{2,}/g, " ").trim();
+  if (!t) t = full;
+  if (t.length > SHORT_TITLE_MAX) {
+    const cut = t.slice(0, SHORT_TITLE_MAX + 1);
+    const sp = cut.lastIndexOf(" ");
+    t = (sp > 15 ? cut.slice(0, sp) : t.slice(0, SHORT_TITLE_MAX))
+      .replace(/(?:[\s,:;+&\u2013\u2014-]|\s(?:at|with|and|of|the|for|in))+$/i, "") + "\u2026";
+  }
+  return t;
+}
+
+function card(d, { showWhen, isPast, date, lead } = {}) {
   const { ev } = d;
   // Which occurrence this card shows: the calendar passes the clicked day; lists use d.next.
   const cancel = cancellationFor(ev, date instanceof Date ? date : d.next);
   const el = document.createElement("article");
   el.className = "card";
   if (isPast) el.classList.add("is-past");
+  if (lead) { el.classList.add("card--lead"); if (cancel) el.classList.add("card--lead-canceled"); }
   if (typeof ev.key === "string" && ev.key) el.dataset.key = ev.key;
   if (state.selectMode && typeof ev.key === "string" && shareSelection.has(ev.key)) el.classList.add("is-selected");
   // In "Share several" mode, tapping anywhere on the card's own surface toggles selection —
@@ -2203,6 +2227,11 @@ function card(d, { showWhen, isPast, date } = {}) {
     badges.appendChild(b);
   }
   const badgeNote = cancel && !flyers.length ? cancelReasonNote(cancel) : null;
+  if (lead) {
+    const b = document.createElement("span");
+    b.className = "badge lead-badge"; b.textContent = "Up next";
+    badges.prepend(b);
+  }
   if (isPast) {
     const b = document.createElement("span");
     b.className = "badge past"; b.textContent = "Past";
@@ -2212,8 +2241,15 @@ function card(d, { showWhen, isPast, date } = {}) {
   if (badgeNote) el.appendChild(badgeNote);
 
   const h = document.createElement("h3");
-  h.textContent = ev.name.trim();
+  h.className = "card-title";
+  const st = shortTitle(ev);
+  h.textContent = st;
   el.appendChild(h);
+  if (st !== ev.name.trim()) {
+    const full = document.createElement("p");
+    full.className = "full-name"; full.textContent = ev.name.trim();
+    el.appendChild(full);
+  }
 
   if (showWhen && d.next) {
     const when = document.createElement("p");
@@ -2281,6 +2317,13 @@ function card(d, { showWhen, isPast, date } = {}) {
     el.appendChild(a);
   }
   el.appendChild(feedbackWidget(ev));
+  if (lead) {
+    // Lead tile: flyer on the left, details on the right (stacks on narrow screens).
+    const body = document.createElement("div");
+    body.className = "card-lead-body";
+    for (const n of [...el.children]) if (n !== art && !n.classList.contains("card-actions")) body.appendChild(n);
+    el.appendChild(body);
+  }
   return el;
 }
 
@@ -2619,7 +2662,7 @@ function render() {
     if (state.view === "grid") {
       const grid = document.createElement("div");
       grid.className = "cards";
-      for (const d of withNext) { grid.appendChild(card(d, { showWhen: true })); shown++; }
+      for (const d of withNext) { grid.appendChild(card(d, { showWhen: true, lead: d === withNext[0] })); shown++; }
       main.appendChild(grid);
     } else {
       const isList = state.view === "list";
@@ -2628,7 +2671,7 @@ function render() {
         main.appendChild(bucketHeadingEl(label));
         const box = document.createElement(isList ? "ul" : "div");
         box.className = isList ? "list-rows" : "cards";
-        for (const d of items) { box.appendChild(isList ? listRow(d, false) : card(d, { showWhen: true })); shown++; }
+        for (const d of items) { box.appendChild(isList ? listRow(d, false) : card(d, { showWhen: true, lead: d === withNext[0] })); shown++; }
         main.appendChild(box);
       }
     }
