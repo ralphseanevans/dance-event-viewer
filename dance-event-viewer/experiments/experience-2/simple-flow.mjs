@@ -238,32 +238,39 @@ function dateBlock(g) {
 }
 const resolve = p => (/^https?:/i.test(p) ? p : new URL(p.replace(/^\.\.\//, ''), /^\.\.\//.test(p) ? SITE : VIEWER).href);
 function safeUrl(s) { try { const u = new URL(s); return /^https?:$/.test(u.protocol) ? u.href : null; } catch { return null; } }
-function tile({ ev, canceled }) {
+function tile({ ev, canceled, day }) {
   const a = document.createElement('article');
   a.className = 'event-tile' + (canceled ? ' is-canceled' : '');
-  const flyers = flyersFor(ev, state.logoMap).map(resolve);
-  const art = document.createElement(flyers.length ? 'button' : 'div');
-  art.className = 'flyer-wrap';
-  if (flyers.length) {
-    art.type = 'button'; art.setAttribute('aria-label', `Enlarge flyer for ${ev.name}${flyers.length > 1 ? ` (${flyers.length} pages)` : ''}`);
-    const img = document.createElement('img'); img.src = flyers[0]; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
-    art.appendChild(img);
-    if (flyers.length > 1) { const c = document.createElement('span'); c.className = 'flyer-count'; c.textContent = `1/${flyers.length}`; art.appendChild(c); }
-    art.addEventListener('click', () => openLightbox(flyers, ev.name, art));
-  } else {
-    art.classList.add('no-flyer'); art.textContent = ev.style || 'Dance';
-  }
   const body = document.createElement('div'); body.className = 'tile-body';
+  const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance';
+  body.appendChild(style);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; body.appendChild(c); }
   const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.name;
-  const meta = document.createElement('p'); meta.className = 'tile-meta';
-  const t = document.createElement('strong'); t.textContent = timeRange(ev); meta.append(t, document.createTextNode([ev.style, ev.cost].filter(Boolean).map(x => ` · ${x}`).join('')));
-  const venue = document.createElement('p'); venue.className = 'tile-venue'; venue.textContent = ev.venue || 'Venue not listed';
+  body.appendChild(name);
+  const paths = {
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+    location: '<path fill="currentColor" stroke="none" d="M12 2a8 8 0 0 0-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 0 0-8-8m0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6"/>',
+    ticket: '<path d="m3 13 10-10 3 3a3 3 0 0 0 4 4l1 1-10 10-3-3a3 3 0 0 0-4-4Z"/><path d="m13 7 1 1m2 2 1 1"/>'
+  };
+  const row = (kind, text) => {
+    const p = document.createElement('p'); p.className = 'tile-detail tile-' + kind;
+    p.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[kind] + '</svg>';
+    const span = document.createElement('span'); span.textContent = text; p.appendChild(span); body.appendChild(p);
+  };
+  const date = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(day + 'T12:00:00'));
+  row('calendar', date + ' · ' + timeRange(ev));
+  row('location', ev.venue || 'Venue not listed');
+  row('ticket', ev.cost || 'Cover not listed');
   const links = document.createElement('p'); links.className = 'tile-links';
-  if (ev.venue) { const m = document.createElement('a'); m.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.venue)}`; m.target = '_blank'; m.rel = 'noopener'; m.innerHTML = 'Directions <span aria-hidden="true">↗</span>'; links.appendChild(m); }
-  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.innerHTML = 'Event page <span aria-hidden="true">↗</span>'; links.appendChild(o); }
-  body.append(name, meta, venue, links);
-  a.append(art, body);
+  if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; links.appendChild(m); }
+  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; links.appendChild(o); }
+  const flyers = flyersFor(ev, state.logoMap).map(resolve);
+  if (flyers.length) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'tile-flyer-link'; button.textContent = 'View flyer ↗';
+    button.setAttribute('aria-label', 'View flyer for ' + ev.name);
+    button.addEventListener('click', () => openLightbox(flyers, ev.name, button)); links.appendChild(button);
+  }
+  body.appendChild(links); a.appendChild(body);
   return a;
 }
 
