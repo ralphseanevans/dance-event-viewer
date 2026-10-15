@@ -235,3 +235,6 @@ html,body{overflow-x:clip}
 .hero{padding-top:0}
 /* Headline moved out of the hero: the video gets the full width again, centered */
 @media(min-width:651px){.hero-art{left:0;right:0;width:100%;height:100%}.hero-art video{object-position:center bottom}.art-shade{background:linear-gradient(0deg,var(--ink),transparent 20%)}}
+
+/* Desktop: halve the hero height and scale the contained video with it. */
+@media(min-width:1001px){.hero{height:min(40svh,380px);min-height:270px;padding:0}.hero-art{height:100%}}
