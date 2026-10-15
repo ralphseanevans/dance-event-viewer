@@ -60,7 +60,7 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange }) {
       const range = { start: dragStart < dragEnd ? dragStart : dragEnd, end: dragStart < dragEnd ? dragEnd : dragStart };
       selectedRanges = [...selectedRanges, range];
       pendingStart = null; didDrag = true; suppressClick = true; paintRange(); onRange?.(range);
-      setTimeout(() => { suppressClick = false; }, 0);
+      setTimeout(() => { suppressClick = false; }, 250);
     }
     dragStart = dragEnd = dragPointer = null;
   }
