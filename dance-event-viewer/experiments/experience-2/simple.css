@@ -328,6 +328,18 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 /* Match the Where heading to Styles. */
 #simple-where-label{font:700 clamp(24px,3vw,40px)/.95 var(--display);letter-spacing:normal;text-transform:uppercase;color:var(--red)}
 
-/* Larger month and year, with wrapping room between navigation arrows. */
-.calendar-month-label{flex:1;min-width:0;font-size:60px;line-height:1.05;text-align:center;overflow-wrap:normal}
+/* One-line month heading and custom rust-accent navigation. */
+.calendar-month-label{flex:1;min-width:0;font-size:40px;line-height:1.05;text-align:center;white-space:nowrap;letter-spacing:0}
 .calendar-head button{flex-shrink:0}
+
+.calendar-head{container-type:inline-size;gap:10px}
+.calendar-month-label{font-size:clamp(20px,10cqw,40px)}
+.calendar-head button{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(220,80,57,.65);border-radius:14px;background:#242421;color:var(--red);cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .15s ease}
+.calendar-head button svg{width:22px;height:22px;transition:transform .18s ease}
+.calendar-head button:disabled{opacity:.25;cursor:default}
+.calendar-head button:active:not(:disabled){transform:scale(.92);background:rgba(220,80,57,.18)}
+@media(hover:hover){
+.calendar-head button:hover:not(:disabled){background:rgba(220,80,57,.14);border-color:var(--red)}
+.calendar-prev:hover:not(:disabled) svg{transform:translateX(-3px)}
+.calendar-next:hover:not(:disabled) svg{transform:translateX(3px)}
+}
