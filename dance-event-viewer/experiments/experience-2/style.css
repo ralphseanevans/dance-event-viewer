@@ -243,3 +243,8 @@ html,body{overflow-x:clip}
 .hero{display:block;height:auto;min-height:0;max-height:none;padding:0;background:#191919;overflow:hidden}
 .hero .hero-art{position:relative;inset:auto;width:100%;height:auto;margin:0;transform:none!important;will-change:auto}
 .hero .hero-art img,.hero .hero-art video{display:block;width:100%;height:auto;aspect-ratio:1378/512;object-fit:contain;object-position:center;filter:none}
+
+/* The title fades over the playing hero after four seconds. */
+.hero .hero-art .hero-logo-overlay{position:absolute;left:50%;top:50%;width:62%;height:auto;max-height:78%;aspect-ratio:auto;object-fit:contain;transform:translate(-50%,-50%);opacity:0;pointer-events:none;transition:opacity 1.4s ease;filter:drop-shadow(0 4px 12px #0008)}
+.hero .hero-art .hero-logo-overlay.is-visible{opacity:1}
+@media(prefers-reduced-motion:reduce){.hero .hero-art .hero-logo-overlay{transition:none}}
