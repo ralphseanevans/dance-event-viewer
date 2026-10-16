@@ -38,5 +38,16 @@ async function load(){
  if(isSnapshot)$('#data-note').prepend(document.createTextNode(`Live feed unavailable. Showing a saved copy from ${updated}. `));render();
 }
 updateSaved();load();
-// Keep the reading progress indicator with the static hero.
+// Loop the hero. Reduced motion uses the poster.
+const heroVideo = $('#hero-video');
+const heroMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+function syncHeroMotion(){
+ if(!heroVideo)return;
+ if(heroMotion.matches){heroVideo.pause();heroVideo.currentTime=0;return}
+ heroVideo.muted=true;
+ heroVideo.play().catch(()=>{});
+}
+heroMotion.addEventListener('change',syncHeroMotion);
+syncHeroMotion();
+// Keep the reading progress indicator with the hero.
 window.addEventListener('scroll',()=>{const max=document.documentElement.scrollHeight-innerHeight;$('#scroll-progress').style.transform=`scaleX(${max>0?window.scrollY/max:0})`},{passive:true});
