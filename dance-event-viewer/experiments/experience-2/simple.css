@@ -320,3 +320,7 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
   .style-choice.has-style-badge{padding:0;border:0}
   .style-choice.has-style-badge img{width:clamp(90px,29vw,110px)}
 }
+
+/* Center city and style rows, including wrapped rows on phones. */
+.place-choices{justify-content:center}
+.style-choices,.style-choices.has-style-badges{justify-content:center;align-items:center;margin-left:0;margin-right:0}
