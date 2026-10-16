@@ -14,6 +14,10 @@ const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const STYLE_BADGES = Object.freeze({
+  'West Coast Swing': 'west-coast-swing.png',
+  'Country': 'country.png',
+  'Mixed': 'mixed.png',
+  'Blues': 'blues.png',
   'Bachata': 'bachata.png',
   'Ballroom': 'ballroom.png',
   'Country Swing': 'country-swing.png',
