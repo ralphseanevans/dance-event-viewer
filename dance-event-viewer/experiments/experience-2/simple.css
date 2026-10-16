@@ -327,3 +327,7 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 
 /* Match the Where heading to Styles. */
 #simple-where-label{font:700 clamp(24px,3vw,40px)/.95 var(--display);letter-spacing:normal;text-transform:uppercase;color:var(--red)}
+
+/* Larger month and year, with wrapping room between navigation arrows. */
+.calendar-month-label{flex:1;min-width:0;font-size:60px;line-height:1.05;text-align:center;overflow-wrap:normal}
+.calendar-head button{flex-shrink:0}
