@@ -343,3 +343,7 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 .calendar-prev:hover:not(:disabled) svg{transform:translateX(-3px)}
 .calendar-next:hover:not(:disabled) svg{transform:translateX(3px)}
 }
+
+/* Keep the range control compact while preserving its accessible label. */
+#calendar-range-summary{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.calendar-range summary{justify-content:flex-end}
