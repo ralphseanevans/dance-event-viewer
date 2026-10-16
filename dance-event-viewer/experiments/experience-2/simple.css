@@ -256,3 +256,65 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 .event-tile.has-flyer.flyer-open .tile-body{width:calc(100% - var(--flyer-reveal));margin-left:var(--flyer-reveal);transform:none;}
 .event-tile.has-flyer .tile-flyer-preview{left:calc(var(--flyer-tab) + 6px);right:auto;width:calc((100% - var(--flyer-tab)) * .4 - 12px);top:6px;bottom:6px;}
 }
+
+
+/* Illustrated dance-style selectors for Experimental Viewer 2 only. */
+.style-choices.has-style-badges{
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px 18px;
+}
+.style-choice.has-style-badge{
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  max-width:100%;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  line-height:1;
+  text-decoration:none;
+  opacity:.72;
+}
+.style-choice.has-style-badge img{
+  display:block;
+  width:clamp(130px,12vw,156px);
+  height:auto;
+  object-fit:contain;
+  filter:brightness(.88) saturate(.9);
+}
+.style-choice.has-style-badge[aria-pressed="true"]{
+  opacity:1;
+}
+.style-choice.has-style-badge[aria-pressed="true"] img{
+  filter:brightness(.88) saturate(.9);
+}
+.style-choice.has-style-badge.is-unavailable,
+.style-choice.has-style-badge.is-unavailable[aria-pressed="true"]{
+  opacity:.34;
+}
+.style-choice.has-style-badge.is-unavailable img,
+.style-choice.has-style-badge.is-unavailable[aria-pressed="true"] img{
+  filter:grayscale(.85) brightness(.55) saturate(.45);
+}
+@media(hover:hover){
+  .style-choice.has-style-badge:hover,
+  .style-choice.has-style-badge[aria-pressed="true"]:hover{
+    opacity:inherit;
+  }
+  .style-choice.has-style-badge:hover img,
+  .style-choice.has-style-badge[aria-pressed="true"]:hover img{
+    filter:brightness(.88) saturate(.9);
+  }
+  .style-choice.has-style-badge.is-unavailable:hover img{
+    filter:grayscale(.85) brightness(.55) saturate(.45);
+  }
+}
+@media(max-width:700px){
+  .style-choices.has-style-badges{gap:8px 10px}
+  .style-choice.has-style-badge{padding:0;border:0}
+  .style-choice.has-style-badge img{width:clamp(90px,29vw,110px)}
+}

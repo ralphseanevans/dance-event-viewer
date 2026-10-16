@@ -13,6 +13,16 @@ const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rul
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const STYLE_BADGES = Object.freeze({
+  'Bachata': 'bachata.png',
+  'Ballroom': 'ballroom.png',
+  'Country Swing': 'country-swing.png',
+  'East Coast Swing': 'east-coast-swing.png',
+  'Hustle': 'hustle.png',
+  'Latin': 'latin.png',
+  'Lindy Hop': 'lindy-hop.png'
+});
+
 const state = { markets: new Set(), styles: new Set(), dateRanges: [], soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
 const el = {
   find: $('#find'), simple: $('#simple'), full: $('#full'), modes: $('.mode-switch'),
@@ -226,7 +236,29 @@ el.styleChoices.addEventListener('click', e => {
 
 function styleButton(style, cls, available = true) {
   const b = document.createElement('button');
-  b.type = 'button'; b.className = cls; b.dataset.style = style; b.textContent = style;
+  b.type = 'button'; b.className = cls; b.dataset.style = style;
+  const badgeFile = STYLE_BADGES[style];
+  if (badgeFile) {
+    b.classList.add('has-style-badge');
+    b.setAttribute('aria-label', style);
+    const img = document.createElement('img');
+    img.src = new URL(`assets/style-badges/${badgeFile}`, import.meta.url).href;
+    img.alt = '';
+    img.setAttribute('aria-hidden', 'true');
+    img.width = 768;
+    img.height = 512;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.addEventListener('error', () => {
+      b.classList.remove('has-style-badge');
+      b.removeAttribute('aria-label');
+      img.remove();
+      b.textContent = style;
+    }, { once: true });
+    b.appendChild(img);
+  } else {
+    b.textContent = style;
+  }
   b.setAttribute('aria-pressed', String(state.styles.has(style)));
   if (!available) { b.disabled = true; b.classList.add('is-unavailable'); b.title = 'No upcoming events in the selected places'; }
   return b;
@@ -262,6 +294,7 @@ function render({ tapped, tappedStyle } = {}) {
     if (state.soloOpen) solo.forEach(s => kids.push(styleButton(s, 'style-choice solo-choice', availableHere.has(s))));
   }
   if (!partner.length && !solo.length) { const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances listed here yet. Try another place.'; kids.push(p); }
+  el.styleChoices.classList.toggle('has-style-badges', kids.some(node => node.classList?.contains('has-style-badge')));
   el.styleChoices.replaceChildren(...kids, lines.styles.line);
   if (tappedStyle) lines.styles.moveTo(el.styleChoices.querySelector(`[data-style="${CSS.escape(tappedStyle)}"]`));
   else if (tappedStyle === null || !state.styles.size) lines.styles.moveTo(el.styleChoices.querySelector('[aria-pressed="true"]'));
