@@ -350,3 +350,7 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 
 /* Prominent weekday headings above each date group. */
 .date-heading{font-size:clamp(40px,6vw,64px);line-height:1.05;margin-bottom:18px}
+
+/* Today stays identifiable alongside range shading and the event-date square. */
+button.calendar-day.is-today{position:relative;font-weight:800}
+button.calendar-day.is-today::after{content:"";position:absolute;bottom:2px;left:50%;width:5px;height:5px;border-radius:50%;background:var(--paper);transform:translateX(-50%);pointer-events:none}
