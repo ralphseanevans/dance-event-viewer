@@ -329,7 +329,7 @@ function render({ tapped, tappedStyle } = {}) {
 }
 el.more.addEventListener('click', () => { state.pages++; render(); });
 
-const fmtHead = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+const fmtHead = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
 function dateBlock(g) {
   const sec = document.createElement('section');
   sec.className = 'date-block'; sec.id = `simple-date-${g.day}`; sec.dataset.date = g.day;
