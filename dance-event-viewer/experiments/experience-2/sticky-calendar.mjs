@@ -28,14 +28,15 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
     const cells = [];
     for (let b = 0; b < new Date(y, m - 1, 1).getDay(); b++) { const s = document.createElement('span'); s.className = 'calendar-blank'; s.setAttribute('aria-hidden', 'true'); cells.push(s); }
     const has = new Set(dates);
+    const today = iso(new Date());
     for (let day = 1; day <= new Date(y, m, 0).getDate(); day++) {
       const key = iso(new Date(y, m - 1, day));
       const cell = document.createElement('button');
       cell.type = 'button'; cell.dataset.date = key;
-      cell.className = 'calendar-day' + (has.has(key) ? ' has-events' : ' no-events') + (key === active ? ' is-active' : '');
+      cell.className = 'calendar-day' + (has.has(key) ? ' has-events' : ' no-events') + (key === active ? ' is-active' : '') + (key === today ? ' is-today' : '');
       cell.textContent = String(day);
-      cell.setAttribute('aria-label', `${fmtJump.format(d(key))}${has.has(key) ? ', events listed' : ', no events listed; available as a range boundary'}`);
-      if (key === active) cell.setAttribute('aria-current', 'date');
+      cell.setAttribute('aria-label', `${fmtJump.format(d(key))}${key === today ? ', today' : ''}${has.has(key) ? ', events listed' : ', no events listed; available as a range boundary'}`);
+      if (key === today) { cell.setAttribute('aria-current', 'date'); cell.title = 'Today'; }
       cells.push(cell);
     }
     grid.replaceChildren(...cells, flow.line);
