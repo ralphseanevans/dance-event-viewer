@@ -14,6 +14,7 @@ const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const STYLE_BADGES = Object.freeze({
+  'Salsa': 'salsa.png',
   'West Coast Swing': 'west-coast-swing.png',
   'Country': 'country.png',
   'Mixed': 'mixed.png',
@@ -288,7 +289,8 @@ function render({ tapped, tappedStyle } = {}) {
   const wasHidden = el.styles.hidden;
   el.styles.hidden = false;
   if (wasHidden) { el.styles.classList.remove('is-opening'); void el.styles.offsetWidth; el.styles.classList.add('is-opening'); }
-  const kids = partner.map(s => styleButton(s, 'style-choice', availableHere.has(s)));
+  // Hide only the generic Swing selector; keep its events in the unfiltered results.
+  const kids = partner.filter(s => s !== 'Swing').map(s => styleButton(s, 'style-choice', availableHere.has(s)));
   if (solo.length) {
     const t = document.createElement('button');
     t.type = 'button'; t.className = 'style-choice solo-toggle'; t.setAttribute('aria-expanded', String(state.soloOpen));
