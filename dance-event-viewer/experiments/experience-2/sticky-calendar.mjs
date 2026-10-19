@@ -68,8 +68,13 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
     }
     dragStart = dragEnd = dragPointer = null;
   }
+  // Touch/pen drags only select a range while the range panel is open; otherwise a
+  // swipe on the calendar must scroll the page instead of painting red range marks
+  // under the finger while the dates move away from it.
+  const rangeMode = () => Boolean(root.querySelector('#calendar-range-details')?.open);
   grid.addEventListener('pointerdown', e => {
     const b = e.target.closest('button[data-date]'); if (!b) return;
+    if (e.pointerType !== 'mouse' && !rangeMode()) return;
     dragStart = dragEnd = b.dataset.date; dragPointer = e.pointerId; didDrag = false; paintRange();
   });
   document.addEventListener('pointermove', e => {
@@ -79,6 +84,8 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
   });
   document.addEventListener('pointerup', e => { if (dragPointer === e.pointerId) finishDrag(); });
   document.addEventListener('pointercancel', e => { if (dragPointer === e.pointerId) { dragStart = dragEnd = dragPointer = null; paintRange(); } });
+  // If the page scrolls mid-drag, the finger no longer sits on the dates it marked.
+  window.addEventListener('scroll', () => { if (dragStart) { dragStart = dragEnd = dragPointer = null; paintRange(); } }, { passive: true });
   grid.addEventListener('click', e => {
     const b = e.target.closest('button[data-date]'); if (!b) return;
     if (suppressClick) { e.preventDefault(); return; }
