@@ -95,7 +95,7 @@ test('hub HTML: metadata, dated links, recurring section, matching ItemList, esc
   assert.match(html, /Every Thursday/);
   assert.match(html, /Third Saturday/);
   assert.match(html, /CONFIRMED CANCELED: 2026-10-15/);
-  assert.match(html, /CANCELED BY OWNER/);
+  assert.match(html, /Officially canceled\./);
   assert.match(html, /Dance &amp; Friends &lt;strong&gt;&quot;test&quot;&lt;\/strong&gt;/);
   assert.doesNotMatch(html, /<script>bad|tonight|undefined|null/i);
   assert.match(html, /href="\/dance-event-viewer\/"/);
