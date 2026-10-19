@@ -192,7 +192,7 @@ for (const ev of data.events) {
   const cancel = cancellationFor(ev, nextOccurrence(ev));
   const ld = eventJsonLd(ev, pageUrl, imgUrl, desc);
   if (ld && cancel) ld.eventStatus = 'https://schema.org/EventCancelled';
-  const sentence = cancel ? cancel.label.charAt(0) + cancel.label.slice(1).toLowerCase() : '';
+  const sentence = cancel ? (cancel.label.charAt(0) + cancel.label.slice(1).toLowerCase()).replace(/\.$/, '') : '';
   const cancelNote = cancel ? `<p class="meta cancel-note"><strong>${esc(cancel.whole ? sentence : `${sentence}: ${nextOccurrence(ev)}`)}</strong></p>` : '';
   const flyer = cancel
     ? `<div class="flyer-frame is-canceled cancel-banner--${cancel.status}"><img class="flyer" src="${esc(imgUrl)}" alt="${esc(ev.name)} flyer"><span class="cancel-banner-sr">${esc(sentence)}.</span></div>`

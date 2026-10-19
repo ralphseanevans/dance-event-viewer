@@ -3,7 +3,7 @@ const WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','S
 function iso(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 
 // Cancel banners: same rules as cancellationFor() in dance-event-viewer/js/app.js.
-const CANCEL_BANNER_LABELS = { confirmed: 'CONFIRMED CANCELED', likely: 'LIKELY CANCELED', owner: 'CANCELED BY OWNER' };
+const CANCEL_BANNER_LABELS = { confirmed: 'CONFIRMED CANCELED', likely: 'LIKELY CANCELED', owner: 'Officially canceled.' };
 const normCancelStatus = s => { const k = typeof s === 'string' ? s.trim().toLowerCase() : ''; return CANCEL_BANNER_LABELS[k] ? k : 'likely'; };
 // Returns { status, label, whole, reason } or null. `day` is an optional YYYY-MM-DD occurrence.
 export function cancellationFor(ev, day){
