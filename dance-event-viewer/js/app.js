@@ -616,12 +616,17 @@ function flyersFor(ev) {
 const CANCEL_BANNER_LABELS = Object.freeze({
   confirmed: "CONFIRMED CANCELED",
   likely: "LIKELY CANCELED",
-  owner: "CANCELED BY OWNER",
+  owner: "Officially canceled.",   // host/owner-authorized only; never a default
 });
 const CANCEL_STATUS_DEFAULT = "likely";
 function normCancelStatus(s) {
   const k = typeof s === "string" ? s.trim().toLowerCase() : "";
   return Object.prototype.hasOwnProperty.call(CANCEL_BANNER_LABELS, k) ? k : CANCEL_STATUS_DEFAULT;
+}
+/* A label without its trailing period, for use inside a sentence or tooltip
+   ("Officially canceled." -> "Officially canceled"). Same as cancelLabelText() in tools/event_schedule.mjs. */
+function cancelLabelText(label) {
+  return String(label || "").replace(/\.+$/, "");
 }
 function isoDay(dt) {
   return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
@@ -652,7 +657,7 @@ function applyCancelBanner(wrapper, cancel) {
   if (!wrapper || !cancel) return false;
   wrapper.classList.add("is-canceled", `cancel-banner--${cancel.status}`);
   wrapper.dataset.cancelStatus = cancel.status;
-  const sentence = `${cancel.label.charAt(0)}${cancel.label.slice(1).toLowerCase()}`;   // "Confirmed canceled"
+  const sentence = cancelLabelText(`${cancel.label.charAt(0)}${cancel.label.slice(1).toLowerCase()}`);   // "Confirmed canceled"
   const sr = document.createElement("span");
   sr.className = "cancel-banner-sr";
   sr.textContent = `${sentence}.`;
@@ -3209,9 +3214,9 @@ function renderMonth(wrap, dated) {
       if (chipCancel) {
         chip.classList.add("is-canceled-chip");
         chip.dataset.cancelStatus = chipCancel.status;
-        chip.title = `${chipCancel.label} — ${item.ev.name}`;
+        chip.title = `${cancelLabelText(chipCancel.label)} — ${item.ev.name}`;
         const sr = document.createElement("span");
-        sr.className = "cancel-banner-sr"; sr.textContent = ` (${chipCancel.label.toLowerCase()})`;
+        sr.className = "cancel-banner-sr"; sr.textContent = ` (${cancelLabelText(chipCancel.label).toLowerCase()})`;
         chip.appendChild(sr);
       }
       chip.addEventListener("click", () => openEventPopup(item, dt));

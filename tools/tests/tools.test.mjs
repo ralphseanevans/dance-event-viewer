@@ -362,7 +362,7 @@ test('share pages: writes only to --out and marks cancellations', () => {
     assert.match(weeklyHtml, /<\/div><p class="cancel-reason">Storm &lt;break&gt; &amp; rest<\/p>/);
     const ownerHtml = readFileSync(join(out, 'e', 'one-off.html'), 'utf8');
     assert.match(ownerHtml, /cancel-banner--owner/);
-    assert.match(ownerHtml, /Canceled by owner\./);
+    assert.match(ownerHtml, /Officially canceled\./); assert.doesNotMatch(ownerHtml, /canceled\.\./i);
     assert.doesNotMatch(ownerHtml, /class="cancel-reason"/);
     const normalHtml = readFileSync(join(out, 'e', 'normal.html'), 'utf8');
     assert.doesNotMatch(normalHtml, /is-canceled|EventCancelled|cancel-banner\.css/);

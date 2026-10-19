@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { nextOccurrence, isPast, cancellationFor } from './event_schedule.mjs';
+import { nextOccurrence, isPast, cancellationFor, cancelLabelText } from './event_schedule.mjs';
 
 const SITE = 'https://danceeventviewer.net';
 const GA_ID = 'G-HC9F04RL9D';
@@ -42,7 +42,7 @@ export function renderHubPage(hub, today){
   const image = SITE + '/dance-event-viewer/assets/og-card.png';
   const cancelNote = ev => {
     const cancel = cancellationFor(ev, nextOccurrence(ev, today));
-    return cancel ? ` <strong>${esc(cancel.whole ? cancel.label : `${cancel.label}: ${nextOccurrence(ev, today)}`)}</strong>` : '';
+    return cancel ? ` <strong>${esc(cancel.whole ? cancel.label : `${cancelLabelText(cancel.label)}: ${nextOccurrence(ev, today)}`)}</strong>` : '';
   };
   const list = (events, schedule = false) => events.map(ev => {
     const when = schedule ? (ev.type === 'weekly_recurring' ? `Every ${ev.day_of_week}` : ev.monthly_rule) : nextOccurrence(ev, today);
