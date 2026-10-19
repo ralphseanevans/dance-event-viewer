@@ -616,7 +616,7 @@ function flyersFor(ev) {
 const CANCEL_BANNER_LABELS = Object.freeze({
   confirmed: "CONFIRMED CANCELED",
   likely: "LIKELY CANCELED",
-  owner: "CANCELED BY OWNER",
+  owner: "Officially canceled.",   // host/owner-authorized only; never a default
 });
 const CANCEL_STATUS_DEFAULT = "likely";
 function normCancelStatus(s) {
@@ -652,7 +652,7 @@ function applyCancelBanner(wrapper, cancel) {
   if (!wrapper || !cancel) return false;
   wrapper.classList.add("is-canceled", `cancel-banner--${cancel.status}`);
   wrapper.dataset.cancelStatus = cancel.status;
-  const sentence = `${cancel.label.charAt(0)}${cancel.label.slice(1).toLowerCase()}`;   // "Confirmed canceled"
+  const sentence = `${cancel.label.charAt(0)}${cancel.label.slice(1).toLowerCase()}`.replace(/\.$/, "");   // "Confirmed canceled"
   const sr = document.createElement("span");
   sr.className = "cancel-banner-sr";
   sr.textContent = `${sentence}.`;

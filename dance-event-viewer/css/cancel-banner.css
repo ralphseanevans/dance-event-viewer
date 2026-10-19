@@ -12,7 +12,7 @@
    Variants (keep in sync with CANCEL_BANNER_LABELS in js/app.js):
      .cancel-banner--confirmed  CONFIRMED CANCELED
      .cancel-banner--likely     LIKELY CANCELED   (default when no modifier is present)
-     .cancel-banner--owner      CANCELED BY OWNER
+     .cancel-banner--owner      Officially canceled.   (host/owner-authorized only; never a fallback)
    See docs/cancel-banners.md. */
 .is-canceled {
   position: relative;
@@ -49,7 +49,7 @@
 }
 .cancel-banner--confirmed::after { content: "CONFIRMED CANCELED"; content: "CONFIRMED CANCELED" / ""; }
 .cancel-banner--likely::after    { content: "LIKELY CANCELED";    content: "LIKELY CANCELED" / ""; }
-.cancel-banner--owner::after     { content: "CANCELED BY OWNER";  content: "CANCELED BY OWNER" / ""; }
+.cancel-banner--owner::after     { content: "Officially canceled."; content: "Officially canceled." / ""; }
 
 /* Screen-reader announcement (self-contained so static pages need only this file). */
 .cancel-banner-sr {
