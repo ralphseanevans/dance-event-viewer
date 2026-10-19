@@ -8,7 +8,7 @@ A canceled event keeps showing on the site, with a semi-transparent yellow bar a
 |---|---|---|
 | `confirmed` | CONFIRMED CANCELED | The cancellation is certain (for example a trusted correction, or the venue is closed). |
 | `likely` | LIKELY CANCELED | Probable but not official. **This is the default** whenever the status is missing or unknown. |
-| `owner` | CANCELED BY OWNER | The owner or organizer canceled it themselves (their post, email, or website says so). |
+| `owner` | Officially canceled. | Only when the host/owner explicitly authorized it. Never a default or fallback: missing or unknown status shows LIKELY CANCELED. |
 
 These three are the only labels. There is no free-text label field.
 
