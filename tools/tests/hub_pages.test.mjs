@@ -73,6 +73,15 @@ test('hub dates: honor start/end, weekly and monthly exclusions, ongoing events 
   ]);
 });
 
+test('hub HTML: dated owner cancellation reads "Officially canceled: <date>" with no ".:"', () => {
+  const events = [weekly('weekly-owner', { canceled_dates: [{ date: '2026-10-15', cancel_status: 'owner' }] }),
+    event('other', { start_date: '2026-11-01' }), event('other-2', { start_date: '2026-11-02' })];
+  const hub = selectHubs(events, TODAY)[0];
+  const html = renderHubPage(hub, TODAY);
+  assert.match(html, /Officially canceled: 2026-10-15/);
+  assert.doesNotMatch(html, /\.:/);
+});
+
 test('hub HTML: metadata, dated links, recurring section, matching ItemList, escaped data and existing GA4', () => {
   const events = [weekly('weekly', { name: 'Dance & Friends <strong>"test"</strong>', venue: 'Hall & Studio, Pensacola, FL',
     canceled_dates: [{ date: '2026-10-15', cancel_status: 'confirmed' }] }),
