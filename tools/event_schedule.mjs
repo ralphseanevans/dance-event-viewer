@@ -5,6 +5,8 @@ function iso(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
 // Cancel banners: same rules as cancellationFor() in dance-event-viewer/js/app.js.
 const CANCEL_BANNER_LABELS = { confirmed: 'CONFIRMED CANCELED', likely: 'LIKELY CANCELED', owner: 'Officially canceled.' };
 const normCancelStatus = s => { const k = typeof s === 'string' ? s.trim().toLowerCase() : ''; return CANCEL_BANNER_LABELS[k] ? k : 'likely'; };
+// A label without its trailing period, for use inside a sentence ("Officially canceled: <date>").
+export const cancelLabelText = label => String(label || '').replace(/\.+$/, '');
 // Returns { status, label, whole, reason } or null. `day` is an optional YYYY-MM-DD occurrence.
 export function cancellationFor(ev, day){
   if (!ev) return null;

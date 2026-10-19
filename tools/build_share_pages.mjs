@@ -16,7 +16,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
 import { mapsSearchUrl } from './lib.mjs';
-import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor } from './event_schedule.mjs';
+import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor, cancelLabelText } from './event_schedule.mjs';
 import { buildHubPages, sitemapFor } from './build_hub_pages.mjs';
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
@@ -192,7 +192,7 @@ for (const ev of data.events) {
   const cancel = cancellationFor(ev, nextOccurrence(ev));
   const ld = eventJsonLd(ev, pageUrl, imgUrl, desc);
   if (ld && cancel) ld.eventStatus = 'https://schema.org/EventCancelled';
-  const sentence = cancel ? (cancel.label.charAt(0) + cancel.label.slice(1).toLowerCase()).replace(/\.$/, '') : '';
+  const sentence = cancel ? cancelLabelText(cancel.label.charAt(0) + cancel.label.slice(1).toLowerCase()) : '';
   const cancelNote = cancel ? `<p class="meta cancel-note"><strong>${esc(cancel.whole ? sentence : `${sentence}: ${nextOccurrence(ev)}`)}</strong></p>` : '';
   const flyer = cancel
     ? `<div class="flyer-frame is-canceled cancel-banner--${cancel.status}"><img class="flyer" src="${esc(imgUrl)}" alt="${esc(ev.name)} flyer"><span class="cancel-banner-sr">${esc(sentence)}.</span></div>`
