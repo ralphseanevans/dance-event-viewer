@@ -405,9 +405,9 @@ button.calendar-day{touch-action:manipulation}
 #simple-groups:not([data-zoom="0"]) .tile-when-sep{display:none}
 #simple-groups:not([data-zoom="0"]) :is(.tile-date,.tile-time){display:block}
 /* Multi-item schedule: entries stack one per line under the date (replaces the time line),
-   at exactly half the date line's size; same serif, tabular numbers, scaled by the card zoom. */
+   at exactly 0.75 of the date line size; same serif, tabular numbers, scaled by the card zoom. */
 #simple-groups:not([data-zoom="0"]) .tile-schedule{display:block;margin:0;padding:0;list-style:none}
-#simple-groups:not([data-zoom="0"]) .tile-schedule li{display:block;font-size:calc(var(--date-size) * 0.5);line-height:1.3;font-variant-numeric:tabular-nums}
+#simple-groups:not([data-zoom="0"]) .tile-schedule li{display:block;font-size:calc(var(--date-size) * 0.75);line-height:1.3;font-variant-numeric:tabular-nums}
 #simple-groups:not([data-zoom="0"]) .has-schedule :is(.tile-time,.tile-when-sep){display:none}
 /* Only rows with real data: placeholders ("Venue not listed" etc.) and empty link rows are left out. */
 #simple-groups:not([data-zoom="0"]) .is-placeholder,#simple-groups:not([data-zoom="0"]) .tile-links:empty{display:none}
