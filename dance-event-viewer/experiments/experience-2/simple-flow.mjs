@@ -388,9 +388,9 @@ function tile({ ev, canceled, day }) {
     if (e.target === a && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); calendar.highlightEvent(day); }
   });
   const body = document.createElement('div'); body.className = 'tile-body';
-  const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance';
+  const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance'; style.title = style.textContent;
   body.appendChild(style);
-  if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; body.appendChild(c); }
+  if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; c.title = c.textContent; body.appendChild(c); }
   const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name; name.title = ev.name;
   body.appendChild(name);
   const paths = {
@@ -425,8 +425,8 @@ function tile({ ev, canceled, day }) {
   if (ev.address_line_1 && ev.venue !== [ev.address_line_1, ev.address_line_2].filter(Boolean).join(', ')) detail('Full address', ev.venue);
   if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
   const links = document.createElement('p'); links.className = 'tile-links';
-  if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; links.appendChild(m); }
-  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; links.appendChild(o); }
+  if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
+  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; o.title = 'Event page for ' + ev.name; links.appendChild(o); }
   const flyers = flyersFor(ev, state.logoMap).map(resolve);
   if (flyers.length) {
     a.classList.add('has-flyer');
