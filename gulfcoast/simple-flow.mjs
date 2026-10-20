@@ -483,8 +483,8 @@ function tile({ ev, canceled, day }) {
     const image = document.createElement('img'); image.addEventListener('load', () => trimFlyerBorder(image)); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
     image.addEventListener('error', () => { a.dispatchEvent(new Event('flip-reset')); const fb = fallbackFlyer(ev, day); fb.inert = preview.inert; preview.replaceWith(fb); preview = fb; a.classList.remove('has-real-flyer'); a.querySelector('.tile-flip-corner')?.remove(); }, { once: true });
     preview.appendChild(image);
-    // A flipped compact card shows the whole flyer in place: no lightbox, no card click.
-    preview.addEventListener('click', e => { if (a.classList.contains('is-flipped')) { e.preventDefault(); e.stopPropagation(); return; } openLightbox(flyers, ev.name, preview); });
+    // Tapping a flipped compact card's flyer opens it full screen; focus returns to the card.
+    preview.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const flipped = a.classList.contains('is-flipped'); openLightbox(flyers, ev.name, flipped ? a : preview, flipped); });
     a.classList.add('has-real-flyer');
   } else {
     preview = fallbackFlyer(ev, day);
@@ -527,13 +527,18 @@ function showPage() {
   $('.lb-count', box).textContent = pages.length > 1 ? `${page + 1} / ${pages.length}` : '';
   box.querySelectorAll('.lb-nav').forEach(b => { b.hidden = pages.length < 2; });
 }
-function openLightbox(list, name, from) { pages = list; page = 0; opener = from; box.dataset.name = name; showPage(); box.showModal(); }
+// One overlay for both modes. "full" = whole flyer, full screen (flipped compact cards).
+// Never touches the URL. Native <dialog>: Esc closes; focus starts on the X.
+function openLightbox(list, name, from, full = false) {
+  pages = list; page = 0; opener = from; box.dataset.name = name; box.classList.toggle('lb-full', full); showPage();
+  document.documentElement.classList.add('lb-lock'); box.showModal(); $('.lb-close', box).focus();
+}
 box.addEventListener('click', e => {
   if (e.target.closest('.lb-close') || e.target === box) box.close();
   const n = e.target.closest('.lb-nav'); if (n) { page = (page + Number(n.dataset.step) + pages.length) % pages.length; showPage(); }
 });
 box.addEventListener('keydown', e => { if (pages.length > 1 && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { page = (page + (e.key === 'ArrowRight' ? 1 : -1) + pages.length) % pages.length; showPage(); } });
-box.addEventListener('close', () => opener?.focus());
+box.addEventListener('close', () => { document.documentElement.classList.remove('lb-lock'); opener?.focus(); });
 
 setMode('simple');
 Promise.all([loadEvents(), loadLogoMap()]).then(([events, logoMap]) => {

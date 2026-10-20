@@ -496,3 +496,16 @@ button.calendar-day{touch-action:manipulation}
 .calendar-day,.calendar-blank{height:40px;scroll-snap-align:start}
 .calendar-sticky:has(#calendar-range-details[open]) .calendar-days{max-height:40px}
 }
+
+/* Full-screen flyer close-up (flipped compact cards): whole flyer, uncropped, pinch-zoom ok */
+.lb-lock,.lb-lock body{overflow:hidden}
+#simple-lightbox .lb-close{min-width:44px;min-height:44px}
+#simple-lightbox.lb-full{box-sizing:border-box;width:100vw;height:100svh;max-width:100vw;max-height:100svh;margin:0;padding:52px 12px 12px;border:0;border-radius:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#simple-lightbox.lb-full:not([open]){display:none}
+#simple-lightbox.lb-full img{max-width:100%;max-height:calc(100svh - 64px);width:auto;height:auto;object-fit:contain;touch-action:pinch-zoom;margin:0}
+#simple-lightbox.lb-full .lb-bar:has(.lb-nav[hidden]){display:none}
+#simple-lightbox.lb-full .lb-close{top:6px;right:6px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.45)}
+#simple-lightbox[open]{animation:lb-in .16s ease-out}
+#simple-lightbox[open]::backdrop{animation:lb-in .16s ease-out}
+@keyframes lb-in{from{opacity:0}}
+@media(prefers-reduced-motion:reduce){#simple-lightbox[open],#simple-lightbox[open]::backdrop{animation:none}}
