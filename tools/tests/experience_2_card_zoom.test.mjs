@@ -13,13 +13,13 @@ const compact = css.slice(css.indexOf('/* Compact card view'));
 const C = '#simple-groups:not([data-zoom="0"])';
 
 test('zoom level parsing falls back to the 6-across compact default', () => {
-  assert.equal(DEFAULT_ZOOM, 1); assert.equal(ZOOM_NAMES.length, 7);
+  assert.equal(DEFAULT_ZOOM, 1); assert.equal(ZOOM_NAMES.length, 6);
   for (const bad of [null, '', 'abc', undefined]) assert.equal(clampZoom(bad), 1);
-  assert.equal(clampZoom('0'), 0); assert.equal(clampZoom('6'), 6); assert.equal(clampZoom('9'), 6); assert.equal(clampZoom('-2'), 0);
+  assert.equal(clampZoom('0'), 0); assert.equal(clampZoom('5'), 5); assert.equal(clampZoom('9'), 5); assert.equal(clampZoom('-2'), 0);
 });
 
 test('fitZoom fits exactly cols panels plus gaps into the row', () => {
-  for (const [w, cols] of [[1020, 6], [876, 6], [1020, 15], [346, 2]]) {
+  for (const [w, cols] of [[1020, 6], [876, 6], [1020, 12], [346, 2]]) {
     const z = fitZoom(w, cols, 14, 194);
     assert.ok(cols * 194 * z + (cols - 1) * 14 <= w, `${w}px/${cols}`);
     assert.ok(cols * 194 * (z + 0.002) + (cols - 1) * 14 > w, `${w}px/${cols} not too small`);
@@ -49,7 +49,7 @@ test('compact puts the date and the time on separate lines; Full keeps them inli
 
 test('desktop default shows 6 across and zooming out adds columns', () => {
   const cols = [...compact.matchAll(/^#simple-groups\[data-zoom="(\d)"\]\{--cols:(\d+)\}$/gm)].map(m => Number(m[2]));
-  assert.deepEqual(cols, [6, 7, 8, 10, 12, 15]);
+  assert.deepEqual(cols, [6, 7, 8, 10, 12]);
 });
 
 test('1280px and wider keeps the desktop columns; fewer only below 1280px', () => {
