@@ -332,6 +332,10 @@ el.more.addEventListener('click', () => { state.pages++; render(); });
 
 // Card size (compact view) lives in its own module; it remembers the choice locally.
 initCardZoom(el.groups, reduced);
+// Full cards have no back face: switching to Full turns every flipped card face up.
+el.groups.addEventListener('card-zoom-change', () => {
+  if (el.groups.dataset.zoom === '0') el.groups.querySelectorAll('.event-tile.is-flipped').forEach(t => t.dispatchEvent(new Event('flip-reset')));
+});
 
 const fmtHead = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
 function dateBlock(g) {
@@ -480,11 +484,25 @@ function tile({ ev, canceled, day }) {
   const setFlyerOpen = open => {
     a.classList.toggle('flyer-open', open);
     toggle.setAttribute('aria-expanded', String(open)); toggle.textContent = open ? 'Hide flyer' : 'Show flyer';
-    preview.inert = !open;
+    preview.inert = !open && !a.classList.contains('is-flipped');
   };
   preview.inert = true;
   toggle.addEventListener('click', () => setFlyerOpen(!a.classList.contains('flyer-open')));
   a.appendChild(toggle);
+  // Compact cards only: an orange folded corner flips this one card to its flyer
+  // (real or fallback) and back. CSS hides the corner on Full cards.
+  const corner = document.createElement('button'); corner.type = 'button'; corner.className = 'tile-flip-corner';
+  const setFlipped = on => {
+    a.classList.toggle('is-flipped', on);
+    corner.setAttribute('aria-pressed', String(on));
+    corner.setAttribute('aria-label', on ? 'Show details' : 'Show flyer'); corner.title = corner.getAttribute('aria-label');
+    preview.inert = !on && !a.classList.contains('flyer-open');
+    body.inert = on;
+  };
+  setFlipped(false);
+  corner.addEventListener('click', e => { e.stopPropagation(); setFlipped(!a.classList.contains('is-flipped')); });
+  a.addEventListener('flip-reset', () => setFlipped(false));
+  a.appendChild(corner);
   body.appendChild(links); a.appendChild(body);
   return a;
 }
