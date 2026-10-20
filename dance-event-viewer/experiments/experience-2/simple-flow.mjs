@@ -2,9 +2,9 @@
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE } from './simple-core.mjs?v=9e76a810';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=a5e5b073';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
-import { initCardZoom } from './card-zoom.mjs?v=3965c667';
+import { initCardZoom } from './card-zoom.mjs?v=2f4a7296';
 import { createStickyCalendar } from './sticky-calendar.mjs?v=3efa899b';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -389,6 +389,7 @@ function tile({ ev, canceled, day }) {
   });
   const body = document.createElement('div'); body.className = 'tile-body';
   const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance'; style.title = style.textContent;
+  if (!ev.style) style.classList.add('is-placeholder');
   body.appendChild(style);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; c.title = c.textContent; body.appendChild(c); }
   const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name; name.title = ev.name;
@@ -408,14 +409,30 @@ function tile({ ev, canceled, day }) {
   const date = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(day + 'T12:00:00'));
   if (Array.isArray(ev.levels) && ev.levels.length) row('level', ev.levels.join(', '));
   if (Array.isArray(ev.instructors) && ev.instructors.length) row('instructor', ev.instructors.join(', '));
-  row('calendar', date + ' · ' + timeRange(ev));
+  // Date and time as separate pieces: inline on Full cards, stacked on compact cards.
+  const when = row('calendar', ''), time = timeRange(ev), schedule = scheduleEntries(ev);
+  when.title = date + ' · ' + time;
+  const dSpan = document.createElement('span'); dSpan.className = 'tile-date'; dSpan.textContent = date;
+  const sep = document.createElement('span'); sep.className = 'tile-when-sep'; sep.textContent = ' · ';
+  const tSpan = document.createElement('span'); tSpan.className = 'tile-time'; tSpan.textContent = time;
+  when.append(dSpan, sep, tSpan);
+  if (!/^\d/.test(time)) { sep.classList.add('is-placeholder'); tSpan.classList.add('is-placeholder'); }
+  // Multi-item schedule (compact only): one entry per line under the date, replacing the single time.
+  if (schedule.length) {
+    const list = document.createElement('ul'); list.className = 'tile-schedule';
+    schedule.forEach(text => { const li = document.createElement('li'); li.textContent = text; li.title = text; list.appendChild(li); });
+    when.appendChild(list); when.parentElement.classList.add('has-schedule');
+    when.title = date + ' · ' + schedule.join(' · ');
+  }
   const location = row('location', ev.address_line_1 || ev.venue || 'Venue not listed');
+  if (!ev.address_line_1 && !ev.venue) location.parentElement.classList.add('is-placeholder');
   if (ev.address_line_2) {
     location.title = (ev.address_line_1 || ev.venue || '') + ', ' + ev.address_line_2;
     const second = document.createElement('span'); second.className = 'tile-address-line';
     second.textContent = ev.address_line_2; location.appendChild(second);
   }
-  row('ticket', ev.cost_display || ev.cost || 'Cover not listed');
+  const price = row('ticket', ev.cost_display || ev.cost || 'Cover not listed');
+  if (!ev.cost_display && !ev.cost) price.parentElement.classList.add('is-placeholder');
   const detail = (label, text) => {
     const details = document.createElement('details'); details.className = 'tile-extra';
     const summary = document.createElement('summary'); summary.textContent = label;
