@@ -91,3 +91,9 @@ test('no empty rows: placeholders and empty link rows are hidden on compact card
   assert.match(js, /if \(!ev\.style\) style\.classList\.add\('is-placeholder'\)/);
   assert.ok(compact.includes('#simple-groups:not([data-zoom="0"]) .is-placeholder,#simple-groups:not([data-zoom="0"]) .tile-links:empty{display:none}'));
 });
+
+test('compact card links are pinned to the bottom edge (flex column + margin-top:auto)', () => {
+  assert.ok(compact.includes('#simple-groups:not([data-zoom="0"]) .event-tile .tile-body{display:flex;flex-direction:column}'));
+  assert.match(compact, /#simple-groups:not\(\[data-zoom="0"\]\) \.tile-links\{margin-top:auto;/);
+  assert.match(compact, /\.day-events\{[^}]*align-items:stretch/, 'cards in a row are equal height');
+});
