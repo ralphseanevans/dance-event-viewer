@@ -4,6 +4,7 @@
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
 import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE } from './simple-core.mjs?v=9e76a810';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
+import { initCardZoom } from './card-zoom.mjs?v=3965c667';
 import { createStickyCalendar } from './sticky-calendar.mjs?v=3efa899b';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -329,6 +330,9 @@ function render({ tapped, tappedStyle } = {}) {
 }
 el.more.addEventListener('click', () => { state.pages++; render(); });
 
+// Card size (compact view) lives in its own module; it remembers the choice locally.
+initCardZoom(el.groups, reduced);
+
 const fmtHead = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
 function dateBlock(g) {
   const sec = document.createElement('section');
@@ -387,7 +391,7 @@ function tile({ ev, canceled, day }) {
   const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance';
   body.appendChild(style);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; body.appendChild(c); }
-  const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name;
+  const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name; name.title = ev.name;
   body.appendChild(name);
   const paths = {
     instructor: '<circle cx="12" cy="7" r="4" fill="currentColor" stroke="none"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z" fill="currentColor" stroke="none"/>',
@@ -399,7 +403,7 @@ function tile({ ev, canceled, day }) {
   const row = (kind, text) => {
     const p = document.createElement('p'); p.className = 'tile-detail tile-' + kind;
     p.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[kind] + '</svg>';
-    const span = document.createElement('span'); span.textContent = text; p.appendChild(span); body.appendChild(p); return span;
+    const span = document.createElement('span'); span.textContent = text; span.title = text; p.appendChild(span); body.appendChild(p); return span;
   };
   const date = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(day + 'T12:00:00'));
   if (Array.isArray(ev.levels) && ev.levels.length) row('level', ev.levels.join(', '));
@@ -407,6 +411,7 @@ function tile({ ev, canceled, day }) {
   row('calendar', date + ' · ' + timeRange(ev));
   const location = row('location', ev.address_line_1 || ev.venue || 'Venue not listed');
   if (ev.address_line_2) {
+    location.title = (ev.address_line_1 || ev.venue || '') + ', ' + ev.address_line_2;
     const second = document.createElement('span'); second.className = 'tile-address-line';
     second.textContent = ev.address_line_2; location.appendChild(second);
   }
