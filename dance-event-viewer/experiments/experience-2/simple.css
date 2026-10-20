@@ -411,5 +411,7 @@ button.calendar-day{touch-action:manipulation}
 #simple-groups:not([data-zoom="0"]) .has-schedule :is(.tile-time,.tile-when-sep){display:none}
 /* Only rows with real data: placeholders ("Venue not listed" etc.) and empty link rows are left out. */
 #simple-groups:not([data-zoom="0"]) .is-placeholder,#simple-groups:not([data-zoom="0"]) .tile-links:empty{display:none}
-#simple-groups:not([data-zoom="0"]) .tile-links{margin-top:18px;gap:18px;font-size:12px}
+/* Links pinned to the bottom edge so they line up across a row of equal-height cards. */
+#simple-groups:not([data-zoom="0"]) .event-tile .tile-body{display:flex;flex-direction:column}
+#simple-groups:not([data-zoom="0"]) .tile-links{margin-top:auto;padding-top:18px;gap:18px;font-size:12px}
 @media(prefers-reduced-motion:reduce){#simple-groups .event-tile{transition:none!important}#simple-groups .event-tile:hover{transform:none!important}}
