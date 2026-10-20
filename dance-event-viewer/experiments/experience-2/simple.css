@@ -419,6 +419,36 @@ button.calendar-day{touch-action:manipulation}
 #simple-groups:not([data-zoom="0"]) .tile-links{margin-top:auto;padding-top:18px;gap:18px;font-size:12px}
 @media(prefers-reduced-motion:reduce){#simple-groups .event-tile{transition:none!important}#simple-groups .event-tile:hover{transform:none!important}}
 
+/* Compact flip corner: an orange folded corner (top left, in the page's red-orange
+   accent var(--red)) flips one compact card to its flyer and back. Each face turns on its own
+   rotateY, flat and quick (no depth); reduced motion crossfades instead.
+   Full cards never show the corner. */
+.tile-flip-corner{display:none}
+#simple-groups:not([data-zoom="0"]) .tile-flip-corner{position:absolute;z-index:3;top:0;left:0;display:block;width:44px;height:44px;padding:0;margin:0;border:0;border-radius:14px 0 0 0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#simple-groups:not([data-zoom="0"]) .tile-flip-corner::before{content:"";position:absolute;top:0;left:0;width:24px;height:24px;border-radius:13px 0 0 0;background:var(--red);clip-path:polygon(0 0,100% 0,0 100%);transition:width .15s ease,height .15s ease}
+@media(hover:hover){#simple-groups:not([data-zoom="0"]) .tile-flip-corner:hover::before{width:28px;height:28px}}
+#simple-groups:not([data-zoom="0"]) .tile-flip-corner:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-body{backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(0deg);transition:transform .32s cubic-bezier(.4,0,.2,1)}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;width:auto;height:auto;min-width:0;max-width:none;margin:0;padding:0;border:0;border-radius:inherit;background:#d8d0bd;overflow:hidden;opacity:1;visibility:visible;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);transition:transform .32s cubic-bezier(.4,0,.2,1)}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview img{width:100%;height:100%;object-fit:contain;border-radius:0}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview.is-fallback{background:var(--paper)}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer.is-flipped .tile-body{transform:rotateY(-180deg)}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer.is-flipped .tile-flyer-preview{transform:rotateY(0deg)}
+@media(prefers-reduced-motion:reduce){
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-body,#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview{transform:none!important;transition:opacity .2s ease,visibility 0s linear .2s!important}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview,#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer.is-flipped .tile-body{opacity:0;visibility:hidden}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer.is-flipped .tile-flyer-preview{opacity:1;visibility:visible;transition:opacity .2s ease,visibility 0s!important}
+}
+
+/* Flyers only chip: flat, quiet, sits left of the card-size slider. */
+.list-tools{display:flex;align-items:center;justify-content:flex-end;gap:22px;margin:0 0 14px}
+.list-tools .card-zoom{margin:0}
+.flyers-only{min-height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--muted);font:600 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:color .15s ease,border-color .15s ease}
+.flyers-only[aria-pressed="true"]{border-color:var(--red);color:var(--paper)}
+@media(hover:hover){.flyers-only:hover{color:var(--paper)}}
+.list-tools>*{flex:none}
+@media(max-width:560px){.list-tools{justify-content:space-between;gap:8px}.list-tools .card-zoom{gap:6px;letter-spacing:.06em}.list-tools .card-zoom input{width:76px}.flyers-only{padding:0 10px;letter-spacing:.06em}}
+
 /* Fallback flyer: shown when an event has no real flyer (a real one replaces it).
    Flat page palette (paper / ink / red), Exp2 display + body fonts, no logos. */
 .event-tile.has-flyer .tile-flyer-preview.is-fallback{cursor:default;background:var(--paper);border:1px solid rgba(24,25,24,.18);container-type:inline-size;overflow:hidden}
