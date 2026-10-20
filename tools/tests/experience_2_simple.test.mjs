@@ -66,3 +66,10 @@ test('styleFacets normalizes raw city values to clean names', async () => {
   assert.deepEqual(core.styleFacets('Ballroom / West Coast Swing'), ['Ballroom', 'West Coast Swing']);
   assert.deepEqual(core.styleFacets('Country Swing'), ['Country Swing']);
 });
+
+test('EV2 card event link is shortened to "Event" with an accessible label', () => {
+  const js = readFileSync(new URL('../../dance-event-viewer/experiments/experience-2/simple-flow.mjs', import.meta.url), 'utf8');
+  assert.match(js, /o\.textContent = 'Event ↗'/);
+  assert.doesNotMatch(js, /textContent = 'Event page ↗'/);
+  assert.match(js, /o\.setAttribute\('aria-label', 'Event page for ' \+ ev\.name\)/);
+});
