@@ -97,3 +97,12 @@ test('compact card links are pinned to the bottom edge (flex column + margin-top
   assert.match(compact, /#simple-groups:not\(\[data-zoom="0"\]\) \.tile-links\{margin-top:auto;/);
   assert.match(compact, /\.day-events\{[^}]*align-items:stretch/, 'cards in a row are equal height');
 });
+
+test('compact cards hide the Full address expander but keep Pricing details', () => {
+  const js = read('simple-flow.mjs');
+  assert.match(js, /detail\('Full address', ev\.venue, 'address'\)/);
+  assert.match(js, /detail\('Pricing details', ev\.cost\)/);
+  assert.ok(compact.includes('#simple-groups:not([data-zoom="0"]) .tile-extra-address{display:none}'));
+  assert.doesNotMatch(compact, /\.tile-extra\{display:none\}/);
+  assert.doesNotMatch(css.slice(0, css.indexOf('/* Compact card view')), /tile-extra-address/, 'Full cards unchanged');
+});
