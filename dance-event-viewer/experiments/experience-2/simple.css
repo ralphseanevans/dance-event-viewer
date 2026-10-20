@@ -436,3 +436,29 @@ button.calendar-day{touch-action:manipulation}
 .ff-details li{overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 /* Narrow phone panels: tighter type so long names fit before clamping. */
 @container (max-width:180px){.ff-name.is-long{font-size:15px}.ff-name.is-medium{font-size:18px}.ff-details li:nth-child(n+2){display:none}.ff-loc{-webkit-line-clamp:2}}
+
+/* Phones (≤600px): compact sticky calendar. Two scrollable week rows of 40px day
+   targets, the + range toggle sits in the month row, and the range panel scrolls
+   inside a short box. Desktop and tablet rules above are untouched. */
+@media(max-width:600px){
+.calendar-sticky{padding-top:6px;padding-bottom:6px;margin-bottom:12px}
+.calendar-head{margin:0 46px 2px 0;gap:6px}
+.calendar-head button{width:40px;height:40px;border-radius:12px}
+.calendar-month-label{font-size:clamp(18px,8cqw,28px)}
+.calendar-range{margin:0;padding:0;border:0}
+.calendar-range summary{position:absolute;top:6px;right:var(--pad);box-sizing:border-box;width:40px;height:40px;min-height:40px;justify-content:center;border:1px solid var(--line);border-radius:12px}
+.calendar-range[open]{max-height:88px;overflow-y:auto;margin:2px 0 4px;padding-bottom:2px;border-bottom:1px solid var(--line)}
+.range-help,.range-status{margin:2px 0}
+.range-status:empty{display:none}
+.range-form{gap:4px 6px;margin:4px 0}
+.range-form label{gap:2px}
+.range-form input{height:40px}
+.range-form button{min-height:40px}
+.range-list{margin:4px 0}
+.range-chip button{width:40px;height:40px;margin:-11px -11px -11px -8px}
+.calendar-weekdays{margin-bottom:1px}
+.calendar-days{max-height:83px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none}
+.calendar-days::-webkit-scrollbar{display:none}
+.calendar-day,.calendar-blank{height:40px;scroll-snap-align:start}
+.calendar-sticky:has(#calendar-range-details[open]) .calendar-days{max-height:40px}
+}
