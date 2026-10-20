@@ -31,9 +31,8 @@ test('corner is a real button with aria-label, aria-pressed and a 44px tap targe
   assert.ok(block.includes(`${C} .tile-flip-corner:focus-visible{`), 'visible keyboard focus');
 });
 
-test('corner is the Show flyer tab orange folded triangle, hidden on Full cards', () => {
-  assert.match(css.slice(0, css.indexOf('/* Compact card view')), /\.tile-flyer-tab\{[^}]*background:#ae543e/);
-  assert.match(block, /\.tile-flip-corner::before\{[^}]*background:#ae543e;clip-path:polygon\(0 0,100% 0,0 100%\)/);
+test('corner is a folded triangle in the page red-orange accent, hidden on Full cards', () => {
+  assert.match(block, /\.tile-flip-corner::before\{[^}]*background:var\(--red\);clip-path:polygon\(0 0,100% 0,0 100%\)/);
   assert.match(block, /^\.tile-flip-corner\{display:none\}$/m, 'Full cards never show it');
   assert.doesNotMatch(css.slice(0, css.indexOf('/* Compact card view')), /tile-flip-corner|is-flipped/, 'Full card CSS unchanged');
 });
@@ -59,7 +58,7 @@ test('back face fills the same card box (scales with zoom) and turns with rotate
   assert.match(block, /\.event-tile\.has-flyer \.tile-body\{[^}]*backface-visibility:hidden;[^}]*transform:rotateY\(0deg\);transition:transform \.32s/);
   assert.ok(block.includes(`${C} .event-tile.has-flyer.is-flipped .tile-body{transform:rotateY(-180deg)}`));
   assert.ok(block.includes(`${C} .event-tile.has-flyer.is-flipped .tile-flyer-preview{transform:rotateY(0deg)}`));
-  assert.doesNotMatch(block, /perspective|zoom:/, 'flat flip; size comes from the card zoom');
+  assert.doesNotMatch(block.replace(/\/\*[\s\S]*?\*\//g, ''), /perspective|zoom:/, 'flat flip; size comes from the card zoom');
 });
 
 test('reduced motion swaps the flip for a crossfade', () => {
