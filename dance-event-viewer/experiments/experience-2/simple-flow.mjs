@@ -4,7 +4,7 @@
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
 import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=a5e5b073';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
-import { initCardZoom } from './card-zoom.mjs?v=2f4a7296';
+import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { createStickyCalendar } from './sticky-calendar.mjs?v=3efa899b';
 
 const $ = (s, r = document) => r.querySelector(s);
