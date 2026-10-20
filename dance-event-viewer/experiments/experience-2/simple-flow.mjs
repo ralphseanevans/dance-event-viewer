@@ -2,7 +2,7 @@
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=a5e5b073';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=f123491e';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { createStickyCalendar } from './sticky-calendar.mjs?v=3efa899b';
@@ -379,6 +379,21 @@ function trimFlyerBorder(image) {
     image.src=cropped.toDataURL('image/png');
   } catch { /* Cross-origin images without pixel access retain their original preview. */ }
 }
+// Placeholder flyer drawn from the event data (no logos, no images).
+function fallbackFlyer(ev, day) {
+  const d = fallbackFlyerData(ev, day);
+  const f = document.createElement('div'); f.className = 'tile-flyer-preview is-fallback';
+  f.setAttribute('role', 'img'); f.setAttribute('aria-label', 'Event summary for ' + d.name);
+  const inner = document.createElement('div'); inner.className = 'fallback-flyer'; f.appendChild(inner);
+  const add = (tag, cls, text) => { const n = document.createElement(tag); n.className = cls; n.textContent = text; inner.appendChild(n); return n; };
+  add('p', 'ff-kicker', d.kicker);
+  const name = add('p', 'ff-name', d.name); name.title = d.name;
+  if (d.name.length > 60) name.classList.add('is-long'); else if (d.name.length > 32) name.classList.add('is-medium');
+  if (d.date || d.time) { const when = add('p', 'ff-when', ''); [d.date, d.time].filter(Boolean).forEach(t => { const s = document.createElement('span'); s.textContent = t; when.appendChild(s); }); }
+  if (d.location) add('p', 'ff-loc', d.location);
+  if (d.details.length) { const ul = add('ul', 'ff-details', ''); d.details.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); }); }
+  return f;
+}
 function tile({ ev, canceled, day }) {
   const a = document.createElement('article');
   a.className = 'event-tile' + (canceled ? ' is-canceled' : '');
@@ -445,28 +460,31 @@ function tile({ ev, canceled, day }) {
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
   const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; o.title = 'Event page for ' + ev.name; links.appendChild(o); }
   const flyers = flyersFor(ev, state.logoMap).map(resolve);
+  // Every card gets a flyer panel: the real flyer when one exists, otherwise a
+  // generated placeholder (it also takes over if the real image fails to load).
+  a.classList.add('has-flyer');
+  let preview;
   if (flyers.length) {
-    a.classList.add('has-flyer');
-    const preview = document.createElement('button'); preview.type = 'button'; preview.className = 'tile-flyer-preview';
+    preview = document.createElement('button'); preview.type = 'button'; preview.className = 'tile-flyer-preview';
     preview.setAttribute('aria-label', 'Enlarge flyer for ' + ev.name);
     const image = document.createElement('img'); image.addEventListener('load', () => trimFlyerBorder(image)); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
+    image.addEventListener('error', () => { const fb = fallbackFlyer(ev, day); fb.inert = preview.inert; preview.replaceWith(fb); preview = fb; }, { once: true });
     preview.appendChild(image);
     preview.addEventListener('click', () => openLightbox(flyers, ev.name, preview));
-    a.appendChild(preview);
-    const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'tile-flyer-tab';
-    toggle.textContent = 'Show flyer'; toggle.setAttribute('aria-expanded', 'false');
-    const setFlyerOpen = open => {
-      a.classList.toggle('flyer-open', open);
-      toggle.setAttribute('aria-expanded', String(open)); toggle.textContent = open ? 'Hide flyer' : 'Show flyer';
-      preview.inert = !open;
-    };
-    preview.inert = true;
-    toggle.addEventListener('click', () => setFlyerOpen(!a.classList.contains('flyer-open')));
-    a.appendChild(toggle);
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'tile-flyer-link'; button.textContent = 'View flyer ↗';
-    button.setAttribute('aria-label', 'View flyer for ' + ev.name);
-    button.addEventListener('click', () => setFlyerOpen(!a.classList.contains('flyer-open')));
+  } else {
+    preview = fallbackFlyer(ev, day);
   }
+  a.appendChild(preview);
+  const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'tile-flyer-tab';
+  toggle.textContent = 'Show flyer'; toggle.setAttribute('aria-expanded', 'false');
+  const setFlyerOpen = open => {
+    a.classList.toggle('flyer-open', open);
+    toggle.setAttribute('aria-expanded', String(open)); toggle.textContent = open ? 'Hide flyer' : 'Show flyer';
+    preview.inert = !open;
+  };
+  preview.inert = true;
+  toggle.addEventListener('click', () => setFlyerOpen(!a.classList.contains('flyer-open')));
+  a.appendChild(toggle);
   body.appendChild(links); a.appendChild(body);
   return a;
 }

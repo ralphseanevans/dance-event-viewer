@@ -9,7 +9,8 @@ import { clampZoom, fitZoom, ZOOM_NAMES, DEFAULT_ZOOM } from '../../dance-event-
 const dir = new URL('../../dance-event-viewer/experiments/experience-2/', import.meta.url);
 const read = f => readFileSync(new URL(f, dir), 'utf8');
 const css = read('simple.css');
-const compact = css.slice(css.indexOf('/* Compact card view'));
+// Bounded at the fallback-flyer block that follows it (merged from #39).
+const compact = css.slice(css.indexOf('/* Compact card view'), css.indexOf('/* Fallback flyer') > css.indexOf('/* Compact card view') ? css.indexOf('/* Fallback flyer') : undefined);
 const C = '#simple-groups:not([data-zoom="0"])';
 
 test('zoom level parsing falls back to the 6-across compact default', () => {
