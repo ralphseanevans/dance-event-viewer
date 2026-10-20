@@ -123,3 +123,17 @@ export function timeRange(ev) {
   const f = v => { if (!/^\d{1,2}:\d{2}/.test(v || '')) return ''; const [h, m] = v.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`; };
   const a = f(ev.start_time), b = f(ev.end_time); return a && b ? `${a}–${b}` : a || b || 'Time not listed';
 }
+
+// Fallback flyer content for events without a real flyer. Missing fields are
+// dropped (never "undefined"/"not listed" filler); details are short lines.
+export function fallbackFlyerData(ev, day) {
+  const clean = v => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '');
+  const list = v => (Array.isArray(v) ? v.map(clean).filter(Boolean).join(', ') : clean(v));
+  const name = clean(ev.card_title) || clean(ev.name) || 'Dance night';
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(day || '')
+    ? new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(day + 'T12:00:00')) : '';
+  const time = timeRange(ev) === 'Time not listed' ? '' : timeRange(ev);
+  const place = clean(ev.address_line_1) ? [clean(ev.address_line_1), clean(ev.address_line_2)].filter(Boolean).join(', ') : clean(ev.venue);
+  const details = [list(ev.levels), list(ev.instructors) && 'With ' + list(ev.instructors), clean(ev.cost_display) || clean(ev.cost)].filter(Boolean);
+  return { kicker: clean(ev.style) || 'Dance', name, date, time, location: place, details };
+}
