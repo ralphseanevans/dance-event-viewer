@@ -68,9 +68,9 @@ test('card-zoom module is cache-busted by content hash', () => {
   assert.match(read('simple-flow.mjs'), new RegExp(`card-zoom\\.mjs\\?v=${sha8}`));
 });
 
-test('schedule lines are exactly half the date line size, stacked one per line', () => {
+test('schedule lines are exactly 0.75 of the date line size, stacked one per line', () => {
   const li = compact.match(/\.tile-schedule li\{([^}]*)\}/)[1];
-  assert.match(li, /font-size:calc\(var\(--date-size\) \* 0\.5\)/);
+  assert.match(li, /font-size:calc\(var\(--date-size\) \* 0\.75\)/);
   assert.match(li, /display:block/); assert.match(li, /tabular-nums/);
   assert.match(compact, /\.has-schedule :is\(\.tile-time,\.tile-when-sep\)\{display:none\}/);
   assert.match(css.slice(0, css.indexOf('/* Compact card view')), /\.tile-schedule\{display:none\}/, 'Full cards unchanged');
