@@ -85,3 +85,4 @@ run through `dance-event-viewer/js/activity-pulse.js`.
 
 See `docs/THEME-SYSTEM.md` for theme IDs, file ownership, maintenance rules, and the
 release checklist. Release history is recorded in `CHANGELOG.md`.
+
