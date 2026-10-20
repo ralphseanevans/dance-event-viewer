@@ -416,5 +416,5 @@ button.calendar-day{touch-action:manipulation}
 /* Links pinned to the bottom edge so they line up across a row of equal-height cards.
    Flex stops margin collapsing, so row margins are bottom-only to keep the phone spacing. */
 #simple-groups:not([data-zoom="0"]) .event-tile .tile-body{display:flex;flex-direction:column}
-#simple-groups:not([data-zoom="0"]) .tile-links{margin-top:auto;padding-top:8px;gap:18px;font-size:12px}
+#simple-groups:not([data-zoom="0"]) .tile-links{margin-top:auto;padding-top:18px;gap:18px;font-size:12px}
 @media(prefers-reduced-motion:reduce){#simple-groups .event-tile{transition:none!important}#simple-groups .event-tile:hover{transform:none!important}}
