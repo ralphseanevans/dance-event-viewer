@@ -123,3 +123,12 @@ export function timeRange(ev) {
   const f = v => { if (!/^\d{1,2}:\d{2}/.test(v || '')) return ''; const [h, m] = v.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`; };
   const a = f(ev.start_time), b = f(ev.end_time); return a && b ? `${a}–${b}` : a || b || 'Time not listed';
 }
+
+// Optional structured schedule: ev.schedule = [{ label: 'Class', time: '18:00' }, ...]
+// (strings are used as-is). No such field exists in the event data yet.
+const shortTime = v => { if (!/^\d{1,2}:\d{2}/.test(v || '')) return String(v || '').trim(); const [h, m] = v.split(':').map(Number); return `${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : ''} ${h >= 12 ? 'PM' : 'AM'}`; };
+export function scheduleEntries(ev) {
+  if (!Array.isArray(ev?.schedule)) return [];
+  return ev.schedule.map(x => typeof x === 'string' ? x.trim() : [x?.label, shortTime(x?.time || x?.start_time)].map(v => String(v || '').trim()).filter(Boolean).join(' '))
+    .filter(Boolean);
+}
