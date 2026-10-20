@@ -131,7 +131,9 @@ test('hub sitemap: only eligible hub URLs, event verification dates preserved, n
   const events = [event('wcs-1', { verified_on: '2026-10-01' }), event('wcs-2'), event('single-latin', { style: 'Latin' }),
     event('past', { start_date: '2026-10-01' })];
   const sitemap = sitemapFor(events, TODAY);
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 5);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 6);
+  assert.match(sitemap, /<loc>https:\/\/danceeventviewer.net\/gulfcoast\/<\/loc>/);
+  assert.doesNotMatch(sitemap, /experience-2/);
   assert.match(sitemap, /<loc>https:\/\/danceeventviewer.net\/pensacola\/west-coast-swing\/<\/loc>/);
   assert.doesNotMatch(sitemap, /latin-bachata|line-dancing|\/e\/past.html/);
   assert.equal((sitemap.match(/<lastmod>/g) || []).length, 1);

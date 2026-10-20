@@ -111,6 +111,11 @@ export function sitemapFor(events, today){
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>${SITE}/gulfcoast/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
 ${urls.map(({ pageUrl, verified }) => `  <url>\n    <loc>${esc(pageUrl)}</loc>\n${verified ? `    <lastmod>${verified}</lastmod>\n` : ''}    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>`).join('\n')}
 </urlset>
 `;

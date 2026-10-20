@@ -3,9 +3,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { fallbackFlyerData } from '../../dance-event-viewer/experiments/experience-2/simple-core.mjs';
+import { fallbackFlyerData } from '../../gulfcoast/simple-core.mjs';
 
-const dir = new URL('../../dance-event-viewer/experiments/experience-2/', import.meta.url);
+const dir = new URL('../../gulfcoast/', import.meta.url);
 const read = f => readFileSync(new URL(f, dir), 'utf8');
 const sha8 = f => createHash('sha1').update(readFileSync(new URL(f, dir))).digest('hex').slice(0, 8);
 

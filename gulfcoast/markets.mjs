@@ -1,4 +1,4 @@
-// Simple-mode markets for Experimental Viewer 2 (plan §2a req 11).
+// Simple-mode markets for the Gulf Coast page (plan §2a req 11).
 // Order is fixed: Pensacola, Mobile, Destin, Panama City Beach, then Other.
 // Pensacola/Mobile/Destin mirror locationOf()/isDestinAreaVenue() in js/app.js
 // (main viewer untouched; this copy goes away when viewer-core.mjs is extracted).

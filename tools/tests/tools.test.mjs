@@ -187,7 +187,7 @@ test('share sitemap: verified lastmod only; passed pages remain archived but are
   ];
   withSharePages(events, ({ sitemap, page }) => {
     const entries = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map(m => m[1]);
-    assert.equal(entries.length, 7);
+    assert.equal(entries.length, 8); // viewer + gulfcoast + events
     assert.doesNotMatch(entries[0], /lastmod/);
     assert.match(entries.find(e => e.includes('/e/verified.html')), /<lastmod>2026-09-02<\/lastmod>/);
     assert.equal((sitemap.match(/<lastmod>/g) || []).length, 1);
@@ -368,7 +368,7 @@ test('share pages: writes only to --out and marks cancellations', () => {
     assert.doesNotMatch(normalHtml, /is-canceled|EventCancelled|cancel-banner\.css/);
     assert.match(normalHtml, /EventScheduled/);
     assert.match(normalHtml, /href="https:\/\/www\.google\.com\/maps\/search\/\?api=1&amp;query=Club%2C%20Mobile%2C%20AL"/);
-    assert.equal((readFileSync(join(out, 'sitemap.xml'), 'utf8').match(/<loc>/g) || []).length, 4);
+    assert.equal((readFileSync(join(out, 'sitemap.xml'), 'utf8').match(/<loc>/g) || []).length, 5);
     // After the canceled Friday, the next Friday is a normal occurrence again.
     execFileSync(process.execPath, [join(TOOLS, 'build_share_pages.mjs'), '--root', root, '--out', out],
       { stdio: 'ignore', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-10' } });

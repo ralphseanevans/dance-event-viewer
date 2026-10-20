@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const css = readFileSync(new URL('../../dance-event-viewer/experiments/experience-2/simple.css', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../../gulfcoast/simple.css', import.meta.url), 'utf8');
 
 test('phone calendar block keeps 40px targets and a short scrolling grid', () => {
   const block = css.slice(css.lastIndexOf('@media(max-width:600px){\n.calendar-sticky'));

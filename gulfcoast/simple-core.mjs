@@ -1,6 +1,6 @@
 // Pure logic for Exp2 Simple mode: styles, next occurrences, date groups.
 // No DOM, no fetch; tested in tools/tests/experience_2_simple.test.mjs.
-import { marketOf } from './markets.mjs?v=aa61ca0a';
+import { marketOf } from './markets.mjs?v=76ee9962';
 
 export const SOLO_STYLES = Object.freeze(['Ballet', 'Jazz', 'Hip Hop', 'Contemporary', 'Heels', 'Pom', 'Musical Theatre', 'Dance Fit', 'Line Dance', 'Belly Dance']);
 export const GROUPS_PER_PAGE = 10;

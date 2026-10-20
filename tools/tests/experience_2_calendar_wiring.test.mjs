@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const js = readFileSync(new URL('../../dance-event-viewer/experiments/experience-2/simple-flow.mjs', import.meta.url), 'utf8');
+const js = readFileSync(new URL('../../gulfcoast/simple-flow.mjs', import.meta.url), 'utf8');
 
 test('calendar.set receives range-filtered days, and no days when results are empty', () => {
   const calls = [...js.matchAll(/calendar\.set\(([^,]+),/g)].map(m => m[1].trim());

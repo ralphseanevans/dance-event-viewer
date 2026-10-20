@@ -1,7 +1,7 @@
-// Experimental Viewer 2 Simple mode: four-market attribution. Run: node --test tools/tests/
+// Gulf Coast page Simple mode: four-market attribution. Run: node --test tools/tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MARKETS, OTHER, SIMPLE_CONTROL_ORDER, marketOf } from '../../dance-event-viewer/experiments/experience-2/markets.mjs';
+import { MARKETS, OTHER, SIMPLE_CONTROL_ORDER, marketOf } from '../../gulfcoast/markets.mjs';
 
 const m = (venue, state = 'FL') => marketOf({ venue, state });
 

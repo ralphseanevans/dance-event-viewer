@@ -1,70 +1,14 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#181918"><meta name="description" content="Find West Coast Swing, tango, salsa, ballroom, and country dance events. Start in Pensacola, Mobile, or the Emerald Coast, then explore the South and national events.">
-<title>Dance Event Viewer · Dance Events Across the South</title>
-<link rel="icon" href="assets/mark.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=b9f79e31"><link rel="stylesheet" href="simple.css?v=e8d9f548">
-<link rel="preload" href="assets/hero-coastal-video-poster.webp" as="image" fetchpriority="high">
+<meta charset="utf-8">
+<title>Gulf Coast | Dance Event Viewer</title>
+<link rel="canonical" href="https://danceeventviewer.net/gulfcoast/">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url=../../../gulfcoast/">
+<script>location.replace(new URL('../../../gulfcoast/', location.href).pathname + location.search + location.hash);</script>
 </head>
 <body>
-<a class="skip" href="#find">Skip to events</a>
-<div id="scroll-progress" aria-hidden="true"></div>
-<header class="topbar"><h1 id="hero-title" class="topbar-title"><span>FIND YOUR</span> <em>NEXT DANCE.</em></h1></header>
-<main>
-<section class="hero" id="top" aria-label="Dancing on the Gulf Coast">
-<div class="hero-art"><video id="hero-video" muted loop playsinline preload="metadata" poster="assets/hero-coastal-video-poster.webp" width="1378" height="512" aria-label="Coastal dance animation"><source src="assets/hero-coastal-video.mp4" type="video/mp4"></video><img class="hero-logo-overlay" src="assets/hero-title-overlay.png" alt="Dance Event Viewer" width="1536" height="768"></div>
-
-</section>
-<section id="find" class="viewer" aria-label="Find a dance">
-<div class="mode-switch" role="group" hidden aria-label="Viewer mode"><button class="mode-btn" type="button" data-mode="simple" aria-pressed="true">Simple</button><button class="mode-btn" type="button" data-mode="full" aria-pressed="false">Full</button></div>
-<div id="simple" class="simple">
-<div id="simple-where" class="simple-where" role="group" aria-labelledby="simple-where-label"><p class="step-label" id="simple-where-label">Where</p><div class="place-choices"><button class="place-choice" type="button" data-market="pensacola" aria-pressed="false" aria-label="Pensacola" title="Pensacola"><img class="location-badge" src="assets/location-badges/pensacola.webp" alt="Pensacola" width="72" height="72" decoding="async"></button><button class="place-choice" type="button" data-market="mobile" aria-pressed="false" aria-label="Mobile" title="Mobile"><img class="location-badge" src="assets/location-badges/mobile.webp" alt="Mobile" width="72" height="72" decoding="async"></button><button class="place-choice" type="button" data-market="destin" aria-pressed="false" aria-label="Destin" title="Destin"><img class="location-badge" src="assets/location-badges/destin.webp" alt="Destin" width="72" height="72" decoding="async"></button><button class="place-choice" type="button" data-market="pcb" aria-pressed="false" aria-label="Panama City Beach" title="Panama City Beach"><img class="location-badge" src="assets/location-badges/pcb.webp" alt="Panama City Beach" width="72" height="72" decoding="async"></button><button class="place-choice is-other" type="button" data-market="other" hidden>Other</button></div></div>
-<p id="simple-status" class="simple-status" role="status" hidden></p>
-<div id="simple-styles" class="simple-styles" hidden><div class="style-route" aria-hidden="true"><span class="style-route-line"></span><span class="style-route-label">Styles</span></div><div class="style-choices" role="group" aria-label="Dance styles"></div></div>
-<div id="simple-results" class="simple-results" hidden>
-<aside id="simple-calendar" class="scroll-calendar" aria-label="When"><div class="calendar-sticky"><div class="calendar-head"><button class="calendar-prev" type="button" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5-7 7 7 7M7 12h14"/></svg></button><p class="calendar-month-label" aria-live="polite"></p><button class="calendar-next" type="button" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 5 7 7-7 7M3 12h14"/></svg></button></div>
-<details id="calendar-range-details" class="calendar-range">
-<summary><span id="calendar-range-summary">Enter date range</span></summary>
-<div class="range-body">
-<p class="range-help">Drag across dates, or tap a start date, change month, then tap an end date. Tap a selected day to remove it.</p>
-<form id="calendar-range-form" class="range-form">
-<label>From<input id="range-from" type="date" required></label>
-<label>To<input id="range-to" type="date" required></label>
-<button type="submit">Add range</button><button id="clear-ranges" type="button">Clear all</button>
-</form>
-<div id="calendar-range-list" class="range-list" hidden></div>
-<p id="calendar-range-status" class="range-status" aria-live="polite"></p>
-</div>
-</details>
-<div class="calendar-weekdays" aria-hidden="true"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div><div class="calendar-days"></div></div></aside>
-<div class="simple-list"><div id="simple-groups" aria-live="polite"></div><button id="simple-more" class="simple-more" type="button" hidden>More nights <span aria-hidden="true">↓</span></button></div>
-</div>
-</div>
-<div id="full" hidden>
-<section class="events-section" id="events" aria-labelledby="events-title">
-<div class="section-top"><span class="eyebrow">YOUR DANCE CALENDAR</span><span class="feed-status" id="feed-status" role="status">Loading event listings…</span></div>
-<div class="events-heading"><h2 id="events-title">WHAT’S ON.<br><em>WHERE & WHEN.</em></h2><p>Dates, venues, times, and listed cover charges.<br>Search your area, then open an event for details.</p></div>
-<form id="filters" class="filters" role="search" aria-label="Find dance events">
-<label class="search-field"><span>SEARCH</span><span class="input-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></svg><input id="search" type="search" placeholder="City, venue, or event" autocomplete="off"></span></label>
-<label><span>WHERE</span><select id="place"><option value="gulf">Gulf Coast</option><option value="pensacola">Pensacola area</option><option value="mobile">Mobile area</option><option value="emerald">Destin & Fort Walton</option><option value="south">Across the South</option><option value="all">Everywhere + national</option><option value="FL">Florida</option><option value="AL">Alabama</option><option value="MS">Mississippi</option><option value="LA">Louisiana</option><option value="GA">Georgia</option><option value="TX">Texas</option><option value="TN">Tennessee</option><option value="NC">North Carolina</option><option value="SC">South Carolina</option></select></label>
-<label><span>WHEN</span><select id="when"><option value="30">Next 30 days</option><option value="today">Today</option><option value="weekend">This weekend</option><option value="7">Next 7 days</option><option value="all">All upcoming</option></select></label>
-<button class="filter-go" type="submit" aria-label="Search events">↗</button>
-</form>
-<div class="event-toolbar"><div class="chips" role="group" aria-label="Filter by dance style"><button class="chip active" data-filter="all" aria-pressed="true">All styles</button><button class="chip" data-filter="West Coast Swing" aria-pressed="false">West Coast Swing</button><button class="chip" data-filter="Tango" aria-pressed="false">Tango</button><button class="chip" data-filter="Latin" aria-pressed="false">Salsa & Bachata</button><button class="chip" data-filter="Ballroom" aria-pressed="false">Ballroom</button><button class="chip" data-filter="Country" aria-pressed="false">Country & Line</button></div><div class="list-options"><label class="unverified-option"><input id="include-unverified" type="checkbox"> Include unverified</label><button id="saved-filter" class="saved-button" aria-pressed="false">♡ Saved <span id="saved-count">0</span></button></div></div>
-<div class="results-top"><p id="result-count" role="status" aria-live="polite">Finding your next dance…</p><button id="reset" class="reset-button">Reset filters</button></div>
-<div id="event-list" class="event-list" aria-busy="true"><p class="loading">The dance floor is warming up…</p></div>
-<div class="events-bottom"><button id="load-more" class="button button-outline" hidden>More nights to explore <span aria-hidden="true">↓</span></button><p class="data-note" id="data-note">Listings from Dance Event Viewer. Times are local to each venue.<br>Recurring dates follow the published schedule. Missing times and prices are labeled rather than estimated. Saved events stay in this browser.</p></div>
-</section>
-</div>
-</section>
-<section class="about-section" aria-labelledby="about-title"><div><span class="eyebrow">A FREE COMMUNITY PROJECT</span><h2 id="about-title">BUILT AROUND<br><em>THE DANCE COMMUNITY.</em></h2><p>Dance Event Viewer connects dancers across Florida, Georgia, Alabama, Mississippi, Louisiana, Tennessee, and the Carolinas. Traveling farther? Explore national conventions, competitions, and other listings with the Everywhere option.</p><p>The calendar runs on volunteered time. Event information comes from multiple sources, and details can change. Check the venue or organizer’s page before heading out.</p></div><div class="community-links"><a href="https://danceeventviewer.net/dance-event-viewer/" target="_blank" rel="noopener"><span>Explore the full viewer<small>Timeline, Calendar, and Map views</small></span><b>↗</b></a><a href="https://danceeventviewer.net/dance-event-viewer/submit-event.html" target="_blank" rel="noopener"><span>Submit a dance event<small>Share a class, social, workshop, or weekend</small></span><b>↗</b></a><a href="https://square.link/u/dG0nDt76" target="_blank" rel="noopener"><span>Support the project<small>Optional contributions help keep it going</small></span><b>↗</b></a></div></section>
-</main>
-<footer><a class="brand" href="#top"><img src="assets/mark.svg" alt="" width="28" height="28"><span>DANCE EVENT<span class="brand-bottom">VIEWER</span></span></a><a href="https://danceeventviewer.net/" target="_blank" rel="noopener">danceeventviewer.net ↗</a></footer>
-<dialog id="event-dialog" aria-labelledby="dialog-title"><button class="dialog-close" aria-label="Close event details">×</button><div id="dialog-content"></div></dialog>
-<dialog id="simple-lightbox" aria-label="Flyer"><button class="lb-close" type="button" aria-label="Close flyer">×</button><img alt=""><div class="lb-bar"><button class="lb-nav" type="button" data-step="-1" aria-label="Previous page">◀</button><span class="lb-count"></span><button class="lb-nav" type="button" data-step="1" aria-label="Next page">▶</button></div></dialog>
-<noscript><p class="noscript">Enable JavaScript for event search and animation, or <a href="https://danceeventviewer.net/dance-event-viewer/">open Dance Event Viewer</a>.</p></noscript>
-<script src="../../js/supabase-config.js?v=0254dbd2"></script>
-<script type="module" src="simple-flow.mjs?v=04a9b8f8"></script>
-<script type="module" src="app.js?v=662778b0"></script>
-</body></html>
+<p>This page has moved to <a href="../../../gulfcoast/">Gulf Coast</a>.</p>
+</body>
+</html>

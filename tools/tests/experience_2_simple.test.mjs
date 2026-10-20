@@ -1,8 +1,8 @@
-// Experimental Viewer 2 Simple mode: styles, scheduling, grouping. Run: node --test tools/tests/
+// Gulf Coast page Simple mode: styles, scheduling, grouping. Run: node --test tools/tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import * as core from '../../dance-event-viewer/experiments/experience-2/simple-core.mjs';
+import * as core from '../../gulfcoast/simple-core.mjs';
 
 const today = new Date(2026, 9, 14); // Wed Oct 14 2026
 const ev = (o) => ({ key: o.name, venue: 'Hall, Pensacola, FL', state: 'FL', ...o });
@@ -49,16 +49,16 @@ test('flyers: flyer_url first, then logo-map pages, deduped', () => {
   assert.deepEqual(core.flyersFor({ key: 'zxz' }, map), ['p.png']);
 });
 test('page: Simple is the initial mode and is not persisted', () => {
-  const html = readFileSync(new URL('../../dance-event-viewer/experiments/experience-2/index.html', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../../gulfcoast/index.html', import.meta.url), 'utf8');
   assert.match(html, /data-mode="simple"[^>]*aria-pressed="true"/);
-  const js = readFileSync(new URL('../../dance-event-viewer/experiments/experience-2/simple-flow.mjs', import.meta.url), 'utf8');
+  const js = readFileSync(new URL('../../gulfcoast/simple-flow.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(js, /localStorage|sessionStorage|URLSearchParams/);
   const order = ['id="simple-where"', 'id="simple-styles"', 'id="simple-results"'].map(s => html.indexOf(s));
   assert.ok(order.every((n, i) => n > 0 && (i === 0 || n > order[i - 1])), 'Where -> Styles -> When/cards order');
 });
 
 test('styleFacets normalizes raw city values to clean names', async () => {
-  const core = await import('../../dance-event-viewer/experiments/experience-2/simple-core.mjs');
+  const core = await import('../../gulfcoast/simple-core.mjs');
   assert.deepEqual(core.styleFacets('Ballroom (Cha Cha / East Coast Swing)'), ['Ballroom']);
   assert.deepEqual(core.styleFacets('Ballroom (cued)'), ['Ballroom']);
   assert.deepEqual(core.styleFacets('Country Western (UCWDC)'), ['Country']);
@@ -68,7 +68,7 @@ test('styleFacets normalizes raw city values to clean names', async () => {
 });
 
 test('EV2 card event link is shortened to "Event" with an accessible label', () => {
-  const js = readFileSync(new URL('../../dance-event-viewer/experiments/experience-2/simple-flow.mjs', import.meta.url), 'utf8');
+  const js = readFileSync(new URL('../../gulfcoast/simple-flow.mjs', import.meta.url), 'utf8');
   assert.match(js, /o\.textContent = 'Event ↗'/);
   assert.doesNotMatch(js, /textContent = 'Event page ↗'/);
   assert.match(js, /o\.setAttribute\('aria-label', 'Event page for ' \+ ev\.name\)/);
