@@ -1,39 +1,66 @@
-// Exp2 compact card view: zoom levels, 12px text floor, single-line cards. Run: node --test tools/tests/
+// Exp2 compact card view: phone info panel scaled as a whole, column levels. Run: node --test tools/tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { clampZoom, ZOOM_NAMES, DEFAULT_ZOOM } from '../../dance-event-viewer/experiments/experience-2/card-zoom.mjs';
+import { scheduleEntries } from '../../dance-event-viewer/experiments/experience-2/simple-core.mjs';
+import { clampZoom, fitZoom, ZOOM_NAMES, DEFAULT_ZOOM } from '../../dance-event-viewer/experiments/experience-2/card-zoom.mjs';
 
 const dir = new URL('../../dance-event-viewer/experiments/experience-2/', import.meta.url);
 const read = f => readFileSync(new URL(f, dir), 'utf8');
 const css = read('simple.css');
 const compact = css.slice(css.indexOf('/* Compact card view'));
+const C = '#simple-groups:not([data-zoom="0"])';
 
-test('zoom level parsing falls back to the 100% compact default', () => {
-  assert.equal(DEFAULT_ZOOM, 1); assert.equal(ZOOM_NAMES[DEFAULT_ZOOM], '100%');
+test('zoom level parsing falls back to the 6-across compact default', () => {
+  assert.equal(DEFAULT_ZOOM, 1); assert.equal(ZOOM_NAMES.length, 7);
   for (const bad of [null, '', 'abc', undefined]) assert.equal(clampZoom(bad), 1);
-  assert.equal(clampZoom('0'), 0); assert.equal(clampZoom('3'), 3); assert.equal(clampZoom('9'), 3); assert.equal(clampZoom('-2'), 0);
+  assert.equal(clampZoom('0'), 0); assert.equal(clampZoom('6'), 6); assert.equal(clampZoom('9'), 6); assert.equal(clampZoom('-2'), 0);
 });
 
-test('smallest compact text renders at 12px or more at every zoom level', () => {
-  const floor = Number(compact.match(/--card-floor:([\d.]+)/)[1]);
-  const base = Number(compact.match(/calc\(([\d.]+) \* var\(--scale\)\)/)[1]);
-  const scales = [...compact.matchAll(/--scale:([\d.]+)/g)].map(m => Number(m[1]));
-  const sizes = compact.split('\n').filter(l => /tile/.test(l)).flatMap(l => [...l.matchAll(/font(?:-size)?:\s*(?:\d+\s+)?(\d+)px/g)].map(m => Number(m[1])));
-  const smallest = Math.min(...sizes);
-  assert.ok(scales.length >= 3);
-  for (const s of scales) assert.ok(Math.max(floor, base * s) * smallest >= 12 - 1e-9, `scale ${s}`);
+test('fitZoom fits exactly cols panels plus gaps into the row', () => {
+  for (const [w, cols] of [[1020, 6], [876, 6], [1020, 15], [346, 2]]) {
+    const z = fitZoom(w, cols, 14, 194);
+    assert.ok(cols * 194 * z + (cols - 1) * 14 <= w, `${w}px/${cols}`);
+    assert.ok(cols * 194 * (z + 0.002) + (cols - 1) * 14 > w, `${w}px/${cols} not too small`);
+  }
+});
+
+test('compact view scales the whole card with zoom; no text-size floor', () => {
+  assert.match(compact, /\.event-tile\.has-flyer\{zoom:var\(--z/);
+  assert.doesNotMatch(compact, /card-floor|max\(12px/);
+  assert.doesNotMatch(compact, /font[^;]*calc\((?!var\(--date-size\))/, 'card fonts are fixed native sizes; only zoom scales them');
+});
+
+test('compact card is the phone info panel: phone type sizes, no flyer, text wraps', () => {
+  assert.match(compact, /:is\(\.tile-flyer-tab,\.tile-flyer-preview\)\{display:none\}/);
+  assert.match(compact, /\.tile-style\{[^}]*font:600 12px/);
+  assert.match(compact, /\.tile-name\{[^}]*font:700 24px\/1\.08 Georgia/);
+  assert.match(compact, /\.tile-detail\{--date-size:16px;[^}]*font:400 var\(--date-size\)\/1\.3 Georgia/);
+  assert.doesNotMatch(compact, /text-overflow:ellipsis|white-space:nowrap/);
+});
+
+test('compact puts the date and the time on separate lines; Full keeps them inline', () => {
+  assert.ok(compact.includes(`${C} .tile-when-sep{display:none}`));
+  assert.ok(compact.includes(`${C} :is(.tile-date,.tile-time){display:block}`));
+  assert.doesNotMatch(css.slice(0, css.indexOf('/* Compact card view')), /tile-when-sep|tile-date|tile-time/);
+  assert.match(read('simple-flow.mjs'), /when\.append\(dSpan, sep, tSpan\)/);
 });
 
 test('desktop default shows 6 across and zooming out adds columns', () => {
-  assert.match(compact, /data-zoom="1"\]\{--scale:1;--cols:6\}/);
-  assert.match(compact, /data-zoom="2"\]\{--scale:\.85;--cols:7\}/);
-  assert.match(compact, /data-zoom="3"\]\{--scale:\.7;--cols:8\}/);
+  const cols = [...compact.matchAll(/^#simple-groups\[data-zoom="(\d)"\]\{--cols:(\d+)\}$/gm)].map(m => Number(m[2]));
+  assert.deepEqual(cols, [6, 7, 8, 10, 12, 15]);
 });
 
-test('compact card text stays on one line with an ellipsis', () => {
-  assert.match(compact, /\.tile-name[^{}]*\{[^}]*white-space:nowrap;overflow:hidden;text-overflow:ellipsis/);
+test('1280px and wider keeps the desktop columns; fewer only below 1280px', () => {
+  const m = compact.match(/@media\(max-width:(\d+)px\)\{#simple-groups\[data-zoom="1"\]\{--cols:5\}/);
+  assert.ok(m); assert.equal(Number(m[1]), 1279);
+  assert.doesNotMatch(compact, /(max|min)-width:1280px/);
+});
+
+test('card text lines keep full-text titles', () => {
+  const js = read('simple-flow.mjs');
+  for (const v of ['style', 'c', 'name', 'span', 'when', 'm', 'o']) assert.match(js, new RegExp(`\\b${v}\\.title = `), v);
 });
 
 test('card-zoom module is cache-busted by content hash', () => {
@@ -41,20 +68,26 @@ test('card-zoom module is cache-busted by content hash', () => {
   assert.match(read('simple-flow.mjs'), new RegExp(`card-zoom\\.mjs\\?v=${sha8}`));
 });
 
-test('1280px and wider keeps 6/7/8 across; 5/6/7 only below 1280px', () => {
-  const m = compact.match(/@media\(max-width:(\d+)px\)\{#simple-groups\[data-zoom="1"\]\{--cols:5\}#simple-groups\[data-zoom="2"\]\{--cols:6\}#simple-groups\[data-zoom="3"\]\{--cols:7\}\}/);
-  assert.ok(m, '5/6/7 rule exists');
-  assert.equal(Number(m[1]), 1279, 'the 5/6/7 rule must stop at 1279px so 1280px gets 6/7/8');
-  assert.doesNotMatch(compact, /(max|min)-width:1280px/);
+test('schedule lines are exactly half the date line size, stacked one per line', () => {
+  const li = compact.match(/\.tile-schedule li\{([^}]*)\}/)[1];
+  assert.match(li, /font-size:calc\(var\(--date-size\) \* 0\.5\)/);
+  assert.match(li, /display:block/); assert.match(li, /tabular-nums/);
+  assert.match(compact, /\.has-schedule :is\(\.tile-time,\.tile-when-sep\)\{display:none\}/);
+  assert.match(css.slice(0, css.indexOf('/* Compact card view')), /\.tile-schedule\{display:none\}/, 'Full cards unchanged');
 });
 
-test('every ellipsized compact-card element gets a full-text title', () => {
-  const sel = compact.match(/:is\(([^)]*)\)\{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis/)[1].split(',').map(s => s.trim());
+test('scheduleEntries formats entries and drops empty ones', () => {
+  assert.deepEqual(scheduleEntries({ schedule: [{ label: 'Class', time: '18:00' }, { label: 'Class C', start_time: '19:00' }, { label: 'Dance', time: '22:30' }, '  ', {}] }),
+    ['Class 6 PM', 'Class C 7 PM', 'Dance 10:30 PM']);
+  assert.deepEqual(scheduleEntries({}), []); assert.deepEqual(scheduleEntries({ schedule: 'x' }), []);
+});
+
+test('no empty rows: placeholders and empty link rows are hidden on compact cards', () => {
   const js = read('simple-flow.mjs');
-  // Each ellipsized class maps to the variable that builds it; that variable must get a title.
-  const builders = { '.tile-style': 'style', '.tile-cancel': 'c', '.tile-name': 'name', '.tile-detail>span': 'span', '.tile-links a': ['m', 'o'] };
-  for (const s of sel) {
-    assert.ok(s in builders, `no title check for ${s}`);
-    for (const v of [].concat(builders[s])) assert.match(js, new RegExp(`\\b${v}\\.title = `), `${s} (${v}) needs a title`);
-  }
+  for (const ph of ['Venue not listed', 'Cover not listed']) assert.ok(js.includes(ph));
+  assert.match(js, /location\.parentElement\.classList\.add\('is-placeholder'\)/);
+  assert.match(js, /price\.parentElement\.classList\.add\('is-placeholder'\)/);
+  assert.match(js, /tSpan\.classList\.add\('is-placeholder'\)/);
+  assert.match(js, /if \(!ev\.style\) style\.classList\.add\('is-placeholder'\)/);
+  assert.ok(compact.includes('#simple-groups:not([data-zoom="0"]) .is-placeholder,#simple-groups:not([data-zoom="0"]) .tile-links:empty{display:none}'));
 });
