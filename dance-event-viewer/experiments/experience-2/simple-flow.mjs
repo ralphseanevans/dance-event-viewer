@@ -433,13 +433,13 @@ function tile({ ev, canceled, day }) {
   }
   const price = row('ticket', ev.cost_display || ev.cost || 'Cover not listed');
   if (!ev.cost_display && !ev.cost) price.parentElement.classList.add('is-placeholder');
-  const detail = (label, text) => {
-    const details = document.createElement('details'); details.className = 'tile-extra';
+  const detail = (label, text, kind) => {
+    const details = document.createElement('details'); details.className = 'tile-extra' + (kind ? ' tile-extra-' + kind : '');
     const summary = document.createElement('summary'); summary.textContent = label;
     const p = document.createElement('p'); p.textContent = text;
     details.append(summary, p); body.appendChild(details);
   };
-  if (ev.address_line_1 && ev.venue !== [ev.address_line_1, ev.address_line_2].filter(Boolean).join(', ')) detail('Full address', ev.venue);
+  if (ev.address_line_1 && ev.venue !== [ev.address_line_1, ev.address_line_2].filter(Boolean).join(', ')) detail('Full address', ev.venue, 'address');
   if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
   const links = document.createElement('p'); links.className = 'tile-links';
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
