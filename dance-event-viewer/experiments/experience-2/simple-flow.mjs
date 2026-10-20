@@ -383,7 +383,7 @@ function fallbackFlyer(ev, day) {
   const inner = document.createElement('div'); inner.className = 'fallback-flyer'; f.appendChild(inner);
   const add = (tag, cls, text) => { const n = document.createElement(tag); n.className = cls; n.textContent = text; inner.appendChild(n); return n; };
   add('p', 'ff-kicker', d.kicker);
-  const name = add('p', 'ff-name', d.name);
+  const name = add('p', 'ff-name', d.name); name.title = d.name;
   if (d.name.length > 60) name.classList.add('is-long'); else if (d.name.length > 32) name.classList.add('is-medium');
   if (d.date || d.time) { const when = add('p', 'ff-when', ''); [d.date, d.time].filter(Boolean).forEach(t => { const s = document.createElement('span'); s.textContent = t; when.appendChild(s); }); }
   if (d.location) add('p', 'ff-loc', d.location);
