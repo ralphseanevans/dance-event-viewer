@@ -358,3 +358,19 @@ button.calendar-day.is-today::after{content:"";position:absolute;bottom:2px;left
 /* Phones: a swipe on the calendar scrolls the page; drag-to-select (touch-action:none) only while the range panel is open. */
 button.calendar-day{touch-action:manipulation}
 .calendar-sticky:has(#calendar-range-details[open]) button.calendar-day{touch-action:none}
+
+/* Fallback flyer: shown when an event has no real flyer (a real one replaces it).
+   Flat page palette (paper / ink / red), Exp2 display + body fonts, no logos. */
+.tile-flyer-preview.is-fallback{cursor:default;background:var(--paper);border:1px solid rgba(24,25,24,.18);container-type:inline-size;overflow:hidden}
+.fallback-flyer{display:flex;flex-direction:column;gap:10px;width:100%;height:100%;padding:clamp(14px,9cqi,26px);overflow:hidden;color:var(--ink);text-align:left}
+.ff-kicker{margin:0;display:flex;align-items:center;gap:8px;font:600 clamp(9px,4.4cqi,12px)/1.3 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere}
+.ff-kicker::before{content:"";flex:none;width:22px;height:3px;background:var(--red)}
+.ff-name{margin:auto 0 0;font:700 clamp(22px,15cqi,46px)/.98 var(--display);letter-spacing:-.01em;text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere;hyphens:auto;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
+.ff-name.is-medium{font-size:clamp(20px,12cqi,38px)}
+.ff-name.is-long{font-size:clamp(17px,9.5cqi,30px);-webkit-line-clamp:6}
+.ff-when{margin:4px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+.ff-when span{padding:4px 9px;border:1.5px solid var(--ink);border-radius:999px;font:600 clamp(10px,5cqi,14px)/1.2 var(--body);color:var(--ink)}
+.ff-when span:first-child{background:var(--ink);color:var(--paper)}
+.ff-loc{margin:0;padding-left:9px;border-left:3px solid var(--red);font:500 clamp(10px,5cqi,14px)/1.3 var(--body);color:var(--ink);overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.ff-details{margin:0;padding:8px 0 0;list-style:none;border-top:1px solid rgba(24,25,24,.2);font:400 clamp(9px,4.4cqi,13px)/1.35 var(--body);color:#3a3a34}
+.ff-details li{overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
