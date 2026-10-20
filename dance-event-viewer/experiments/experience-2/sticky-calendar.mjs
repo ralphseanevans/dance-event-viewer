@@ -2,7 +2,7 @@
 // renderCalendar()/observeDateBlocks() plus calendar-navigation.js month arrows.
 // Only dates that have a rendered group are buttons; the bar height is measured
 // into --cal-h so date groups scroll in below it.
-import { createFlowLine } from './flow-line.mjs?v=16d8885e';
+import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 
 const fmtMonth = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
 const fmtJump = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' });

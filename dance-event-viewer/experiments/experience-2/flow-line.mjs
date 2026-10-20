@@ -12,7 +12,7 @@ export function createFlowLine(group) {
     frame = 0;
     if (!target || !target.isConnected || !target.getClientRects().length) { line.style.opacity = '0'; placed = false; return; }
     const g = group.getBoundingClientRect(), r = target.getBoundingClientRect();
-    const x = r.left - g.left + group.scrollLeft, y = r.bottom - g.top + group.scrollTop - 2;
+    const x = r.left - g.left + group.scrollLeft, y = r.bottom - g.top - 2;
     if (!placed) { line.style.transition = 'none'; void line.offsetWidth; }
     line.style.transform = `translate(${x}px, ${y}px) scaleX(${Math.max(1, r.width)})`;
     line.style.opacity = '1';
