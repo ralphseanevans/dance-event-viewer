@@ -1,4 +1,4 @@
-// Experimental Viewer 2 Simple mode: styles, scheduling, grouping. Run: node --test tools/tests/
+// Gulf Coast page Simple mode: styles, scheduling, grouping. Run: node --test tools/tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

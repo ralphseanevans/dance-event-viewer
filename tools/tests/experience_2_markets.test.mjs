@@ -1,4 +1,4 @@
-// Experimental Viewer 2 Simple mode: four-market attribution. Run: node --test tools/tests/
+// Gulf Coast page Simple mode: four-market attribution. Run: node --test tools/tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MARKETS, OTHER, SIMPLE_CONTROL_ORDER, marketOf } from '../../gulfcoast/markets.mjs';
