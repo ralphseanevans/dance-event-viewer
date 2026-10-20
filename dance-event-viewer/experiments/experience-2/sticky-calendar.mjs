@@ -2,7 +2,7 @@
 // renderCalendar()/observeDateBlocks() plus calendar-navigation.js month arrows.
 // Only dates that have a rendered group are buttons; the bar height is measured
 // into --cal-h so date groups scroll in below it.
-import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
+import { createFlowLine } from './flow-line.mjs?v=16d8885e';
 
 const fmtMonth = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
 const fmtJump = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -40,6 +40,8 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
       cells.push(cell);
     }
     grid.replaceChildren(...cells, flow.line);
+    // Phones show the grid as a short scroll box; keep the active/event row in view.
+    if (grid.scrollHeight > grid.clientHeight) { const f = grid.querySelector('.is-active') || (eventDate && grid.querySelector(`button[data-date="${eventDate}"]`)); grid.scrollTop = f ? f.offsetTop : 0; }
     flow.moveTo(tapped ? grid.querySelector(`button[data-date="${tapped}"]`) : null);
     paintRange();
   }

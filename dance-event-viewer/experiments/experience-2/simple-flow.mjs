@@ -3,9 +3,9 @@
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
 import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=f123491e';
-import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
+import { createFlowLine } from './flow-line.mjs?v=16d8885e';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
-import { createStickyCalendar } from './sticky-calendar.mjs?v=3efa899b';
+import { createStickyCalendar } from './sticky-calendar.mjs?v=e1e7ad90';
 
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../../', import.meta.url);          // /dance-event-viewer/
