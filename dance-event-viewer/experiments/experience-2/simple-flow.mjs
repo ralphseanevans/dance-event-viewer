@@ -468,7 +468,7 @@ function tile({ ev, canceled, day }) {
   if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
   const links = document.createElement('p'); links.className = 'tile-links';
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
-  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; o.title = 'Event page for ' + ev.name; links.appendChild(o); }
+  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event ↗'; o.title = 'Event page for ' + ev.name; o.setAttribute('aria-label', 'Event page for ' + ev.name); links.appendChild(o); }
   const flyers = flyersFor(ev, state.logoMap).map(resolve);
   // Every card gets a flyer panel: the real flyer when one exists, otherwise a
   // generated placeholder (it also takes over if the real image fails to load).
