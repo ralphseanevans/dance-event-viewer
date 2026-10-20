@@ -447,13 +447,14 @@ button.calendar-day{touch-action:manipulation}
 .calendar-month-label{font-size:clamp(18px,8cqw,28px)}
 .calendar-range{margin:0;padding:0;border:0}
 .calendar-range summary{position:absolute;top:6px;right:var(--pad);box-sizing:border-box;width:40px;height:40px;min-height:40px;justify-content:center;border:1px solid var(--line);border-radius:12px}
-.calendar-range[open]{max-height:88px;overflow-y:auto;margin:2px 0 4px;padding-bottom:2px;border-bottom:1px solid var(--line)}
-.range-help,.range-status{margin:2px 0}
+.calendar-range[open]{max-height:44px;overflow-y:auto;margin:2px 0;border-bottom:1px solid var(--line)}
+.range-help{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%)}
+.range-status{margin:2px 0}
 .range-status:empty{display:none}
-.range-form{gap:4px 6px;margin:4px 0}
-.range-form label{gap:2px}
-.range-form input{height:40px}
-.range-form button{min-height:40px}
+.range-form{grid-template-columns:1fr 1fr auto auto;gap:4px;margin:0 0 2px}
+.range-form label{font-size:0;gap:0}
+.range-form input{height:40px;padding:4px 3px;font-size:11px}
+.range-form button{min-height:40px;padding:4px 6px}
 .range-list{margin:4px 0}
 .range-chip button{width:40px;height:40px;margin:-11px -11px -11px -8px}
 .calendar-weekdays{margin-bottom:1px}
