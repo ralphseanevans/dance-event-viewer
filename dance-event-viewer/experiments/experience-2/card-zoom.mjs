@@ -1,9 +1,9 @@
 // Exp2 compact card view: one small "Card size" slider above the cards.
-// 0 = full cards, 1-6 = compact, 6/7/8/10/12/15 across on desktop (simple.css maps each level
+// 0 = full cards, 1-5 = compact, 6/7/8/10/12 across on desktop (simple.css maps each level
 // to --cols; this module sets --z so the panels fill the row). The choice is remembered in localStorage.
 export const ZOOM_KEY = 'ev2-card-zoom';
 // Level names; the label shows the live column count (e.g. "6 across").
-export const ZOOM_NAMES = ['Full', 'Compact', 'Smaller', 'Small', 'Tiny', 'Tinier', 'Tiniest'];
+export const ZOOM_NAMES = ['Full', 'Compact', 'Smaller', 'Small', 'Tiny', 'Tiniest'];
 export const DEFAULT_ZOOM = 1;
 export function clampZoom(v) {
   const n = Math.round(Number(v));

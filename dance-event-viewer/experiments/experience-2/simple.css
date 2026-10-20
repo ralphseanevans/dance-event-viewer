@@ -362,7 +362,9 @@ button.calendar-day{touch-action:manipulation}
 /* Schedule list is a compact-card feature; Full cards keep their single time line. */
 .tile-schedule{display:none}
 
-/* Compact card view (slider levels 1-6; 0 = the full cards).
+/* Compact card view (slider levels 1-5; 0 = the full cards; the last step,
+   12 across at 1280px+, was picked by eye as the smallest where titles, dates and
+   rows are still recognizable; 15 across turned into unreadable texture).
    Each compact card is the phone card's info panel on its own (style label,
    serif title, date/time, address, price, links), laid out at the phone
    panel's native width (--panel-w, 194px on a 393px iPhone) with the phone's exact type sizes, so
@@ -378,11 +380,10 @@ button.calendar-day{touch-action:manipulation}
 #simple-groups[data-zoom="3"]{--cols:8}
 #simple-groups[data-zoom="4"]{--cols:10}
 #simple-groups[data-zoom="5"]{--cols:12}
-#simple-groups[data-zoom="6"]{--cols:15}
-@media(max-width:1279px){#simple-groups[data-zoom="1"]{--cols:5}#simple-groups[data-zoom="2"]{--cols:6}#simple-groups[data-zoom="3"]{--cols:7}#simple-groups[data-zoom="4"]{--cols:8}#simple-groups[data-zoom="5"]{--cols:10}#simple-groups[data-zoom="6"]{--cols:12}}
-@media(max-width:1023px){#simple-groups[data-zoom="1"]{--cols:4}#simple-groups[data-zoom="2"]{--cols:5}#simple-groups[data-zoom="3"]{--cols:6}#simple-groups[data-zoom="4"]{--cols:7}#simple-groups[data-zoom="5"]{--cols:8}#simple-groups[data-zoom="6"]{--cols:10}}
-@media(max-width:820px){#simple-groups[data-zoom="3"]{--cols:5}#simple-groups[data-zoom="4"]{--cols:6}#simple-groups[data-zoom="5"]{--cols:7}#simple-groups[data-zoom="6"]{--cols:9}}
-@media(max-width:560px){#simple-groups{--gap:10px}#simple-groups[data-zoom="1"]{--cols:2}#simple-groups[data-zoom="2"],#simple-groups[data-zoom="3"]{--cols:3}#simple-groups[data-zoom="4"]{--cols:4}#simple-groups[data-zoom="5"]{--cols:5}#simple-groups[data-zoom="6"]{--cols:6}}
+@media(max-width:1279px){#simple-groups[data-zoom="1"]{--cols:5}#simple-groups[data-zoom="2"]{--cols:6}#simple-groups[data-zoom="3"]{--cols:7}#simple-groups[data-zoom="4"]{--cols:8}#simple-groups[data-zoom="5"]{--cols:10}}
+@media(max-width:1023px){#simple-groups[data-zoom="1"]{--cols:4}#simple-groups[data-zoom="2"]{--cols:5}#simple-groups[data-zoom="3"]{--cols:6}#simple-groups[data-zoom="4"]{--cols:7}#simple-groups[data-zoom="5"]{--cols:8}}
+@media(max-width:820px){#simple-groups[data-zoom="3"]{--cols:5}#simple-groups[data-zoom="4"]{--cols:6}#simple-groups[data-zoom="5"]{--cols:7}}
+@media(max-width:560px){#simple-groups{--gap:10px}#simple-groups[data-zoom="1"]{--cols:2}#simple-groups[data-zoom="2"],#simple-groups[data-zoom="3"]{--cols:3}#simple-groups[data-zoom="4"]{--cols:4}#simple-groups[data-zoom="5"]{--cols:5}}
 #simple-groups:not([data-zoom="0"]) .day-events{grid-template-columns:repeat(var(--cols,6),calc(var(--panel-w) * var(--z,.78)));gap:var(--gap);justify-content:start;align-items:stretch}
 #simple-groups:not([data-zoom="0"]) .date-heading{font-size:clamp(26px,3vw,38px);margin-bottom:12px}
 #simple-groups:not([data-zoom="0"]) .date-block{padding-bottom:20px}
