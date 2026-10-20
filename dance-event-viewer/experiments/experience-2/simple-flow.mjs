@@ -2,8 +2,9 @@
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=aa61ca0a';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE } from './simple-core.mjs?v=cbb49a75';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=f123491e';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
+import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { createStickyCalendar } from './sticky-calendar.mjs?v=3efa899b';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -329,6 +330,9 @@ function render({ tapped, tappedStyle } = {}) {
 }
 el.more.addEventListener('click', () => { state.pages++; render(); });
 
+// Card size (compact view) lives in its own module; it remembers the choice locally.
+initCardZoom(el.groups, reduced);
+
 const fmtHead = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
 function dateBlock(g) {
   const sec = document.createElement('section');
@@ -399,10 +403,11 @@ function tile({ ev, canceled, day }) {
     if (e.target === a && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); calendar.highlightEvent(day); }
   });
   const body = document.createElement('div'); body.className = 'tile-body';
-  const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance';
+  const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance'; style.title = style.textContent;
+  if (!ev.style) style.classList.add('is-placeholder');
   body.appendChild(style);
-  if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; body.appendChild(c); }
-  const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name;
+  if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; c.title = c.textContent; body.appendChild(c); }
+  const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name; name.title = ev.name;
   body.appendChild(name);
   const paths = {
     instructor: '<circle cx="12" cy="7" r="4" fill="currentColor" stroke="none"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z" fill="currentColor" stroke="none"/>',
@@ -414,29 +419,46 @@ function tile({ ev, canceled, day }) {
   const row = (kind, text) => {
     const p = document.createElement('p'); p.className = 'tile-detail tile-' + kind;
     p.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[kind] + '</svg>';
-    const span = document.createElement('span'); span.textContent = text; p.appendChild(span); body.appendChild(p); return span;
+    const span = document.createElement('span'); span.textContent = text; span.title = text; p.appendChild(span); body.appendChild(p); return span;
   };
   const date = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(day + 'T12:00:00'));
   if (Array.isArray(ev.levels) && ev.levels.length) row('level', ev.levels.join(', '));
   if (Array.isArray(ev.instructors) && ev.instructors.length) row('instructor', ev.instructors.join(', '));
-  row('calendar', date + ' · ' + timeRange(ev));
+  // Date and time as separate pieces: inline on Full cards, stacked on compact cards.
+  const when = row('calendar', ''), time = timeRange(ev), schedule = scheduleEntries(ev);
+  when.title = date + ' · ' + time;
+  const dSpan = document.createElement('span'); dSpan.className = 'tile-date'; dSpan.textContent = date;
+  const sep = document.createElement('span'); sep.className = 'tile-when-sep'; sep.textContent = ' · ';
+  const tSpan = document.createElement('span'); tSpan.className = 'tile-time'; tSpan.textContent = time;
+  when.append(dSpan, sep, tSpan);
+  if (!/^\d/.test(time)) { sep.classList.add('is-placeholder'); tSpan.classList.add('is-placeholder'); }
+  // Multi-item schedule (compact only): one entry per line under the date, replacing the single time.
+  if (schedule.length) {
+    const list = document.createElement('ul'); list.className = 'tile-schedule';
+    schedule.forEach(text => { const li = document.createElement('li'); li.textContent = text; li.title = text; list.appendChild(li); });
+    when.appendChild(list); when.parentElement.classList.add('has-schedule');
+    when.title = date + ' · ' + schedule.join(' · ');
+  }
   const location = row('location', ev.address_line_1 || ev.venue || 'Venue not listed');
+  if (!ev.address_line_1 && !ev.venue) location.parentElement.classList.add('is-placeholder');
   if (ev.address_line_2) {
+    location.title = (ev.address_line_1 || ev.venue || '') + ', ' + ev.address_line_2;
     const second = document.createElement('span'); second.className = 'tile-address-line';
     second.textContent = ev.address_line_2; location.appendChild(second);
   }
-  row('ticket', ev.cost_display || ev.cost || 'Cover not listed');
-  const detail = (label, text) => {
-    const details = document.createElement('details'); details.className = 'tile-extra';
+  const price = row('ticket', ev.cost_display || ev.cost || 'Cover not listed');
+  if (!ev.cost_display && !ev.cost) price.parentElement.classList.add('is-placeholder');
+  const detail = (label, text, kind) => {
+    const details = document.createElement('details'); details.className = 'tile-extra' + (kind ? ' tile-extra-' + kind : '');
     const summary = document.createElement('summary'); summary.textContent = label;
     const p = document.createElement('p'); p.textContent = text;
     details.append(summary, p); body.appendChild(details);
   };
-  if (ev.address_line_1 && ev.venue !== [ev.address_line_1, ev.address_line_2].filter(Boolean).join(', ')) detail('Full address', ev.venue);
+  if (ev.address_line_1 && ev.venue !== [ev.address_line_1, ev.address_line_2].filter(Boolean).join(', ')) detail('Full address', ev.venue, 'address');
   if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
   const links = document.createElement('p'); links.className = 'tile-links';
-  if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; links.appendChild(m); }
-  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; links.appendChild(o); }
+  if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
+  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event page ↗'; o.title = 'Event page for ' + ev.name; links.appendChild(o); }
   const flyers = flyersFor(ev, state.logoMap).map(resolve);
   // Every card gets a flyer panel: the real flyer when one exists, otherwise a
   // generated placeholder (it also takes over if the real image fails to load).
