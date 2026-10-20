@@ -375,4 +375,4 @@ button.calendar-day{touch-action:manipulation}
 .ff-details{margin:0;padding:8px 0 0;list-style:none;border-top:1px solid rgba(24,25,24,.2);font:400 clamp(9px,4.4cqi,13px)/1.35 var(--body);color:#3a3a34}
 .ff-details li{overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 /* Narrow phone panels: tighter type so long names fit before clamping. */
-@container (max-width:180px){.ff-name.is-long{font-size:15px}.ff-name.is-medium{font-size:18px}.ff-details li:nth-child(n+3){display:none}}
+@container (max-width:180px){.ff-name.is-long{font-size:15px}.ff-name.is-medium{font-size:18px}.ff-details li:nth-child(n+2){display:none}.ff-loc{-webkit-line-clamp:2}}
