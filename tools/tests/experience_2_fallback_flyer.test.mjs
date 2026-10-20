@@ -49,3 +49,12 @@ test('Exp2 cache busters match content for the fallback flyer', () => {
   assert.match(html, new RegExp(`simple\\.css\\?v=${sha8('simple.css')}`));
   assert.match(html, new RegExp(`simple-flow\\.mjs\\?v=${sha8('simple-flow.mjs')}`));
 });
+
+test('fallback flyer name clamps to 3 lines and pills/location never shrink out of the panel', () => {
+  const css = read('simple.css');
+  const rule = sel => (css.match(new RegExp(`(?:^|\\})\\${sel}\\{([^}]*)\\}`, "m")) || [])[1] || '';
+  const name = rule('.ff-name');
+  for (const d of ['display:-webkit-box', '-webkit-box-orient:vertical', 'overflow:hidden', '-webkit-line-clamp:3', 'min-height:0']) assert.ok(name.includes(d), d);
+  assert.doesNotMatch(css, /\.ff-name[^{]*\{[^}]*-webkit-line-clamp:(?![123]\b)\d/, 'no name clamp above 3 lines');
+  for (const sel of ['.ff-kicker', '.ff-when', '.ff-loc']) assert.ok(rule(sel).includes('flex:none'), sel + ' must not shrink');
+});
