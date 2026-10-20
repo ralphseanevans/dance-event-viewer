@@ -40,6 +40,8 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
       cells.push(cell);
     }
     grid.replaceChildren(...cells, flow.line);
+    // Phones show the grid as a short scroll box; keep the active/event row in view.
+    if (grid.scrollHeight > grid.clientHeight) { const f = grid.querySelector('.is-active') || (eventDate && grid.querySelector(`button[data-date="${eventDate}"]`)); grid.scrollTop = f ? f.offsetTop : 0; }
     flow.moveTo(tapped ? grid.querySelector(`button[data-date="${tapped}"]`) : null);
     paintRange();
   }

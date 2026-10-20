@@ -6,7 +6,7 @@ import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData,
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
-import { createStickyCalendar } from './sticky-calendar.mjs?v=5bc0262b';
+import { createStickyCalendar } from './sticky-calendar.mjs?v=99052a08';
 
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../../', import.meta.url);          // /dance-event-viewer/
@@ -134,6 +134,9 @@ function syncRangeControls() {
   });
   list.hidden = state.dateRanges.length === 0;
   $('#clear-ranges').disabled = state.dateRanges.length === 0;
+  // Phones show the panel as one short scroll row: bring the newest chip (and its ×) into view.
+  const panel = $('.range-body');
+  if (panel.scrollHeight > panel.clientHeight) { panel.scrollTop = list.hidden ? 0 : list.offsetTop - panel.offsetTop; list.scrollLeft = list.scrollWidth; }
 }
 function removeDateDay(day) {
   const adjacent = delta => {
