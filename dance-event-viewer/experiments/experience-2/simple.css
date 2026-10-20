@@ -446,7 +446,8 @@ button.calendar-day{touch-action:manipulation}
 .flyers-only{min-height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--muted);font:600 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:color .15s ease,border-color .15s ease}
 .flyers-only[aria-pressed="true"]{border-color:var(--red);color:var(--paper)}
 @media(hover:hover){.flyers-only:hover{color:var(--paper)}}
-@media(max-width:560px){.list-tools{justify-content:space-between;gap:10px}.list-tools .card-zoom input{width:110px}}
+.list-tools>*{flex:none}
+@media(max-width:560px){.list-tools{justify-content:space-between;gap:8px}.list-tools .card-zoom{gap:6px;letter-spacing:.06em}.list-tools .card-zoom input{width:76px}.flyers-only{padding:0 10px;letter-spacing:.06em}}
 
 /* Fallback flyer: shown when an event has no real flyer (a real one replaces it).
    Flat page palette (paper / ink / red), Exp2 display + body fonts, no logos. */
