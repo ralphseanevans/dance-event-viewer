@@ -134,7 +134,8 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
     set(newDates, blocks, ranges = []) {
       dates = newDates; selectedRanges = Array.isArray(ranges) ? ranges : [];
       if (!dates.includes(tapped)) tapped = null; if (!dates.includes(active)) active = dates[0] || null;
-      if (!shownMonth || !months().includes(shownMonth)) shownMonth = active ? active.slice(0, 7) : null;
+      // Empty results keep the current/last month so render() redraws it with no marks.
+      if (dates.length && (!shownMonth || !months().includes(shownMonth))) shownMonth = active.slice(0, 7);
       render(); setH();
       observer?.disconnect();
       // Scroll-spy keeps the month/active day in step with the list; the gliding
