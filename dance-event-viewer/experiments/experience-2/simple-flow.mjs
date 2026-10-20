@@ -325,12 +325,12 @@ function render({ tapped, tappedStyle } = {}) {
     const p = document.createElement('p'); p.className = 'simple-empty';
     p.textContent = state.flyersOnly ? 'No events with flyers here yet. Turn off Flyers only to see them all.'
       : state.dateRanges.length ? 'No events fall within the selected date ranges.' : 'No upcoming dances for this pick yet.';
-    el.groups.replaceChildren(p); calendar.set(state.allDays, [], state.dateRanges); el.more.hidden = true; return;
+    el.groups.replaceChildren(p); calendar.set([], [], state.dateRanges); el.more.hidden = true; return;
   }
   const blocks = shown.map(dateBlock);
   el.groups.replaceChildren(...blocks);
   el.more.hidden = groups.length <= shown.length;
-  calendar.set(state.allDays, blocks, state.dateRanges);
+  calendar.set(groups.map(g => g.day), blocks, state.dateRanges);
 }
 el.more.addEventListener('click', () => { state.pages++; render(); });
 
