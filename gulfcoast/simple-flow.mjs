@@ -9,8 +9,8 @@ import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
 import { createStickyCalendar } from './sticky-calendar.mjs?v=99052a08';
 
 const $ = (s, r = document) => r.querySelector(s);
-const VIEWER = new URL('../../', import.meta.url);          // /dance-event-viewer/
-const SITE = new URL('../../../', import.meta.url);         // site root
+const VIEWER = new URL('../dance-event-viewer/', import.meta.url); // /dance-event-viewer/
+const SITE = new URL('../', import.meta.url);                   // site root
 const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url,card_title,instructors,levels,address_line_1,address_line_2,cost_display';
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;

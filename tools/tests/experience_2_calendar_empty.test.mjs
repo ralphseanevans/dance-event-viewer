@@ -20,7 +20,7 @@ globalThis.getComputedStyle = () => ({ position: 'relative' });
 globalThis.requestAnimationFrame = () => 1;
 globalThis.IntersectionObserver = class { observe() {} disconnect() {} };
 
-const { createStickyCalendar } = await import('../../dance-event-viewer/experiments/experience-2/sticky-calendar.mjs');
+const { createStickyCalendar } = await import('../../gulfcoast/sticky-calendar.mjs');
 
 function make() {
   const parts = { '.calendar-month-label': new El('div'), '.calendar-prev': new El('button'), '.calendar-next': new El('button'), '.calendar-days': new El('div'), '.calendar-sticky': new El('div') };
