@@ -5,6 +5,7 @@ import { MARKETS } from './markets.mjs?v=aa61ca0a';
 import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=f123491e';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
+import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
 import { createStickyCalendar } from './sticky-calendar.mjs?v=3efa899b';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -29,7 +30,7 @@ const STYLE_BADGES = Object.freeze({
   'Lindy Hop': 'lindy-hop.png'
 });
 
-const state = { markets: new Set(), styles: new Set(), dateRanges: [], soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
+const state = { flyersOnly: false, markets: new Set(), styles: new Set(), dateRanges: [], soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
 const el = {
   find: $('#find'), simple: $('#simple'), full: $('#full'), modes: $('.mode-switch'),
   where: $('#simple-where .place-choices'), styles: $('#simple-styles'), styleChoices: $('#simple-styles .style-choices'),
@@ -309,7 +310,9 @@ function render({ tapped, tappedStyle } = {}) {
 
   // Results are always available. Empty style selection means all available styles.
   const visibleStyles = state.styles.size ? [...state.styles] : [...partner, ...solo];
-  const allGroups = groupByDate(items, visibleStyles);
+  // Flyers only: keep events with a real flyer image; empty date groups drop out with them.
+  const listed = state.flyersOnly ? items.filter(x => flyersFor(x.ev, state.logoMap).length) : items;
+  const allGroups = groupByDate(listed, visibleStyles);
   state.allDays = allGroups.map(g => g.day);
   const groups = state.dateRanges.length
     ? allGroups.filter(g => state.dateRanges.some(r => g.day >= r.start && g.day <= r.end))
@@ -320,7 +323,8 @@ function render({ tapped, tappedStyle } = {}) {
   if (wasResultsHidden) { el.results.classList.remove('is-revealing'); void el.results.offsetWidth; el.results.classList.add('is-revealing'); }
   if (!shown.length) {
     const p = document.createElement('p'); p.className = 'simple-empty';
-    p.textContent = state.dateRanges.length ? 'No events fall within the selected date ranges.' : 'No upcoming dances for this pick yet.';
+    p.textContent = state.flyersOnly ? 'No events with flyers here yet. Turn off Flyers only to see them all.'
+      : state.dateRanges.length ? 'No events fall within the selected date ranges.' : 'No upcoming dances for this pick yet.';
     el.groups.replaceChildren(p); calendar.set(state.allDays, [], state.dateRanges); el.more.hidden = true; return;
   }
   const blocks = shown.map(dateBlock);
@@ -332,6 +336,8 @@ el.more.addEventListener('click', () => { state.pages++; render(); });
 
 // Card size (compact view) lives in its own module; it remembers the choice locally.
 initCardZoom(el.groups, reduced);
+// "Flyers only" chip beside the card-size slider (module remembers the choice).
+state.flyersOnly = initFlyersOnly(el.groups.previousElementSibling, on => { state.flyersOnly = on; state.pages = 1; render(); });
 // Full cards have no back face: switching to Full turns every flipped card face up.
 el.groups.addEventListener('card-zoom-change', () => {
   if (el.groups.dataset.zoom === '0') el.groups.querySelectorAll('.event-tile.is-flipped').forEach(t => t.dispatchEvent(new Event('flip-reset')));
