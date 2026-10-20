@@ -26,7 +26,7 @@ test('corner is a real button with aria-label, aria-pressed and a 44px tap targe
   assert.match(tileFn, /corner\.setAttribute\('aria-pressed', String\(on\)\)/);
   assert.match(tileFn, /corner\.setAttribute\('aria-label', on \? 'Show details' : 'Show flyer'\)/);
   assert.match(tileFn, /setFlipped\(false\);/, 'starts face up with labels set');
-  const rule = block.match(new RegExp(`\\${C.replace(/[()[\]"=]/g, m => '\\' + m)} \\.tile-flip-corner\\{([^}]*)\\}`))[1];
+  const rule = block.match(new RegExp(`\\${C.replace(/[()[\]"=]/g, m => '\\' + m)} \\.event-tile\\.has-real-flyer \\.tile-flip-corner\\{([^}]*)\\}`))[1];
   assert.match(rule, /width:44px;height:44px/); assert.match(rule, /position:absolute/); assert.match(rule, /top:0;left:0/);
   assert.ok(block.includes(`${C} .tile-flip-corner:focus-visible{`), 'visible keyboard focus');
 });
@@ -38,14 +38,14 @@ test('corner is a folded triangle in the page red-orange accent, hidden on Full 
 });
 
 test('flip changes only this card and toggles back from the same corner', () => {
-  assert.match(tileFn, /corner\.addEventListener\('click', e => \{ e\.stopPropagation\(\); setFlipped\(!a\.classList\.contains\('is-flipped'\)\); \}\)/);
+  assert.match(tileFn, /corner\.addEventListener\('click', e => \{ e\.preventDefault\(\); e\.stopPropagation\(\); setFlipped\(!a\.classList\.contains\('is-flipped'\)\); \}\)/);
   assert.match(tileFn, /a\.classList\.toggle\('is-flipped', on\)/);
   assert.doesNotMatch(tileFn, /querySelectorAll\(/, 'no cross-card changes from a tile');
   assert.match(tileFn, /a\.appendChild\(corner\)/, 'corner is on the card, above both faces');
   assert.match(block, /\.tile-flip-corner\{[^}]*z-index:3/);
 });
 
-test('hidden face is inert; back face shows the real flyer or the fallback', () => {
+test('hidden face is inert; back face is the real flyer', () => {
   assert.match(tileFn, /body\.inert = on;/);
   assert.match(tileFn, /preview\.inert = !on && !a\.classList\.contains\('flyer-open'\)/);
   assert.match(tileFn, /preview\.inert = !open && !a\.classList\.contains\('is-flipped'\)/, 'Full tab respects the flip');
@@ -77,4 +77,20 @@ test('Exp2 cache busters match content for the flip corner', () => {
   const html = read('index.html');
   assert.match(html, new RegExp(`simple\\.css\\?v=${sha8('simple.css')}`));
   assert.match(html, new RegExp(`simple-flow\\.mjs\\?v=${sha8('simple-flow.mjs')}`));
+});
+
+test('corner exists only on cards with a real flyer; fallback cards never flip', () => {
+  assert.match(tileFn, /if \(flyers\.length\) \{\n    const corner = document\.createElement\('button'\)/, 'corner only built when a real flyer exists');
+  assert.match(tileFn, /a\.classList\.add\('has-real-flyer'\)/);
+  assert.match(tileFn, /a\.classList\.remove\('has-real-flyer'\); a\.querySelector\('\.tile-flip-corner'\)\?\.remove\(\)/, 'broken flyer drops the corner');
+  assert.match(block, new RegExp(`\\.event-tile\\.has-real-flyer \\.tile-flip-corner\\{[^}]*display:block`));
+  assert.doesNotMatch(block, /\)\s\.tile-flip-corner\{[^}]*display:block/, 'no rule shows the corner on every card');
+});
+
+test('flipped card shows the whole flyer in place: contain, no link, no lightbox, no card click', () => {
+  assert.match(block, /\.tile-flyer-preview img\{[^}]*object-fit:contain/);
+  assert.match(block, /\.event-tile\.has-flyer \.tile-flyer-preview\{[^}]*inset:0[^}]*background:#d8d0bd[^}]*overflow:hidden/, 'letterboxed on the card colour');
+  assert.match(tileFn, /preview\.addEventListener\('click', e => \{ if \(a\.classList\.contains\('is-flipped'\)\) \{ e\.preventDefault\(\); e\.stopPropagation\(\); return; \} openLightbox/);
+  assert.doesNotMatch(tileFn, /createElement\('a'\); [^\n]*tile-flyer-preview/, 'back image is not wrapped in a link');
+  assert.match(tileFn, /preview = document\.createElement\('button'\); preview\.type = 'button'; preview\.className = 'tile-flyer-preview'/);
 });
