@@ -226,7 +226,7 @@ html,body{overflow-x:clip}
 /* Header bar removed: pull the hero up */
 .hero{padding-top:64px}
 @media(max-width:650px){.hero{padding-top:28px}}
-/* Headline lives in the top bar: FIND YOUR + NEXT DANCE. centered together, one row at every width */
+/* Headline lives in the top bar: GULF + COAST centered together, one row at every width */
 .topbar{padding:14px var(--pad);border-bottom:1px solid var(--line);position:relative;z-index:10}
 .topbar-title{display:flex;justify-content:center;align-items:baseline;gap:.4em;margin:0;white-space:nowrap;font-family:var(--display);font-weight:700;font-size:clamp(26px,8.2vw,112px);line-height:.95;letter-spacing:-.02em;color:var(--paper)}
 .topbar-title em{font-style:normal;color:var(--red)}

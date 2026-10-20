@@ -11,6 +11,7 @@ test('gulfcoast page: name, canonical and OG tags, no visitor-facing "Experiment
   assert.match(html, /og:title" content="Gulf Coast \| Dance Event Viewer"/);
   assert.match(html, /og:url" content="https:\/\/danceeventviewer\.net\/gulfcoast\/"/);
   assert.doesNotMatch(html, /experiment/i);
+  assert.match(html, /<h1 id="hero-title" class="topbar-title"><span>GULF<\/span> <em>COAST<\/em><\/h1>/);
   assert.match(html, /src="\.\.\/dance-event-viewer\/js\/supabase-config\.js\?v=/);
 });
 
