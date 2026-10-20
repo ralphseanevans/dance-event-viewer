@@ -481,9 +481,11 @@ function tile({ ev, canceled, day }) {
     preview = document.createElement('button'); preview.type = 'button'; preview.className = 'tile-flyer-preview';
     preview.setAttribute('aria-label', 'Enlarge flyer for ' + ev.name);
     const image = document.createElement('img'); image.addEventListener('load', () => trimFlyerBorder(image)); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
-    image.addEventListener('error', () => { const fb = fallbackFlyer(ev, day); fb.inert = preview.inert; preview.replaceWith(fb); preview = fb; }, { once: true });
+    image.addEventListener('error', () => { a.dispatchEvent(new Event('flip-reset')); const fb = fallbackFlyer(ev, day); fb.inert = preview.inert; preview.replaceWith(fb); preview = fb; a.classList.remove('has-real-flyer'); a.querySelector('.tile-flip-corner')?.remove(); }, { once: true });
     preview.appendChild(image);
-    preview.addEventListener('click', () => openLightbox(flyers, ev.name, preview));
+    // A flipped compact card shows the whole flyer in place: no lightbox, no card click.
+    preview.addEventListener('click', e => { if (a.classList.contains('is-flipped')) { e.preventDefault(); e.stopPropagation(); return; } openLightbox(flyers, ev.name, preview); });
+    a.classList.add('has-real-flyer');
   } else {
     preview = fallbackFlyer(ev, day);
   }
@@ -498,20 +500,22 @@ function tile({ ev, canceled, day }) {
   preview.inert = true;
   toggle.addEventListener('click', () => setFlyerOpen(!a.classList.contains('flyer-open')));
   a.appendChild(toggle);
-  // Compact cards only: an orange folded corner flips this one card to its flyer
-  // (real or fallback) and back. CSS hides the corner on Full cards.
-  const corner = document.createElement('button'); corner.type = 'button'; corner.className = 'tile-flip-corner';
-  const setFlipped = on => {
-    a.classList.toggle('is-flipped', on);
-    corner.setAttribute('aria-pressed', String(on));
-    corner.setAttribute('aria-label', on ? 'Show details' : 'Show flyer'); corner.title = corner.getAttribute('aria-label');
-    preview.inert = !on && !a.classList.contains('flyer-open');
-    body.inert = on;
-  };
-  setFlipped(false);
-  corner.addEventListener('click', e => { e.stopPropagation(); setFlipped(!a.classList.contains('is-flipped')); });
-  a.addEventListener('flip-reset', () => setFlipped(false));
-  a.appendChild(corner);
+  // Compact cards only: an orange folded corner flips this one card to its real flyer
+  // and back. Cards without a real flyer get no corner and no flip. CSS hides it on Full cards.
+  if (flyers.length) {
+    const corner = document.createElement('button'); corner.type = 'button'; corner.className = 'tile-flip-corner';
+    const setFlipped = on => {
+      a.classList.toggle('is-flipped', on);
+      corner.setAttribute('aria-pressed', String(on));
+      corner.setAttribute('aria-label', on ? 'Show details' : 'Show flyer'); corner.title = corner.getAttribute('aria-label');
+      preview.inert = !on && !a.classList.contains('flyer-open');
+      body.inert = on;
+    };
+    setFlipped(false);
+    corner.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); setFlipped(!a.classList.contains('is-flipped')); });
+    a.addEventListener('flip-reset', () => setFlipped(false));
+    a.appendChild(corner);
+  }
   body.appendChild(links); a.appendChild(body);
   return a;
 }
