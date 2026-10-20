@@ -133,6 +133,9 @@ function syncRangeControls() {
   });
   list.hidden = state.dateRanges.length === 0;
   $('#clear-ranges').disabled = state.dateRanges.length === 0;
+  // Phones show the panel as one short scroll row: bring the newest chip (and its ×) into view.
+  const panel = $('.range-body');
+  if (panel.scrollHeight > panel.clientHeight) { panel.scrollTop = list.hidden ? 0 : list.offsetTop - panel.offsetTop; list.scrollLeft = list.scrollWidth; }
 }
 function removeDateDay(day) {
   const adjacent = delta => {
