@@ -258,7 +258,7 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 }
 
 
-/* Illustrated dance-style selectors for Experimental Viewer 2 only. */
+/* Illustrated dance-style selectors for the Gulf Coast page only. */
 .style-choices.has-style-badges{
   flex-direction:row;
   flex-wrap:wrap;
