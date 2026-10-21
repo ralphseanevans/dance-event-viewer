@@ -38,14 +38,28 @@ async function load(){
  if(isSnapshot)$('#data-note').prepend(document.createTextNode(`Live feed unavailable. Showing a saved copy from ${updated}. `));render();
 }
 updateSaved();load();
-// Loop the hero. Reduced motion uses the poster.
+// Play the hero once, then hold a clean final frame. Reduced motion shows that frame without playing.
 const heroVideo = $('#hero-video');
 const heroLogo = $('.hero-logo-overlay');
-heroVideo?.addEventListener('timeupdate',()=>{if(heroVideo.currentTime>=4)heroLogo?.classList.add('is-visible')});
+const HERO_END_HOLD = 0.15;
+function heroFinalTime(){return Math.max(0,(heroVideo.duration||0)-HERO_END_HOLD)}
+function holdHeroFinalFrame(){
+ if(!heroVideo)return;
+ const seek=()=>{heroVideo.pause();heroVideo.currentTime=heroFinalTime();heroLogo?.classList.add('is-visible')};
+ if(heroVideo.readyState>=1&&isFinite(heroVideo.duration))seek();else heroVideo.addEventListener('loadedmetadata',seek,{once:true});
+}
+heroVideo?.addEventListener('timeupdate',()=>{
+ if(heroVideo.currentTime>=4)heroLogo?.classList.add('is-visible');
+ if(!heroVideo.paused&&isFinite(heroVideo.duration)&&heroVideo.currentTime>=heroFinalTime())holdHeroFinalFrame();
+});
+heroVideo?.addEventListener('ended',holdHeroFinalFrame);
 const heroMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function syncHeroMotion(){
  if(!heroVideo)return;
- if(heroMotion.matches){heroVideo.pause();heroVideo.currentTime=0;heroLogo?.classList.add('is-visible');return}
+ heroVideo.loop=false;
+ if(heroMotion.matches){holdHeroFinalFrame();return}
+ if(heroVideo.dataset.played)return;
+ heroVideo.dataset.played='1';
  heroVideo.muted=true;
  heroVideo.play().catch(()=>{});
 }
