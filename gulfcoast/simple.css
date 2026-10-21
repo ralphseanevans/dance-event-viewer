@@ -97,6 +97,18 @@ button.calendar-day.is-active{color:var(--red)}
 .calendar-weekdays{margin-bottom:2px}
 .date-block{scroll-margin-top:calc(var(--cal-h,220px) + 10px)}
 }
+/* >820px: same top-pinned calendar bar as phones, kept compact and centered */
+@media(min-width:821px){
+.simple-results{display:block}
+.scroll-calendar{display:contents}
+.calendar-sticky{top:0;z-index:5;margin:0 0 18px;padding:8px 0;max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain}
+.calendar-sticky>*{max-width:560px;margin-left:auto;margin-right:auto}
+.calendar-head{margin-bottom:4px}
+.calendar-head button{width:28px;height:28px}
+.calendar-day,.calendar-blank{height:24px;font-size:12px}
+.calendar-weekdays{margin-bottom:2px}
+.date-block{scroll-margin-top:calc(var(--cal-h,200px) + 10px)}
+}
 @media(max-width:560px){
 .viewer{padding-top:22px}
 .place-choices{gap:2px 22px}
