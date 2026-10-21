@@ -352,7 +352,8 @@ function dateBlock(g) {
   sec.className = 'date-block'; sec.id = `simple-date-${g.day}`; sec.dataset.date = g.day;
   const h = document.createElement('h3'); h.className = 'date-heading'; h.textContent = fmtHead.format(new Date(`${g.day}T12:00:00`));
   const grid = document.createElement('div'); grid.className = 'day-events';
-  g.items.forEach(x => grid.appendChild(tile(x)));
+  // Each card sits in its own perspective scene so the whole card turns over in 3D.
+  g.items.forEach(x => { const scene = document.createElement('div'); scene.className = 'tile-flip-scene'; scene.appendChild(tile(x)); grid.appendChild(scene); });
   sec.append(h, grid);
   return sec;
 }

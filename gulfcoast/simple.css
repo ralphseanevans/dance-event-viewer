@@ -420,8 +420,9 @@ button.calendar-day{touch-action:manipulation}
 @media(prefers-reduced-motion:reduce){#simple-groups .event-tile{transition:none!important}#simple-groups .event-tile:hover{transform:none!important}}
 
 /* Compact flip corner: an orange folded corner (top left, in the page's red-orange
-   accent var(--red)) flips one compact card to its flyer and back. Each face turns on its own
-   rotateY, flat and quick (no depth); reduced motion crossfades instead.
+   accent var(--red)) flips one compact card to its flyer and back:
+   the whole card turns over in 3D (see below), 0.5s eased; both faces share the card box
+   (back face is absolute inset:0) so height never jumps. Reduced motion crossfades instead.
    Only cards with a real flyer get the corner; the whole flyer is letterboxed (contain).
    Full cards never show the corner. */
 .tile-flip-corner{display:none}
@@ -429,14 +430,33 @@ button.calendar-day{touch-action:manipulation}
 #simple-groups:not([data-zoom="0"]) .tile-flip-corner::before{content:"";position:absolute;top:0;left:0;width:24px;height:24px;border-radius:13px 0 0 0;background:var(--red);clip-path:polygon(0 0,100% 0,0 100%);transition:width .15s ease,height .15s ease}
 @media(hover:hover){#simple-groups:not([data-zoom="0"]) .tile-flip-corner:hover::before{width:28px;height:28px}}
 #simple-groups:not([data-zoom="0"]) .tile-flip-corner:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
-#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-body{backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(0deg);transition:transform .32s cubic-bezier(.4,0,.2,1)}
-#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;width:auto;height:auto;min-width:0;max-width:none;margin:0;padding:0;border:0;border-radius:inherit;background:#d8d0bd;overflow:hidden;opacity:1;visibility:visible;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);transition:transform .32s cubic-bezier(.4,0,.2,1)}
+/* Whole-card 3D flip: .tile-flip-scene is the per-card perspective wrapper; the card itself
+   (.event-tile) rotates 180deg as one object. The card box goes transparent and both faces
+   carry the full card look (border, background, radius, shadow), stacked in the same box. */
+.tile-flip-scene{display:grid;min-width:0}
+.tile-flip-scene>.event-tile{min-width:0}
+#simple-groups:not([data-zoom="0"]) .tile-flip-scene{position:relative;-webkit-perspective:1100px;perspective:1100px}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer{position:relative;overflow:visible;border-color:transparent;background:transparent;box-shadow:none;-webkit-transform-style:preserve-3d;transform-style:preserve-3d;-webkit-transition:-webkit-transform .5s cubic-bezier(.45,.05,.25,1),transform .5s cubic-bezier(.45,.05,.25,1);transition:transform .5s cubic-bezier(.45,.05,.25,1)}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer:hover{box-shadow:none}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer.is-flipped{-webkit-transform:rotateY(180deg);transform:rotateY(180deg)}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer .tile-body,
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer .tile-flyer-preview{box-sizing:border-box;margin:-1px;border:1px solid #a69e8d;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.1);-webkit-backface-visibility:hidden;backface-visibility:hidden}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer .tile-body{position:relative;width:calc(100% + 2px);height:calc(100% + 2px);background:#d8d0bd;-webkit-transform:translateZ(.1px);transform:translateZ(.1px)}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;width:auto;height:auto;min-width:0;max-width:none;padding:0;background:#d8d0bd;overflow:hidden;opacity:1;visibility:visible;-webkit-transform:rotateY(180deg) translateZ(.1px);transform:rotateY(180deg) translateZ(.1px)}
 #simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;border-radius:0}
 #simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview.is-fallback{background:var(--paper)}
-#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer.is-flipped .tile-body{transform:rotateY(-180deg)}
-#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer.is-flipped .tile-flyer-preview{transform:rotateY(0deg)}
+/* The corner rides on the card: it swaps to the back face at the half-way point. */
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer .tile-flip-corner{-webkit-transform:translateZ(1px);transform:translateZ(1px);-webkit-transition:-webkit-transform 0s linear .25s;transition:transform 0s linear .25s}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer.is-flipped .tile-flip-corner{-webkit-transform:rotateY(180deg) translateZ(1px);transform:rotateY(180deg) translateZ(1px)}
+/* Floor shadow: shrinks and blurs as the card goes edge-on, then settles as it lands. */
+#simple-groups:not([data-zoom="0"]) .tile-flip-scene:has(.has-real-flyer)::after{content:"";position:absolute;z-index:-1;left:10%;right:10%;bottom:-6px;height:14px;border-radius:50%;background:rgba(0,0,0,.28);-webkit-filter:blur(6px);filter:blur(6px);pointer-events:none;animation:flip-floor-shadow-a .5s cubic-bezier(.45,.05,.25,1)}
+#simple-groups:not([data-zoom="0"]) .tile-flip-scene:has(.is-flipped)::after{animation-name:flip-floor-shadow-b}
+@keyframes flip-floor-shadow-a{0%,100%{transform:scaleX(1);opacity:1;filter:blur(6px)}50%{transform:scaleX(.18);opacity:.45;filter:blur(12px)}}
+@keyframes flip-floor-shadow-b{0%,100%{transform:scaleX(1);opacity:1;filter:blur(6px)}50%{transform:scaleX(.18);opacity:.45;filter:blur(12px)}}
 @media(prefers-reduced-motion:reduce){
-#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-body,#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview{transform:none!important;transition:opacity .2s ease,visibility 0s linear .2s!important}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer,#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer.is-flipped,#simple-groups:not([data-zoom="0"]) .event-tile.has-real-flyer .tile-flip-corner{-webkit-transform:none!important;transform:none!important;transition:none!important}
+#simple-groups:not([data-zoom="0"]) .tile-flip-scene::after{animation:none!important}
+#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-body,#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview{-webkit-transform:none!important;transform:none!important;transition:opacity .2s ease,visibility 0s linear .2s!important}
 #simple-groups:not([data-zoom="0"]) .event-tile.has-flyer .tile-flyer-preview,#simple-groups:not([data-zoom="0"]) .event-tile.has-flyer.is-flipped .tile-body{opacity:0;visibility:hidden}
 #simple-groups:not([data-zoom="0"]) .event-tile.has-flyer.is-flipped .tile-flyer-preview{opacity:1;visibility:visible;transition:opacity .2s ease,visibility 0s!important}
 }

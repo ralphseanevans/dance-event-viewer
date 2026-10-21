@@ -52,13 +52,10 @@ test('hidden face is inert; back face is the real flyer', () => {
   assert.match(js, /if \(flyers\.length\) \{[\s\S]*?\} else \{\s*preview = fallbackFlyer\(ev, day\);/);
 });
 
-test('back face fills the same card box (scales with zoom) and turns with rotateY', () => {
+test('back face fills the same card box (scales with zoom), turned 180deg', () => {
   const back = block.match(/\.event-tile\.has-flyer \.tile-flyer-preview\{([^}]*)\}/)[1];
-  for (const d of ['position:absolute', 'inset:0', 'display:flex', 'backface-visibility:hidden', 'transform:rotateY(180deg)']) assert.ok(back.includes(d), d);
-  assert.match(block, /\.event-tile\.has-flyer \.tile-body\{[^}]*backface-visibility:hidden;[^}]*transform:rotateY\(0deg\);transition:transform \.32s/);
-  assert.ok(block.includes(`${C} .event-tile.has-flyer.is-flipped .tile-body{transform:rotateY(-180deg)}`));
-  assert.ok(block.includes(`${C} .event-tile.has-flyer.is-flipped .tile-flyer-preview{transform:rotateY(0deg)}`));
-  assert.doesNotMatch(block.replace(/\/\*[\s\S]*?\*\//g, ''), /perspective|zoom:/, 'flat flip; size comes from the card zoom');
+  for (const d of ['position:absolute', 'inset:0', 'display:flex', 'transform:rotateY(180deg)']) assert.ok(back.includes(d), d);
+  assert.doesNotMatch(block.replace(/\/\*[\s\S]*?\*\//g, ''), /zoom:/, 'size comes from the card zoom');
 });
 
 test('reduced motion swaps the flip for a crossfade', () => {
@@ -93,4 +90,21 @@ test('flipped card shows the whole flyer in place: contain, no link, no card cli
   assert.match(tileFn, /preview\.addEventListener\('click', e => \{ e\.preventDefault\(\); e\.stopPropagation\(\);/);
   assert.doesNotMatch(tileFn, /createElement\('a'\); [^\n]*tile-flyer-preview/, 'back image is not wrapped in a link');
   assert.match(tileFn, /preview = document\.createElement\('button'\); preview\.type = 'button'; preview\.className = 'tile-flyer-preview'/);
+});
+
+test('whole card turns over in 3D inside a per-card perspective scene', () => {
+  assert.match(js, /scene\.className = 'tile-flip-scene'; scene\.appendChild\(tile\(x\)\); grid\.appendChild\(scene\)/);
+  assert.ok(block.includes(`${C} .tile-flip-scene{position:relative;-webkit-perspective:1100px;perspective:1100px}`));
+  const card = block.match(/\.event-tile\.has-real-flyer\{([^}]*)\}/)[1];
+  for (const d of ['overflow:visible', 'background:transparent', '-webkit-transform-style:preserve-3d', 'transform-style:preserve-3d', 'transition:transform .5s cubic-bezier']) assert.ok(card.includes(d), `card: ${d}`);
+  assert.ok(block.includes(`${C} .event-tile.has-real-flyer.is-flipped{-webkit-transform:rotateY(180deg);transform:rotateY(180deg)}`));
+  const faces = block.match(/\.event-tile\.has-real-flyer \.tile-flyer-preview\{([^}]*)\}/)[1];
+  for (const d of ['border:1px solid', 'border-radius:14px', 'box-shadow:', '-webkit-backface-visibility:hidden', 'backface-visibility:hidden']) assert.ok(faces.includes(d), `faces: ${d}`);
+  assert.ok(block.includes('.tile-flyer-preview{position:absolute;inset:0'), 'faces stacked in one box: no height jump');
+});
+
+test('floor shadow shrinks and blurs mid-flip with the same timing', () => {
+  assert.match(block, /\.tile-flip-scene:has\(\.has-real-flyer\)::after\{[^}]*filter:blur\(6px\)[^}]*animation:flip-floor-shadow-a \.5s/);
+  assert.match(block, /\.tile-flip-scene:has\(\.is-flipped\)::after\{animation-name:flip-floor-shadow-b\}/);
+  assert.match(block, /@keyframes flip-floor-shadow-a\{[^@]*50%\{transform:scaleX\(\.18\);opacity:\.45;filter:blur\(12px\)\}/);
 });
