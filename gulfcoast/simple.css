@@ -468,7 +468,7 @@ button.calendar-day{touch-action:manipulation}
 /* Narrow phone panels: tighter type so long names fit before clamping. */
 @container (max-width:180px){.ff-name.is-long{font-size:15px}.ff-name.is-medium{font-size:18px}.ff-details li:nth-child(n+2){display:none}.ff-loc{-webkit-line-clamp:2}}
 
-/* Phones (≤600px): compact sticky calendar. Two scrollable week rows of 40px day
+/* Phones (≤600px): compact sticky calendar. Full month grid of 40px day
    targets, the + range toggle sits in the month row, and the range panel scrolls
    inside a short box. Desktop and tablet rules above are untouched. */
 @media(max-width:600px){
@@ -491,10 +491,9 @@ button.calendar-day{touch-action:manipulation}
 .range-chip{flex:none;height:22px}
 .range-chip button{width:40px;height:40px;margin:-11px -11px -11px -8px}
 .calendar-weekdays{margin-bottom:1px}
-.calendar-days{max-height:83px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none}
-.calendar-days::-webkit-scrollbar{display:none}
-.calendar-day,.calendar-blank{height:40px;scroll-snap-align:start}
-.calendar-sticky:has(#calendar-range-details[open]) .calendar-days{max-height:40px}
+/* Every day of the month always shows (no clipped/scrolled week rows). */
+.calendar-days{max-height:none;overflow:visible}
+.calendar-day,.calendar-blank{height:40px}
 }
 
 /* Full-screen flyer close-up (flipped compact cards): whole flyer, uncropped, pinch-zoom ok */
