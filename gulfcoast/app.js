@@ -38,13 +38,17 @@ async function load(){
  if(isSnapshot)$('#data-note').prepend(document.createTextNode(`Live feed unavailable. Showing a saved copy from ${updated}. `));render();
 }
 updateSaved();load();
-// Loop the hero. Reduced motion uses the poster.
+// Play the hero once. Reduced motion uses the poster.
 const heroVideo = $('#hero-video');
 const heroLogo = $('.hero-logo-overlay');
+let heroFinished = false;
+heroVideo?.addEventListener('ended',()=>{heroFinished=true;heroLogo?.classList.add('is-visible')});
 heroVideo?.addEventListener('timeupdate',()=>{if(heroVideo.currentTime>=4)heroLogo?.classList.add('is-visible')});
 const heroMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function syncHeroMotion(){
  if(!heroVideo)return;
+ heroVideo.loop=false;
+ if(heroFinished){heroVideo.pause();return}
  if(heroMotion.matches){heroVideo.pause();heroVideo.currentTime=0;heroLogo?.classList.add('is-visible');return}
  heroVideo.muted=true;
  heroVideo.play().catch(()=>{});
