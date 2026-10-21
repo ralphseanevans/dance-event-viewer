@@ -2,7 +2,7 @@
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=c4216989';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, instructorBadges } from './simple-core.mjs?v=715ed208';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -436,7 +436,20 @@ function tile({ ev, canceled, day }) {
   };
   const date = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(day + 'T12:00:00'));
   if (Array.isArray(ev.levels) && ev.levels.length) row('level', ev.levels.join(', '));
-  if (Array.isArray(ev.instructors) && ev.instructors.length) row('instructor', ev.instructors.join(', '));
+  const badges = instructorBadges(ev.instructors);
+  if (badges.length) {
+    // Compact overlapping stack of round photo/initials badges plus names in small text.
+    const p = document.createElement('p'); p.className = 'tile-detail tile-instructor tile-instructors';
+    const stack = document.createElement('span'); stack.className = 'ib-stack'; stack.setAttribute('aria-hidden', 'true');
+    badges.forEach(b => {
+      const el = document.createElement('span'); el.className = 'ib' + (b.photo ? '' : ' ib-initials'); el.title = b.name;
+      if (b.photo) { const img = document.createElement('img'); img.src = b.photo; img.alt = ''; img.width = 40; img.height = 40; img.loading = 'lazy'; img.decoding = 'async'; el.appendChild(img); }
+      else el.textContent = b.initials;
+      stack.appendChild(el);
+    });
+    const names = document.createElement('span'); names.className = 'ib-names'; names.textContent = badges.map(b => b.name).join(', '); names.title = names.textContent;
+    p.append(stack, names); body.appendChild(p);
+  }
   // Date and time as separate pieces: inline on Full cards, stacked on compact cards.
   const when = row('calendar', ''), time = timeRange(ev), schedule = scheduleEntries(ev);
   when.title = date + ' · ' + time;

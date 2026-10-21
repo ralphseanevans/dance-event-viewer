@@ -146,3 +146,25 @@ export function fallbackFlyerData(ev, day) {
   const details = [list(ev.levels), list(ev.instructors) && 'With ' + list(ev.instructors), clean(ev.cost_display) || clean(ev.cost)].filter(Boolean);
   return { kicker: clean(ev.style) || 'Dance', name, date, time, location: place, details };
 }
+
+// Instructor badges (2026-10-21): real, cropped photos only (graphics/instructors/<slug>.webp,
+// 56px for 2x). Anyone not listed here gets an initials badge. Names match case/space-insensitively.
+export const INSTRUCTOR_PHOTOS = {
+  'mike spencer': 'mike-spencer',
+  'nina outlaw': 'nina-outlaw',
+  'rachel bowlby': 'rachel-bowlby',
+  'travis outlaw': 'travis-outlaw'
+};
+const normName = s => String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/["“”]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+export function instructorInitials(name) {
+  const words = String(name || '').replace(/["“”][^"“”]*["“”]/g, ' ').split(/[\s&]+/).map(w => w.replace(/[^\p{L}\p{N}]/gu, '')).filter(Boolean);
+  if (!words.length) return '?';
+  return (words.length === 1 ? words[0].slice(0, 2) : words[0][0] + words.at(-1)[0]).toUpperCase();
+}
+export function instructorBadges(list, base = '../graphics/instructors/') {
+  const arr = Array.isArray(list) ? list : (typeof list === 'string' && list.trim() ? [list] : []);
+  return arr.map(n => String(n || '').replace(/\s+/g, ' ').trim()).filter(Boolean).map(name => {
+    const slug = INSTRUCTOR_PHOTOS[normName(name)];
+    return { name, initials: instructorInitials(name), photo: slug ? base + slug + '.webp' : null };
+  });
+}
