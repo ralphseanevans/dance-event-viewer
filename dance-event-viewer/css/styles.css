@@ -1047,6 +1047,9 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 }
 .experimental-viewer-link:hover { color: var(--text); border-color: var(--accent); }
 .experimental-viewer-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Gulf Coast nav pill (2026-10-21, Sean): filled, flat teal so it stands out; no shadow/gradient. */
+.experimental-viewer-link.nav-gulfcoast { background: #2ec4b6; border-color: #2ec4b6; color: #062320; font-weight: 800; }
+.experimental-viewer-link.nav-gulfcoast:hover { background: #4fd6c9; border-color: #4fd6c9; color: #031614; }
 @media (max-width: 560px) {
   .header-actions { gap: 6px; }
   .experimental-viewer-link,

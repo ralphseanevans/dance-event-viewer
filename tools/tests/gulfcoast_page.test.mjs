@@ -31,7 +31,7 @@ test('old experience-2 URL is a tiny redirect that keeps query and hash', () => 
 
 test('viewer nav links say Gulf Coast and no visible "Experimental" label', () => {
   const html = r('dance-event-viewer/index.html');
-  assert.match(html, /<a href="\.\.\/gulfcoast\/" class="experimental-viewer-link">Gulf Coast<\/a>/);
+  assert.match(html, /<a href="\.\.\/gulfcoast\/" class="experimental-viewer-link nav-gulfcoast">Gulf Coast<\/a>/);
   assert.doesNotMatch(html, /experience-2/);
   assert.doesNotMatch(html.replace(/<[^>]*>/g, ' '), /Experimental/);
   assert.doesNotMatch(r('dance-event-viewer/experiments/location-discovery/index.html').replace(/<[^>]*>/g, ' '), /Experimental/);
