@@ -4,7 +4,7 @@
 .organizer-choice{display:grid;place-items:center;flex:0 0 52px;width:52px;height:52px;min-height:52px;padding:6px;border:1px solid transparent;border-radius:3px;background:none;color:var(--paper);cursor:pointer;touch-action:manipulation}
 .organizer-choice img{display:block;width:40px;height:40px;object-fit:contain;image-rendering:auto}
 .organizer-choice[aria-pressed=true]{border-color:var(--red)}
-.organizer-clear{display:grid;place-items:center;width:44px;height:44px;min-height:44px;margin:3px 0 0;padding:0;border:0;background:none;color:var(--muted);font:24px/1 var(--body);touch-action:manipulation}
+.organizer-clear{display:none;place-items:center;width:44px;height:44px;min-height:44px;margin:3px 0 0;padding:0;border:0;background:none;color:var(--muted);font:24px/1 var(--body);touch-action:manipulation}
 .organizer-clear[hidden]{display:none}.organizer-choice:focus-visible,.organizer-clear:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 @media(hover:hover){.organizer-choice:hover{border-color:var(--line)}.organizer-choice[aria-pressed=true]:hover{border-color:var(--red)}.organizer-clear:hover{color:var(--paper)}}
 .tile-body.has-organizer-badge{position:relative}.tile-body.has-organizer-badge .tile-style{padding-right:38px}.organizer-card-badge{position:absolute;top:10px;right:10px;width:30px!important;height:30px!important;object-fit:contain;pointer-events:none}
