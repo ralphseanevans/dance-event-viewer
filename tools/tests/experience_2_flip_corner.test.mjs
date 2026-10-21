@@ -87,10 +87,10 @@ test('corner exists only on cards with a real flyer; fallback cards never flip',
   assert.doesNotMatch(block, /\)\s\.tile-flip-corner\{[^}]*display:block/, 'no rule shows the corner on every card');
 });
 
-test('flipped card shows the whole flyer in place: contain, no link, no lightbox, no card click', () => {
+test('flipped card shows the whole flyer in place: contain, no link, no card click', () => {
   assert.match(block, /\.tile-flyer-preview img\{[^}]*object-fit:contain/);
   assert.match(block, /\.event-tile\.has-flyer \.tile-flyer-preview\{[^}]*inset:0[^}]*background:#d8d0bd[^}]*overflow:hidden/, 'letterboxed on the card colour');
-  assert.match(tileFn, /preview\.addEventListener\('click', e => \{ if \(a\.classList\.contains\('is-flipped'\)\) \{ e\.preventDefault\(\); e\.stopPropagation\(\); return; \} openLightbox/);
+  assert.match(tileFn, /preview\.addEventListener\('click', e => \{ e\.preventDefault\(\); e\.stopPropagation\(\);/);
   assert.doesNotMatch(tileFn, /createElement\('a'\); [^\n]*tile-flyer-preview/, 'back image is not wrapped in a link');
   assert.match(tileFn, /preview = document\.createElement\('button'\); preview\.type = 'button'; preview\.className = 'tile-flyer-preview'/);
 });
