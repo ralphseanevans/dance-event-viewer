@@ -8,7 +8,6 @@ export const BADGES = Object.freeze([
   {id:'coastals',name:'Pensacola Coastals',kind:'Studio'},
   {id:'starlite',name:'Starlite Ballroom',kind:'Studio · Mobile'},
   {id:'todd-jamie',name:'Let’s Dance Pensacola (Todd and Jamie)',kind:'Group'},
-  {id:'bill-thrall',name:'Bill Thrall',kind:'Instructor'},
   {id:'nina-travis',name:'Nina, Travis and Andy',kind:'Instructors'},
   {id:'rachel-zander',name:'Rachel & Zander',kind:'Instructors'},
   {id:'traci-bell',name:'Traci Bell',kind:'Instructor'}
@@ -26,7 +25,6 @@ export function badgeIds(ev={}) {
   if(key.startsWith('pensacola-coastals-')||venue.includes('pensacola coastals')||source.includes('pensacolacoastals.wixsite.com'))ids.push('coastals');
   if(key==='starlite-ballroom-tuesday-ballroom-latin-class'||key==='ttdgc-starlight-ballroom-friday'||source.includes('starliteballroomal.com')||(/starlite ballroom/.test(venue)&&/mobile/.test(venue)))ids.push('starlite');
   if(key.startsWith('good-ole-social-dance')||/\btodd and jamie\b/.test(text))ids.push('todd-jamie');
-  if(/\bbill thrall\b/.test(text)||key.startsWith('ttdgc-bill-thrall-'))ids.push('bill-thrall');
   if(key==='ttdgc-dancing-nina-travis-andy-tuesday'||(/\bnina outlaw\b/.test(text)&&/\btravis outlaw\b/.test(text)&&/\bandy\b/.test(text)))ids.push('nina-travis');
   if(/\brachel\s*(?:&|and)\s*zander\b/.test(text))ids.push('rachel-zander');
   if(/\btraci bell\b/.test(text))ids.push('traci-bell');
@@ -51,5 +49,5 @@ export function createBadgePicker(after,onChange) {
   const clear=document.createElement('button');clear.type='button';clear.className='organizer-clear';clear.textContent='×';clear.setAttribute('aria-label','Clear group filter');clear.title='Clear group filter';clear.hidden=true;clear.addEventListener('click',()=>{selected.clear();refresh();onChange();});section.appendChild(clear);
   const status=document.createElement('p');status.className='organizer-status badge-sr-only';status.setAttribute('role','status');section.appendChild(status);const layout=document.createElement('div');layout.className='style-organizer-layout';after.before(layout);layout.append(after,section);
   function refresh(){buttons.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(selected.has(b.dataset.organizer))));clear.hidden=!selected.size;status.textContent=selected.size?'Showing '+BADGES.filter(b=>selected.has(b.id)).map(b=>b.name).join(', ')+'. Other place, style and date filters still apply.':'';}
-  return {get selected(){return [...selected];},update(items){section.hidden=false;for(const b of buttons.children){const keys=new Set(items.filter(x=>matchesBadge(x.ev,b.dataset.organizer)).map(x=>x.ev.key));b.setAttribute('aria-label',BADGES.find(x=>x.id===b.dataset.organizer).name+', '+keys.size+' listed');b.title=BADGES.find(x=>x.id===b.dataset.organizer).name+' — '+keys.size+' listed';}refresh();}};
+  return {get selected(){return [...selected];},update(items){for(const id of selected)if(!BADGES.some(b=>b.id===id))selected.delete(id);section.hidden=false;for(const b of buttons.children){const keys=new Set(items.filter(x=>matchesBadge(x.ev,b.dataset.organizer)).map(x=>x.ev.key));b.setAttribute('aria-label',BADGES.find(x=>x.id===b.dataset.organizer).name+', '+keys.size+' listed');b.title=BADGES.find(x=>x.id===b.dataset.organizer).name+' — '+keys.size+' listed';}refresh();}};
 }
