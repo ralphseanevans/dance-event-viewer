@@ -31,11 +31,11 @@ export function badgeIds(ev={}) {
 export const matchesBadge=(ev,id)=>!id||badgeIds(ev).includes(id);
 const vectors=new Set(['coastals','starlite','todd-jamie','bill-thrall','nina-travis']);
 export const badgeAssetFile=(id,size)=>vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
-const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v=sharp-3',import.meta.url).href;
+const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v=sharp-4',import.meta.url).href;
 export function addCardBadge(host,ev) {
   const id=badgeIds(ev)[0];if(!id)return;
   const item=BADGES.find(b=>b.id===id),img=document.createElement('img');
-  img.className='organizer-card-badge';img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
+  img.className='organizer-card-badge'+(id==='nina-travis'?' organizer-card-badge-color':'');img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
   img.addEventListener('error',()=>img.remove(),{once:true});host.classList.add('has-organizer-badge');host.appendChild(img);
 }
 export function createBadgePicker(after,onChange) {
