@@ -2,7 +2,7 @@
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=c4216989';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=ab42327e';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -313,8 +313,9 @@ function render({ tapped, tappedStyle } = {}) {
 
   // Results are always available. Empty style selection means all available styles.
   const visibleStyles = state.styles.size ? [...state.styles] : [...partner, ...solo];
-  // Flyers only: keep events with a real flyer image; empty date groups drop out with them.
-  const listed = state.flyersOnly ? items.filter(x => flyersFor(x.ev, state.logoMap).length) : items;
+  // Flyers only: keep events with a real flyer image (same rule as the flip corner);
+  // empty date groups drop out with them, and the list becomes a flyer-only gallery.
+  const listed = state.flyersOnly ? items.filter(x => hasRealFlyer(x.ev, state.logoMap)) : items;
   const allGroups = groupByDate(listed, visibleStyles);
   state.allDays = allGroups.map(g => g.day);
   const groups = state.dateRanges.length
@@ -330,8 +331,16 @@ function render({ tapped, tappedStyle } = {}) {
       : state.dateRanges.length ? 'No events fall within the selected date ranges.' : 'No upcoming dances for this pick yet.';
     el.groups.replaceChildren(p); calendar.set([], [], state.dateRanges); el.more.hidden = true; return;
   }
-  const blocks = shown.map(dateBlock);
-  el.groups.replaceChildren(...blocks);
+  el.groups.classList.toggle('is-flyer-gallery', state.flyersOnly);
+  let blocks;
+  if (state.flyersOnly) {
+    const gallery = document.createElement('div'); gallery.className = 'flyer-gallery';
+    blocks = shown.map(g => { const thumbs = g.items.map(flyerThumb); thumbs[0].id = `simple-date-${g.day}`; gallery.append(...thumbs); return thumbs[0]; });
+    el.groups.replaceChildren(gallery);
+  } else {
+    blocks = shown.map(dateBlock);
+    el.groups.replaceChildren(...blocks);
+  }
   el.more.hidden = groups.length <= shown.length;
   calendar.set(groups.map(g => g.day), blocks, state.dateRanges);
 }
@@ -347,6 +356,17 @@ el.groups.addEventListener('card-zoom-change', () => {
 });
 
 const fmtHead = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+// Flyers only gallery tile: just the flyer image; tapping opens the full-screen close-up.
+function flyerThumb({ ev, day }) {
+  const flyers = flyersFor(ev, state.logoMap).map(resolve);
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'flyer-thumb'; b.dataset.date = day;
+  b.setAttribute('aria-label', 'Open flyer for ' + ev.name);
+  const img = document.createElement('img'); img.src = flyers[0]; img.alt = 'Flyer for ' + ev.name; img.loading = 'lazy'; img.decoding = 'async';
+  img.addEventListener('error', () => b.remove(), { once: true });
+  b.appendChild(img);
+  b.addEventListener('click', () => openLightbox(flyers, ev.name, b, true));
+  return b;
+}
 function dateBlock(g) {
   const sec = document.createElement('section');
   sec.className = 'date-block'; sec.id = `simple-date-${g.day}`; sec.dataset.date = g.day;
@@ -472,7 +492,7 @@ function tile({ ev, canceled, day }) {
   const links = document.createElement('p'); links.className = 'tile-links';
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
   const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event ↗'; o.title = 'Event page for ' + ev.name; o.setAttribute('aria-label', 'Event page for ' + ev.name); links.appendChild(o); }
-  const flyers = flyersFor(ev, state.logoMap).map(resolve);
+  const flyers = hasRealFlyer(ev, state.logoMap) ? flyersFor(ev, state.logoMap).map(resolve) : [];
   // Every card gets a flyer panel: the real flyer when one exists, otherwise a
   // generated placeholder (it also takes over if the real image fails to load).
   a.classList.add('has-flyer');
