@@ -10,7 +10,8 @@ export const BADGES = Object.freeze([
   {id:'todd-jamie',name:'Let’s Dance Pensacola (Todd and Jamie)',kind:'Group'},
   {id:'bill-thrall',name:'Bill Thrall',kind:'Instructor'},
   {id:'nina-travis',name:'Nina, Travis and Andy',kind:'Instructors'},
-  {id:'rachel-zander',name:'Rachel & Zander',kind:'Instructors'}
+  {id:'rachel-zander',name:'Rachel & Zander',kind:'Instructors'},
+  {id:'traci-bell',name:'Traci Bell',kind:'Instructor'}
 ]);
 const norm=s=>String(s||'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim();
 export function badgeIds(ev={}) {
@@ -28,16 +29,17 @@ export function badgeIds(ev={}) {
   if(/\bbill thrall\b/.test(text)||key.startsWith('ttdgc-bill-thrall-'))ids.push('bill-thrall');
   if(key==='ttdgc-dancing-nina-travis-andy-tuesday'||(/\bnina outlaw\b/.test(text)&&/\btravis outlaw\b/.test(text)&&/\bandy\b/.test(text)))ids.push('nina-travis');
   if(/\brachel\s*(?:&|and)\s*zander\b/.test(text))ids.push('rachel-zander');
+  if(/\btraci bell\b/.test(text))ids.push('traci-bell');
   return ids.sort((a,b)=>(a==='twym')-(b==='twym'));
 }
 export const matchesBadge=(ev,ids)=>{const chosen=Array.isArray(ids)?ids:ids?[ids]:[];return !chosen.length||badgeIds(ev).some(id=>chosen.includes(id));};
 const vectors=new Set(['coastals','starlite','todd-jamie','bill-thrall','nina-travis']);
-export const badgeAssetFile=(id,size)=>id==='rachel-zander'?'rachel-zander-teacher-avatar.png':vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
+export const badgeAssetFile=(id,size)=>['rachel-zander','traci-bell'].includes(id)?id+'-teacher-avatar.png':vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
 const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v=sharp-4',import.meta.url).href;
 export function addCardBadge(host,ev) {
   const id=badgeIds(ev)[0];if(!id)return;
   const item=BADGES.find(b=>b.id===id),img=document.createElement('img');
-  img.className='organizer-card-badge'+(['nina-travis','rachel-zander'].includes(id)?' organizer-card-badge-color':'');img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
+  img.className='organizer-card-badge'+(['nina-travis','rachel-zander','traci-bell'].includes(id)?' organizer-card-badge-color':'');img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
   img.addEventListener('error',()=>img.remove(),{once:true});host.classList.add('has-organizer-badge');host.appendChild(img);
 }
 export function createBadgePicker(after,onChange) {
