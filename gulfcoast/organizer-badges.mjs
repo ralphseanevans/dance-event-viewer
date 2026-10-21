@@ -7,9 +7,9 @@ export const BADGES = Object.freeze([
   {id:'usa-dance',name:'USA Dance',kind:'National organization'},
   {id:'coastals',name:'Pensacola Coastals',kind:'Studio'},
   {id:'starlite',name:'Starlite Ballroom',kind:'Studio · Mobile'},
-  {id:'todd-jamie',name:'Todd and Jamie',kind:'Instructors'},
+  {id:'todd-jamie',name:'Let’s Dance Pensacola (Todd and Jamie)',kind:'Group'},
   {id:'bill-thrall',name:'Bill Thrall',kind:'Instructor'},
-  {id:'nina-travis',name:'Nina and Travis',kind:'Instructors'}
+  {id:'nina-travis',name:'Nina, Travis and Andy',kind:'Instructors'}
 ]);
 const norm=s=>String(s||'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim();
 export function badgeIds(ev={}) {
@@ -25,11 +25,13 @@ export function badgeIds(ev={}) {
   if(key==='starlite-ballroom-tuesday-ballroom-latin-class'||key==='ttdgc-starlight-ballroom-friday'||source.includes('starliteballroomal.com')||(/starlite ballroom/.test(venue)&&/mobile/.test(venue)))ids.push('starlite');
   if(key.startsWith('good-ole-social-dance')||/\btodd and jamie\b/.test(text))ids.push('todd-jamie');
   if(/\bbill thrall\b/.test(text)||key.startsWith('ttdgc-bill-thrall-'))ids.push('bill-thrall');
-  if(key==='ttdgc-dancing-nina-travis-andy-tuesday'||(/\bnina outlaw\b/.test(text)&&/\btravis outlaw\b/.test(text)))ids.push('nina-travis');
+  if(key==='ttdgc-dancing-nina-travis-andy-tuesday'||(/\bnina outlaw\b/.test(text)&&/\btravis outlaw\b/.test(text)&&/\bandy\b/.test(text)))ids.push('nina-travis');
   return ids.sort((a,b)=>(a==='twym')-(b==='twym'));
 }
 export const matchesBadge=(ev,id)=>!id||badgeIds(ev).includes(id);
-const asset=(id,size)=>new URL(`assets/organizer-badges/${id}-${size}.png?v=stacked-2`,import.meta.url).href;
+const vectors=new Set(['coastals','starlite','todd-jamie','bill-thrall','nina-travis']);
+export const badgeAssetFile=(id,size)=>vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
+const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v=sharp-3',import.meta.url).href;
 export function addCardBadge(host,ev) {
   const id=badgeIds(ev)[0];if(!id)return;
   const item=BADGES.find(b=>b.id===id),img=document.createElement('img');
@@ -38,12 +40,12 @@ export function addCardBadge(host,ev) {
 }
 export function createBadgePicker(after,onChange) {
   let selected=null;const section=document.createElement('section');section.className='organizer-picker';section.hidden=true;
-  const heading=document.createElement('h3');heading.className='step-label';heading.textContent='Groups, studios & instructors';section.appendChild(heading);
-  const help=document.createElement('p');help.className='organizer-help';help.textContent='Choose one to narrow these events. Studio badges also include events hosted there.';section.appendChild(help);
-  const buttons=document.createElement('div');buttons.className='organizer-choices';buttons.setAttribute('aria-label','Filter by group, studio or instructor');section.appendChild(buttons);
-  for(const item of BADGES){const b=document.createElement('button');b.type='button';b.className='organizer-choice';b.dataset.organizer=item.id;b.setAttribute('aria-pressed','false');b.setAttribute('aria-label',item.name);const img=document.createElement('img');img.src=asset(item.id,60);img.width=60;img.height=60;img.alt='';img.addEventListener('error',()=>img.remove(),{once:true});const label=document.createElement('span');label.textContent=item.name;const count=document.createElement('small');count.className='organizer-count';b.append(img,label,count);b.addEventListener('click',()=>{selected=selected===item.id?null:item.id;refresh();onChange();});buttons.appendChild(b);}
-  const clear=document.createElement('button');clear.type='button';clear.className='organizer-clear';clear.textContent='Show all groups';clear.hidden=true;clear.addEventListener('click',()=>{selected=null;refresh();onChange();});section.appendChild(clear);
-  const status=document.createElement('p');status.className='organizer-status';status.setAttribute('role','status');section.appendChild(status);const layout=document.createElement('div');layout.className='style-organizer-layout';after.before(layout);layout.append(after,section);
+  const heading=document.createElement('h3');heading.className='badge-sr-only';heading.textContent='Groups, studios & instructors';section.appendChild(heading);
+  const help=document.createElement('p');help.className='badge-sr-only';help.textContent='Choose one to narrow these events. Studio badges also include events hosted there.';section.appendChild(help);
+  const buttons=document.createElement('div');buttons.className='organizer-choices';buttons.setAttribute('role','group');buttons.setAttribute('aria-label','Filter by group, studio or instructor');section.appendChild(buttons);
+  for(const item of BADGES){const b=document.createElement('button');b.type='button';b.className='organizer-choice';b.dataset.organizer=item.id;b.setAttribute('aria-pressed','false');b.setAttribute('aria-label',item.name);const img=document.createElement('img');img.src=asset(item.id,40);img.width=40;img.height=40;img.alt='';img.addEventListener('error',()=>img.remove(),{once:true});b.title=item.name;b.append(img);b.addEventListener('click',()=>{selected=selected===item.id?null:item.id;refresh();onChange();});buttons.appendChild(b);}
+  const clear=document.createElement('button');clear.type='button';clear.className='organizer-clear';clear.textContent='×';clear.setAttribute('aria-label','Clear group filter');clear.title='Clear group filter';clear.hidden=true;clear.addEventListener('click',()=>{selected=null;refresh();onChange();});section.appendChild(clear);
+  const status=document.createElement('p');status.className='organizer-status badge-sr-only';status.setAttribute('role','status');section.appendChild(status);const layout=document.createElement('div');layout.className='style-organizer-layout';after.before(layout);layout.append(after,section);
   function refresh(){buttons.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.organizer===selected)));clear.hidden=!selected;status.textContent=selected?'Showing '+BADGES.find(b=>b.id===selected).name+'. Other place, style and date filters still apply.':'';}
-  return {get selected(){return selected;},update(items){section.hidden=false;for(const b of buttons.children){const keys=new Set(items.filter(x=>matchesBadge(x.ev,b.dataset.organizer)).map(x=>x.ev.key));b.querySelector('small').textContent=keys.size+' listed';}refresh();}};
+  return {get selected(){return selected;},update(items){section.hidden=false;for(const b of buttons.children){const keys=new Set(items.filter(x=>matchesBadge(x.ev,b.dataset.organizer)).map(x=>x.ev.key));b.setAttribute('aria-label',BADGES.find(x=>x.id===b.dataset.organizer).name+', '+keys.size+' listed');b.title=BADGES.find(x=>x.id===b.dataset.organizer).name+' — '+keys.size+' listed';}refresh();}};
 }

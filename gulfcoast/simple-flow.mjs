@@ -1,4 +1,4 @@
-import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=1dc9ef2f';
+import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=9d0fec84';
 // Exp2 Simple mode: Where -> Styles -> When (sticky calendar) -> cards, each step
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
