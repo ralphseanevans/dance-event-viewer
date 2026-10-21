@@ -10,3 +10,23 @@
 .tile-body.has-organizer-badge{position:relative}.tile-body.has-organizer-badge .tile-style{padding-right:38px}.organizer-card-badge{position:absolute;top:10px;right:10px;width:30px!important;height:30px!important;object-fit:contain;pointer-events:none}
 #simple-groups:not([data-zoom="0"]) .organizer-card-badge{width:calc(30px / var(--z,.78))!important;height:calc(30px / var(--z,.78))!important;top:calc(10px / var(--z,.78));right:calc(10px / var(--z,.78));filter:brightness(.18)}
 @media(max-width:600px){.organizer-choices{gap:5px}.organizer-choice{width:calc((100% - 15px)/4);min-width:65px;font-size:10px;padding:7px 3px;min-height:125px}.organizer-choice img{width:60px;height:60px}.organizer-choice span{overflow-wrap:anywhere}}
+
+/* Place the compact bordered identity panel beside the dance choices. */
+.style-organizer-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,370px);gap:28px;align-items:start}
+.style-organizer-layout>*{min-width:0}
+.style-organizer-layout .organizer-picker{margin-top:56px;padding:12px;border:1px solid var(--line);border-radius:6px}
+.style-organizer-layout .organizer-choice{width:calc((100% - 12px)/3);min-height:118px;padding:7px 3px;border-color:var(--line)}
+.style-organizer-layout .organizer-choices{gap:6px}
+.style-organizer-layout .organizer-choice[aria-pressed=true]{border-color:var(--red)}
+.style-organizer-layout .organizer-help{font-size:11px;line-height:1.4}
+.style-organizer-layout .style-choices{margin-left:0;margin-right:0;justify-content:center}
+@media(max-width:800px){
+.style-organizer-layout{grid-template-columns:minmax(0,1fr) minmax(146px,.9fr);gap:12px}
+.style-organizer-layout .organizer-picker{padding:8px;margin-top:48px}
+.style-organizer-layout .organizer-choice{width:calc((100% - 6px)/2);min-width:0;min-height:118px;padding:6px 0;font-size:10px}
+.style-organizer-layout .style-choices{gap:6px;margin-top:22px}
+.style-organizer-layout .style-choice.has-style-badge img{width:90px;max-width:100%}
+.style-organizer-layout .style-choice{max-width:100%}
+.style-organizer-layout .solo-toggle{font-size:12px;gap:3px;white-space:normal;text-align:center}
+.style-organizer-layout .style-route{margin-left:0}
+}
