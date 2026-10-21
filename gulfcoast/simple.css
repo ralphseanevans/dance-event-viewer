@@ -280,19 +280,25 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
   text-decoration:none;
   opacity:.72;
 }
+/* Lift the muted source artwork to the cream/red tones of Blues and West Coast Swing.
+   Keep this on the button so selected and hover states share the same treatment. */
+.style-choice.has-style-badge:is([data-style="Bachata"],[data-style="Ballroom"],[data-style="Country Swing"],[data-style="East Coast Swing"],[data-style="Hustle"],[data-style="Latin"],[data-style="Lindy Hop"]){
+  --badge-brightness:1.45;
+  --badge-saturation:1.1;
+}
 .style-choice.has-style-badge img{
   display:block;
   width:clamp(130px,12vw,156px);
   height:auto;
   object-fit:contain;
-  filter:brightness(1.144) saturate(.9);
+  filter:brightness(var(--badge-brightness,1.144)) saturate(var(--badge-saturation,.9));
 }
 .style-choice.has-style-badge[aria-pressed="true"]{
   box-shadow:0 0 0 2px var(--red);
   opacity:1;
 }
 .style-choice.has-style-badge[aria-pressed="true"] img{
-  filter:brightness(1.144) saturate(.9);
+  filter:brightness(var(--badge-brightness,1.144)) saturate(var(--badge-saturation,.9));
 }
 .style-choice.has-style-badge.is-unavailable,
 .style-choice.has-style-badge.is-unavailable[aria-pressed="true"]{
@@ -309,7 +315,7 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
   }
   .style-choice.has-style-badge:hover img,
   .style-choice.has-style-badge[aria-pressed="true"]:hover img{
-    filter:brightness(1.144) saturate(.9);
+    filter:brightness(var(--badge-brightness,1.144)) saturate(var(--badge-saturation,.9));
   }
   .style-choice.has-style-badge.is-unavailable:hover img{
     filter:grayscale(.85) brightness(.715) saturate(.45);
