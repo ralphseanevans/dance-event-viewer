@@ -1,3 +1,4 @@
+import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=e2d669b7';
 // Exp2 Simple mode: Where -> Styles -> When (sticky calendar) -> cards, each step
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
@@ -36,6 +37,7 @@ const el = {
   where: $('#simple-where .place-choices'), styles: $('#simple-styles'), styleChoices: $('#simple-styles .style-choices'),
   results: $('#simple-results'), groups: $('#simple-groups'), more: $('#simple-more'), status: $('#simple-status')
 };
+const badgePicker = createBadgePicker(el.styles, () => { state.pages = 1; render(); });
 const lines = { mode: createFlowLine(el.modes), where: createFlowLine(el.where), styles: createFlowLine(el.styleChoices) };
 // Draw a separate route from every selected city to the Styles heading.
 const routeHost = $('#simple');
@@ -281,12 +283,14 @@ function render({ tapped, tappedStyle } = {}) {
   el.status.hidden = true;
   const today = atMidnight(new Date());
   const markets = state.markets.size ? [...state.markets] : MARKETS.map(m => m.id);
-  const items = upcomingIn(state.events, markets, today);
+  const nearbyItems = upcomingIn(state.events, markets, today);
+  badgePicker.update(nearbyItems);
+  const items = nearbyItems.filter(x => matchesBadge(x.ev, badgePicker.selected));
   // Keep all nearby styles visible, but disable styles with no events in the selected places.
   const styleMarkets = MARKETS.map(m => m.id);
   const styleCatalog = upcomingIn(state.events, styleMarkets, today);
   const { partner, solo } = availableStyles(styleCatalog);
-  const { partner: availablePartner, solo: availableSolo } = availableStyles(items);
+  const { partner: availablePartner, solo: availableSolo } = availableStyles(nearbyItems);
   const availableHere = new Set([...availablePartner, ...availableSolo]);
   [...state.styles].forEach(s => { if (!availableHere.has(s)) state.styles.delete(s); });
 
@@ -419,6 +423,7 @@ function tile({ ev, canceled, day }) {
   const style = document.createElement('p'); style.className = 'tile-style'; style.textContent = ev.style || 'Dance'; style.title = style.textContent;
   if (!ev.style) style.classList.add('is-placeholder');
   body.appendChild(style);
+  addCardBadge(body, ev);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; c.title = c.textContent; body.appendChild(c); }
   const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name; name.title = ev.name;
   body.appendChild(name);

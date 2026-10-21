@@ -1,0 +1,49 @@
+// Explicit identity rules only. A venue match means "at this studio", not ownership.
+export const BADGES = Object.freeze([
+  {id:'psds',name:'Pensacola Swing Dance Society',kind:'Group'},
+  {id:'twym',name:'The Way You Move',kind:'Studio / venue'},
+  {id:'seaside',name:'Seaside Swing-Outs',kind:'Group'},
+  {id:'mobile-wcs',name:'Mobile WCS',kind:'Community'},
+  {id:'usa-dance',name:'USA Dance',kind:'National organization'},
+  {id:'coastals',name:'Pensacola Coastals',kind:'Studio'},
+  {id:'starlite',name:'Starlite Ballroom',kind:'Studio · Mobile'},
+  {id:'todd-jamie',name:'Todd and Jamie',kind:'Instructors'},
+  {id:'bill-thrall',name:'Bill Thrall',kind:'Instructor'},
+  {id:'john-plott',name:'John Plott',kind:'Instructor'}
+]);
+const norm=s=>String(s||'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim();
+export function badgeIds(ev={}) {
+  const key=norm(ev.key),name=norm(ev.name),venue=norm(ev.venue),source=norm(ev.source_url);
+  const people=norm(Array.isArray(ev.instructors)?ev.instructors.join(' '):ev.instructors);
+  const text=name+' '+people, ids=[];
+  if(key.startsWith('psds-')||['bobe-st-studio-coaching-with-justin-tuesdays','monday-night-west-coast-swing-dance-party-ragon-hall','ragon-hall-first-saturday-monthly-dance','3rd-saturday-west-coast-swing-old-sacred-heart-2026-07-18'].includes(key)||name.includes('pensacola swing dance society')||source.includes('pensacolaswingdancesociety.com')||/\btaylor morton\b/.test(text))ids.push('psds');
+  if(venue.includes('the way you move')||name.includes('the way you move')||key.startsWith('west-coast-wednesdays-in-'))ids.push('twym');
+  if(name.includes('seaside swing-outs')||key.startsWith('seaside-swing-outs-')||key.startsWith('sso-lindy-and-blues-')||key==='first-friday-live-band-dance-night-seaside-swing-outs')ids.push('seaside');
+  if(key.startsWith('mobtown-')||name.includes('mobile west coast swing'))ids.push('mobile-wcs');
+  if(key.startsWith('usa-dance-')||source.includes('usadance.org')||name.includes('usa dance'))ids.push('usa-dance');
+  if(key.startsWith('pensacola-coastals-')||venue.includes('pensacola coastals')||source.includes('pensacolacoastals.wixsite.com'))ids.push('coastals');
+  if(key==='starlite-ballroom-tuesday-ballroom-latin-class'||key==='ttdgc-starlight-ballroom-friday'||source.includes('starliteballroomal.com')||(/starlite ballroom/.test(venue)&&/mobile/.test(venue)))ids.push('starlite');
+  if(key.startsWith('good-ole-social-dance')||/\btodd and jamie\b/.test(text))ids.push('todd-jamie');
+  if(/\bbill thrall\b/.test(text)||key.startsWith('ttdgc-bill-thrall-'))ids.push('bill-thrall');
+  if(/\bjohn plott\b/.test(text))ids.push('john-plott');
+  return ids.sort((a,b)=>(a==='twym')-(b==='twym'));
+}
+export const matchesBadge=(ev,id)=>!id||badgeIds(ev).includes(id);
+const asset=(id,size)=>new URL(`assets/organizer-badges/${id}-${size}.png`,import.meta.url).href;
+export function addCardBadge(host,ev) {
+  const id=badgeIds(ev)[0];if(!id)return;
+  const item=BADGES.find(b=>b.id===id),img=document.createElement('img');
+  img.className='organizer-card-badge';img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
+  img.addEventListener('error',()=>img.remove(),{once:true});host.classList.add('has-organizer-badge');host.appendChild(img);
+}
+export function createBadgePicker(after,onChange) {
+  let selected=null;const section=document.createElement('section');section.className='organizer-picker';section.hidden=true;
+  const heading=document.createElement('h3');heading.className='step-label';heading.textContent='Groups, studios & instructors';section.appendChild(heading);
+  const help=document.createElement('p');help.className='organizer-help';help.textContent='Choose one to narrow these events. Studio badges also include events hosted there.';section.appendChild(help);
+  const buttons=document.createElement('div');buttons.className='organizer-choices';buttons.setAttribute('aria-label','Filter by group, studio or instructor');section.appendChild(buttons);
+  for(const item of BADGES){const b=document.createElement('button');b.type='button';b.className='organizer-choice';b.dataset.organizer=item.id;b.setAttribute('aria-pressed','false');b.setAttribute('aria-label',item.name);const img=document.createElement('img');img.src=asset(item.id,60);img.width=60;img.height=60;img.alt='';img.addEventListener('error',()=>img.remove(),{once:true});const label=document.createElement('span');label.textContent=item.name;const count=document.createElement('small');count.className='organizer-count';b.append(img,label,count);b.addEventListener('click',()=>{selected=selected===item.id?null:item.id;refresh();onChange();});buttons.appendChild(b);}
+  const clear=document.createElement('button');clear.type='button';clear.className='organizer-clear';clear.textContent='Show all groups';clear.hidden=true;clear.addEventListener('click',()=>{selected=null;refresh();onChange();});section.appendChild(clear);
+  const status=document.createElement('p');status.className='organizer-status';status.setAttribute('role','status');section.appendChild(status);after.after(section);
+  function refresh(){buttons.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.organizer===selected)));clear.hidden=!selected;status.textContent=selected?'Showing '+BADGES.find(b=>b.id===selected).name+'. Other place, style and date filters still apply.':'';}
+  return {get selected(){return selected;},update(items){section.hidden=false;for(const b of buttons.children){const keys=new Set(items.filter(x=>matchesBadge(x.ev,b.dataset.organizer)).map(x=>x.ev.key));b.querySelector('small').textContent=keys.size+' listed';}refresh();}};
+}
