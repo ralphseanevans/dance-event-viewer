@@ -16,3 +16,12 @@
 @media(max-width:800px){.style-organizer-layout{grid-template-columns:minmax(0,1fr) 132px;gap:12px}.style-organizer-layout .organizer-picker{padding:8px;margin-top:48px}.style-organizer-layout .style-choices{gap:6px;margin-top:22px}.style-organizer-layout .style-choice.has-style-badge img{width:90px;max-width:100%}.style-organizer-layout .style-choice{max-width:100%}.style-organizer-layout .solo-toggle{font-size:12px;gap:3px;white-space:normal;text-align:center}.style-organizer-layout .style-route{margin-left:0}}
 
 #simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge .tile-style{padding-right:calc(50px / var(--z,.78));min-height:calc(52px / var(--z,.78))}
+
+/* Instructor photo badges (face + name artwork): 56px across on cards, up from 42px, so the
+   name label is legible. Group/studio logos stay 42px. Top inset trimmed to 8px on Full cards
+   so the badge still ends inside the style row's 52px min-height (no taller cards); compact
+   cards have 18px top padding, so 10px + 56px still ends inside that row. Flip corner is top-left. */
+.organizer-card-badge.organizer-card-badge-color{top:8px;right:8px;width:56px!important;height:56px!important}
+.tile-body.has-organizer-badge:has(.organizer-card-badge-color) .tile-style{padding-right:62px}
+#simple-groups:not([data-zoom="0"]) .organizer-card-badge.organizer-card-badge-color{width:calc(56px / var(--z,.78))!important;height:calc(56px / var(--z,.78))!important;top:calc(10px / var(--z,.78));right:calc(10px / var(--z,.78))}
+#simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge:has(.organizer-card-badge-color) .tile-style{padding-right:calc(64px / var(--z,.78))}
