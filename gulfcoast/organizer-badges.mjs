@@ -8,7 +8,7 @@ export const BADGES = Object.freeze([
   {id:'coastals',name:'Pensacola Coastals',kind:'Studio'},
   {id:'starlite',name:'Starlite Ballroom',kind:'Studio · Mobile'},
   {id:'todd-jamie',name:'Let’s Dance Pensacola (Todd and Jamie)',kind:'Group'},
-  {id:'nina-travis',name:'Nina, Travis and Andy',kind:'Instructors'},
+  {id:'nina-travis',name:'Nina & Travis',kind:'Instructors'},
   {id:'rachel-zander',name:'Rachel & Zander',kind:'Instructors'},
   {id:'traci-bell',name:'Traci Bell',kind:'Instructor'},
   {id:'john-alicia',name:'John & Alicia',kind:'Instructors'}
@@ -33,8 +33,8 @@ export function badgeIds(ev={}) {
   return ids.sort((a,b)=>(a==='twym')-(b==='twym'));
 }
 export const matchesBadge=(ev,ids)=>{const chosen=Array.isArray(ids)?ids:ids?[ids]:[];return !chosen.length||badgeIds(ev).some(id=>chosen.includes(id));};
-const vectors=new Set(['coastals','starlite','todd-jamie','bill-thrall','nina-travis']);
-export const badgeAssetFile=(id,size)=>['rachel-zander','traci-bell','john-alicia'].includes(id)?id+'-teacher-avatar.png':vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
+const vectors=new Set(['coastals','starlite','todd-jamie','bill-thrall']);
+export const badgeAssetFile=(id,size)=>['rachel-zander','traci-bell','john-alicia','nina-travis'].includes(id)?id+'-teacher-avatar.png':vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
 const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v='+(id==='john-alicia'?'ja-v3':'sharp-4'),import.meta.url).href;
 export function addCardBadge(host,ev) {
   const id=badgeIds(ev)[0];if(!id)return;
