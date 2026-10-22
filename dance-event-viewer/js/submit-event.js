@@ -8,6 +8,11 @@
  * Apps Script project "Dance Event Viewer - Submission Intake"). If it's
  * ever blank, the form explains that submissions aren't live yet rather
  * than silently failing.
+ *
+ * 2026-10-22: before the Apps Script POST, the submission is also filed in the
+ * Supabase review list (js/submissions.js). Supabase RLS, not the browser and never
+ * the typed name, decides whether it is "pending" (everyone) or "approved" (the
+ * signed-in admin Google account only). Admins also get the review list below the form.
  */
 "use strict";
 
@@ -320,6 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
     submitBtn.disabled = true;
     setStatus("Sending…", false);
     try {
+      if (window.DEV_SUBMISSIONS) await window.DEV_SUBMISSIONS.attach(payload);
       const res = await fetch(SUBMIT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
@@ -334,6 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setStatus(data.published
           ? "Thanks! Your event is live — it'll show on the calendar in a minute or two."
           : "Thanks! Your submission is in for review.", false, true);
+        loadReviewList();
       } else {
         setStatus((data && data.error) || "Something went wrong — please try again.", true);
       }
@@ -342,5 +349,98 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       submitBtn.disabled = false;
     }
+  });
+
+  /* ---------- Admin review list (2026-10-22) ----------
+     Visible only when the signed-in email is an admin (cosmetic). The rows come from
+     Supabase, where RLS lets ONLY the admin Google account read or update them, so a
+     non-admin who unhides this section just gets an empty list / an error. */
+  const reviewSection = $("#review-list");
+  const reviewItems = $("#review-items");
+  const reviewStatus = $("#review-status");
+  const reviewRefresh = $("#review-refresh");
+  let reviewIsAdmin = false;
+
+  function reviewText(msg) { if (reviewStatus) reviewStatus.textContent = msg; }
+
+  function describe(row) {
+    const d = row.details || {};
+    const when = row.created_at ? new Date(row.created_at).toLocaleString() : "";
+    const what = row.submission_kind === "correction"
+      ? `Report a problem: ${d.name || row.event_key || "(listing)"}`
+      : (d.name || (row.intake_method === "flyer" ? "Flyer upload" : "New event"));
+    const bits = [d.style, d.type, d.day_of_week || d.start_date, d.start_time, d.venue].filter(Boolean).join(" · ");
+    const who = [row.contact_name, row.contact_email, row.contact_phone].filter(Boolean).join(" · ") || "(no contact)";
+    const note = [d.source_note, d.source_url].filter(Boolean).join(" — ");
+    const photos = row.flyer_count ? `${row.flyer_count} photo${row.flyer_count > 1 ? "s" : ""} (in the Apps Script intake)` : "";
+    return { when, what, bits, who, note, photos };
+  }
+
+  async function setReviewStatus(id, status, li) {
+    const client = window.DEV_AUTH && window.DEV_AUTH.client;
+    if (!client) return;
+    li.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+    const { error } = await client.from("submissions").update({ status }).eq("id", id);
+    if (error) {
+      reviewText("Couldn't update that one: " + error.message);
+      li.querySelectorAll("button").forEach((b) => { b.disabled = false; });
+      return;
+    }
+    li.remove();
+    if (reviewItems && !reviewItems.children.length) reviewText("Nothing waiting for review.");
+  }
+
+  async function loadReviewList() {
+    if (!reviewSection || !reviewItems || !reviewIsAdmin) return;
+    const client = window.DEV_AUTH && window.DEV_AUTH.client;
+    if (!client) return;
+    reviewText("Loading…");
+    const { data, error } = await client.from("submissions")
+      .select("id,created_at,status,submission_kind,intake_method,event_key,details,contact_name,contact_email,contact_phone,flyer_count")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    reviewItems.textContent = "";
+    if (error) { reviewText("Couldn't load the review list: " + error.message); return; }
+    if (!data || !data.length) { reviewText("Nothing waiting for review."); return; }
+    reviewText(`${data.length} waiting for review.`);
+    data.forEach((row) => {
+      const info = describe(row);
+      const li = document.createElement("li");
+      li.className = "review-item";
+      const title = document.createElement("strong");
+      title.textContent = info.what;
+      const meta = document.createElement("div");
+      meta.className = "review-meta";
+      meta.textContent = [info.when, info.bits].filter(Boolean).join(" — ");
+      const who = document.createElement("div");
+      who.className = "review-meta";
+      who.textContent = "From: " + info.who;
+      li.append(title, meta, who);
+      [info.note, info.photos].filter(Boolean).forEach((t) => {
+        const p = document.createElement("div");
+        p.className = "review-meta";
+        p.textContent = t;
+        li.append(p);
+      });
+      const actions = document.createElement("div");
+      actions.className = "review-actions";
+      [["approved", "Mark approved"], ["rejected", "Reject"]].forEach(([status, label]) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        b.addEventListener("click", () => { void setReviewStatus(row.id, status, li); });
+        actions.append(b);
+      });
+      li.append(actions);
+      reviewItems.append(li);
+    });
+  }
+
+  if (reviewRefresh) reviewRefresh.addEventListener("click", () => { void loadReviewList(); });
+  window.addEventListener("dev-auth-change", (e) => {
+    reviewIsAdmin = !!(e.detail && e.detail.admin);
+    if (reviewIsAdmin) void loadReviewList();
+    else if (reviewItems) { reviewItems.textContent = ""; reviewText(""); }
   });
 });

@@ -240,7 +240,7 @@ hidden until clicked). Text-only corrections go out via the silent-send mail rel
 **One-step flyer upload (2026-07-13):** attaching a photo routes the send through the
 Submission-Intake Apps Script (`SUBMIT_ENDPOINT`, `submission_kind:"correction"` +
 `event_key` + `type`) — and that backend can now publish it to the live site with no
-further steps: trusted senders (name contains "Ralph" or "admin123") get the image
+further steps: a verified admin (see "Admin sign-in" below; a typed name never counts) gets the image
 committed straight to the GitHub repo (`graphics/logos/` + a `logo-map.json` update),
 live in ~1–2 minutes; everyone else's upload is held and Sean gets an email with
 one-click Approve/Reject links. Recurring events also get a prepended `patterns` entry
@@ -251,8 +251,8 @@ the daily `dos-flyer-sync` scheduled task pulls
 web-published logos back into this local master folder (see `AUTOMATIONS.md`).
 
 **Text corrections → hourly auto-fix (2026-07-13, same day):** text-only sends now
-also go through the Submissions pipeline instead of the mail relay. Trusted senders
-(name contains "Ralph"/"admin123") get queued as `pending-fix`; the hourly
+also go through the Submissions pipeline instead of the mail relay. A verified admin's
+fixes get queued as `pending-fix`; the hourly
 `dos-correction-fixer` Cowork task interprets the note and applies it to the real
 event data with the full safe-write/test/publish pipeline (never deletes events,
 never changes keys — ambiguous asks are held for Sean). Everyone else's corrections
@@ -264,11 +264,24 @@ now accepts **multiple photos of the same flyer** (front/back, close-ups — up 
 event's card image, all photos go to the Drive intake folder (extras in the sheet's
 `extra_flyer_urls` column) and all are sent to Gemini together in one extraction call.
 The "Fill Out Details" intake gained an **optional flyer image**: the typed details are
-authoritative (no AI extraction), and a trusted sender name ("Ralph"/"admin123") puts
+authoritative (no AI extraction), and a verified admin submission puts
 the event + flyer live immediately via the `web-events.json` overlay + logo layer,
 while anyone else's is held — Sean's email Approve link publishes the **event and
 flyer together** (not just the image). Backend spec-of-record:
 `Operations/Submission_AppsScript_Code.gs`.
+
+## Admin sign-in and the review list (2026-10-22)
+
+Nobody has to sign in to submit an event or report a problem. Every submission is filed
+in the Supabase `public.submissions` review list as `pending`, then sent to the Apps
+Script intake as before. The optional **Admin sign-in** button (Google, via Supabase Auth)
+matters only for the admin account (initially ralphseanevans@gmail.com): Supabase RLS
+lets only that account insert a row as `approved` or read the review list, and the
+Apps Script reads the row back with the caller's own token before it publishes anything.
+**The typed contact name grants nothing.** Sign-in uses
+`redirectTo = window.location.origin + window.location.pathname`, so it also works on a
+local copy at `http://localhost:8123` / `http://127.0.0.1:8123`. Policies:
+`supabase/migrations/20261022000000_submissions_rls.sql`; external settings: `SETUP.md`.
 
 ## Dashboard calendar management (2026-07-22)
 

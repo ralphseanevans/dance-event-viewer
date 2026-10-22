@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-22 - Submissions: admin Google sign-in, RLS review list, no name trust
+
+### Security
+
+- A typed contact name (the old `TRUSTED_NAME_RE` / `TRUSTED_NAME_PATTERN`) no longer grants
+  instant publishing. Trust now comes from Supabase RLS: only the admin Google account can
+  file an `approved` submission, and the Apps Script reads it back with the caller's token.
+
+### Added
+
+- `public.submissions` review list (proposed migration
+  `supabase/migrations/20261022000000_submissions_rls.sql`, not applied), `js/submissions.js`,
+  an admin-only review list on the Submit page, and `SETUP.md` (external settings).
+
+### Changed
+
+- "Sign in with Google" is now an optional **Admin sign-in** and redirects to
+  `window.location.origin + pathname`, so it works on `localhost` / `127.0.0.1` too.
+
 ## 2026-08-16 - Clearer multi-event selection
 
 ### Changed
