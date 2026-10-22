@@ -1314,7 +1314,7 @@ function renderCalendarCard(event) {
         intake_method: act.intake_method,
         event_key: event.key,
         source_note: act.note(event),
-        contact_name: "Ralph (authenticated dashboard)",
+        contact_name: "Owner dashboard (password-authenticated)",
       });
       if (!data.ok) throw new Error(data.error || "unknown error");
       status.textContent = "Removal request filed. The event remains in calendar JSON until the protected local workflow applies it.";
@@ -1473,7 +1473,7 @@ function openEditPanel(event) {
         intake_method: act.intake_method,
         event_key: event.key,
         source_note: act.note(event, prev, summary),
-        contact_name: "Ralph (authenticated dashboard)",
+        contact_name: "Owner dashboard (password-authenticated)",
       }, changed));
       if (!data.ok) throw new Error(data.error || "unknown error");
       status.textContent = "Edit request filed. The live calendar remains unchanged until the protected local workflow applies it.";

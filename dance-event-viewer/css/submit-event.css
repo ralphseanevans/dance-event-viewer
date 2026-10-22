@@ -241,3 +241,16 @@ input.visually-hidden-file:focus-visible + .file-button {
 @media (max-width: 640px) {
   .submit-wrap { margin-top: 10px; }
 }
+
+/* Admin review list (2026-10-22) — only shown to the admin account; data is RLS-gated. */
+.review-list { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border, #333); }
+.review-list h2 { font-size: 1.1rem; margin: 0 0 .4rem; }
+.review-hint, .review-status { color: var(--text-dim, #aaa); font-size: .85rem; }
+.review-refresh, .review-actions button {
+  background: transparent; color: var(--accent, #4cc2ff); border: 1px solid currentColor;
+  border-radius: 999px; padding: 3px 12px; font: inherit; font-size: .82rem; cursor: pointer;
+}
+.review-items { list-style: none; padding: 0; margin: .5rem 0 0; display: grid; gap: .6rem; }
+.review-item { border: 1px solid var(--border, #333); border-radius: 10px; padding: .6rem .8rem; }
+.review-meta { color: var(--text-dim, #aaa); font-size: .82rem; overflow-wrap: anywhere; }
+.review-actions { display: flex; gap: .5rem; margin-top: .4rem; }

@@ -9,7 +9,11 @@
   Nothing here writes to canonical dance_events.json. Submissions go to
   a private "Submissions" Google Sheet via an Apps Script web app and sit
   there until Sean reviews and approves them in a private artifact, then
-  explicitly asks for an "add the approved ones" transfer. See
+  explicitly asks for an "add the approved ones" transfer.
+  2026-10-22: each submission is also filed in the Supabase review list
+  (public.submissions). No login is needed to submit; the optional
+  "Admin sign-in" (Google) only matters for the admin account, whose posts
+  RLS allows to be "approved" (live right away). See SETUP.md and
   Event_Submission_Form_Prompt.md (Dance Event Viewer Project root) for the
   full architecture.
 -->
@@ -24,7 +28,7 @@
   <!-- Site analytics (GA4, added 2026-08-07). Public measurement ID only. -->
   <script src="js/analytics.js?v=d88dcbe5"></script>
   <link rel="stylesheet" href="css/styles.css?v=711d1bca">
-  <link rel="stylesheet" href="css/submit-event.css?v=47f298f6">
+  <link rel="stylesheet" href="css/submit-event.css?v=267fc7f5">
   <link rel="stylesheet" href="css/auth.css?v=084b41f0">
 </head>
 <body class="submit-page">
@@ -265,11 +269,21 @@
         <p id="submit-status" class="submit-status" role="status"></p>
       </div>
     </form>
+
+    <section id="review-list" class="review-list" data-admin-only hidden aria-labelledby="review-heading">
+      <h2 id="review-heading">Review list (admin)</h2>
+      <p class="review-hint">Pending submissions and problem reports. Supabase only shows these to the admin account.
+        "Mark approved" records your decision here; flyer photos and publishing still go through the Apps Script email links.</p>
+      <button type="button" id="review-refresh" class="review-refresh">Refresh</button>
+      <p id="review-status" class="review-status" role="status"></p>
+      <ul id="review-items" class="review-items"></ul>
+    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
   <script src="js/supabase-config.js?v=0254dbd2"></script>
-  <script src="js/auth.js?v=e70a7d71"></script>
-  <script src="js/submit-event.js?v=7a310080"></script>
+  <script src="js/auth.js?v=4dbec408"></script>
+  <script src="js/submissions.js?v=566d87ba"></script>
+  <script src="js/submit-event.js?v=11a52630"></script>
 </body>
 </html>

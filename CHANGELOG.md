@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-22 - Submissions: admin Google sign-in, RLS review list, no name trust
+
+### Security
+
+- A typed contact name (the old `TRUSTED_NAME_RE` / `TRUSTED_NAME_PATTERN`) no longer grants
+  instant publishing. Trust now comes from Supabase: only an admin on the private user-id
+  allowlist can file an `approved` submission, and the Apps Script consumes that row once,
+  with the caller's token, only if the payload hash it computes matches the row.
+- Submissions are filed through `rpc/submit_submission` (server-made id, no direct insert,
+  idempotent `client_key` for retries) with a per-caller and global throttle on anon rows.
+- The Supabase step gives up after 4 seconds, so the form never sticks on "Sending…".
+- The throttle's per-sender hint uses only `cf-connecting-ip` (no `x-forwarded-for`; without
+  it only the global limit applies); all submission helpers
+  live in a new `submissions_private` schema (the existing `private` schema is untouched);
+  the Apps Script checks trust only after the contact and image-type validations.
+
+### Added
+
+- `public.submissions` review list (proposed migration
+  `supabase/migrations/20261022000000_submissions_rls.sql`, not applied), `js/submissions.js`,
+  an admin-only review list on the Submit page, and `SETUP.md` (external settings).
+
+### Changed
+
+- "Sign in with Google" is now an optional **Admin sign-in** and redirects to
+  `window.location.origin + pathname`, so it works on `localhost` / `127.0.0.1` too.
+
 ## 2026-08-16 - Clearer multi-event selection
 
 ### Changed

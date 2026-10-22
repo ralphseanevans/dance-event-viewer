@@ -1,6 +1,10 @@
-/* Google sign-in (Supabase Auth). Anyone may sign in; only ADMIN_EMAILS see edit controls.
-   This gate is COSMETIC: real write permission is enforced server-side by Supabase RLS.
-   Anonymous visitors keep full access to viewing, submitting events and "Wrong info?". */
+/* Optional admin sign-in with Google (Supabase Auth). Nobody needs to sign in to view,
+   submit an event or use "Wrong info?"; those posts go to the admin review list.
+   ADMIN_EMAILS here is COSMETIC (shows admin controls). Real trust is enforced server-side
+   by Supabase RLS (public.is_submissions_admin(), see supabase/migrations/) — never by a
+   typed name. redirectTo is built from window.location.origin, so the same code works on
+   https://danceeventviewer.net, http://localhost:<port> and http://127.0.0.1:<port>,
+   provided each origin is on the Supabase Redirect URL allow-list (see SETUP.md). */
 (function () {
   const config = window.DANCE_EVENT_VIEWER_SUPABASE;
   if (!window.supabase?.createClient || !config?.enabled) return;
@@ -10,9 +14,13 @@
   });
   const isAdmin = (session) => !!session?.user?.email && admins.includes(session.user.email.toLowerCase());
 
+  // Back to the same page on the same origin (production, localhost or 127.0.0.1).
+  function redirectUrl() {
+    return window.location.origin + window.location.pathname;
+  }
+
   function signIn() {
-    const redirectTo = window.location.href.split("#")[0];
-    return client.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+    return client.auth.signInWithOAuth({ provider: "google", options: { redirectTo: redirectUrl() } });
   }
 
   function render(session) {
@@ -27,7 +35,8 @@
         btn.type = "button";
         btn.className = "auth-btn";
         btn.dataset.authSignin = "";
-        btn.textContent = "Sign in with Google";
+        btn.textContent = "Admin sign-in";
+        btn.title = "Optional — only for site admins. Anyone can submit without signing in.";
         btn.addEventListener("click", () => { void signIn(); });
         slot.append(btn);
         return;
@@ -56,11 +65,14 @@
     });
   }
 
-  window.DEV_AUTH = { client, signIn, isAdmin, admins };
+  window.DEV_AUTH = { client, signIn, isAdmin, admins, redirectUrl };
   const start = () => {
     render(null);
     client.auth.getSession().then(({ data }) => render(data.session));
-    client.auth.onAuthStateChange((_e, session) => render(session));
+    client.auth.onAuthStateChange((_e, session) => {
+      render(session);
+      window.dispatchEvent(new CustomEvent("dev-auth-change", { detail: { session, admin: isAdmin(session) } }));
+    });
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();

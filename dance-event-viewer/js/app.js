@@ -2527,6 +2527,9 @@ function feedbackWidget(ev) {
           source_url: link.value.trim(),
           contact_name: who.value.trim(),
         };
+        // 2026-10-22: file it in the Supabase review list first; RLS (never the typed
+        // name) decides whether it is pending or admin-approved. See js/submissions.js.
+        if (window.DEV_SUBMISSIONS) await window.DEV_SUBMISSIONS.attach(payload);
         const res = await fetch(SUBMIT_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script
@@ -2569,6 +2572,9 @@ function feedbackWidget(ev) {
           source_url: link.value.trim(),
           contact_name: who.value.trim(),
         };
+        // 2026-10-22: file it in the Supabase review list first; RLS (never the typed
+        // name) decides whether it is pending or admin-approved. See js/submissions.js.
+        if (window.DEV_SUBMISSIONS) await window.DEV_SUBMISSIONS.attach(payload);
         const res = await fetch(SUBMIT_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "text/plain" }, // avoids a CORS preflight against Apps Script

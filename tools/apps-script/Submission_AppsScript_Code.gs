@@ -8,9 +8,12 @@
  * Nothing secret lives in this file. Everything sensitive is a Script Property
  * (Project Settings > Script Properties):
  *   NOTIFY_EMAIL         - where review / publish notifications are sent
- *   TRUSTED_NAME_PATTERN - case-insensitive regex; submissions whose contact name
- *                          matches it are auto-published. Keep it private. If unset,
- *                          nobody is trusted and everything goes to review.
+ *   SUPABASE_PUBLISHABLE_KEY - the site's public Supabase publishable key (same value
+ *                          as js/supabase-config.js). Used only to mark an approved
+ *                          submissions row consumed (once, hash-matched) with the
+ *                          caller's token so RLS decides trust. If unset, only
+ *                          DASHBOARD_PASSWORD/REVIEW_TOKEN is trusted.
+ *   (TRUSTED_NAME_PATTERN is no longer read: a typed name never grants trust. Delete it.)
  *   FLYERS_FOLDER_ID     - Drive folder that stores uploaded flyer photos
  *   GEMINI_API_KEY       - Google AI Studio key used to read flyer details
  *   OPENAI_API_KEY       - used by the "email me a designed graphic" feature
@@ -38,12 +41,13 @@ const LOGO_MAP_REPO_PATH = "dance-event-viewer/logo-map.json";
 const SITE_SETTINGS_REPO_PATH = "site-settings.json";
 const VALID_PAGE_CHARACTERS = ["panel-peeker", "hero-opossum", "blue-angels"];
 const LOGOS_REPO_DIR = "graphics/logos"; // repo root, referenced as ../graphics/logos/ from index.html
-// Trusted-uploader pattern comes from a Script Property so it is never public.
-// Unset or invalid = trust nobody (everything goes to review).
-const TRUSTED_NAME_RE = (() => {
-  const pattern = PropertiesService.getScriptProperties().getProperty("TRUSTED_NAME_PATTERN");
-  try { return pattern ? new RegExp(pattern, "i") : /(?!)/; } catch (e) { return /(?!)/; }
-})();
+// 2026-10-22: the typed contact name NEVER grants trust (the old TRUSTED_NAME_RE /
+// TRUSTED_NAME_PATTERN check let anyone who typed the trigger word auto-publish).
+// Trust now comes only from submissionTrust_() below: a Supabase row whose RLS-gated
+// status is "approved" (only the admin Google account can create one), or the
+// existing server-checked DASHBOARD_PASSWORD / REVIEW_TOKEN. See SETUP.md.
+const SUPABASE_URL = "https://xyyxbwetagfexsqtokpk.supabase.co"; // public project URL
+const SUPABASE_SUBMISSIONS_TABLE = "submissions";
 const ALLOWED_IMAGE_EXT = { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp" };
 
 // Order matches the live Sheet as of 2026-07-13; NEW columns are appended at
@@ -58,6 +62,8 @@ const HEADERS = [
   "flyer_file_id", "flyer_token", "published_at", "logo_path",
   "extra_flyer_urls", // 2026-07-18: Drive links for photos 2..N of a multi-photo flyer upload
   "result_note", // 2026-07-23: human-readable outcome written back by the local queue processor
+  "trust_basis", // 2026-10-22: "supabase-admin" | "dashboard-auth" | "none" (never the typed name)
+  "supabase_submission_id", // 2026-10-22: id of the matching public.submissions row, if any
 ];
 
 // 2026-07-23: every intake_method any frontend actually sends. Unknown non-empty
@@ -261,6 +267,75 @@ function doPost(e) {
   }
 }
 
+/* 2026-10-22: server-side trust for submissions. The typed name is ignored.
+   - "supabase-admin": the browser filed a public.submissions row as "approved", which
+     Supabase only allows for an allowlisted admin user id. The row stores payload_hash,
+     a SHA-256 of the canonical payload. We recompute that hash from the body WE received
+     and, WITH THE CALLER'S OWN access token, set consumed_at on the row filtered by
+     id + status=approved + consumed_at is null + payload_hash. RLS only lets an admin
+     token update a row, and consumed_at can only go from null to set once, so:
+       * an anonymous or non-admin token never matches (RLS);
+       * a different payload replayed with the same id + token never matches (hash);
+       * the same request replayed a second time never matches (already consumed).
+     Needs the public SUPABASE_PUBLISHABLE_KEY Script Property; unset = trust nobody this way.
+   - "dashboard-auth": the existing DASHBOARD_PASSWORD / REVIEW_TOKEN (checkAuth_),
+     which the owner's dance-dashboard.html already sends with every request.
+   The access token is used for this one request only; it is never logged or stored. */
+function submissionTrust_(body) {
+  if (checkAuth_(body)) return { trusted: true, basis: "dashboard-auth" };
+  if (consumeSupabaseApproved_(body.supabase_submission_id, body.supabase_access_token, body)) {
+    return { trusted: true, basis: "supabase-admin" };
+  }
+  return { trusted: false, basis: "none" };
+}
+
+// Keys left out of the payload hash; must match HASH_SKIP in js/submissions.js.
+const PAYLOAD_HASH_SKIP_ = ["action", "password", "token", "supabase_submission_id", "supabase_access_token"];
+
+// Canonical JSON (sorted keys). Same algorithm as canonical() in js/submissions.js.
+function canonicalJson_(v) {
+  if (Array.isArray(v)) return "[" + v.map(function (x) { return x === undefined ? "null" : canonicalJson_(x); }).join(",") + "]";
+  if (v && typeof v === "object") {
+    return "{" + Object.keys(v).filter(function (k) { return v[k] !== undefined && typeof v[k] !== "function"; }).sort()
+      .map(function (k) { return JSON.stringify(k) + ":" + canonicalJson_(v[k]); }).join(",") + "}";
+  }
+  return JSON.stringify(v === undefined ? null : v);
+}
+
+function payloadHash_(body) {
+  const o = {};
+  Object.keys(body || {}).forEach(function (k) { if (PAYLOAD_HASH_SKIP_.indexOf(k) === -1) o[k] = body[k]; });
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, canonicalJson_(o), Utilities.Charset.UTF_8);
+  return digest.map(function (b) { return ("0" + (b & 0xff).toString(16)).slice(-2); }).join("");
+}
+
+function consumeSupabaseApproved_(submissionId, accessToken, body) {
+  const id = String(submissionId || "");
+  const token = String(accessToken || "");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return false;
+  if (!token || token.length > 8192) return false;
+  const key = PropertiesService.getScriptProperties().getProperty("SUPABASE_PUBLISHABLE_KEY");
+  if (!key) return false;
+  try {
+    const hash = payloadHash_(body);
+    if (!/^[0-9a-f]{64}$/.test(hash)) return false;
+    const res = UrlFetchApp.fetch(SUPABASE_URL + "/rest/v1/" + SUPABASE_SUBMISSIONS_TABLE +
+      "?select=id,status&status=eq.approved&consumed_at=is.null&id=eq." + encodeURIComponent(id) +
+      "&payload_hash=eq." + hash, {
+      method: "patch",
+      contentType: "application/json",
+      payload: JSON.stringify({ consumed_at: new Date().toISOString() }), // the DB stamps now()
+      headers: { apikey: key, Authorization: "Bearer " + token, Accept: "application/json", Prefer: "return=representation" },
+      muteHttpExceptions: true,
+    });
+    if (res.getResponseCode() !== 200) return false;
+    const rows = JSON.parse(res.getContentText());
+    return Array.isArray(rows) && rows.length === 1 && rows[0].id === id && rows[0].status === "approved";
+  } catch (err) {
+    return false; // fail closed: the submission still lands in the review queue
+  }
+}
+
 function handleSubmit_(body) {
   const intakeMethod = String(body.intake_method || "").slice(0, 40);
   if (intakeMethod && INTAKE_METHODS.indexOf(intakeMethod) === -1) {
@@ -305,6 +380,8 @@ function handleSubmit_(body) {
     published_at: "",
     logo_path: "",
     extra_flyer_urls: "",
+    trust_basis: "none",
+    supabase_submission_id: /^[0-9a-f-]{36}$/i.test(String(body.supabase_submission_id || "")) ? String(body.supabase_submission_id) : "",
   };
   const isCorrection = row.submission_kind === "correction" && !!row.event_key;
 
@@ -320,12 +397,18 @@ function handleSubmit_(body) {
   let flyerBlob = null;       // FIRST photo - the one that publishes to the site
   let extraBlobs = [];        // photos 2..N of the same flyer (2026-07-18) - Drive + extraction only
   const isForm = row.intake_method === "form"; // Fill Out Details path (2026-07-18)
+  if (body.flyer_base64 && (isCorrection || isForm) && !ALLOWED_IMAGE_EXT[body.flyer_mime || "image/jpeg"]) {
+    return jsonOut_({ ok: false, error: "please upload a JPG, PNG, GIF, or WebP image" });
+  }
+
+  // Trust is checked only AFTER every validation above: for a Supabase-admin row this
+  // uses up its one-time consumed_at, so a post we reject must not burn it.
+  const trust = submissionTrust_(body);
+  row.trust_basis = trust.basis;
+
   if (body.flyer_base64) {
     try {
       const mime = body.flyer_mime || "image/jpeg";
-      if ((isCorrection || isForm) && !ALLOWED_IMAGE_EXT[mime]) {
-        return jsonOut_({ ok: false, error: "please upload a JPG, PNG, GIF, or WebP image" });
-      }
       const bytes = Utilities.base64Decode(body.flyer_base64);
       const folderId = PropertiesService.getScriptProperties().getProperty("FLYERS_FOLDER_ID");
       const folder = DriveApp.getFolderById(folderId);
@@ -369,7 +452,7 @@ function handleSubmit_(body) {
       // corrections still skip it. The FORM path also skips it (2026-07-18): the
       // submitter typed the details themselves - the human's data is authoritative,
       // and the image is only the event's card picture.
-      if (!isForm && (!isCorrection || TRUSTED_NAME_RE.test(row.contact_name))) {
+      if (!isForm && (!isCorrection || trust.trusted)) {
         const drafted = extractFlyerFields_(images);
         if (drafted) {
           row.extraction_status = "ai-drafted";
@@ -409,7 +492,7 @@ function handleSubmit_(body) {
 
   /* ----- One-step flyer pipeline (corrections with a photo only, 2026-07-13) ----- */
   if (isCorrection && flyerBlob) {
-    const trusted = TRUSTED_NAME_RE.test(row.contact_name);
+    const trusted = trust.trusted;
     if (trusted) {
       try {
         const result = publishFlyerToGitHub_(row.event_key, row.type, flyerBlob, rowId);
@@ -428,7 +511,7 @@ function handleSubmit_(body) {
         appendRow_(sheet, row);
         notifyFlyer_(row, flyerBlob, {
           kind: detailsQueued ? "published-fix" : "published",
-          detail: "Auto-published (trusted name: \"" + row.contact_name + "\"). Image live in ~1-2 minutes.\n" +
+          detail: "Auto-published (verified: " + trust.basis + "). Image live in ~1-2 minutes.\n" +
             "Image committed: " + result.imagePath + "\n" +
             (result.patternAdded ? "Recurring pattern added/refreshed: \"" + result.patternAdded + "\" (carries this flyer to sibling listings of the series).\n" : "") +
             (detailsQueued
@@ -469,27 +552,27 @@ function handleSubmit_(body) {
      (dos-correction-watch notifies) for the owner to apply interactively. This script
      never edits event data itself. */
   if (isCorrection && !flyerBlob) {
-    const trusted = TRUSTED_NAME_RE.test(row.contact_name);
+    const trusted = trust.trusted;
     row.status = trusted ? "pending-fix" : "pending";
     appendRow_(sheet, row);
     notifyFlyer_(row, null, {
       kind: "correction",
       detail: trusted
         ? "Trusted sender - queued as \"pending-fix\". Apply it in a session with \"apply the queued flyer fixes\" (the old hourly auto-fixer was retired in the factory reset)."
-        : "Not from a trusted name - review it in Submission_Review.html, or ask Claude to apply it.",
+        : "Not from a verified admin - review it in Submission_Review.html, or ask Claude to apply it.",
     });
     return jsonOut_({ ok: true, row_id: rowId, published: false, queued: trusted });
   }
 
   /* ----- Form-path flyer (2026-07-18, the owner's ask) -----
      "Fill Out Details" + an attached flyer image. The typed details are authoritative
-     (no extraction). Trusted name -> event + flyer live immediately via the overlay,
+     (no extraction). Verified admin -> event + flyer live immediately via the overlay,
      exactly like trusted flyer uploads. Anyone else -> held as "pending-flyer" with
      one-click Approve/Reject links; Approve publishes the event + flyer together
      (see handleFlyerReview_). A form submission with NO flyer is unchanged below. */
   if (row.submission_kind === "new_event" && isForm && flyerBlob) {
     const built = buildEventFromRow_(row);
-    if (TRUSTED_NAME_RE.test(row.contact_name)) {
+    if (trust.trusted) {
       if (built) {
         try {
           const result = publishNewEventToGitHub_(built.event, flyerBlob, rowId);
@@ -523,12 +606,12 @@ function handleSubmit_(body) {
 
   /* ----- New-event auto-publish (trusted flyer uploads only, 2026-07-17) -----
      the owner's ask: an "Add event" flow where HE uploads a flyer and it goes live
-     with no review. Gated strictly on the trusted name AND a confident
+     with no review. Gated strictly on submissionTrust_() AND a confident
      extraction. Publishes to the web-events.json OVERLAY (never
      dance_events.json), so a later skill publish can't clobber it. Anything
      short of that falls through to the normal "pending" review queue below. */
   if (row.submission_kind === "new_event" && flyerBlob &&
-      TRUSTED_NAME_RE.test(row.contact_name) && row.extraction_status === "ai-drafted") {
+      trust.trusted && row.extraction_status === "ai-drafted") {
     const built = buildEventFromRow_(row);
     if (built) {
       try {
