@@ -522,6 +522,10 @@ function tile({ ev, canceled, day }) {
     a.appendChild(corner);
   }
   body.appendChild(links); a.appendChild(body);
+  // One surface carries both faces, including their border and background.
+  // Full cards keep their existing layout through display:contents.
+  const surface = document.createElement('div'); surface.className = 'tile-turn-surface';
+  surface.append(body, preview); a.appendChild(surface);
   return a;
 }
 
