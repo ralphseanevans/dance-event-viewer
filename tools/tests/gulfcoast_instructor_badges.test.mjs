@@ -1,12 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { instructorBadges, instructorInitials, INSTRUCTOR_PHOTOS } from '../../gulfcoast/simple-core.mjs';
 
 test('known instructors map to committed photos', () => {
   const b = instructorBadges(['Nina Outlaw', ' travis  outlaw ', 'Mike Spencer', 'Rachel Bowlby']);
-  assert.deepEqual(b.map(x => x.photo), ['nina-outlaw', 'travis-outlaw', 'mike-spencer', 'rachel-bowlby'].map(s => `../graphics/instructors/${s}.webp`));
-  for (const slug of Object.values(INSTRUCTOR_PHOTOS)) assert.ok(fs.existsSync(new URL(`../../graphics/instructors/${slug}.webp`, import.meta.url)), slug);
+  assert.deepEqual(b.map(x => x.photo.replace(/\?v=.*/, '')), ['nina-outlaw', 'travis-outlaw', 'mike-spencer', 'rachel-bowlby'].map(s => `../graphics/instructors/${s}.webp`));
+  for (const file of Object.values(INSTRUCTOR_PHOTOS)) {
+    const [name, v] = file.split('?v=');
+    const buf = fs.readFileSync(new URL(`../../graphics/instructors/${name}`, import.meta.url));
+    assert.equal(v, createHash('sha1').update(buf).digest('hex').slice(0, 8), file + ' cache-bust');
+  }
 });
 test('others get initials, no photo', () => {
   const [a, j, s] = instructorBadges(['Ariel Beck', 'Julie "Jewlz" Hansen', 'Zhen']);

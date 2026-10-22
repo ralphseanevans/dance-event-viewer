@@ -148,12 +148,12 @@ export function fallbackFlyerData(ev, day) {
 }
 
 // Instructor badges (2026-10-21): real, cropped photos only (graphics/instructors/<slug>.webp,
-// 56px for 2x). Anyone not listed here gets an initials badge. Names match case/space-insensitively.
+// 80px for 2x, cartoon-filtered with OpenCV; ?v= is the file's sha1/8 cache-bust). Anyone not listed here gets an initials badge. Names match case/space-insensitively.
 export const INSTRUCTOR_PHOTOS = {
-  'mike spencer': 'mike-spencer',
-  'nina outlaw': 'nina-outlaw',
-  'rachel bowlby': 'rachel-bowlby',
-  'travis outlaw': 'travis-outlaw'
+  'mike spencer': 'mike-spencer.webp?v=aecf4c03',
+  'nina outlaw': 'nina-outlaw.webp?v=f1c95134',
+  'rachel bowlby': 'rachel-bowlby.webp?v=edea7043',
+  'travis outlaw': 'travis-outlaw.webp?v=a0c3b2d2'
 };
 const normName = s => String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/["“”]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 export function instructorInitials(name) {
@@ -165,6 +165,6 @@ export function instructorBadges(list, base = '../graphics/instructors/') {
   const arr = Array.isArray(list) ? list : (typeof list === 'string' && list.trim() ? [list] : []);
   return arr.map(n => String(n || '').replace(/\s+/g, ' ').trim()).filter(Boolean).map(name => {
     const slug = INSTRUCTOR_PHOTOS[normName(name)];
-    return { name, initials: instructorInitials(name), photo: slug ? base + slug + '.webp' : null };
+    return { name, initials: instructorInitials(name), photo: slug ? base + slug : null };
   });
 }
