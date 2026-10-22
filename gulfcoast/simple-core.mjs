@@ -89,10 +89,20 @@ export function isCanceledOn(ev, day) {
 const isUnverified = ev => ev.unverified === true || ev.research_confidence === 'low';
 
 // Upcoming, verified records in the selected markets, with their next date.
-export function upcomingIn(events, markets, today) {
-  const set = new Set(markets);
-  return events.filter(ev => ev && ev.key && ev.name && !isUnverified(ev) && set.has(marketOf(ev)))
-    .map(ev => ({ ev, date: nextOccurrence(ev, today) })).filter(x => x.date);
+export function upcomingIn(events, markets, today, through = null) {
+  const set = new Set(markets), rows = [];
+  for (const ev of events.filter(ev => ev && ev.key && ev.name && !isUnverified(ev) && set.has(marketOf(ev)))) {
+    let date = nextOccurrence(ev, today);
+    // Materialize a bounded view window, without cloning or changing the series record.
+    for (let n = 0; date && n < 3660; n++) {
+      if (through && date > through) break;
+      rows.push({ ev, date });
+      if (!through || !['weekly_recurring', 'biweekly_recurring', 'monthly_recurring'].includes(ev.type)) break;
+      const after = new Date(date); after.setDate(after.getDate() + 1);
+      date = nextOccurrence(ev, after);
+    }
+  }
+  return rows;
 }
 export const availableStyles = items => orderStyles(items.flatMap(x => styleFacets(x.ev.style)));
 

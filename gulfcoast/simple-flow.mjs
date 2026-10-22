@@ -1,9 +1,9 @@
-import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=c48d2f80';
+import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=a2a62ad9';
 // Exp2 Simple mode: Where -> Styles -> When (sticky calendar) -> cards, each step
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=c4216989';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=21e5af42';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -283,7 +283,10 @@ function render({ tapped, tappedStyle } = {}) {
   el.status.hidden = true;
   const today = atMidnight(new Date());
   const markets = state.markets.size ? [...state.markets] : MARKETS.map(m => m.id);
-  const nearbyItems = upcomingIn(state.events, markets, today);
+  // Calendar and date filters need subsequent recurrences, not only each series' next date.
+  const through = new Date(today); through.setDate(through.getDate() + 90);
+  for (const range of state.dateRanges) { const end = new Date(range.end + 'T00:00:00'); if (end > through) through.setTime(end.getTime()); }
+  const nearbyItems = upcomingIn(state.events, markets, today, through);
   badgePicker.update(nearbyItems);
   const items = nearbyItems.filter(x => matchesBadge(x.ev, badgePicker.selected));
   // Keep all nearby styles visible, but disable styles with no events in the selected places.

@@ -25,7 +25,7 @@ export function badgeIds(ev={}) {
   if(key.startsWith('usa-dance-')||source.includes('usadance.org')||name.includes('usa dance'))ids.push('usa-dance');
   if(key.startsWith('pensacola-coastals-')||venue.includes('pensacola coastals')||source.includes('pensacolacoastals.wixsite.com'))ids.push('coastals');
   if(key==='starlite-ballroom-tuesday-ballroom-latin-class'||key==='ttdgc-starlight-ballroom-friday'||source.includes('starliteballroomal.com')||(/starlite ballroom/.test(venue)&&/mobile/.test(venue)))ids.push('starlite');
-  if(key.startsWith('good-ole-social-dance')||/\btodd and jamie\b/.test(text))ids.push('todd-jamie');
+  if(key==='sanders-beach-ballroom-weekly-classes'||key.startsWith('good-ole-social-dance')||/\btodd and jamie\b/.test(text))ids.push('todd-jamie');
   if(key==='ttdgc-dancing-nina-travis-andy-tuesday'||(/\bnina outlaw\b/.test(text)&&/\btravis outlaw\b/.test(text)&&/\bandy\b/.test(text)))ids.push('nina-travis');
   if(/\brachel\s*(?:&|and)\s*zander\b/.test(text))ids.push('rachel-zander');
   if(/\btraci bell\b/.test(text))ids.push('traci-bell');
