@@ -280,25 +280,25 @@ test('proposed RLS migration: explicit grants, RPC-only writes, admin by uid all
   assert.match(sql, /revoke all on table public\.submissions from public, anon, authenticated/);
   assert.match(sql, /grant select on table public\.submissions to authenticated/);
   assert.doesNotMatch(sql, /grant select[^;]*to anon/);
-  assert.match(sql, /for select\s+to authenticated\s+using \(\(select private\.is_submissions_admin\(\)\)\)/);
-  assert.match(sql, /p_status = 'approved' and not private\.is_submissions_admin\(\) then\s+raise/);
+  assert.match(sql, /for select\s+to authenticated\s+using \(\(select submissions_private\.is_submissions_admin\(\)\)\)/);
+  assert.match(sql, /p_status = 'approved' and not submissions_private\.is_submissions_admin\(\) then\s+raise/);
   assert.match(sql, /submitted_by_email := auth\.jwt\(\) ->> 'email'/);
   assert.doesNotMatch(sql, /contact_name[^\n]*(ralph|like|~)/i);
 });
 
 test('fix 2: admin = auth.uid() on a private allowlist, not email text', () => {
   const sql = read('supabase/migrations/20261022000000_submissions_rls.sql').replace(/--[^\n]*/g, '');
-  assert.match(sql, /create table if not exists private\.submission_admins \(\s*user_id\s+uuid primary key references auth\.users \(id\) on delete cascade/);
-  assert.match(sql, /exists \(select 1 from private\.submission_admins a where a\.user_id = \(select auth\.uid\(\)\)\)/);
-  assert.match(sql, /revoke all on table private\.submission_admins from public, anon, authenticated/);
+  assert.match(sql, /create table if not exists submissions_private\.submission_admins \(\s*user_id\s+uuid primary key references auth\.users \(id\) on delete cascade/);
+  assert.match(sql, /exists \(select 1 from submissions_private\.submission_admins a where a\.user_id = \(select auth\.uid\(\)\)\)/);
+  assert.match(sql, /revoke all on table submissions_private\.submission_admins from public, anon, authenticated/);
   assert.doesNotMatch(sql, /ralphseanevans@gmail\.com/, 'no email in the SQL');
   assert.doesNotMatch(sql, /jwt\(\) ->> 'email'\)?\s*=/, 'email is never compared for trust');
-  assert.match(read('SETUP.md'), /insert into private\.submission_admins/);
+  assert.match(read('SETUP.md'), /insert into submissions_private\.submission_admins/);
 });
 
 test('fix 3: pending inserts are throttled per caller hint and globally; details cap tightened', () => {
   const sql = read('supabase/migrations/20261022000000_submissions_rls.sql').replace(/--[^\n]*/g, '');
-  assert.match(sql, /create trigger submissions_throttle\s+before insert on public\.submissions\s+for each row execute function private\.submissions_throttle\(\)/);
+  assert.match(sql, /create trigger submissions_throttle\s+before insert on public\.submissions\s+for each row execute function submissions_private\.submissions_throttle\(\)/);
   assert.match(sql, /per_hint_max\s+constant int := 5;/);
   assert.match(sql, /global_max\s+constant int := 60;/);
   assert.match(sql, /using errcode = 'PT429'/);
@@ -315,7 +315,7 @@ test('fix 3: pending inserts are throttled per caller hint and globally; details
 
 test('fix 4: anon cannot execute the admin check, insert directly, or set the id', () => {
   const sql = read('supabase/migrations/20261022000000_submissions_rls.sql').replace(/--[^\n]*/g, '');
-  assert.match(sql, /grant execute on function private\.is_submissions_admin\(\) to authenticated;/);
+  assert.match(sql, /grant execute on function submissions_private\.is_submissions_admin\(\) to authenticated;/);
   assert.doesNotMatch(sql, /grant execute on function [^;]*is_submissions_admin[^;]*anon/);
   assert.doesNotMatch(sql, /grant insert/i, 'no direct INSERT grant at all');
   assert.doesNotMatch(sql, /grant [^;]*\(\s*id\b/, 'id is never a granted column');
@@ -323,6 +323,104 @@ test('fix 4: anon cannot execute the admin check, insert directly, or set the id
   assert.match(sql, /grant execute on function public\.submit_submission\(uuid, text, text, jsonb\) to anon, authenticated;/);
   assert.match(sql, /function public\.submit_submission\([^)]*\)\s+returns jsonb\s+language sql\s+volatile\s+security invoker/);
   assert.match(sql, /return jsonb_build_object\('id', v_id, 'status', v_status\);\s*end;/);
+});
+
+test('A: throttle IP only from cf-connecting-ip, else the RIGHTMOST x-forwarded-for entry, else none (cited)', () => {
+  const sql = read('supabase/migrations/20261022000000_submissions_rls.sql');
+  const code = sql.replace(/--[^\n]*/g, '');
+  assert.doesNotMatch(code, /split_part\([^)]*x-forwarded-for/, 'never the leftmost (client-forgeable) entry');
+  assert.match(code, /xff\s+text\[\] := string_to_array\(nullif\(btrim\(coalesce\(hdrs ->> 'x-forwarded-for', ''\)\), ''\), ','\);/);
+  assert.match(code, /ip\s+text := coalesce\(nullif\(btrim\(hdrs ->> 'cf-connecting-ip'\), ''\),\s+nullif\(btrim\(xff\[cardinality\(xff\)\]\), ''\)\);/);
+  assert.match(code, /new\.client_hint := null;\s+if ip is not null then/, 'no trustworthy header -> no per-sender hint');
+  assert.doesNotMatch(code, /x-real-ip|true-client-ip/i);
+  const setup = read('SETUP.md');
+  for (const src of ['https://developers.cloudflare.com/fundamentals/reference/http-headers/', 'https://github.com/supabase/pg_graphql/issues/400']) {
+    assert.ok(sql.includes(src) && setup.includes(src), `source cited: ${src}`);
+  }
+});
+
+test('B: submission objects live in submissions_private; the existing private schema is never touched', () => {
+  const sql = read('supabase/migrations/20261022000000_submissions_rls.sql').replace(/--[^\n]*/g, '');
+  assert.doesNotMatch(sql, /(^|[^_a-z])private\./m, 'no private.<object> reference');
+  assert.doesNotMatch(sql, /schema\s+private\b/i, 'no create/grant/revoke on schema private');
+  assert.match(sql, /create schema if not exists submissions_private;/);
+  for (const obj of ['submission_admins', 'submission_throttle']) assert.match(sql, new RegExp(`create table if not exists submissions_private\\.${obj} `));
+  for (const fn of ['is_submissions_admin', 'submissions_throttle', 'submit_submission']) assert.match(sql, new RegExp(`create or replace function submissions_private\\.${fn}\\(`));
+  // Least privilege on the new schema.
+  const grants = [...sql.matchAll(/grant [^;]+;/g)].map(m => m[0].replace(/\s+/g, ' ')).filter(g => /submissions_private/.test(g));
+  assert.deepEqual(grants.sort(), [
+    'grant execute on function submissions_private.is_submissions_admin() to authenticated;',
+    'grant execute on function submissions_private.submit_submission(uuid, text, text, jsonb) to anon, authenticated;',
+    'grant usage on schema submissions_private to anon, authenticated;',
+  ]);
+  for (const t of ['submission_admins', 'submission_throttle']) assert.match(sql, new RegExp(`revoke all on table submissions_private\\.${t} from public, anon, authenticated;`));
+  assert.match(sql, /revoke all on function submissions_private\.submissions_throttle\(\) from public, anon, authenticated;/);
+});
+
+function loadIntake(fetchResult) {
+  const appended = [], fetches = [];
+  const ctx = {
+    PropertiesService: { getScriptProperties: () => ({ getProperty: k => ({ SUPABASE_PUBLISHABLE_KEY: 'pk', FLYERS_FOLDER_ID: 'f' })[k] ?? null }) },
+    UrlFetchApp: { fetch: (u, o) => { fetches.push({ u, o }); return fetchResult(u, o); } },
+    Utilities: {
+      getUuid: () => 'row-1', base64Decode: () => [1, 2, 3], newBlob: (b, m, n) => ({ m, n }),
+      DigestAlgorithm: { SHA_256: 'SHA_256' }, Charset: { UTF_8: 'UTF_8' },
+      computeDigest: (alg, str) => Array.from(createHash('sha256').update(str, 'utf8').digest(), b => (b > 127 ? b - 256 : b)),
+    },
+    DriveApp: { getFolderById: () => ({ createFile: () => ({ setSharing() {}, getUrl: () => 'u', getId: () => 'id' }) }), Access: {}, Permission: {} },
+    SpreadsheetApp: {}, MailApp: { sendEmail() {} }, HtmlService: {}, ContentService: {}, Session: {}, LockService: {}, ScriptApp: { getService: () => ({ getUrl: () => 'x' }) },
+  };
+  vm.runInNewContext(read('tools/apps-script/Submission_AppsScript_Code.gs'), ctx);
+  ctx.getSheet_ = () => ({});
+  ctx.appendRow_ = (sh, row) => appended.push({ ...row });
+  ctx.jsonOut_ = o => o;
+  ctx.notifyFlyer_ = () => {}; ctx.notifyNewEvent_ = () => {};
+  ctx.extractFlyerFields_ = () => null;
+  for (const fn of Object.keys(ctx).filter(k => /^publish.*GitHub_$/.test(k))) ctx[fn] = () => ({ imagePath: 'p', patternAdded: '' });
+  return { ctx, appended, fetches };
+}
+
+test('C: a post rejected by the contact or image-type check never consumes the one-time row', () => {
+  const admin = { supabase_submission_id: SID, supabase_access_token: 'admin-token-zz9' };
+  const cases = [
+    [{ intake_method: 'form', name: 'Social', ...admin }, /contact method/],
+    [{ intake_method: 'form', name: 'Social', contact_name: 'Sean', flyer_base64: 'AAA', flyer_mime: 'application/pdf', ...admin }, /JPG, PNG, GIF, or WebP/],
+    [{ submission_kind: 'correction', event_key: 'k', flyer_base64: 'AAA', flyer_mime: 'text/html', ...admin }, /JPG, PNG, GIF, or WebP/],
+  ];
+  for (const [body, err] of cases) {
+    const rows = [{ id: SID, status: 'approved', payload_hash: null, consumed_at: null }];
+    const gs = loadIntake(fakeSupabase(rows));
+    rows[0].payload_hash = gs.ctx.payloadHash_(body);
+    const res = gs.ctx.handleSubmit_(JSON.parse(JSON.stringify(body)));
+    assert.equal(res.ok, false);
+    assert.match(res.error, err);
+    assert.equal(gs.fetches.length, 0, 'no Supabase consume call for a rejected post');
+    assert.equal(rows[0].consumed_at, null);
+    // The corrected resubmission (same row, now valid) is still trusted once.
+    const fixed = { ...body, contact_name: 'Sean', flyer_mime: 'image/png' };
+    rows[0].payload_hash = gs.ctx.payloadHash_(fixed);
+    const ok = gs.ctx.handleSubmit_(JSON.parse(JSON.stringify(fixed)));
+    assert.equal(ok.ok, true, JSON.stringify(ok));
+    assert.equal(gs.appended.at(-1).trust_basis, 'supabase-admin');
+    assert.equal(rows[0].consumed_at, 'now');
+  }
+  const src = read('tools/apps-script/Submission_AppsScript_Code.gs');
+  const body = src.slice(src.indexOf('function handleSubmit_('));
+  const at = re => body.search(re);
+  assert.ok(at(/const trust = submissionTrust_\(body\);/) > at(/at least one contact method is required/));
+  assert.ok(at(/const trust = submissionTrust_\(body\);/) > at(/please upload a JPG, PNG, GIF, or WebP image/));
+  assert.ok(at(/const trust = submissionTrust_\(body\);/) < at(/Utilities\.base64Decode\(body\.flyer_base64\)/));
+});
+
+test('SETUP.md recommends (but does not schedule) a 90-day cleanup of old rows / client_hint', () => {
+  const setup = read('SETUP.md');
+  assert.match(setup, /client_hint[^\n]*pseudonymous personal data|pseudonymous personal data[\s\S]{0,200}client_hint|client_hint` is a salted hash[\s\S]{0,120}pseudonymous personal data/);
+  assert.match(setup, /90 days/);
+  assert.match(setup, /delete from public\.submissions\s+where created_at < now\(\) - interval '90 days'/);
+  assert.match(setup, /\*\*not scheduled and not\s+run by this PR\*\*/);
+  const sql = read('supabase/migrations/20261022000000_submissions_rls.sql');
+  assert.doesNotMatch(sql.replace(/--[^\n]*/g, ''), /cron|delete from/i, 'nothing scheduled or run in the migration');
+  assert.match(sql, /new\.client_hint := case when new\.client_hint is null then null else old\.client_hint end;/);
 });
 
 test('pages load submissions.js after auth.js, with content cache busters', () => {

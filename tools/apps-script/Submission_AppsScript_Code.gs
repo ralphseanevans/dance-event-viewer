@@ -383,8 +383,6 @@ function handleSubmit_(body) {
     trust_basis: "none",
     supabase_submission_id: /^[0-9a-f-]{36}$/i.test(String(body.supabase_submission_id || "")) ? String(body.supabase_submission_id) : "",
   };
-  const trust = submissionTrust_(body);
-  row.trust_basis = trust.basis;
   const isCorrection = row.submission_kind === "correction" && !!row.event_key;
 
   // At least one contact method required - reject otherwise (belt-and-suspenders;
@@ -399,12 +397,18 @@ function handleSubmit_(body) {
   let flyerBlob = null;       // FIRST photo - the one that publishes to the site
   let extraBlobs = [];        // photos 2..N of the same flyer (2026-07-18) - Drive + extraction only
   const isForm = row.intake_method === "form"; // Fill Out Details path (2026-07-18)
+  if (body.flyer_base64 && (isCorrection || isForm) && !ALLOWED_IMAGE_EXT[body.flyer_mime || "image/jpeg"]) {
+    return jsonOut_({ ok: false, error: "please upload a JPG, PNG, GIF, or WebP image" });
+  }
+
+  // Trust is checked only AFTER every validation above: for a Supabase-admin row this
+  // uses up its one-time consumed_at, so a post we reject must not burn it.
+  const trust = submissionTrust_(body);
+  row.trust_basis = trust.basis;
+
   if (body.flyer_base64) {
     try {
       const mime = body.flyer_mime || "image/jpeg";
-      if ((isCorrection || isForm) && !ALLOWED_IMAGE_EXT[mime]) {
-        return jsonOut_({ ok: false, error: "please upload a JPG, PNG, GIF, or WebP image" });
-      }
       const bytes = Utilities.base64Decode(body.flyer_base64);
       const folderId = PropertiesService.getScriptProperties().getProperty("FLYERS_FOLDER_ID");
       const folder = DriveApp.getFolderById(folderId);

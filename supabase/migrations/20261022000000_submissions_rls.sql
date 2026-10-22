@@ -5,7 +5,7 @@
 -- Rules (Sean, 2026-10-22):
 --   * Anyone (anon, no login) may submit an event or report a problem. Their rows are
 --     always status = 'pending' and land in the admin review list.
---   * Only an admin (a Supabase auth user id on the private.submission_admins allowlist)
+--   * Only an admin (a Supabase auth user id on the submissions_private.submission_admins allowlist)
 --     may file a row as 'approved' (goes live right away), read the review list, or
 --     change status. The allowlist is keyed by auth.uid(), never by email text.
 --   * The typed contact name grants nothing.
@@ -26,19 +26,23 @@ begin;
 
 -- 1. Who is an admin? auth.uid() on a private allowlist (filled in after Sean's first
 --    Google sign-in; see SETUP.md step 4). Not anonymous sign-ins.
-create schema if not exists private;
-revoke all on schema private from public;
-grant usage on schema private to anon, authenticated;
+--    Every submission helper lives in its own schema, submissions_private. This migration
+--    never touches the existing `private` schema (submissions_private.events and its sync/guard functions).
+--    submissions_private is not an exposed API schema; anon/authenticated get USAGE only so
+--    the public RPC wrapper and the RLS policies can call the two functions granted below.
+create schema if not exists submissions_private;
+revoke all on schema submissions_private from public;
+grant usage on schema submissions_private to anon, authenticated;
 
-create table if not exists private.submission_admins (
+create table if not exists submissions_private.submission_admins (
   user_id  uuid primary key references auth.users (id) on delete cascade,
   note     text,
   added_at timestamptz not null default now()
 );
-revoke all on table private.submission_admins from public, anon, authenticated;
+revoke all on table submissions_private.submission_admins from public, anon, authenticated;
 
 drop function if exists public.is_submissions_admin();
-create or replace function private.is_submissions_admin()
+create or replace function submissions_private.is_submissions_admin()
 returns boolean
 language sql
 stable
@@ -46,13 +50,13 @@ security definer
 set search_path = ''
 as $$
   select coalesce(
-    exists (select 1 from private.submission_admins a where a.user_id = (select auth.uid()))
+    exists (select 1 from submissions_private.submission_admins a where a.user_id = (select auth.uid()))
     and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false,
     false
   );
 $$;
-revoke all on function private.is_submissions_admin() from public, anon, authenticated;
-grant execute on function private.is_submissions_admin() to authenticated;
+revoke all on function submissions_private.is_submissions_admin() from public, anon, authenticated;
+grant execute on function submissions_private.is_submissions_admin() to authenticated;
 
 -- 2. The review list.
 create table if not exists public.submissions (
@@ -84,7 +88,7 @@ create table if not exists public.submissions (
   review_note        text check (char_length(review_note) <= 1000)
 );
 comment on table public.submissions is
-  'Public event submissions and "Wrong info?" reports. Filed via public.submit_submission(); anon rows are pending; only private.is_submissions_admin() may approve or read.';
+  'Public event submissions and "Wrong info?" reports. Filed via public.submit_submission(); anon rows are pending; only submissions_private.is_submissions_admin() may approve or read.';
 create index if not exists submissions_status_created_idx on public.submissions (status, created_at desc);
 create index if not exists submissions_hint_created_idx on public.submissions (client_hint, created_at desc);
 
@@ -121,7 +125,7 @@ begin
     new.flyer_count := old.flyer_count;
     new.client_key := old.client_key;
     new.payload_hash := old.payload_hash;
-    new.client_hint := old.client_hint;
+    new.client_hint := case when new.client_hint is null then null else old.client_hint end; -- may only be cleared (retention)
     new.submitted_by_email := old.submitted_by_email;
     -- consumed_at is one-way: null -> now() once, never cleared or moved.
     if old.consumed_at is null and new.consumed_at is not null then
@@ -148,16 +152,16 @@ create trigger submissions_stamp
   before insert or update on public.submissions
   for each row execute function public.submissions_stamp();
 
--- 4. Spam throttle for pending (anon) inserts. Per caller (salted hash of the IP that
---    PostgREST forwards, when present) and globally. Admin 'approved' rows are exempt.
-create table if not exists private.submission_throttle (
+-- 4. Spam throttle for pending (anon) inserts. Per caller (salted hash of a trustworthy
+--    client IP header, when present) and globally. Admin 'approved' rows are exempt.
+create table if not exists submissions_private.submission_throttle (
   singleton boolean primary key default true check (singleton),
   salt      text not null default gen_random_uuid()::text
 );
-insert into private.submission_throttle (singleton) values (true) on conflict do nothing;
-revoke all on table private.submission_throttle from public, anon, authenticated;
+insert into submissions_private.submission_throttle (singleton) values (true) on conflict do nothing;
+revoke all on table submissions_private.submission_throttle from public, anon, authenticated;
 
-create or replace function private.submissions_throttle()
+create or replace function submissions_private.submissions_throttle()
 returns trigger
 language plpgsql
 security definer
@@ -168,13 +172,21 @@ declare
   global_max    constant int := 60;                   -- all pending rows per window
   win           constant interval := interval '10 minutes';
   hdrs jsonb := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::jsonb;
-  ip   text := coalesce(nullif(hdrs ->> 'cf-connecting-ip', ''),
-                        nullif(btrim(split_part(hdrs ->> 'x-forwarded-for', ',', 1)), ''));
+  -- Sources: https://developers.cloudflare.com/fundamentals/reference/http-headers/ and the
+  -- hosted request.headers dump in https://github.com/supabase/pg_graphql/issues/400
+  -- (cf-connecting-ip = client; x-forwarded-for = "client, cloudflare-edge"). See SETUP.md.
+  -- Only sources a client cannot forge: Cloudflare's
+  -- cf-connecting-ip, else the RIGHTMOST x-forwarded-for entry (added by the last proxy;
+  -- the leftmost entries are whatever the client sent). Neither -> no per-sender hint,
+  -- so only the global limit applies.
+  xff  text[] := string_to_array(nullif(btrim(coalesce(hdrs ->> 'x-forwarded-for', '')), ''), ',');
+  ip   text := coalesce(nullif(btrim(hdrs ->> 'cf-connecting-ip'), ''),
+                        nullif(btrim(xff[cardinality(xff)]), ''));
 begin
   new.client_hint := null;
   if ip is not null then
     select encode(sha256(convert_to(t.salt || '|' || ip, 'UTF8')), 'hex')
-      into new.client_hint from private.submission_throttle t;
+      into new.client_hint from submissions_private.submission_throttle t;
   end if;
   if new.status <> 'pending' then return new; end if;
   perform pg_advisory_xact_lock(hashtext('public.submissions throttle'));
@@ -190,17 +202,17 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.submissions_throttle() from public, anon, authenticated;
+revoke all on function submissions_private.submissions_throttle() from public, anon, authenticated;
 drop trigger if exists submissions_throttle on public.submissions;
 create trigger submissions_throttle                    -- runs after submissions_stamp (name order)
   before insert on public.submissions
-  for each row execute function private.submissions_throttle();
+  for each row execute function submissions_private.submissions_throttle();
 
 -- 5. The one write path for the site. Server-made id; idempotent on client_key.
---    private.* does the work as the owner (RLS bypass) and enforces the rules itself;
+--    submissions_private.* does the work as the owner (RLS bypass) and enforces the rules itself;
 --    public.submit_submission is a thin invoker wrapper so no security definer
 --    function sits in the exposed schema.
-create or replace function private.submit_submission(
+create or replace function submissions_private.submit_submission(
   p_client_key uuid, p_status text, p_payload_hash text, p_row jsonb)
 returns jsonb
 language plpgsql
@@ -217,7 +229,7 @@ begin
   if p_status is null or p_status not in ('pending', 'approved') then
     raise exception 'status must be pending or approved' using errcode = '22023';
   end if;
-  if p_status = 'approved' and not private.is_submissions_admin() then
+  if p_status = 'approved' and not submissions_private.is_submissions_admin() then
     raise exception 'only an admin may file an approved submission' using errcode = '42501';
   end if;
   if p_status = 'approved' and p_payload_hash is null then
@@ -245,8 +257,8 @@ begin
   return jsonb_build_object('id', v_id, 'status', v_status);
 end;
 $$;
-revoke all on function private.submit_submission(uuid, text, text, jsonb) from public, anon, authenticated;
-grant execute on function private.submit_submission(uuid, text, text, jsonb) to anon, authenticated;
+revoke all on function submissions_private.submit_submission(uuid, text, text, jsonb) from public, anon, authenticated;
+grant execute on function submissions_private.submit_submission(uuid, text, text, jsonb) to anon, authenticated;
 
 create or replace function public.submit_submission(
   p_client_key uuid, p_status text, p_payload_hash text, p_row jsonb)
@@ -255,7 +267,7 @@ language sql
 volatile
 security invoker
 set search_path = ''
-as $$ select private.submit_submission(p_client_key, p_status, p_payload_hash, p_row); $$;
+as $$ select submissions_private.submit_submission(p_client_key, p_status, p_payload_hash, p_row); $$;
 revoke all on function public.submit_submission(uuid, text, text, jsonb) from public, anon, authenticated;
 grant execute on function public.submit_submission(uuid, text, text, jsonb) to anon, authenticated;
 
@@ -278,14 +290,14 @@ drop policy if exists submissions_admin_read on public.submissions;
 create policy submissions_admin_read
   on public.submissions for select
   to authenticated
-  using ((select private.is_submissions_admin()));
+  using ((select submissions_private.is_submissions_admin()));
 
 drop policy if exists submissions_admin_review on public.submissions;
 create policy submissions_admin_review
   on public.submissions for update
   to authenticated
-  using ((select private.is_submissions_admin()))
-  with check ((select private.is_submissions_admin()));
+  using ((select submissions_private.is_submissions_admin()))
+  with check ((select submissions_private.is_submissions_admin()));
 
 commit;
 

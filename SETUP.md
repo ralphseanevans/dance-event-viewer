@@ -68,17 +68,40 @@ production, `localhost` and `127.0.0.1`.
 ## 4. Supabase database: apply the proposed migration (after review)
 
 - File: `supabase/migrations/20261022000000_submissions_rls.sql` (not applied by this PR).
-- It creates `public.submissions`, the private admin allowlist `private.submission_admins`
-  with the check `private.is_submissions_admin()` (`auth.uid()` on the allowlist, not anonymous),
+- It creates `public.submissions`, the admin allowlist `submissions_private.submission_admins`
+  with the check `submissions_private.is_submissions_admin()` (`auth.uid()` on the allowlist, not anonymous),
   the stamping and throttle triggers, and the one write path `public.submit_submission()`.
   It sets **explicit GRANTs**, because from 2026-10-30 Supabase no longer auto-grants new public tables:
   - anon / authenticated: **no** direct `INSERT`; they call `rpc/submit_submission`. The server
     creates the row id and returns it. A retry with the same `client_key` returns the same row.
   - anon `pending` rows are throttled: more than 5 from one caller (salted hash of the IP) or
     more than 60 in total within 10 minutes get HTTP 429. `details` is capped at 6 KB.
+    The caller IP comes only from headers a client cannot forge: `cf-connecting-ip`, else the
+    **rightmost** `x-forwarded-for` entry; with neither, there is no per-caller hint and only
+    the global limit applies. The leftmost `x-forwarded-for` entry is never used: it is
+    whatever the client sent. Sources:
+    - Cloudflare, [HTTP request headers](https://developers.cloudflare.com/fundamentals/reference/http-headers/):
+      `CF-Connecting-IP` is the client IP connecting to Cloudflare; an `X-Forwarded-For` the
+      client already sent is kept and Cloudflare *appends* to it, so leftmost entries are
+      client-controlled. Cloudflare recommends `CF-Connecting-IP` over `X-Forwarded-For`.
+    - A hosted-Supabase `request.headers` dump in
+      [supabase/pg_graphql#400](https://github.com/supabase/pg_graphql/issues/400#issuecomment-1663503020)
+      shows `"cf-connecting-ip": "167.88.159.69"` and
+      `"x-forwarded-for": "167.88.159.69, 172.71.134.144"`, where the rightmost entry is the
+      Cloudflare edge (same as `x-real-ip`). So on Supabase the real client IP is
+      `cf-connecting-ip`. The rightmost `x-forwarded-for` fallback is a proxy address, so it
+      is coarse (it can group many visitors) and should only matter if Cloudflare is ever
+      bypassed. Supabase also documents `cf-connecting-ip` in `request.headers` for an IP
+      check ([Debugging performance](https://supabase.com/docs/guides/database/debugging-performance))
+      and lists it among gateway request headers
+      ([Log field reference](https://supabase.com/docs/guides/observability/log-field-reference)).
+      Note: Supabase's own rate-limit example in
+      [Securing your API](https://supabase.com/docs/guides/api/securing-your-api) takes the
+      *first* `x-forwarded-for` entry, which a client can forge; this migration deliberately
+      does not.
   - admin only: `approved` rows, `SELECT` (review list), `UPDATE status/review_note/consumed_at`.
     `consumed_at` can only be set once (the Apps Script does that when it trusts a row).
-  - `private.is_submissions_admin()` is executable by `authenticated` only (not `anon`).
+  - `submissions_private.is_submissions_admin()` is executable by `authenticated` only (not `anon`).
   - no `DELETE` for anon/authenticated
 - **After applying, the admin list is empty**, so nobody is admin yet and everything goes to
   review. Fill it in after Sean's first Google sign-in (step 6.2 creates the user):
@@ -86,14 +109,35 @@ production, `localhost` and `127.0.0.1`.
   SQL editor:
 
   ```sql
-  insert into private.submission_admins (user_id, note)
+  insert into submissions_private.submission_admins (user_id, note)
   values ('<paste the user id here>', 'Sean')
   on conflict do nothing;
   ```
 
   To add another admin later, insert their user id the same way (`delete from
-  private.submission_admins where user_id = '...'` removes one). For the cosmetic UI, also add
+  submissions_private.submission_admins where user_id = '...'` removes one). For the cosmetic UI, also add
   the email to `adminEmails` in `js/supabase-config.js`.
+- All submission helpers live in the new schema `submissions_private` (allowlist, admin check,
+  throttle salt and trigger, RPC implementation). The migration does **not** touch the existing
+  `private` schema (`private.events` and its sync/guard functions). anon gets only `USAGE` on
+  `submissions_private` plus `EXECUTE` on `submissions_private.submit_submission`; authenticated
+  also gets `EXECUTE` on `submissions_private.is_submissions_admin()` (the RLS policies call it).
+  Do not add `submissions_private` to the Data API's exposed schemas.
+- **Retention (recommended, not automated):** `client_hint` is a salted hash of the sender's
+  IP, which is still pseudonymous personal data, and the rows also hold contact details. A
+  suggested retention is **90 days** for reviewed rows. This example is **not scheduled and not
+  run by this PR**; run it by hand (or schedule it yourself) only if you agree:
+
+  ```sql
+  -- Example only. Deletes reviewed or used rows older than 90 days.
+  delete from public.submissions
+  where created_at < now() - interval '90 days'
+    and (status <> 'pending' or consumed_at is not null);
+  ```
+
+  A lighter option is to keep the rows but clear only the hint:
+  `update public.submissions set client_hint = null where created_at < now() - interval '90 days';`
+  (run as the owner/service role; the API roles cannot change `client_hint`).
 - Post-apply checks are at the bottom of the file.
 
 Until this is applied, the site still works. The Supabase call fails quietly (or gives up after 4 seconds), the
@@ -110,6 +154,6 @@ submission goes to the Apps Script intake with no trust, and so everything goes 
 
 1. Logged out, at `https://danceeventviewer.net/dance-event-viewer/submit-event.html`: submit with name "Ralph". The page should say "in for review", and the row should be `pending`.
 2. Click **Admin sign-in** → Google → you return to the same page with an "Admin" chip, and the review list appears with the row from step 1.
-3. Submit while signed in: "Your event is live" (the Sheet's `trust_basis` = `supabase-admin`). This needs your user id in `private.submission_admins` (step 4). The row's `consumed_at` is now set.
+3. Submit while signed in: "Your event is live" (the Sheet's `trust_basis` = `supabase-admin`). This needs your user id in `submissions_private.submission_admins` (step 4). The row's `consumed_at` is now set.
 4. Locally: run `node Operations/Tools/serve_checkout.mjs` (workspace repo), then open `http://127.0.0.1:8123/dance-event-viewer/submit-event.html` and repeat step 2. Then do the same on `http://localhost:8123/...`. You should come back to the local page, not to production.
 5. Sign in with a different Google account. You should see no Admin chip, your posts stay `pending`, and the review list is empty or refused.
