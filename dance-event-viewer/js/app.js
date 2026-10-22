@@ -64,8 +64,11 @@ const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never ev
 const DEFAULT_AREAS = ["Pensacola area", "Mobile area", "Destin area"];   // 2026-07-20 (Sean): default location scope back to Pensacola + Mobile selected on load (and on "Clear all"). Everywhere/other chips still available to widen. Areas aren't persisted, so every fresh visit starts here.
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
 const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map view (optional; page works without it)
-const MAP_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";  // free, no API key
-const MAP_TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+// 2026-10-22: CARTO basemaps now return 200 "API KEY REQUIRED" images, so use keyless OSM standard tiles
+// (darkened in CSS via .map-tiles-osm to suit the dark theme).
+const MAP_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";  // free, no API key
+const MAP_TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const MAP_TILE_OPTIONS = { attribution: MAP_TILE_ATTRIB, maxZoom: 19, className: "map-tiles-osm" };
 const MAP_MARKER_COLORS = {
   "West Coast Swing": "#4cc2ff", "Country Swing": "#d78f4f", "Ballroom": "#60a5fa", "Mixed": "#7fe0a7", "Latin": "#ffc27d",
   "Argentine Tango": "#ff5fa2", "Other": "#9fadc4",
@@ -3330,7 +3333,7 @@ function renderMap(main, visible) {
 
   if (mapInstance) { mapInstance.remove(); mapInstance = null; }
   mapInstance = L.map(canvas, { scrollWheelZoom: false });
-  L.tileLayer(MAP_TILE_URL, { attribution: MAP_TILE_ATTRIB, maxZoom: 19 }).addTo(mapInstance);
+  L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(mapInstance);
 
   const pins = [];
   const missing = [];
@@ -3406,7 +3409,7 @@ function openAddressPopup(address, coords) {
     if (!backdrop.isConnected || typeof L === "undefined") return;
     if (addressMapInstance) { addressMapInstance.remove(); addressMapInstance = null; }
     addressMapInstance = L.map(canvas, { scrollWheelZoom: false }).setView([coords.lat, coords.lon], 15);
-    L.tileLayer(MAP_TILE_URL, { attribution: MAP_TILE_ATTRIB, maxZoom: 19 }).addTo(addressMapInstance);
+    L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(addressMapInstance);
     L.circleMarker([coords.lat, coords.lon], { radius: 9, color: "#4cc2ff", weight: 2, fillColor: "#4cc2ff", fillOpacity: 0.6 }).addTo(addressMapInstance);
     setTimeout(() => addressMapInstance && addressMapInstance.invalidateSize(), 50);
   };

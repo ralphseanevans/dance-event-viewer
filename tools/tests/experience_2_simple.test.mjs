@@ -67,9 +67,13 @@ test('styleFacets normalizes raw city values to clean names', async () => {
   assert.deepEqual(core.styleFacets('Country Swing'), ['Country Swing']);
 });
 
-test('EV2 card event link is shortened to "Event" with an accessible label', () => {
+test('EV2 card title links to the /e/ page and the bottom Event link is gone', () => {
   const js = readFileSync(new URL('../../gulfcoast/simple-flow.mjs', import.meta.url), 'utf8');
-  assert.match(js, /o\.textContent = 'Event ↗'/);
-  assert.doesNotMatch(js, /textContent = 'Event page ↗'/);
-  assert.match(js, /o\.setAttribute\('aria-label', 'Event page for ' \+ ev\.name\)/);
+  assert.doesNotMatch(js, /'Event ↗'/);
+  assert.match(js, /state\.eventPages\.has\(ev\.key\)/);
+  assert.match(js, /t\.className = 'tile-name-link'; t\.href = new URL\('e\/' \+ ev\.key \+ '\.html', SITE\)\.href/);
+  assert.match(js, /else name\.textContent = ev\.card_title \|\| ev\.name/);
+  const css = readFileSync(new URL('../../gulfcoast/simple.css', import.meta.url), 'utf8');
+  assert.match(css, /\.tile-name-link\{color:inherit;/);
+  assert.match(css, /\.tile-name-link:focus-visible\{outline:2px solid/);
 });

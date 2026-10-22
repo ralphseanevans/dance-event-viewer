@@ -3,7 +3,7 @@ import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badge
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=21e5af42';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=a03e5726';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -31,7 +31,7 @@ const STYLE_BADGES = Object.freeze({
   'Lindy Hop': 'lindy-hop.png'
 });
 
-const state = { flyersOnly: false, markets: new Set(), styles: new Set(), dateRanges: [], soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, loaded: false };
+const state = { flyersOnly: false, markets: new Set(), styles: new Set(), dateRanges: [], soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, eventPages: new Set(), loaded: false };
 const el = {
   find: $('#find'), simple: $('#simple'), full: $('#full'), modes: $('.mode-switch'),
   where: $('#simple-where .place-choices'), styles: $('#simple-styles'), styleChoices: $('#simple-styles .style-choices'),
@@ -175,6 +175,11 @@ function addDateRange(range) {
 syncRangeControls();
 
 // ---------- data: same order as the main viewer's loadData() ----------
+// Keys that have an /e/<key>.html share page, read from the sitemap. If it can't load, titles stay plain.
+async function loadEventPages() {
+  try { const r = await fetch(new URL('sitemap.xml', SITE)); if (r.ok) return new Set([...(await r.text()).matchAll(/\/e\/([a-z0-9-]+)\.html</g)].map(m => m[1])); } catch {}
+  return new Set();
+}
 async function loadEvents() {
   const cfg = window.DANCE_EVENT_VIEWER_SUPABASE;
   let list = null;
@@ -428,7 +433,9 @@ function tile({ ev, canceled, day }) {
   body.appendChild(style);
   addCardBadge(body, ev);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; c.title = c.textContent; body.appendChild(c); }
-  const name = document.createElement('h4'); name.className = 'tile-name'; name.textContent = ev.card_title || ev.name; name.title = ev.name;
+  const name = document.createElement('h4'); name.className = 'tile-name'; name.title = ev.name;
+  if (typeof ev.key === 'string' && state.eventPages.has(ev.key)) { const t = document.createElement('a'); t.className = 'tile-name-link'; t.href = new URL('e/' + ev.key + '.html', SITE).href; t.textContent = ev.card_title || ev.name; name.appendChild(t); }
+  else name.textContent = ev.card_title || ev.name;
   body.appendChild(name);
   const paths = {
     instructor: '<circle cx="12" cy="7" r="4" fill="currentColor" stroke="none"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z" fill="currentColor" stroke="none"/>',
@@ -479,7 +486,6 @@ function tile({ ev, canceled, day }) {
   if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
   const links = document.createElement('p'); links.className = 'tile-links';
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
-  const src = safeUrl(ev.source_url); if (src) { const o = document.createElement('a'); o.href = src; o.target = '_blank'; o.rel = 'noopener noreferrer'; o.textContent = 'Event ↗'; o.title = 'Event page for ' + ev.name; o.setAttribute('aria-label', 'Event page for ' + ev.name); links.appendChild(o); }
   const flyers = flyersFor(ev, state.logoMap).map(resolve);
   // Every card gets a flyer panel: the real flyer when one exists, otherwise a
   // generated placeholder (it also takes over if the real image fails to load).
@@ -553,7 +559,8 @@ box.addEventListener('keydown', e => { if (pages.length > 1 && (e.key === 'Arrow
 box.addEventListener('close', () => { document.documentElement.classList.remove('lb-lock'); opener?.focus(); });
 
 setMode('simple');
-Promise.all([loadEvents(), loadLogoMap()]).then(([events, logoMap]) => {
+Promise.all([loadEvents(), loadLogoMap(), loadEventPages()]).then(([events, logoMap, eventPages]) => {
+  state.eventPages = eventPages;
   state.events = events.filter(e => e && typeof e.name === 'string' && e.name.trim());
   state.logoMap = logoMap || state.logoMap; state.loaded = true; render();
 }).catch(() => { state.loaded = true; el.status.hidden = false; el.status.textContent = 'Listings are unavailable right now. Please try again later.'; });
