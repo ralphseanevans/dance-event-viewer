@@ -220,6 +220,8 @@ body {
 /* Traveling now uses the standard Advanced-panel chip states (2026-07-29). */
 .activity-msg { color:var(--pulse-color); text-shadow:var(--pulse-shadow); }
 .leaflet-container { background:#10111b; color:var(--text); }
+/* OSM standard tiles are light; dim them to sit in the dark theme (CARTO dark_all now needs an API key). */
+.leaflet-layer.map-tiles-osm { filter:brightness(.62) contrast(1.08) saturate(.75); }
 
 /* Low-poly panel creature: injected and timed by club-lights.js. It rises from behind
    the main controls panel, glances around, then ducks away without accepting clicks. */
