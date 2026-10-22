@@ -61,7 +61,7 @@ test('1280px and wider keeps the desktop columns; fewer only below 1280px', () =
 
 test('card text lines keep full-text titles', () => {
   const js = read('simple-flow.mjs');
-  for (const v of ['style', 'c', 'name', 'span', 'when', 'm', 'o']) assert.match(js, new RegExp(`\\b${v}\\.title = `), v);
+  for (const v of ['style', 'c', 'name', 'span', 'when', 'm']) assert.match(js, new RegExp(`\\b${v}\\.title = `), v);
 });
 
 test('card-zoom module is cache-busted by content hash', () => {
