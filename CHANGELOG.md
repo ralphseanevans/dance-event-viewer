@@ -11,8 +11,8 @@
 - Submissions are filed through `rpc/submit_submission` (server-made id, no direct insert,
   idempotent `client_key` for retries) with a per-caller and global throttle on anon rows.
 - The Supabase step gives up after 4 seconds, so the form never sticks on "Sending…".
-- The throttle's per-sender hint uses only `cf-connecting-ip`, else the rightmost
-  `x-forwarded-for` entry (never the client-forgeable leftmost one); all submission helpers
+- The throttle's per-sender hint uses only `cf-connecting-ip` (no `x-forwarded-for`; without
+  it only the global limit applies); all submission helpers
   live in a new `submissions_private` schema (the existing `private` schema is untouched);
   the Apps Script checks trust only after the contact and image-type validations.
 

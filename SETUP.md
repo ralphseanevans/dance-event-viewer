@@ -76,10 +76,10 @@ production, `localhost` and `127.0.0.1`.
     creates the row id and returns it. A retry with the same `client_key` returns the same row.
   - anon `pending` rows are throttled: more than 5 from one caller (salted hash of the IP) or
     more than 60 in total within 10 minutes get HTTP 429. `details` is capped at 6 KB.
-    The caller IP comes only from headers a client cannot forge: `cf-connecting-ip`, else the
-    **rightmost** `x-forwarded-for` entry; with neither, there is no per-caller hint and only
-    the global limit applies. The leftmost `x-forwarded-for` entry is never used: it is
-    whatever the client sent. Sources:
+    The caller IP comes only from `cf-connecting-ip`, which Cloudflare sets. If it is missing,
+    there is no per-caller hint and only the global limit applies. `x-forwarded-for` is never
+    used: its leftmost entries are whatever the client sent, and its rightmost entry on
+    Supabase is a shared Cloudflare edge address. Sources:
     - Cloudflare, [HTTP request headers](https://developers.cloudflare.com/fundamentals/reference/http-headers/):
       `CF-Connecting-IP` is the client IP connecting to Cloudflare; an `X-Forwarded-For` the
       client already sent is kept and Cloudflare *appends* to it, so leftmost entries are
@@ -89,9 +89,7 @@ production, `localhost` and `127.0.0.1`.
       shows `"cf-connecting-ip": "167.88.159.69"` and
       `"x-forwarded-for": "167.88.159.69, 172.71.134.144"`, where the rightmost entry is the
       Cloudflare edge (same as `x-real-ip`). So on Supabase the real client IP is
-      `cf-connecting-ip`. The rightmost `x-forwarded-for` fallback is a proxy address, so it
-      is coarse (it can group many visitors) and should only matter if Cloudflare is ever
-      bypassed. Supabase also documents `cf-connecting-ip` in `request.headers` for an IP
+      `cf-connecting-ip`. Supabase also documents `cf-connecting-ip` in `request.headers` for an IP
       check ([Debugging performance](https://supabase.com/docs/guides/database/debugging-performance))
       and lists it among gateway request headers
       ([Log field reference](https://supabase.com/docs/guides/observability/log-field-reference)).
@@ -139,6 +137,29 @@ production, `localhost` and `127.0.0.1`.
   `update public.submissions set client_hint = null where created_at < now() - interval '90 days';`
   (run as the owner/service role; the API roles cannot change `client_hint`).
 - Post-apply checks are at the bottom of the file.
+- **Post-apply checks for `submissions_private` (run later by hand in the SQL editor; not run by
+  this PR).** Expected results are in the comments:
+
+  ```sql
+  -- 1. anon (and authenticated) have USAGE on the schema            -> true, true
+  -- select has_schema_privilege('anon', 'submissions_private', 'usage'),
+  --        has_schema_privilege('authenticated', 'submissions_private', 'usage');
+
+  -- 2. No PUBLIC entry in any submissions_private function ACL      -> 0 rows
+  --    (a NULL proacl means "defaults", which include PUBLIC EXECUTE, so it is listed too)
+  -- select p.proname, p.proacl
+  -- from pg_proc p
+  -- where p.pronamespace = 'submissions_private'::regnamespace
+  --   and (p.proacl is null
+  --        or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0));
+
+  -- 3. submissions_private is not an exposed Data API schema        -> false
+  --    (also check Dashboard > Data API settings > Exposed schemas)
+  -- select coalesce(
+  --   (select 'submissions_private' = any (string_to_array(replace(split_part(c, '=', 2), ' ', ''), ','))
+  --    from pg_roles r, unnest(r.rolconfig) c
+  --    where r.rolname = 'authenticator' and c like 'pgrst.db_schemas=%'), false);
+  ```
 
 Until this is applied, the site still works. The Supabase call fails quietly (or gives up after 4 seconds), the
 submission goes to the Apps Script intake with no trust, and so everything goes to review.

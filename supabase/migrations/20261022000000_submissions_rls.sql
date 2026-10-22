@@ -27,12 +27,17 @@ begin;
 -- 1. Who is an admin? auth.uid() on a private allowlist (filled in after Sean's first
 --    Google sign-in; see SETUP.md step 4). Not anonymous sign-ins.
 --    Every submission helper lives in its own schema, submissions_private. This migration
---    never touches the existing `private` schema (submissions_private.events and its sync/guard functions).
+--    never touches the existing `private` schema (private.events and its sync/guard functions).
 --    submissions_private is not an exposed API schema; anon/authenticated get USAGE only so
 --    the public RPC wrapper and the RLS policies can call the two functions granted below.
 create schema if not exists submissions_private;
 revoke all on schema submissions_private from public;
 grant usage on schema submissions_private to anon, authenticated;
+-- Functions created here later should not be executable by PUBLIC by default. Note: Postgres
+-- adds per-schema default privileges on top of the global ones, so this cannot remove the
+-- global PUBLIC EXECUTE default; the explicit per-function revokes below are what enforce it
+-- (SETUP.md step 4 has the checks).
+alter default privileges in schema submissions_private revoke execute on functions from public;
 
 create table if not exists submissions_private.submission_admins (
   user_id  uuid primary key references auth.users (id) on delete cascade,
@@ -175,13 +180,10 @@ declare
   -- Sources: https://developers.cloudflare.com/fundamentals/reference/http-headers/ and the
   -- hosted request.headers dump in https://github.com/supabase/pg_graphql/issues/400
   -- (cf-connecting-ip = client; x-forwarded-for = "client, cloudflare-edge"). See SETUP.md.
-  -- Only sources a client cannot forge: Cloudflare's
-  -- cf-connecting-ip, else the RIGHTMOST x-forwarded-for entry (added by the last proxy;
-  -- the leftmost entries are whatever the client sent). Neither -> no per-sender hint,
-  -- so only the global limit applies.
-  xff  text[] := string_to_array(nullif(btrim(coalesce(hdrs ->> 'x-forwarded-for', '')), ''), ',');
-  ip   text := coalesce(nullif(btrim(hdrs ->> 'cf-connecting-ip'), ''),
-                        nullif(btrim(xff[cardinality(xff)]), ''));
+  -- Only Cloudflare's cf-connecting-ip is used. x-forwarded-for is never used: its leftmost
+  -- entries are whatever the client sent and its rightmost is a shared proxy address.
+  -- No cf-connecting-ip -> no per-sender hint, so only the global limit applies.
+  ip   text := nullif(btrim(hdrs ->> 'cf-connecting-ip'), '');
 begin
   new.client_hint := null;
   if ip is not null then

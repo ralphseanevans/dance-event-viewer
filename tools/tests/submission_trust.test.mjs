@@ -325,14 +325,14 @@ test('fix 4: anon cannot execute the admin check, insert directly, or set the id
   assert.match(sql, /return jsonb_build_object\('id', v_id, 'status', v_status\);\s*end;/);
 });
 
-test('A: throttle IP only from cf-connecting-ip, else the RIGHTMOST x-forwarded-for entry, else none (cited)', () => {
+test('A: throttle IP only from cf-connecting-ip; no x-forwarded-for at all; none -> global limit only (cited)', () => {
   const sql = read('supabase/migrations/20261022000000_submissions_rls.sql');
   const code = sql.replace(/--[^\n]*/g, '');
-  assert.doesNotMatch(code, /split_part\([^)]*x-forwarded-for/, 'never the leftmost (client-forgeable) entry');
-  assert.match(code, /xff\s+text\[\] := string_to_array\(nullif\(btrim\(coalesce\(hdrs ->> 'x-forwarded-for', ''\)\), ''\), ','\);/);
-  assert.match(code, /ip\s+text := coalesce\(nullif\(btrim\(hdrs ->> 'cf-connecting-ip'\), ''\),\s+nullif\(btrim\(xff\[cardinality\(xff\)\]\), ''\)\);/);
-  assert.match(code, /new\.client_hint := null;\s+if ip is not null then/, 'no trustworthy header -> no per-sender hint');
+  assert.match(code, /\n\s*ip\s+text := nullif\(btrim\(hdrs ->> 'cf-connecting-ip'\), ''\);/);
+  assert.doesNotMatch(code, /x-forwarded-for|xff/i, 'x-forwarded-for is never read');
+  assert.match(code, /new\.client_hint := null;\s+if ip is not null then/, 'no cf-connecting-ip -> no per-sender hint');
   assert.doesNotMatch(code, /x-real-ip|true-client-ip/i);
+  for (const f of ['SETUP.md', 'CHANGELOG.md']) assert.doesNotMatch(read(f), /rightmost `x-forwarded-for` (entry|fallback)|else the rightmost/i, `${f} matches the code`);
   const setup = read('SETUP.md');
   for (const src of ['https://developers.cloudflare.com/fundamentals/reference/http-headers/', 'https://github.com/supabase/pg_graphql/issues/400']) {
     assert.ok(sql.includes(src) && setup.includes(src), `source cited: ${src}`);
@@ -421,6 +421,23 @@ test('SETUP.md recommends (but does not schedule) a 90-day cleanup of old rows /
   const sql = read('supabase/migrations/20261022000000_submissions_rls.sql');
   assert.doesNotMatch(sql.replace(/--[^\n]*/g, ''), /cron|delete from/i, 'nothing scheduled or run in the migration');
   assert.match(sql, /new\.client_hint := case when new\.client_hint is null then null else old\.client_hint end;/);
+});
+
+test('submissions_private: default EXECUTE revoked from PUBLIC; SETUP.md has hand-run post-apply checks', () => {
+  const sql = read('supabase/migrations/20261022000000_submissions_rls.sql');
+  assert.match(sql.replace(/--[^\n]*/g, ''), /alter default privileges in schema submissions_private revoke execute on functions from public;/);
+  assert.match(sql, /never touches the existing `private` schema \(private\.events and its sync\/guard functions\)/);
+  assert.doesNotMatch(sql, /submissions_private\.events/);
+  const setup = read('SETUP.md');
+  const at = setup.indexOf('Post-apply checks for `submissions_private`');
+  assert.ok(at > 0);
+  const block = setup.slice(at, setup.indexOf('```', setup.indexOf('```sql', at) + 6));
+  assert.match(block, /not run by\s+this PR/);
+  assert.match(block, /has_schema_privilege\('anon', 'submissions_private', 'usage'\)/);
+  assert.match(block, /aclexplode\(p\.proacl\) a where a\.grantee = 0/);
+  assert.match(block, /pgrst\.db_schemas/);
+  const sqlLines = block.split('```sql')[1].split('\n').filter(l => l.trim());
+  assert.ok(sqlLines.every(l => l.trim().startsWith('--')), 'every line is commented out');
 });
 
 test('pages load submissions.js after auth.js, with content cache busters', () => {
