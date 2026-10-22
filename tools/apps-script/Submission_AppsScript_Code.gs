@@ -9,9 +9,10 @@
  * (Project Settings > Script Properties):
  *   NOTIFY_EMAIL         - where review / publish notifications are sent
  *   SUPABASE_PUBLISHABLE_KEY - the site's public Supabase publishable key (same value
- *                          as js/supabase-config.js). Used only to read back a
- *                          submissions row with the caller's token so RLS decides
- *                          trust. If unset, only DASHBOARD_PASSWORD/REVIEW_TOKEN is trusted.
+ *                          as js/supabase-config.js). Used only to mark an approved
+ *                          submissions row consumed (once, hash-matched) with the
+ *                          caller's token so RLS decides trust. If unset, only
+ *                          DASHBOARD_PASSWORD/REVIEW_TOKEN is trusted.
  *   (TRUSTED_NAME_PATTERN is no longer read: a typed name never grants trust. Delete it.)
  *   FLYERS_FOLDER_ID     - Drive folder that stores uploaded flyer photos
  *   GEMINI_API_KEY       - Google AI Studio key used to read flyer details
@@ -267,23 +268,48 @@ function doPost(e) {
 }
 
 /* 2026-10-22: server-side trust for submissions. The typed name is ignored.
-   - "supabase-admin": the browser inserted a public.submissions row and Supabase RLS
-     only lets the admin Google account insert or read a row with status "approved".
-     We read that row back WITH THE CALLER'S OWN access token, so RLS decides: an
-     anonymous or non-admin token can never see an approved row. Needs the public
-     SUPABASE_PUBLISHABLE_KEY Script Property; unset = trust nobody this way.
+   - "supabase-admin": the browser filed a public.submissions row as "approved", which
+     Supabase only allows for an allowlisted admin user id. The row stores payload_hash,
+     a SHA-256 of the canonical payload. We recompute that hash from the body WE received
+     and, WITH THE CALLER'S OWN access token, set consumed_at on the row filtered by
+     id + status=approved + consumed_at is null + payload_hash. RLS only lets an admin
+     token update a row, and consumed_at can only go from null to set once, so:
+       * an anonymous or non-admin token never matches (RLS);
+       * a different payload replayed with the same id + token never matches (hash);
+       * the same request replayed a second time never matches (already consumed).
+     Needs the public SUPABASE_PUBLISHABLE_KEY Script Property; unset = trust nobody this way.
    - "dashboard-auth": the existing DASHBOARD_PASSWORD / REVIEW_TOKEN (checkAuth_),
      which the owner's dance-dashboard.html already sends with every request.
    The access token is used for this one request only; it is never logged or stored. */
 function submissionTrust_(body) {
   if (checkAuth_(body)) return { trusted: true, basis: "dashboard-auth" };
-  if (verifySupabaseApproved_(body.supabase_submission_id, body.supabase_access_token)) {
+  if (consumeSupabaseApproved_(body.supabase_submission_id, body.supabase_access_token, body)) {
     return { trusted: true, basis: "supabase-admin" };
   }
   return { trusted: false, basis: "none" };
 }
 
-function verifySupabaseApproved_(submissionId, accessToken) {
+// Keys left out of the payload hash; must match HASH_SKIP in js/submissions.js.
+const PAYLOAD_HASH_SKIP_ = ["action", "password", "token", "supabase_submission_id", "supabase_access_token"];
+
+// Canonical JSON (sorted keys). Same algorithm as canonical() in js/submissions.js.
+function canonicalJson_(v) {
+  if (Array.isArray(v)) return "[" + v.map(function (x) { return x === undefined ? "null" : canonicalJson_(x); }).join(",") + "]";
+  if (v && typeof v === "object") {
+    return "{" + Object.keys(v).filter(function (k) { return v[k] !== undefined && typeof v[k] !== "function"; }).sort()
+      .map(function (k) { return JSON.stringify(k) + ":" + canonicalJson_(v[k]); }).join(",") + "}";
+  }
+  return JSON.stringify(v === undefined ? null : v);
+}
+
+function payloadHash_(body) {
+  const o = {};
+  Object.keys(body || {}).forEach(function (k) { if (PAYLOAD_HASH_SKIP_.indexOf(k) === -1) o[k] = body[k]; });
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, canonicalJson_(o), Utilities.Charset.UTF_8);
+  return digest.map(function (b) { return ("0" + (b & 0xff).toString(16)).slice(-2); }).join("");
+}
+
+function consumeSupabaseApproved_(submissionId, accessToken, body) {
   const id = String(submissionId || "");
   const token = String(accessToken || "");
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return false;
@@ -291,10 +317,15 @@ function verifySupabaseApproved_(submissionId, accessToken) {
   const key = PropertiesService.getScriptProperties().getProperty("SUPABASE_PUBLISHABLE_KEY");
   if (!key) return false;
   try {
+    const hash = payloadHash_(body);
+    if (!/^[0-9a-f]{64}$/.test(hash)) return false;
     const res = UrlFetchApp.fetch(SUPABASE_URL + "/rest/v1/" + SUPABASE_SUBMISSIONS_TABLE +
-      "?select=id,status&status=eq.approved&id=eq." + encodeURIComponent(id), {
-      method: "get",
-      headers: { apikey: key, Authorization: "Bearer " + token, Accept: "application/json" },
+      "?select=id,status&status=eq.approved&consumed_at=is.null&id=eq." + encodeURIComponent(id) +
+      "&payload_hash=eq." + hash, {
+      method: "patch",
+      contentType: "application/json",
+      payload: JSON.stringify({ consumed_at: new Date().toISOString() }), // the DB stamps now()
+      headers: { apikey: key, Authorization: "Bearer " + token, Accept: "application/json", Prefer: "return=representation" },
       muteHttpExceptions: true,
     });
     if (res.getResponseCode() !== 200) return false;

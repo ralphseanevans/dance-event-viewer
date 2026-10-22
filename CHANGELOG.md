@@ -5,8 +5,12 @@
 ### Security
 
 - A typed contact name (the old `TRUSTED_NAME_RE` / `TRUSTED_NAME_PATTERN`) no longer grants
-  instant publishing. Trust now comes from Supabase RLS: only the admin Google account can
-  file an `approved` submission, and the Apps Script reads it back with the caller's token.
+  instant publishing. Trust now comes from Supabase: only an admin on the private user-id
+  allowlist can file an `approved` submission, and the Apps Script consumes that row once,
+  with the caller's token, only if the payload hash it computes matches the row.
+- Submissions are filed through `rpc/submit_submission` (server-made id, no direct insert,
+  idempotent `client_key` for retries) with a per-caller and global throttle on anon rows.
+- The Supabase step gives up after 4 seconds, so the form never sticks on "Sending…".
 
 ### Added
 

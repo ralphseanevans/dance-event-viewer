@@ -275,9 +275,12 @@ flyer together** (not just the image). Backend spec-of-record:
 Nobody has to sign in to submit an event or report a problem. Every submission is filed
 in the Supabase `public.submissions` review list as `pending`, then sent to the Apps
 Script intake as before. The optional **Admin sign-in** button (Google, via Supabase Auth)
-matters only for the admin account (initially ralphseanevans@gmail.com): Supabase RLS
-lets only that account insert a row as `approved` or read the review list, and the
-Apps Script reads the row back with the caller's own token before it publishes anything.
+matters only for the admin account (initially ralphseanevans@gmail.com, allowlisted by its
+Supabase user id): Supabase lets only that account file a row as `approved` or read the
+review list, and the Apps Script, with the caller's own token, marks that row consumed
+(once, and only if the payload hash matches) before it publishes anything. Supabase
+creates the row id; retries of the same submission reuse the row; the Supabase step gives
+up after 4 seconds so the form never hangs.
 **The typed contact name grants nothing.** Sign-in uses
 `redirectTo = window.location.origin + window.location.pathname`, so it also works on a
 local copy at `http://localhost:8123` / `http://127.0.0.1:8123`. Policies:
