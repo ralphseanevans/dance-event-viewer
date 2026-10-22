@@ -542,6 +542,17 @@ function tile({ ev, canceled, day }) {
 const box = $('#simple-lightbox'); let pages = [], page = 0, opener = null;
 function showPage() {
   $('img', box).src = pages[page]; $('img', box).alt = `${box.dataset.name} flyer, page ${page + 1} of ${pages.length}`;
+  // Link to the available source file, never the card's trimmed/canvas image.
+  const fileLink = $('.lb-file', box), source = new URL(pages[page], location.href);
+  const safe = source.protocol === 'https:' || source.protocol === 'http:';
+  fileLink.hidden = !safe;
+  if (safe) {
+    fileLink.href = source.href;
+    const local = source.origin === location.origin;
+    fileLink.textContent = local ? 'Download image' : 'Open image file';
+    local ? fileLink.setAttribute('download', '') : fileLink.removeAttribute('download');
+    fileLink.title = 'Available source file at its stored resolution; older files may already be compressed.';
+  } else fileLink.removeAttribute('href');
   $('.lb-count', box).textContent = pages.length > 1 ? `${page + 1} / ${pages.length}` : '';
   box.querySelectorAll('.lb-nav').forEach(b => { b.hidden = pages.length < 2; });
 }

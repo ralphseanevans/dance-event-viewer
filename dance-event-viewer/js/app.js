@@ -3485,12 +3485,25 @@ function openImageLightbox(src, label, cancel) {
     pop.appendChild(img); pop.appendChild(missing);
   }
 
+  const fileLink = document.createElement('a');
+  fileLink.className = 'flyer-file-link'; fileLink.target = '_blank'; fileLink.rel = 'noopener noreferrer';
+  fileLink.title = 'Available source file at its stored resolution; older files may already be compressed.';
+  pop.appendChild(fileLink);
   let prev, next, counter;
   const show = (i) => {
     idx = (i + images.length) % images.length;
     img.hidden = false;
     if (missing) missing.hidden = true;
-    img.src = safeImageUrl(images[idx]);
+    const available = safeImageUrl(images[idx]);
+    img.src = available;
+    const source = available && new URL(available, location.href);
+    fileLink.hidden = !source || !['https:', 'http:'].includes(source.protocol);
+    if (!fileLink.hidden) {
+      fileLink.href = source.href;
+      const local = source.origin === location.origin;
+      fileLink.textContent = local ? 'Download image' : 'Open image file';
+      local ? fileLink.setAttribute('download', '') : fileLink.removeAttribute('download');
+    } else fileLink.removeAttribute('href');
     img.alt = label
       ? (multi ? `${label} — page ${idx + 1} of ${images.length}` : label)
       : "";
