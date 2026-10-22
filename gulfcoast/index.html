@@ -9,11 +9,13 @@
 <link rel="icon" href="assets/mark.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=e694228d"><link rel="stylesheet" href="simple.css?v=d0e5207a">
 <link rel="preload" href="assets/hero-coastal-video-poster.webp" as="image" fetchpriority="high">
 <link rel="stylesheet" href="organizer-badges.css?v=b6ea0e19">
+<link rel="stylesheet" href="../dance-event-viewer/css/auth.css?v=084b41f0">
+<style>.topbar .gulf-auth{display:flex;justify-content:flex-end;width:fit-content;margin:8px 0 0 auto;font:14px var(--body);--accent:var(--red);--text-dim:var(--muted)}.topbar .gulf-auth .auth-btn{white-space:nowrap}</style>
 </head>
 <body>
 <a class="skip" href="#find">Skip to events</a>
 <div id="scroll-progress" aria-hidden="true"></div>
-<header class="topbar"><h1 id="hero-title" class="topbar-title"><span>GULF</span> <em>COAST</em></h1></header>
+<header class="topbar"><h1 id="hero-title" class="topbar-title"><span>GULF</span> <em>COAST</em></h1><span class="gulf-auth auth-slot" data-auth-slot></span></header>
 <main>
 <section class="hero" id="top" aria-label="Dancing on the Gulf Coast">
 <div class="hero-art"><video id="hero-video" muted playsinline preload="metadata" poster="assets/hero-coastal-video-poster.webp" width="1378" height="512" aria-label="Coastal dance animation"><source src="assets/hero-coastal-video.mp4" type="video/mp4"></video><img class="hero-logo-overlay" src="assets/hero-title-overlay.png" alt="Dance Event Viewer" width="1536" height="768"></div>
@@ -70,4 +72,6 @@
 <script src="../dance-event-viewer/js/supabase-config.js?v=0254dbd2"></script>
 <script type="module" src="simple-flow.mjs?v=1c4bc429"></script>
 <script type="module" src="app.js?v=fa7ac237"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js" integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O" crossorigin="anonymous"></script>
+<script defer src="../dance-event-viewer/js/auth.js?v=e70a7d71"></script>
 </body></html>
