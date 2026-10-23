@@ -22,3 +22,60 @@ test("Bill badge removal preserves event content while leaving him unbadged",()=
 
 test("John and Alicia approved avatar remains unmapped without verified event identity",()=>{assert.equal(BADGES.find(b=>b.id==="john-alicia").name,"John & Alicia");assert.equal(badgeAssetFile("john-alicia",40),"john-alicia-teacher-avatar.png");assert(!badgeIds({name:"John & Alicia social",instructors:["John Plott","Alicia"]}).includes("john-alicia"));});
 test('Nina & Travis photo badge matches the instructor avatar format and its cache-buster tracks the file',async()=>{const {readFileSync}=await import('node:fs');const {createHash}=await import('node:crypto');const png=readFileSync(new URL('../../gulfcoast/assets/organizer-badges/nina-travis-teacher-avatar.png',import.meta.url));assert.equal(png.readUInt32BE(16),336);assert.equal(png.readUInt32BE(20),336);assert.equal(png[25],6);assert(png.length<250*1024);const sha=createHash('sha1').update(png).digest('hex').slice(0,8);const src=readFileSync(new URL('../../gulfcoast/organizer-badges.mjs',import.meta.url),'utf8');assert(src.includes("id==='nina-travis'?'"+sha+"'"));});
+
+import {readFileSync} from 'node:fs';import {createHash} from 'node:crypto';
+const gc=f=>new URL('../../gulfcoast/'+f,import.meta.url);
+const css=readFileSync(gc('organizer-badges.css'),'utf8');
+test('every badge declares how it is drawn on the beige card; light one-colour logos are inked, USA Dance stays colour, instructors stay photos',()=>{
+  const by=Object.fromEntries(BADGES.map(b=>[b.id,b.card]));
+  for(const id of ['psds','twym','seaside','mobile-wcs','coastals','starlite','todd-jamie'])assert.equal(by[id],'ink',id);
+  assert.equal(by['usa-dance'],'color');
+  for(const id of ['nina-travis','rachel-zander','traci-bell','john-alicia'])assert.equal(by[id],'photo',id);
+  assert(BADGES.every(b=>['ink','color','photo'].includes(b.card)));
+});
+test('USA Dance card copy has inked figures; the picker keeps the original artwork',()=>{
+  assert.equal(badgeAssetFile('usa-dance',30),'usa-dance-card.png');assert.equal(badgeAssetFile('usa-dance',40),'usa-dance-240.png');
+  assert(readFileSync(gc('assets/organizer-badges/usa-dance-card.png')).length>1000);
+});
+test('ink logos use a shape-preserving dark filter in every view; photo badges get no filter',()=>{
+  assert.match(css,/\.organizer-card-badge\.organizer-card-badge-ink\{filter:brightness\(0\) invert\(\.094\)\}/);
+  assert(!/organizer-card-badge-color[^{]*\{[^}]*filter/.test(css));
+  assert(!/data-zoom="0"\]\) \.organizer-card-badge:not\(\.organizer-card-badge-color\)\{filter/.test(css),'old compact-only darkening removed');
+});
+test('logo size follows the card body width: cqi clamp behind @supports, 42px floor on Full and on compact cards >= a 4-across phone card, 24px only below that, 64px cap',()=>{
+  const sup=css.match(/@supports\(width:1cqi\)\{([\s\S]*?)\n\}/);assert(sup,'cqi sizes wrapped in @supports');
+  assert.match(sup[1],/\.tile-body\.has-organizer-badge\{--logo:clamp\(42px,61cqi,64px\)\}/);
+  assert.match(sup[1],/#simple-groups:not\(\[data-zoom="0"\]\) \.tile-body\.has-organizer-badge\{--logo:clamp\(var\(--logo-min\),61cqi,calc\(64px \/ var\(--z,\.78\)\)\)\}/);
+  // On-screen floor: 42px unless the card (194px x --z) is narrower than ~72px (z < .37), then 24px.
+  assert.match(css,/#simple-groups:not\(\[data-zoom="0"\]\) \.tile-body\.has-organizer-badge\{--logo-min:calc\(clamp\(24px,calc\(\(var\(--z,\.78\) - \.37\) \* 10000px \+ 24px\),42px\) \/ var\(--z,\.78\)\)\}/);
+  const floor=z=>Math.min(42,Math.max(24,(z-.37)*10000+24));
+  // 4 across at 375/390/430 and 10 across desktop keep 42; 5 across at 430/390/375 and 12 across shrink.
+  for(const z of [.387,.407,.464,.386])assert.equal(floor(z),42,`z=${z}`);
+  for(const z of [.356,.315,.30,.31])assert.equal(floor(z),24,`z=${z}`);
+  // Every cqi value (including the photo clamp, which holds var() and so is never dropped at parse
+  // time) sits inside an @supports(width:1cqi) block; outside them only plain px remain.
+  const outside=css.replace(/\/\*[\s\S]*?\*\//g,'').replace(/@supports\(width:1cqi\)\{[\s\S]*?\n\}/g,'');
+  assert(!/cqi/.test(outside),'no cqi outside @supports');
+  assert.match(css,/\.tile-body\.has-organizer-badge\{position:relative;container-type:inline-size\}/);
+  assert.match(css,/\.organizer-card-badge\{float:right;[^}]*width:var\(--logo,42px\)!important;height:var\(--logo,42px\)!important/);
+});
+test('the logo floats inside the style label so the label wraps beside/below it (no padding column it can overflow)',()=>{
+  assert.match(css,/\.tile-body\.has-organizer-badge \.tile-style\{display:flow-root/);
+  assert(!/\.tile-style\{padding-right/.test(css),'old padding-right column removed');
+  const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/querySelector\('\.tile-style'\)/);assert.match(src,/label\.prepend\(img\)/);
+  // Style phrases stay together: each " / " part becomes an inline-block span; text is unchanged.
+  assert.match(src,/split\(\/\\s\*\\\/\\s\*\/\)/);assert.match(src,/className='tile-style-part'/);
+  assert.match(css,/\.tile-body\.has-organizer-badge \.tile-style-part\{display:inline-block;max-width:100%\}/);
+});
+test('instructor photo badges stay 56px but shrink with compact cards (plain fallback first) and opt out of --logo',()=>{
+  assert.match(css,/\.organizer-card-badge\.organizer-card-badge-color\{[^}]*width:56px!important;height:56px!important\}/);
+  assert.match(css,/width:calc\(56px \/ var\(--z,\.78\)\)!important;height:calc\(56px \/ var\(--z,\.78\)\)!important\}/);
+  assert.match(css,/@supports\(width:1cqi\)\{\n#simple-groups:not\(\[data-zoom=\"0\"\]\) \.organizer-card-badge\.organizer-card-badge-color\{width:clamp\(var\(--logo-min\),61cqi,calc\(56px \/ var\(--z,\.78\)\)\)!important/);
+  assert.match(css,/has\(\.organizer-card-badge-color\)[^{]*\{--logo:initial\}/);
+});
+test('cache-busters match the first 8 sha1 characters of the changed badge files',()=>{
+  const h=f=>createHash('sha1').update(readFileSync(gc(f))).digest('hex').slice(0,8);
+  assert(readFileSync(gc('index.html'),'utf8').includes('organizer-badges.css?v='+h('organizer-badges.css')));
+  assert(readFileSync(gc('index.html'),'utf8').includes('simple-flow.mjs?v='+h('simple-flow.mjs')));
+  assert(readFileSync(gc('simple-flow.mjs'),'utf8').includes('organizer-badges.mjs?v='+h('organizer-badges.mjs')));
+});

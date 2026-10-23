@@ -7,21 +7,49 @@
 .organizer-clear{display:none;place-items:center;width:44px;height:44px;min-height:44px;margin:3px 0 0;padding:0;border:0;background:none;color:var(--muted);font:24px/1 var(--body);touch-action:manipulation}
 .organizer-clear[hidden]{display:none}.organizer-choice:focus-visible,.organizer-clear:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 @media(hover:hover){.organizer-choice:hover{border-color:var(--line)}.organizer-choice[aria-pressed=true]:hover{border-color:var(--red)}.organizer-clear:hover{color:var(--paper)}}
-.tile-body.has-organizer-badge{position:relative}.tile-body.has-organizer-badge .tile-style{padding-right:50px;min-height:52px;box-sizing:border-box}.organizer-card-badge{position:absolute;top:10px;right:10px;width:42px!important;height:42px!important;object-fit:contain;pointer-events:none}
-#simple-groups:not([data-zoom="0"]) .organizer-card-badge{width:calc(42px / var(--z,.78))!important;height:calc(42px / var(--z,.78))!important;top:calc(10px / var(--z,.78));right:calc(10px / var(--z,.78))}
-#simple-groups:not([data-zoom="0"]) .organizer-card-badge:not(.organizer-card-badge-color){filter:brightness(.18)}
+/* Card corner logos. The card body is a size container so the group/studio logo follows the CARD
+   width (and so the Card size slider), not the screen: --logo = 61% of the body's inner width,
+   capped at 64px on screen (so the style label and title keep their room at 1 across / Full).
+   Floor: 42px on screen (Sean's iPhone size at 4 across) on every card at least as wide as a
+   4-across phone card. Compact cards are drawn at native size and scaled by zoom:var(--z), so the
+   on-screen card width is 194px x --z and px limits are divided by --z. --logo-min steps from 42px
+   down to 24px only when the card is narrower than ~72px on screen (--z < .37): 5 across on any
+   phone (<= 69px at 430 wide) and 12 across on desktop (60px). 4 across at 375-430 (75-87px) and
+   10 across on desktop (~75px) keep 42px. The step is a clamp with a steep ramp (no JS).
+   The logo is floated inside the style label (organizer-badges.mjs puts it there), so the label
+   text flows beside it and any word that doesn't fit drops BELOW the logo: the label can never run
+   under the logo, and the label grows to the logo's height so the title starts below it.
+   --logo is only set where cqi is supported; elsewhere var(--logo,...) falls back to plain px. */
+#simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge{--logo-min:calc(clamp(24px,calc((var(--z,.78) - .37) * 10000px + 24px),42px) / var(--z,.78))}
+@supports(width:1cqi){
+.tile-body.has-organizer-badge{--logo:clamp(42px,61cqi,64px)}
+#simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge{--logo:clamp(var(--logo-min),61cqi,calc(64px / var(--z,.78)))}
+}
+.tile-body.has-organizer-badge{position:relative;container-type:inline-size}
+.tile-body.has-organizer-badge .tile-style{display:flow-root;text-wrap:balance}
+.organizer-card-badge{float:right;margin:-6px -6px 4px 8px;width:var(--logo,42px)!important;height:var(--logo,42px)!important;object-fit:contain;pointer-events:none}
+/* Compact: same on-screen spot as before (10px from the card's top and right edges), 8px gap to the label. */
+#simple-groups:not([data-zoom="0"]) .organizer-card-badge{width:var(--logo,calc(42px / var(--z,.78)))!important;height:var(--logo,calc(42px / var(--z,.78)))!important;margin:calc(10px / var(--z,.78) - 18px) calc(10px / var(--z,.78) - 12px) 4px max(4px,calc(12px - 2px / var(--z,.78)))}
+/* Light one-colour logos (BADGES card:'ink') are drawn in the page's dark ink (#181918 ~ black, then
+   lifted 9.4%) so they read on the beige card; the alpha shape is untouched. Colour logos and
+   instructor photos get no filter. */
+.organizer-card-badge.organizer-card-badge-ink{filter:brightness(0) invert(.094)}
 .style-organizer-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,250px);gap:24px;align-items:start}
 .style-organizer-layout>*{min-width:0}.style-organizer-layout .organizer-picker{margin-top:56px;padding:8px;border:1px solid var(--line);border-radius:4px}
 .style-organizer-layout .style-choices{margin-left:0;margin-right:0;justify-content:center}
 @media(max-width:800px){.style-organizer-layout{grid-template-columns:minmax(0,1fr) 132px;gap:12px}.style-organizer-layout .organizer-picker{padding:8px;margin-top:48px}.style-organizer-layout .style-choices{gap:6px;margin-top:22px}.style-organizer-layout .style-choice.has-style-badge img{width:90px;max-width:100%}.style-organizer-layout .style-choice{max-width:100%}.style-organizer-layout .solo-toggle{font-size:12px;gap:3px;white-space:normal;text-align:center}.style-organizer-layout .style-route{margin-left:0}}
 
-#simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge .tile-style{padding-right:calc(50px / var(--z,.78));min-height:calc(52px / var(--z,.78))}
-
-/* Instructor photo badges (face + name artwork): 56px across on cards, up from 42px, so the
-   name label is legible. Group/studio logos stay 42px. Top inset trimmed to 8px on Full cards
-   so the badge still ends inside the style row's 52px min-height (no taller cards); compact
-   cards have 18px top padding, so 10px + 56px still ends inside that row. Flip corner is top-left. */
-.organizer-card-badge.organizer-card-badge-color{top:8px;right:8px;width:56px!important;height:56px!important}
-.tile-body.has-organizer-badge:has(.organizer-card-badge-color) .tile-style{padding-right:62px}
-#simple-groups:not([data-zoom="0"]) .organizer-card-badge.organizer-card-badge-color{width:calc(56px / var(--z,.78))!important;height:calc(56px / var(--z,.78))!important;top:calc(10px / var(--z,.78));right:calc(10px / var(--z,.78))}
-#simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge:has(.organizer-card-badge-color) .tile-style{padding-right:calc(64px / var(--z,.78))}
+/* Instructor photo badges (face + name artwork): 56px across on cards so the name label is
+   legible, and they don't use the scaling --logo. On compact cards they stay 56px on screen but
+   never more than 61% of the card body and never below --logo-min (42px at 4 across and wider; both only where cqi works, else a plain 56px),
+   so at 5 across (phone) / 12 across (desktop) they shrink with the card like the logos. */
+.tile-body.has-organizer-badge:has(.organizer-card-badge-color),#simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge:has(.organizer-card-badge-color){--logo:initial}
+.organizer-card-badge.organizer-card-badge-color{margin:-8px -8px 4px 8px;width:56px!important;height:56px!important}
+#simple-groups:not([data-zoom="0"]) .organizer-card-badge.organizer-card-badge-color{width:calc(56px / var(--z,.78))!important;height:calc(56px / var(--z,.78))!important}
+/* The clamp holds var(), so it is never dropped at parse time: without cqi it would be invalid at
+   computed time and the photo would fall back to its natural size (100-290px). Keep it in @supports. */
+@supports(width:1cqi){
+#simple-groups:not([data-zoom="0"]) .organizer-card-badge.organizer-card-badge-color{width:clamp(var(--logo-min),61cqi,calc(56px / var(--z,.78)))!important;height:clamp(var(--logo-min),61cqi,calc(56px / var(--z,.78)))!important}
+}
+/* Style phrases (one per " / " part, see organizer-badges.mjs) stay together beside or below the logo. */
+.tile-body.has-organizer-badge .tile-style-part{display:inline-block;max-width:100%}
