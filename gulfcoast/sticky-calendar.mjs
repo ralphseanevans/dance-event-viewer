@@ -68,15 +68,13 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
       pendingStart = null; didDrag = true; suppressClick = true; paintRange(); onRange?.(range);
       setTimeout(() => { suppressClick = false; }, 250);
     }
-    dragStart = dragEnd = dragPointer = null;
+    dragStart = dragEnd = dragPointer = null; paintRange();
   }
-  // Touch/pen drags only select a range while the range panel is open; otherwise a
-  // swipe on the calendar must scroll the page instead of painting red range marks
-  // under the finger while the dates move away from it.
-  const rangeMode = () => Boolean(root.querySelector('#calendar-range-details')?.open);
+  // Mouse, touch and pen: dragging across dates selects a range; each new drag adds
+  // another range. The grid has touch-action:none (simple.css), so a finger swipe on
+  // the calendar selects dates instead of scrolling; swipes elsewhere still scroll.
   grid.addEventListener('pointerdown', e => {
     const b = e.target.closest('button[data-date]'); if (!b) return;
-    if (e.pointerType !== 'mouse' && !rangeMode()) return;
     dragStart = dragEnd = b.dataset.date; dragPointer = e.pointerId; didDrag = false; paintRange();
   });
   document.addEventListener('pointermove', e => {

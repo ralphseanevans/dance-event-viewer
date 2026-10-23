@@ -368,9 +368,9 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 button.calendar-day.is-today{position:relative;font-weight:800}
 button.calendar-day.is-today::after{content:"";position:absolute;bottom:2px;left:50%;width:5px;height:5px;border-radius:50%;background:var(--paper);transform:translateX(-50%);pointer-events:none}
 
-/* Phones: a swipe on the calendar scrolls the page; drag-to-select (touch-action:none) only while the range panel is open. */
-button.calendar-day{touch-action:manipulation}
-.calendar-sticky:has(#calendar-range-details[open]) button.calendar-day{touch-action:none}
+/* Phones: a finger swipe on the calendar grid selects a date range (it does not scroll);
+   swipes anywhere else on the page scroll as normal. */
+.calendar-days,.calendar-days button.calendar-day{touch-action:none}
 
 /* Schedule list is a compact-card feature; Full cards keep their single time line. */
 .tile-schedule{display:none}
