@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {BADGES,badgeIds,matchesBadge,badgeAssetFile} from '../../gulfcoast/organizer-badges.mjs';
-test('trial has twelve distinct identities, eight groups/studios and no withheld Taylor',()=>{assert.equal(BADGES.length,12);assert.equal(new Set(BADGES.map(x=>x.id)).size,12);assert.equal(BADGES.filter(x=>!x.kind.includes('Instructor')).length,8);assert(!BADGES.some(x=>/oblow/i.test(x.name)));});
+test('trial has thirteen distinct identities, eight groups/studios and no withheld Taylor',()=>{assert.equal(BADGES.length,13);assert.equal(new Set(BADGES.map(x=>x.id)).size,13);assert.equal(BADGES.filter(x=>!x.kind.includes('Instructor')).length,8);assert(!BADGES.some(x=>/oblow/i.test(x.name)));});
 test('Taylor Morton uses PSDS; Taylor Oblow and personal relationships do not',()=>{assert.deepEqual(badgeIds({name:'Workshop',instructors:['Taylor Morton']}),['psds']);assert.deepEqual(badgeIds({name:'Workshop',instructors:['Taylor Oblow','Jake']}),[]);});
 test('unrelated first/third Saturday events and unknown instructors stay unassigned',()=>{assert.deepEqual(badgeIds({key:'ga-marietta-tango-social-3rd-saturday-milonga-2026-08-15',name:'Third Saturday Milonga'}),[]);assert.deepEqual(badgeIds({name:'West Coast Swing',venue:'Ragon Hall'}),[]);assert.deepEqual(badgeIds({name:'Workshop',instructors:['John Doe']}),[]);});
 test('source-backed Seaside event at TWYM matches both, with organizer card first',()=>{const ev={key:'sso-lindy-and-blues-fridays-the-way-you-move',name:'SSO Lindy & Blues',venue:'The Way You Move, Pensacola'};assert.deepEqual(badgeIds(ev),['seaside','twym']);assert(matchesBadge(ev,'seaside'));assert(matchesBadge(ev,'twym'));assert(!matchesBadge(ev,'psds'));});
@@ -10,7 +10,7 @@ test('Todd/Jamie known series and reset preserve explicit scope',()=>{assert.dee
 
 test('Nina/Travis shared badge uses shared-series evidence and not Nina-only appearances',()=>{assert(BADGES.some(x=>x.id==='nina-travis'));assert(!BADGES.some(x=>x.id==='john-plott'));assert.deepEqual(badgeIds({key:'ttdgc-dancing-nina-travis-andy-tuesday',name:'Dancing with Nina, Travis and Andy'}),['nina-travis']);assert.deepEqual(badgeIds({name:'Workshop',instructors:['Nina Outlaw','Travis Outlaw','Andy']}),['nina-travis']);assert(!badgeIds({name:'West Coast Swing Class & Social with Nina Outlaw'}).includes('nina-travis'));assert(!badgeIds({name:'Unknown Nina and Travis'}).includes('nina-travis'));});
 
-test('selector assets are vector or density-safe originals, never 30px exports',()=>{for(const id of ['psds','twym','seaside','mobile-wcs','usa-dance'])assert.equal(badgeAssetFile(id,40),id+'-240.png');for(const id of ['coastals','starlite','todd-jamie','bill-thrall'])assert.equal(badgeAssetFile(id,40),id+'.svg');assert.equal(badgeAssetFile('nina-travis',40),'nina-travis-teacher-avatar.png');assert.equal(badgeAssetFile('nina-travis',30),'nina-travis-teacher-avatar.png');assert.equal(badgeAssetFile('coastals',30),'coastals.svg');});
+test('selector assets are vector or density-safe originals, never 30px exports',()=>{for(const id of ['psds','twym','seaside','mobile-wcs','usa-dance'])assert.equal(badgeAssetFile(id,40),id+'-240.png');for(const id of ['coastals','starlite','bill-thrall'])assert.equal(badgeAssetFile(id,40),id+'.svg');assert.equal(badgeAssetFile('nina-travis',40),'nina-travis-teacher-avatar.png');assert.equal(badgeAssetFile('nina-travis',30),'nina-travis-teacher-avatar.png');assert.equal(badgeAssetFile('coastals',30),'coastals.svg');});
 
 test('shared badge is labeled Nina & Travis but still only matches the shared Nina/Travis/Andy series',()=>{assert.equal(BADGES.find(x=>x.id==='nina-travis').name,'Nina & Travis');assert(!badgeIds({name:'Class',instructors:['Nina Outlaw','Travis Outlaw']}).includes('nina-travis'));});
 
@@ -28,9 +28,9 @@ const gc=f=>new URL('../../gulfcoast/'+f,import.meta.url);
 const css=readFileSync(gc('organizer-badges.css'),'utf8');
 test('every badge declares how it is drawn on the beige card; light one-colour logos are inked, USA Dance stays colour, instructors stay photos',()=>{
   const by=Object.fromEntries(BADGES.map(b=>[b.id,b.card]));
-  for(const id of ['psds','twym','seaside','mobile-wcs','coastals','starlite','todd-jamie'])assert.equal(by[id],'ink',id);
+  for(const id of ['psds','twym','seaside','mobile-wcs','coastals','starlite'])assert.equal(by[id],'ink',id);
   assert.equal(by['usa-dance'],'color');
-  for(const id of ['nina-travis','rachel-zander','traci-bell','john-alicia'])assert.equal(by[id],'photo',id);
+  for(const id of ['nina-travis','rachel-zander','traci-bell','john-alicia','gary-jobst','todd-jamie'])assert.equal(by[id],'photo',id);
   assert(BADGES.every(b=>['ink','color','photo'].includes(b.card)));
 });
 test('USA Dance card copy has inked figures; the picker keeps the original artwork',()=>{
@@ -78,4 +78,17 @@ test('cache-busters match the first 8 sha1 characters of the changed badge files
   assert(readFileSync(gc('index.html'),'utf8').includes('organizer-badges.css?v='+h('organizer-badges.css')));
   assert(readFileSync(gc('index.html'),'utf8').includes('simple-flow.mjs?v='+h('simple-flow.mjs')));
   assert(readFileSync(gc('simple-flow.mjs'),'utf8').includes('organizer-badges.mjs?v='+h('organizer-badges.mjs')));
+});
+test('Gary Jobst photo badge matches his exact full name only (the PCDA Round-Up lists him), Taylor Oblow stays unbadged',()=>{
+  assert.deepEqual(badgeIds({key:'pcda-wednesday-night-round-up-ragon-hall',name:'The Wednesday Night Round-Up with PCDA at Ragon Hall',instructors:['Gary Jobst','Taylor Oblow','Jake Twork']}),['gary-jobst']);
+  assert.deepEqual(badgeIds({name:'Workshop',instructors:['Gary']}),[]);assert.deepEqual(badgeIds({name:'Workshop',instructors:['Gary Jobson']}),[]);
+});
+test('Gary and Todd & Jamie photo badges use the instructor avatar format and file-tracking cache-busters',()=>{
+  const src=readFileSync(gc('organizer-badges.mjs'),'utf8');
+  for(const id of ['gary-jobst','todd-jamie']){
+    assert.equal(badgeAssetFile(id,30),id+'-teacher-avatar.png');assert.equal(badgeAssetFile(id,40),id+'-teacher-avatar.png');
+    const png=readFileSync(gc('assets/organizer-badges/'+id+'-teacher-avatar.png'));
+    assert.equal(png.readUInt32BE(16),336);assert.equal(png.readUInt32BE(20),336);assert.equal(png[25],6);assert(png.length<250*1024);
+    assert(src.includes("id==='"+id+"'?'"+createHash('sha1').update(png).digest('hex').slice(0,8)+"'"),id);
+  }
 });
