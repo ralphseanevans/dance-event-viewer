@@ -38,12 +38,14 @@ export function badgeIds(ev={}) {
 export const matchesBadge=(ev,ids)=>{const chosen=Array.isArray(ids)?ids:ids?[ids]:[];return !chosen.length||badgeIds(ev).some(id=>chosen.includes(id));};
 const vectors=new Set(['coastals','starlite','todd-jamie','bill-thrall']);
 export const badgeAssetFile=(id,size)=>(size===30&&id==='usa-dance')?'usa-dance-card.png':['rachel-zander','traci-bell','john-alicia','nina-travis'].includes(id)?id+'-teacher-avatar.png':vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
-const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v='+(id==='john-alicia'?'ja-v3':'sharp-4'),import.meta.url).href;
+const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v='+(id==='john-alicia'?'ja-v3':id==='nina-travis'?'db587e27':'sharp-4'),import.meta.url).href;
 export function addCardBadge(host,ev) {
   const id=badgeIds(ev)[0];if(!id)return;
   const item=BADGES.find(b=>b.id===id),img=document.createElement('img');
   img.className='organizer-card-badge'+(item.card==='photo'?' organizer-card-badge-color':item.card==='ink'?' organizer-card-badge-ink':'');img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
-  img.addEventListener('error',()=>img.remove(),{once:true});host.classList.add('has-organizer-badge');host.appendChild(img);
+  img.addEventListener('error',()=>img.remove(),{once:true});host.classList.add('has-organizer-badge');
+  // Float the logo inside the style label so the label wraps beside/below it and never runs under it.
+  const label=host.querySelector('.tile-style');if(label)label.prepend(img);else host.appendChild(img);
 }
 export function createBadgePicker(after,onChange) {
   const selected=new Set();const section=document.createElement('section');section.className='organizer-picker';section.hidden=true;

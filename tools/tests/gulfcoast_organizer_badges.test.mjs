@@ -21,6 +21,7 @@ test("Traci avatar matches exact full name and does not claim every historic ser
 test("Bill badge removal preserves event content while leaving him unbadged",()=>{const ev={key:"ttdgc-bill-thrall-evermans-thursday",name:"Lesson with Bill Thrall",instructors:["Bill Thrall"]};const original=JSON.stringify(ev);assert(!BADGES.some(b=>b.id==="bill-thrall"));assert(!badgeIds(ev).includes("bill-thrall"));assert.equal(JSON.stringify(ev),original);});
 
 test("John and Alicia approved avatar remains unmapped without verified event identity",()=>{assert.equal(BADGES.find(b=>b.id==="john-alicia").name,"John & Alicia");assert.equal(badgeAssetFile("john-alicia",40),"john-alicia-teacher-avatar.png");assert(!badgeIds({name:"John & Alicia social",instructors:["John Plott","Alicia"]}).includes("john-alicia"));});
+test('Nina & Travis photo badge matches the instructor avatar format and its cache-buster tracks the file',async()=>{const {readFileSync}=await import('node:fs');const {createHash}=await import('node:crypto');const png=readFileSync(new URL('../../gulfcoast/assets/organizer-badges/nina-travis-teacher-avatar.png',import.meta.url));assert.equal(png.readUInt32BE(16),336);assert.equal(png.readUInt32BE(20),336);assert.equal(png[25],6);assert(png.length<250*1024);const sha=createHash('sha1').update(png).digest('hex').slice(0,8);const src=readFileSync(new URL('../../gulfcoast/organizer-badges.mjs',import.meta.url),'utf8');assert(src.includes("id==='nina-travis'?'"+sha+"'"));});
 
 import {readFileSync} from 'node:fs';import {createHash} from 'node:crypto';
 const gc=f=>new URL('../../gulfcoast/'+f,import.meta.url);
@@ -41,15 +42,22 @@ test('ink logos use a shape-preserving dark filter in every view; photo badges g
   assert(!/organizer-card-badge-color[^{]*\{[^}]*filter/.test(css));
   assert(!/data-zoom="0"\]\) \.organizer-card-badge:not\(\.organizer-card-badge-color\)\{filter/.test(css),'old compact-only darkening removed');
 });
-test('logo size follows the card body width: container query clamp, 42px floor, 64px cap, compact limits divided by --z',()=>{
-  assert.match(css,/\.tile-body\.has-organizer-badge\{[^}]*container-type:inline-size[^}]*--logo:clamp\(42px,61cqi,64px\)/);
-  assert.match(css,/#simple-groups:not\(\[data-zoom="0"\]\) \.tile-body\.has-organizer-badge\{--logo:clamp\(calc\(42px \/ var\(--z,\.78\)\),61cqi,calc\(64px \/ var\(--z,\.78\)\)\)\}/);
-  assert.match(css,/\.organizer-card-badge\{[^}]*width:var\(--logo,42px\)!important;height:var\(--logo,42px\)!important/);
-  assert.match(css,/\.tile-body\.has-organizer-badge \.tile-style\{padding-right:calc\(var\(--logo,42px\) \+ 8px\);min-height:max\(52px,calc\(var\(--logo,0px\) - 6px\)\)/);
+test('logo size follows the card body width: cqi clamp behind @supports, 42px floor on Full, 24px on-screen floor on compact, 64px cap',()=>{
+  const sup=css.match(/@supports\(width:1cqi\)\{([\s\S]*?)\n\}/);assert(sup,'cqi sizes wrapped in @supports');
+  assert.match(sup[1],/\.tile-body\.has-organizer-badge\{--logo:clamp\(42px,61cqi,64px\)\}/);
+  assert.match(sup[1],/#simple-groups:not\(\[data-zoom="0"\]\) \.tile-body\.has-organizer-badge\{--logo:clamp\(calc\(24px \/ var\(--z,\.78\)\),61cqi,calc\(64px \/ var\(--z,\.78\)\)\)\}/);
+  assert(!/cqi/.test(css.replace(/\/\*[\s\S]*?\*\//g,'').replace(sup[0],'').replace(/min\(calc\(56px \/ var\(--z,\.78\)\),61cqi\)/g,'')),'no cqi outside @supports except the photo min() that has a plain fallback before it');
+  assert.match(css,/\.tile-body\.has-organizer-badge\{position:relative;container-type:inline-size\}/);
+  assert.match(css,/\.organizer-card-badge\{float:right;[^}]*width:var\(--logo,42px\)!important;height:var\(--logo,42px\)!important/);
 });
-test('instructor photo badges keep their fixed 56px size and opt out of the scaling logo variable',()=>{
-  assert.match(css,/\.organizer-card-badge\.organizer-card-badge-color\{top:8px;right:8px;width:56px!important;height:56px!important\}/);
-  assert.match(css,/calc\(56px \/ var\(--z,\.78\)\)!important/);
+test('the logo floats inside the style label so the label wraps beside/below it (no padding column it can overflow)',()=>{
+  assert.match(css,/\.tile-body\.has-organizer-badge \.tile-style\{display:flow-root/);
+  assert(!/\.tile-style\{padding-right/.test(css),'old padding-right column removed');
+  const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/querySelector\('\.tile-style'\)[^;]*;if\(label\)label\.prepend\(img\)/);
+});
+test('instructor photo badges stay 56px but shrink with compact cards (plain fallback first) and opt out of --logo',()=>{
+  assert.match(css,/\.organizer-card-badge\.organizer-card-badge-color\{[^}]*width:56px!important;height:56px!important\}/);
+  assert.match(css,/width:calc\(56px \/ var\(--z,\.78\)\)!important;height:calc\(56px \/ var\(--z,\.78\)\)!important;width:min\(calc\(56px \/ var\(--z,\.78\)\),61cqi\)!important/);
   assert.match(css,/has\(\.organizer-card-badge-color\)[^{]*\{--logo:initial\}/);
 });
 test('cache-busters match the first 8 sha1 characters of the changed badge files',()=>{
