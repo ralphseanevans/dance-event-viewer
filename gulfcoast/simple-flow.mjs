@@ -3,7 +3,7 @@ import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badge
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=a03e5726';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing } from './simple-core.mjs?v=51c7155c';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -11,7 +11,47 @@ import { createStickyCalendar } from './sticky-calendar.mjs?v=99052a08';
 
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../dance-event-viewer/', import.meta.url); // /dance-event-viewer/
-const SITE = new URL('../', import.meta.url);                   // site root
+const SITE = new URL('../', import.meta.url);
+
+// Price row: full pricing inline unless it runs past 5 lines AND collapsing saves
+// at least 2 lines after paying for the toggle row (rule in simple-core.mjs).
+// Collapsed = the short summary (or the full text) clamped to 5 lines plus a
+// "Pricing details" toggle; opening it swaps the row to the full text in place,
+// so nothing is shown twice. Measured after render and re-checked on resize.
+const priceObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
+  for (const { target } of entries) target._fitPricing?.();
+}) : null;
+function fitPricing(span, full, summary) {
+  const row = span.parentElement;
+  const details = document.createElement('details'); details.className = 'tile-extra tile-extra-pricing';
+  const label = document.createElement('summary'); label.textContent = 'Pricing details';
+  details.appendChild(label); details.hidden = true; row.after(details);
+  let lastWidth = -1, collapsible = false;
+  const show = () => {
+    const open = collapsible && details.open;
+    span.textContent = collapsible && !open ? (summary || full) : full;
+    row.classList.toggle('is-price-clamped', collapsible && !open);
+    details.hidden = !collapsible;
+  };
+  row._fitPricing = () => {
+    const width = row.clientWidth;
+    if (!width || width === lastWidth) return;
+    lastWidth = width;
+    const cs = getComputedStyle(span);
+    const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3;
+    row.classList.remove('is-price-clamped'); span.textContent = full;
+    const fullHeight = span.offsetHeight;
+    span.textContent = summary || full; row.classList.add('is-price-clamped');
+    const collapsedHeight = span.offsetHeight;
+    details.hidden = false;
+    const dcs = getComputedStyle(details);
+    const toggleHeight = details.offsetHeight + parseFloat(dcs.marginTop) + parseFloat(dcs.marginBottom);
+    collapsible = shouldCollapsePricing({ fullHeight, collapsedHeight, toggleHeight, lineHeight });
+    show();
+  };
+  details.addEventListener('toggle', show);
+  if (priceObserver) priceObserver.observe(row);
+}
 const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url,card_title,instructors,levels,address_line_1,address_line_2,cost_display';
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -474,7 +514,7 @@ function tile({ ev, canceled, day }) {
     const second = document.createElement('span'); second.className = 'tile-address-line';
     second.textContent = ev.address_line_2; location.appendChild(second);
   }
-  const price = row('ticket', ev.cost_display || ev.cost || 'Cover not listed');
+  const price = row('ticket', ev.cost || ev.cost_display || 'Cover not listed');
   if (!ev.cost_display && !ev.cost) price.parentElement.classList.add('is-placeholder');
   const detail = (label, text, kind) => {
     const details = document.createElement('details'); details.className = 'tile-extra' + (kind ? ' tile-extra-' + kind : '');
@@ -483,7 +523,7 @@ function tile({ ev, canceled, day }) {
     details.append(summary, p); body.appendChild(details);
   };
   if (ev.address_line_1 && ev.venue !== [ev.address_line_1, ev.address_line_2].filter(Boolean).join(', ')) detail('Full address', ev.venue, 'address');
-  if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
+  if (ev.cost) fitPricing(price, ev.cost, ev.cost_display && ev.cost_display !== ev.cost ? ev.cost_display : '');
   const links = document.createElement('p'); links.className = 'tile-links';
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
   const flyers = flyersFor(ev, state.logoMap).map(resolve);
