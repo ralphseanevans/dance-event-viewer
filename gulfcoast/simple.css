@@ -150,7 +150,7 @@ button.calendar-day.is-active{color:var(--red)}
 .calendar-day.in-range{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
 .calendar-day.range-start,.calendar-day.range-end,.calendar-day.range-pending{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
 button.calendar-day{touch-action:none;user-select:none;-webkit-user-select:none}
-button.calendar-day.no-events{cursor:crosshair}
+button.calendar-day.no-events{cursor:pointer}
 
 /* Reference card: spacious editorial typography and icon-led details. */
 .day-events{grid-template-columns:minmax(0,1fr);gap:18px}
