@@ -1,4 +1,4 @@
-import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=500e0e2d';
+import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=80b7fe31';
 // Exp2 Simple mode: Where -> Styles -> When (sticky calendar) -> cards, each step
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
@@ -52,7 +52,6 @@ function fitPricing(span, full, summary) {
   details.addEventListener('toggle', show);
   if (priceObserver) priceObserver.observe(row);
 }
-                   // site root
 const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url,card_title,instructors,levels,address_line_1,address_line_2,cost_display';
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
