@@ -72,7 +72,8 @@ test('EV2 card title links to the /e/ page and the bottom Event link is gone', (
   assert.doesNotMatch(js, /'Event ↗'/);
   assert.match(js, /state\.eventPages\.has\(ev\.key\)/);
   assert.match(js, /t\.className = 'tile-name-link'; t\.href = new URL\('e\/' \+ ev\.key \+ '\.html', SITE\)\.href/);
-  assert.match(js, /else name\.textContent = ev\.card_title \|\| ev\.name/);
+  assert.match(js, /else fillTitle\(name, ev\.card_title \|\| ev\.name\)/);
+  assert.match(js, /fillTitle\(t, ev\.card_title \|\| ev\.name\); name\.appendChild\(t\)/);
   const css = readFileSync(new URL('../../gulfcoast/simple.css', import.meta.url), 'utf8');
   assert.match(css, /\.tile-name-link\{color:inherit;/);
   assert.match(css, /\.tile-name-link:focus-visible\{outline:2px solid/);

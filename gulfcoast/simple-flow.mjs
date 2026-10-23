@@ -3,7 +3,7 @@ import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badge
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing } from './simple-core.mjs?v=3bc975d4';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts } from './simple-core.mjs?v=5560fb56';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -459,6 +459,14 @@ function fallbackFlyer(ev, day) {
   if (d.details.length) { const ul = add('ul', 'ff-details', ''); d.details.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); }); }
   return f;
 }
+// Title text: everything but the last two words as plain text, those two in an inline-block
+// .tile-name-tail that stays on one line when it fits and wraps normally when it doesn't.
+function fillTitle(el, text) {
+  const [head, tail] = titleParts(text);
+  el.textContent = head;
+  if (tail) { const s = document.createElement('span'); s.className = 'tile-name-tail'; s.textContent = tail; el.appendChild(s); }
+}
+
 function tile({ ev, canceled, day }) {
   const a = document.createElement('article');
   a.className = 'event-tile' + (canceled ? ' is-canceled' : '');
@@ -474,8 +482,8 @@ function tile({ ev, canceled, day }) {
   addCardBadge(body, ev);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; c.title = c.textContent; body.appendChild(c); }
   const name = document.createElement('h4'); name.className = 'tile-name'; name.title = ev.name;
-  if (typeof ev.key === 'string' && state.eventPages.has(ev.key)) { const t = document.createElement('a'); t.className = 'tile-name-link'; t.href = new URL('e/' + ev.key + '.html', SITE).href; t.textContent = ev.card_title || ev.name; name.appendChild(t); }
-  else name.textContent = ev.card_title || ev.name;
+  if (typeof ev.key === 'string' && state.eventPages.has(ev.key)) { const t = document.createElement('a'); t.className = 'tile-name-link'; t.href = new URL('e/' + ev.key + '.html', SITE).href; fillTitle(t, ev.card_title || ev.name); name.appendChild(t); }
+  else fillTitle(name, ev.card_title || ev.name);
   body.appendChild(name);
   const paths = {
     instructor: '<circle cx="12" cy="7" r="4" fill="currentColor" stroke="none"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z" fill="currentColor" stroke="none"/>',

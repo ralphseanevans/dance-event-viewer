@@ -147,6 +147,19 @@ export function scheduleEntries(ev) {
 
 // Generated stand-in flyer for cards with no real flyer. Off: such cards show only
 // their details (no flyer panel, tab or corner). Set to true to bring it back.
+// Card titles never strand one word on the last line, and never split a hyphenated word
+// ("Swing- | Outs"). Hyphens between letters/digits get a word joiner (U+2060, zero width, no glyph,
+// so the font's own hyphen is kept; Georgia has no U+2011) and the last two words come back
+// separately so the card can keep them on one line when they fit (see .tile-name-tail).
+// Display only: the event data and the title attribute keep the original text.
+export function titleParts(text) {
+  const t = String(text ?? '').replace(/\s+/g, ' ').trim().replace(/([\p{L}\p{N}])-(?=[\p{L}\p{N}])/gu, '$1-\u2060');
+  const i = t.lastIndexOf(' ');
+  if (i < 0) return [t, ''];
+  const j = t.lastIndexOf(' ', i - 1);
+  return [t.slice(0, j + 1), t.slice(j + 1)];
+}
+
 export const SHOW_FALLBACK_FLYER = false;
 
 // Fallback flyer content for events without a real flyer. Missing fields are
