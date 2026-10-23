@@ -19,6 +19,13 @@ test('touch/pen drag-select on calendar dates is not limited to mouse or range m
   assert.match(js, /selectedRanges = \[\.\.\.selectedRanges, range\]/);
 });
 
+test('a page scroll during a drag does not cancel it (second drag used to be dropped while the page glided)', () => {
+  const js = read('sticky-calendar.mjs');
+  assert.doesNotMatch(js, /addEventListener\('scroll'/);
+  // The range end still follows whatever date is under the pointer, so a scrolled page stays accurate.
+  assert.match(js, /document\.elementFromPoint\(e\.clientX, e\.clientY\)/);
+});
+
 test('touch-action:none only on the calendar grid, never on the page or sticky bar', () => {
   const css = read('simple.css');
   const rules = [...css.matchAll(/([^{}]*)\{([^}]*touch-action:\s*none[^}]*)\}/g)].map(m => m[1].trim().split('\n').pop().trim());

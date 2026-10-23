@@ -92,8 +92,9 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
   });
   document.addEventListener('pointerup', e => { if (dragPointer === e.pointerId) finishDrag(); });
   document.addEventListener('pointercancel', e => { if (dragPointer === e.pointerId) { dragStart = dragEnd = dragPointer = null; paintRange(); } });
-  // If the page scrolls mid-drag, the finger no longer sits on the dates it marked.
-  window.addEventListener('scroll', () => { if (dragStart) { dragStart = dragEnd = dragPointer = null; paintRange(); } }, { passive: true });
+  // No scroll-cancel: touch-action:none means a drag on the grid can't scroll the page, and a
+  // page that is still gliding (wheel/trackpad inertia, list re-render after a range) must not
+  // silently drop the next drag. pointermove re-reads the date under the pointer anyway.
   grid.addEventListener('click', e => {
     const b = e.target.closest('button[data-date]'); if (!b) return;
     if (suppressClick) { e.preventDefault(); return; }
