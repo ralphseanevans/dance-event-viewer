@@ -9,7 +9,11 @@
 @media(hover:hover){.organizer-choice:hover{border-color:var(--line)}.organizer-choice[aria-pressed=true]:hover{border-color:var(--red)}.organizer-clear:hover{color:var(--paper)}}
 /* Card corner logos. The card body is a size container so the group/studio logo follows the CARD
    width (and so the Card size slider), not the screen: --logo = 61% of the body's inner width,
-   capped at 64px on screen (so the style label and title keep their room at 1 across / Full).
+   capped at 64px on screen on compact cards. Full cards keep growing with the card: 42px + 8% of
+   the body width, never below the 64px above (about 11% of a wide card: ~100px on an 800px card, ~118px on a 1020px card),
+   capped at 130px. On wide Full cards (body >= 420px, i.e. tablet/desktop, not phones) the label is
+   not a flow-root, so the bigger logo float reaches into the title and detail lines, which wrap
+   beside it (they never run under it) instead of leaving a tall empty band above the title.
    Floor: 42px on screen (Sean's iPhone size at 4 across) on every card at least as wide as a
    4-across phone card. Compact cards are drawn at native size and scaled by zoom:var(--z), so the
    on-screen card width is 194px x --z and px limits are divided by --z. --logo-min steps from 42px
@@ -22,11 +26,12 @@
    --logo is only set where cqi is supported; elsewhere var(--logo,...) falls back to plain px. */
 #simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge{--logo-min:calc(clamp(24px,calc((var(--z,.78) - .37) * 10000px + 24px),42px) / var(--z,.78))}
 @supports(width:1cqi){
-.tile-body.has-organizer-badge{--logo:clamp(42px,61cqi,64px)}
+.tile-body.has-organizer-badge{--logo:clamp(42px,min(61cqi,max(64px,calc(42px + 8cqi))),130px)}
 #simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge{--logo:clamp(var(--logo-min),61cqi,calc(64px / var(--z,.78)))}
 }
 .tile-body.has-organizer-badge{position:relative;container-type:inline-size}
 .tile-body.has-organizer-badge .tile-style{display:flow-root;text-wrap:balance}
+@container (min-width:420px){#simple-groups[data-zoom="0"] .tile-body.has-organizer-badge .tile-style{display:block}#simple-groups[data-zoom="0"] .tile-body.has-organizer-badge .organizer-card-badge{margin-left:16px}}
 .organizer-card-badge{float:right;margin:-6px -6px 4px 8px;width:var(--logo,42px)!important;height:var(--logo,42px)!important;object-fit:contain;pointer-events:none}
 /* Compact: same on-screen spot as before (10px from the card's top and right edges), 8px gap to the label. */
 #simple-groups:not([data-zoom="0"]) .organizer-card-badge{width:var(--logo,calc(42px / var(--z,.78)))!important;height:var(--logo,calc(42px / var(--z,.78)))!important;margin:calc(10px / var(--z,.78) - 18px) calc(10px / var(--z,.78) - 12px) 4px max(4px,calc(12px - 2px / var(--z,.78)))}
