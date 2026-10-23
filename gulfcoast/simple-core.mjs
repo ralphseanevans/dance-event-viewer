@@ -156,3 +156,17 @@ export function fallbackFlyerData(ev, day) {
   const details = [list(ev.levels), list(ev.instructors) && 'With ' + list(ev.instructors), clean(ev.cost_display) || clean(ev.cost)].filter(Boolean);
   return { kicker: clean(ev.style) || 'Dance', name, date, time, location: place, details };
 }
+
+// Pricing on a card collapses behind a "Pricing details" toggle only when that
+// actually saves space: the full text must run past PRICE_MAX_LINES lines, and
+// the collapsed view (clamped text + the toggle row) must be at least
+// PRICE_MIN_SAVED_LINES lines shorter than the full text. Heights are in px,
+// measured after render; lineHeight is the price row's line height.
+export const PRICE_MAX_LINES = 5;
+export const PRICE_MIN_SAVED_LINES = 2;
+export function shouldCollapsePricing({ fullHeight, collapsedHeight, toggleHeight, lineHeight }) {
+  if (!(lineHeight > 0) || !(fullHeight > 0)) return false;
+  const tooLong = fullHeight > PRICE_MAX_LINES * lineHeight + 0.5 * lineHeight;
+  const saved = fullHeight - (collapsedHeight + toggleHeight);
+  return tooLong && saved >= PRICE_MIN_SAVED_LINES * lineHeight - 1;
+}

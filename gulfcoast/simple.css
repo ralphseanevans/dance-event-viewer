@@ -168,6 +168,10 @@ button.calendar-day.no-events{cursor:crosshair}
 .tile-extra{margin:8px 0 8px 42px;font:400 15px/1.45 var(--body);color:#34352d}
 .tile-extra summary{cursor:pointer;font-size:12px;text-decoration:underline;text-underline-offset:3px}
 .tile-extra p{margin:8px 0;white-space:pre-wrap}
+/* Long pricing only (see fitPricing in simple-flow.mjs): clamp to 5 lines behind a Pricing details toggle. */
+.tile-ticket span{white-space:pre-wrap}
+.is-price-clamped span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;line-clamp:5;overflow:hidden}
+.tile-extra-pricing[hidden]{display:none}
 @media(max-width:560px){.tile-extra{margin-left:34px}}
 
 /* Flyer sits beside the card copy; on phones it floats at the top right. */
