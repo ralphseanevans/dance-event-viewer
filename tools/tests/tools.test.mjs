@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 // Tests for the build tools. Run from the repo root:  node --test tools/tests/
 // Everything runs in temp dirs with fixtures or a mocked fetch. No network, no Supabase.
 import test from 'node:test';
@@ -286,7 +287,8 @@ test('share OG: whole-word description limit, absolute matching flyer images, al
     assert.equal(ld.offers.price, '10');
     assert.ok(!('organizer' in ld));
     const images = {
-      composed: 'https://danceeventviewer.net/e/img/composed.jpg',
+      // Local images that exist get a ?v=<sha1-8> cache-bust stamp; missing/external ones don't.
+      composed: `https://danceeventviewer.net/e/img/composed.jpg?v=${createHash('sha1').update('fixture image').digest('hex').slice(0, 8)}`,
       logo: 'https://danceeventviewer.net/graphics/logos/fixture.jpg',
       'absolute-logo': 'https://example.test/flyer.jpg',
       fallback: 'https://danceeventviewer.net/dance-event-viewer/assets/og-card.png',
@@ -301,6 +303,16 @@ test('share OG: whole-word description limit, absolute matching flyer images, al
     assert.equal((html.match(/googletagmanager\.com\/gtag\/js/g) || []).length, 1);
     assert.match(html, /G-HC9F04RL9D/);
   }, { logos: { logo: ['../graphics/logos/fixture.jpg'], 'absolute-logo': 'https://example.test/flyer.jpg' }, composed: ['composed'] });
+});
+
+test('share images: image-versions.json lists sha1-8 of e/img and graphics/logos; replacing a file changes it', () => {
+  const sha = text => createHash('sha1').update(text).digest('hex').slice(0, 8);
+  withSharePages([shareEvent('composed')], ({ out, page }) => {
+    const versions = JSON.parse(readFileSync(join(out, 'dance-event-viewer', 'image-versions.json'), 'utf8'));
+    assert.deepEqual(versions, { 'e/img/composed.jpg': sha('fixture image') });
+    assert.ok(page('composed').includes(`/e/img/composed.jpg?v=${sha('fixture image')}`));
+    assert.notEqual(sha('fixture image'), sha('replaced fixture image'));
+  }, { composed: ['composed'] });
 });
 
 test('share viewer: replace only marked block in --out, cap 60, sort upcoming dates and group states', () => {

@@ -203,8 +203,24 @@ async function loadEvents() {
   return list.concat(overlay.filter(e => e && !(typeof e.key === 'string' && keys.has(e.key))));
 }
 async function loadLogoMap() {
-  try { const r = await fetch(new URL('logo-map.json', VIEWER)); if (r.ok) return await r.json(); } catch {}
-  return { logos: {}, patterns: [] };
+  let map = null, versions = {};
+  try { const r = await fetch(new URL('logo-map.json', VIEWER)); if (r.ok) map = await r.json(); } catch {}
+  if (!map) return { logos: {}, patterns: [] };
+  // 2026-10-22: flyer images are browser-cached for a week (_headers); add ?v=<sha1-8> from
+  // image-versions.json (tools/build_share_pages.mjs) so a replaced flyer still updates.
+  try { const r = await fetch(new URL('image-versions.json', VIEWER), { cache: 'no-store' }); if (r.ok) versions = await r.json() || {}; } catch {}
+  const stamp = src => {
+    if (typeof src !== 'string' || !src) return src;
+    try {
+      const u = new URL(src, VIEWER);
+      const v = u.origin === new URL(VIEWER).origin && !u.search && versions[decodeURIComponent(u.pathname.replace(/^\/+/, ''))];
+      return v ? `${src}?v=${v}` : src;
+    } catch { return src; }
+  };
+  const each = v => Array.isArray(v) ? v.map(stamp) : stamp(v);
+  if (map.logos && typeof map.logos === 'object') for (const k of Object.keys(map.logos)) map.logos[k] = each(map.logos[k]);
+  if (Array.isArray(map.patterns)) for (const p of map.patterns) if (p) p.logo = each(p.logo);
+  return map;
 }
 
 // ---------- mode switch (memory only) ----------

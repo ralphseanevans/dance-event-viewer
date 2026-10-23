@@ -1,0 +1,13 @@
+# Cloudflare Pages response headers (https://developers.cloudflare.com/pages/configuration/headers/).
+# Flyer / logo images only: let browsers keep them for a week (604800 s).
+# Every image URL the site renders carries ?v=<first 8 hex of the file's sha1>
+# (dance-event-viewer/image-versions.json, written by tools/build_share_pages.mjs),
+# so a replaced flyer gets a new URL and still updates immediately.
+# HTML, JS and CSS are deliberately NOT listed here — their caching is unchanged.
+# NOTE: GitHub Pages ignores this file; it only applies where Cloudflare Pages serves the site.
+
+/graphics/logos/*
+  Cache-Control: public, max-age=604800
+
+/e/img/*
+  Cache-Control: public, max-age=604800

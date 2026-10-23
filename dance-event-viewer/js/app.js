@@ -63,6 +63,7 @@ const DAY_ORDER = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 const PREFS_KEY = "dance-event-viewer-prefs-v4";   // UI prefs only — never event data. (v2: location model changed 2026-07-11; v3: 2026-07-14 default areas set to Pensacola+Mobile — bump retires stale saved prefs so returning visitors pick up the new default once.)
 const DEFAULT_AREAS = ["Pensacola area", "Mobile area", "Destin area"];   // 2026-07-20 (Sean): default location scope back to Pensacola + Mobile selected on load (and on "Clear all"). Everywhere/other chips still available to widen. Areas aren't persisted, so every fresh visit starts here.
 const LOGO_MAP_FILE = "logo-map.json";          // event key -> image path (optional; page works without it)
+const IMAGE_VERSIONS_FILE = "image-versions.json"; // site path -> sha1-8 of each flyer image (tools/build_share_pages.mjs); optional
 const VENUE_COORDS_FILE = "venue-coords.json";  // cached geocoding for the Map view (optional; page works without it)
 // 2026-10-22: CARTO basemaps now return 200 "API KEY REQUIRED" images, so use keyless OSM standard tiles
 // (darkened in CSS via .map-tiles-osm to suit the dark theme).
@@ -155,6 +156,8 @@ const state = {
                          // narrows within the current scope. Stored lowercased. Not persisted, not in URL.
   logos: {},             // from logo-map.json — purely decorative, optional
   logoPatterns: [],      // fallback substring rules so rolled-over series keep their logo
+  imageVersions: {},     // from image-versions.json — "graphics/logos/x.png" -> sha1-8, used as ?v= so a
+                         // replaced flyer busts the week-long browser cache (_headers). Optional.
   webEvents: [],         // from web-events.json — optional overlay of trusted flyer auto-publishes,
                          // separate file from dance_events.json so the two writers never clobber each
                          // other. Merged into the main list on load (main list wins on key). Absence
@@ -556,6 +559,22 @@ async function loadLogoMap() {
               || (Array.isArray(p.logo) && p.logo.some(s => typeof s === "string" && s))))
       : [];
   } catch (err) { state.logos = {}; state.logoPatterns = []; }
+  try {
+    const res = await fetch(`${IMAGE_VERSIONS_FILE}?t=${Date.now()}`, { cache: "no-store" });
+    const j = res.ok ? await res.json() : null;
+    state.imageVersions = (j && typeof j === "object" && !Array.isArray(j)) ? j : {};
+  } catch (err) { state.imageVersions = {}; }
+}
+/* Add ?v=<sha1-8> to a same-site flyer/logo path we have a version for (2026-10-22: those
+   images are browser-cached for a week, so a replaced file must get a new URL). Anything
+   else — external URLs, unknown files, paths that already carry a query — is unchanged. */
+function versionedImage(src) {
+  try {
+    const u = new URL(src, document.baseURI);
+    if (u.origin !== location.origin || u.search) return src;
+    const v = state.imageVersions[decodeURIComponent(u.pathname.replace(/^\/+/, ""))];
+    return v ? `${src}?v=${v}` : src;
+  } catch (err) { return src; }
 }
 /* Optional overlay of trusted flyer auto-publishes (../web-events.json, written
    by the submission backend). Same defensive contract as loadLogoMap: any
@@ -578,9 +597,9 @@ async function loadWebEvents() {
    single-image event yields a one-element list and renders exactly as before. */
 function logoListFor(key) {
   if (typeof key !== "string" || !key) return [];
-  const norm = (v) => Array.isArray(v)
+  const norm = (v) => (Array.isArray(v)
     ? v.filter(s => typeof s === "string" && s)
-    : (typeof v === "string" && v ? [v] : []);
+    : (typeof v === "string" && v ? [v] : [])).map(versionedImage);
   const exact = norm(state.logos[key]);
   if (exact.length) return exact;
   for (const p of state.logoPatterns) {
