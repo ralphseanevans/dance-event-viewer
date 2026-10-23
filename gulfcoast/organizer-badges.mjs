@@ -45,7 +45,12 @@ export function addCardBadge(host,ev) {
   img.className='organizer-card-badge'+(item.card==='photo'?' organizer-card-badge-color':item.card==='ink'?' organizer-card-badge-ink':'');img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
   img.addEventListener('error',()=>img.remove(),{once:true});host.classList.add('has-organizer-badge');
   // Float the logo inside the style label so the label wraps beside/below it and never runs under it.
-  const label=host.querySelector('.tile-style');if(label)label.prepend(img);else host.appendChild(img);
+  const label=host.querySelector('.tile-style');if(!label){host.appendChild(img);return;}
+  // Keep each style phrase ("West Coast Swing") together: one inline-block per " / " part, so a phrase
+  // either fits beside the logo or drops below it whole. textContent stays identical.
+  if(!label.children.length){const parts=label.textContent.split(/\s*\/\s*/).filter(Boolean);label.textContent='';
+    parts.forEach((t,i)=>{const s=document.createElement('span');s.className='tile-style-part';s.textContent=t+(i<parts.length-1?' /':'');label.append(s);if(i<parts.length-1)label.append(' ');});}
+  label.prepend(img);
 }
 export function createBadgePicker(after,onChange) {
   const selected=new Set();const section=document.createElement('section');section.className='organizer-picker';section.hidden=true;

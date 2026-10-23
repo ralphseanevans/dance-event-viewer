@@ -52,18 +52,25 @@ test('logo size follows the card body width: cqi clamp behind @supports, 42px fl
   // 4 across at 375/390/430 and 10 across desktop keep 42; 5 across at 430/390/375 and 12 across shrink.
   for(const z of [.387,.407,.464,.386])assert.equal(floor(z),42,`z=${z}`);
   for(const z of [.356,.315,.30,.31])assert.equal(floor(z),24,`z=${z}`);
-  assert(!/cqi/.test(css.replace(/\/\*[\s\S]*?\*\//g,'').replace(sup[0],'').replace(/clamp\(var\(--logo-min\),61cqi,calc\(56px \/ var\(--z,\.78\)\)\)/g,'')),'no cqi outside @supports except the photo min() that has a plain fallback before it');
+  // Every cqi value (including the photo clamp, which holds var() and so is never dropped at parse
+  // time) sits inside an @supports(width:1cqi) block; outside them only plain px remain.
+  const outside=css.replace(/\/\*[\s\S]*?\*\//g,'').replace(/@supports\(width:1cqi\)\{[\s\S]*?\n\}/g,'');
+  assert(!/cqi/.test(outside),'no cqi outside @supports');
   assert.match(css,/\.tile-body\.has-organizer-badge\{position:relative;container-type:inline-size\}/);
   assert.match(css,/\.organizer-card-badge\{float:right;[^}]*width:var\(--logo,42px\)!important;height:var\(--logo,42px\)!important/);
 });
 test('the logo floats inside the style label so the label wraps beside/below it (no padding column it can overflow)',()=>{
   assert.match(css,/\.tile-body\.has-organizer-badge \.tile-style\{display:flow-root/);
   assert(!/\.tile-style\{padding-right/.test(css),'old padding-right column removed');
-  const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/querySelector\('\.tile-style'\)[^;]*;if\(label\)label\.prepend\(img\)/);
+  const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/querySelector\('\.tile-style'\)/);assert.match(src,/label\.prepend\(img\)/);
+  // Style phrases stay together: each " / " part becomes an inline-block span; text is unchanged.
+  assert.match(src,/split\(\/\\s\*\\\/\\s\*\/\)/);assert.match(src,/className='tile-style-part'/);
+  assert.match(css,/\.tile-body\.has-organizer-badge \.tile-style-part\{display:inline-block;max-width:100%\}/);
 });
 test('instructor photo badges stay 56px but shrink with compact cards (plain fallback first) and opt out of --logo',()=>{
   assert.match(css,/\.organizer-card-badge\.organizer-card-badge-color\{[^}]*width:56px!important;height:56px!important\}/);
-  assert.match(css,/width:calc\(56px \/ var\(--z,\.78\)\)!important;height:calc\(56px \/ var\(--z,\.78\)\)!important;width:clamp\(var\(--logo-min\),61cqi,calc\(56px \/ var\(--z,\.78\)\)\)!important/);
+  assert.match(css,/width:calc\(56px \/ var\(--z,\.78\)\)!important;height:calc\(56px \/ var\(--z,\.78\)\)!important\}/);
+  assert.match(css,/@supports\(width:1cqi\)\{\n#simple-groups:not\(\[data-zoom=\"0\"\]\) \.organizer-card-badge\.organizer-card-badge-color\{width:clamp\(var\(--logo-min\),61cqi,calc\(56px \/ var\(--z,\.78\)\)\)!important/);
   assert.match(css,/has\(\.organizer-card-badge-color\)[^{]*\{--logo:initial\}/);
 });
 test('cache-busters match the first 8 sha1 characters of the changed badge files',()=>{

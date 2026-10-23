@@ -41,8 +41,15 @@
 
 /* Instructor photo badges (face + name artwork): 56px across on cards so the name label is
    legible, and they don't use the scaling --logo. On compact cards they stay 56px on screen but
-   never more than 61% of the card body and never below --logo-min (42px at 4 across and wider),
+   never more than 61% of the card body and never below --logo-min (42px at 4 across and wider; both only where cqi works, else a plain 56px),
    so at 5 across (phone) / 12 across (desktop) they shrink with the card like the logos. */
 .tile-body.has-organizer-badge:has(.organizer-card-badge-color),#simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge:has(.organizer-card-badge-color){--logo:initial}
 .organizer-card-badge.organizer-card-badge-color{margin:-8px -8px 4px 8px;width:56px!important;height:56px!important}
-#simple-groups:not([data-zoom="0"]) .organizer-card-badge.organizer-card-badge-color{width:calc(56px / var(--z,.78))!important;height:calc(56px / var(--z,.78))!important;width:clamp(var(--logo-min),61cqi,calc(56px / var(--z,.78)))!important;height:clamp(var(--logo-min),61cqi,calc(56px / var(--z,.78)))!important}
+#simple-groups:not([data-zoom="0"]) .organizer-card-badge.organizer-card-badge-color{width:calc(56px / var(--z,.78))!important;height:calc(56px / var(--z,.78))!important}
+/* The clamp holds var(), so it is never dropped at parse time: without cqi it would be invalid at
+   computed time and the photo would fall back to its natural size (100-290px). Keep it in @supports. */
+@supports(width:1cqi){
+#simple-groups:not([data-zoom="0"]) .organizer-card-badge.organizer-card-badge-color{width:clamp(var(--logo-min),61cqi,calc(56px / var(--z,.78)))!important;height:clamp(var(--logo-min),61cqi,calc(56px / var(--z,.78)))!important}
+}
+/* Style phrases (one per " / " part, see organizer-badges.mjs) stay together beside or below the logo. */
+.tile-body.has-organizer-badge .tile-style-part{display:inline-block;max-width:100%}
