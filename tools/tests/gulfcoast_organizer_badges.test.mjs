@@ -44,7 +44,10 @@ test('ink logos use a shape-preserving dark filter in every view; photo badges g
 });
 test('logo size follows the card body width: cqi clamp behind @supports, 42px floor on Full and on compact cards >= a 4-across phone card, 24px only below that, 64px cap on compact; Full grows with the card up to 130px',()=>{
   const sup=css.match(/@supports\(width:1cqi\)\{([\s\S]*?)\n\}/);assert(sup,'cqi sizes wrapped in @supports');
-  assert.match(sup[1],/\.tile-body\.has-organizer-badge\{--logo:clamp\(42px,min\(61cqi,max\(64px,calc\(42px \+ 8cqi\)\)\),130px\)\}/);
+  assert.match(sup[1],/\.tile-body\.has-organizer-badge\{--logo:clamp\(42px,min\(61cqi,max\(64px,calc\(42px \+ 8cqi \+ var\(--logo-step,0px\)\)\)\),130px\)\}/);
+  // Above 560px the card padding/border step up (~24px less body, ~30px when the flyer is open); --logo-step keeps the logo from shrinking there.
+  assert.match(sup[1],/@media\(min-width:561px\)\{\.tile-body\.has-organizer-badge\{--logo-step:2\.4px\}\}/);
+  {const f=(w,st=0)=>Math.min(130,Math.max(42,Math.min(.61*w,Math.max(64,42+.08*w+st))));for(const w of [300,400,480,520])for(const d of [20,24,30])assert(f(w-d,2.4)>=f(w),`step w=${w} d=${d}`);}
   // Full: never below #70's clamp(42px,61cqi,64px) at any width, then 42px + 8% of the body width, max 130px.
   const full=w=>Math.min(130,Math.max(42,Math.min(.61*w,Math.max(64,42+.08*w)))),old=w=>Math.min(64,Math.max(42,.61*w));
   for(const w of [60,100,165,290,500,730,950])assert(full(w)>=old(w),'w='+w);assert.equal(full(165),64);assert(Math.abs(full(730)-100.4)<.1);assert(full(950)>110&&full(950)<=130);assert.equal(full(2000),130);
@@ -66,6 +69,7 @@ test('the logo floats inside the style label so the label wraps beside/below it 
   assert.match(css,/\.tile-body\.has-organizer-badge \.tile-style\{display:flow-root/);
   // Wide Full cards only: the float reaches into the title/details so they wrap beside the bigger logo.
   assert.match(css,/@container \(min-width:420px\)\{#simple-groups\[data-zoom="0"\] \.tile-body\.has-organizer-badge \.tile-style\{display:block\}/);
+  assert.match(css,/@container \(min-width:420px\)\{[^\n]*#simple-groups\[data-zoom="0"\] \.tile-body\.has-organizer-badge \.tile-name\{text-wrap:balance\}\}/,"wide Full titles are balanced (no lone 'Outs')");
   assert(!/\.tile-style\{padding-right/.test(css),'old padding-right column removed');
   const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/querySelector\('\.tile-style'\)/);assert.match(src,/label\.prepend\(img\)/);
   // Style phrases stay together: each " / " part becomes an inline-block span; text is unchanged.
