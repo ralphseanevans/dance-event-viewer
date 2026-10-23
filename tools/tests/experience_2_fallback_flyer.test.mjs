@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { fallbackFlyerData, flyersFor, hasRealFlyer, timeRange, scheduleEntries, SHOW_FALLBACK_FLYER } from '../../gulfcoast/simple-core.mjs';
+import { fallbackFlyerData, flyersFor, hasRealFlyer, timeRange, scheduleEntries, SHOW_FALLBACK_FLYER, titleParts, titleRuns } from '../../gulfcoast/simple-core.mjs';
 
 const dir = new URL('../../gulfcoast/', import.meta.url);
 const read = f => readFileSync(new URL(f, dir), 'utf8');
@@ -92,9 +92,9 @@ function buildTile(ev, { showFallback = SHOW_FALLBACK_FLYER } = {}) {
     querySelector(sel) { const c = sel.replace(/^\./, ''); return this.all().find(n => n.className.split(' ').includes(c)) || null; }
     set innerHTML(v) { this._html = v; } get innerHTML() { return this._html || ''; }
   }
-  const document = { createElement: t => new El(t) };
+  const document = { createElement: t => new El(t), createTextNode: t => Object.assign(new El('#text'), { textContent: t }) };
   const deps = { document, Event: class { constructor(type) { this.type = type; } }, URL, Intl, Date, state: { eventPages: new Set(), logoMap: null }, calendar: { highlightEvent() {} },
-    SITE: 'https://danceeventviewer.net/', addCardBadge() {}, timeRange, scheduleEntries, flyersFor, hasRealFlyer, fallbackFlyerData, resolve: p => p,
+    SITE: 'https://danceeventviewer.net/', addCardBadge() {}, watchTitle() {}, titleParts, titleRuns, timeRange, scheduleEntries, flyersFor, hasRealFlyer, fallbackFlyerData, resolve: p => p,
     SHOW_FALLBACK_FLYER: showFallback, trimFlyerBorder() {}, openLightbox() {} };
   const run = new Function(...Object.keys(deps), src + '\nreturn tile;')(...Object.values(deps));
   return run({ ev, canceled: false, day: '2026-10-27' });
@@ -109,7 +109,8 @@ test('a no-flyer event renders no flyer panel, no flyer toggle and no flip corne
   assert.ok(!card.all().some(n => /flyer/i.test(n.textContent)), 'no "Show flyer"/"Hide flyer" text');
   const body = card.querySelector('.tile-body');
   assert.ok(body && body.parentElement === card, 'details are the whole card');
-  assert.equal(body.querySelector('.tile-name').textContent, noFlyer.name);
+  const nm = body.querySelector('.tile-name'); const text = n => n.children.length ? n.children.map(text).join('') : n.textContent;
+  assert.equal(text(nm), noFlyer.name, 'title text is exactly the event name');
   assert.ok(body.querySelector('.tile-links'), 'links row kept');
 });
 

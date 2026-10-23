@@ -3,7 +3,7 @@ import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badge
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing } from './simple-core.mjs?v=3bc975d4';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts, titleRuns } from './simple-core.mjs?v=9d4c8ff4';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -384,6 +384,9 @@ function render({ tapped, tappedStyle } = {}) {
   }
   const blocks = shown.map(dateBlock);
   el.groups.replaceChildren(...blocks);
+  // Settle title wrapping now (not in the later ResizeObserver pass) so the layout is final before
+  // the calendar measures a date heading to jump to; otherwise late .loose-tail lines push it down.
+  fitTitles([...el.groups.querySelectorAll('.tile-name')]);
   el.more.hidden = groups.length <= shown.length;
   calendar.set(groups.map(g => g.day), blocks, state.dateRanges);
 }
@@ -444,6 +447,29 @@ function trimFlyerBorder(image) {
     image.src=cropped.toDataURL('image/png');
   } catch { /* Cross-origin images without pixel access retain their original preview. */ }
 }
+// Last resort for a title piece wider than its card: while the nowrap tail would overflow, let it wrap
+// (.loose-tail); if a hyphenated word alone still overflows, let that wrap too (.loose-all, where
+// overflow-wrap:anywhere applies). Re-checked whenever a title's width changes and once fonts load.
+const titleWidths = new WeakMap();
+const overflows = el => { const w = el.getBoundingClientRect().width + 0.02; // sub-pixel exact, like the browser's own wrapping
+  return el.scrollWidth > el.clientWidth || [...el.querySelectorAll('.tile-name-tail,.tile-name-nobr')].some(s => s.getBoundingClientRect().width > w); };
+function fitTitles(list) {
+  list.forEach(el => el.classList.remove('loose-tail', 'loose-all'));
+  const over = list.filter(overflows);
+  over.forEach(el => el.classList.add('loose-tail'));
+  over.filter(overflows).forEach(el => el.classList.add('loose-all'));
+}
+const titleFit = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
+  const changed = [];
+  for (const { target: el, contentRect: r } of entries) {
+    if (!el.isConnected) { titleFit.unobserve(el); continue; }
+    if (titleWidths.get(el) !== r.width) { titleWidths.set(el, r.width); changed.push(el); }
+  }
+  if (changed.length) fitTitles(changed);
+}) : null;
+function watchTitle(el) { titleFit?.observe(el); }
+document.fonts?.ready.then(() => fitTitles([...document.querySelectorAll('#simple-groups .tile-name')]));
+
 // Placeholder flyer drawn from the event data (no logos, no images).
 function fallbackFlyer(ev, day) {
   const d = fallbackFlyerData(ev, day);
@@ -459,6 +485,23 @@ function fallbackFlyer(ev, day) {
   if (d.details.length) { const ul = add('ul', 'ff-details', ''); d.details.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); }); }
   return f;
 }
+// Title text: everything but the last two words as plain text, those two in an inline .tile-name-tail
+// (white-space:nowrap) and every hyphenated word in a nowrap .tile-name-nobr. All plain inline content:
+// no inserted characters and no inline-block, so Ctrl+F across the whole title, copying and the
+// accessible name all see the original text, and the hover underline is one continuous line.
+function addTitleRuns(el, text) {
+  for (const r of titleRuns(text)) {
+    if (r.nobr) { const s = document.createElement('span'); s.className = 'tile-name-nobr'; s.textContent = r.text; el.appendChild(s); }
+    else el.appendChild(document.createTextNode(r.text));
+  }
+}
+function fillTitle(el, text) {
+  const [head, tail] = titleParts(text);
+  el.textContent = '';
+  addTitleRuns(el, head);
+  if (tail) { const s = document.createElement('span'); s.className = 'tile-name-tail'; addTitleRuns(s, tail); el.appendChild(s); }
+}
+
 function tile({ ev, canceled, day }) {
   const a = document.createElement('article');
   a.className = 'event-tile' + (canceled ? ' is-canceled' : '');
@@ -474,9 +517,10 @@ function tile({ ev, canceled, day }) {
   addCardBadge(body, ev);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; c.title = c.textContent; body.appendChild(c); }
   const name = document.createElement('h4'); name.className = 'tile-name'; name.title = ev.name;
-  if (typeof ev.key === 'string' && state.eventPages.has(ev.key)) { const t = document.createElement('a'); t.className = 'tile-name-link'; t.href = new URL('e/' + ev.key + '.html', SITE).href; t.textContent = ev.card_title || ev.name; name.appendChild(t); }
-  else name.textContent = ev.card_title || ev.name;
+  if (typeof ev.key === 'string' && state.eventPages.has(ev.key)) { const t = document.createElement('a'); t.className = 'tile-name-link'; t.href = new URL('e/' + ev.key + '.html', SITE).href; fillTitle(t, ev.card_title || ev.name); name.appendChild(t); }
+  else fillTitle(name, ev.card_title || ev.name);
   body.appendChild(name);
+  watchTitle(name);
   const paths = {
     instructor: '<circle cx="12" cy="7" r="4" fill="currentColor" stroke="none"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z" fill="currentColor" stroke="none"/>',
     level: '<path d="M4 21v-5h4v5Zm6 0V10h4v11Zm6 0V3h4v18Z" fill="currentColor" stroke="none"/>',

@@ -145,6 +145,22 @@ export function scheduleEntries(ev) {
     .filter(Boolean);
 }
 
+// Card titles never strand one word on the last line, and never split a hyphenated word
+// ("Swing- | Outs"). titleParts splits the title, character for character, into the head and the
+// last two words (the tail, kept on one line when it fits; see .tile-name-tail). titleRuns splits a
+// piece into plain text and letter-hyphen-letter words ({ nobr: true }, put in a .tile-name-nobr span).
+// Nothing is inserted or replaced: joining the pieces gives back the exact title, so find-in-page,
+// copied text and the heading's accessible name match the event data.
+export function titleParts(text) {
+  const t = String(text ?? '');
+  const m = t.match(/^([\s\S]*?)(\S+\s+\S+\s*)$/);
+  return m ? [m[1], m[2]] : [t, ''];
+}
+
+export function titleRuns(text) {
+  return String(text ?? '').split(/(\S*[\p{L}\p{N}]-[\p{L}\p{N}]\S*)/u).map((t, i) => ({ text: t, nobr: i % 2 === 1 })).filter(r => r.text);
+}
+
 // Generated stand-in flyer for cards with no real flyer. Off: such cards show only
 // their details (no flyer panel, tab or corner). Set to true to bring it back.
 export const SHOW_FALLBACK_FLYER = false;
