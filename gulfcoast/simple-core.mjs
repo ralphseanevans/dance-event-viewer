@@ -129,6 +129,8 @@ export function flyersFor(ev, logoMap) {
   else for (const p of logoMap?.patterns || []) if (p && ev.key?.includes(p.contains)) { const l = norm(p.logo); if (l.length) { l.forEach(push); break; } }
   return out;
 }
+// One real-flyer rule shared by the orange flip corner and the Flyers only gallery.
+export const hasRealFlyer = (ev, logoMap) => flyersFor(ev, logoMap).length > 0;
 export function timeRange(ev) {
   const f = v => { if (!/^\d{1,2}:\d{2}/.test(v || '')) return ''; const [h, m] = v.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`; };
   const a = f(ev.start_time), b = f(ev.end_time); return a && b ? `${a}–${b}` : a || b || 'Time not listed';
@@ -142,6 +144,10 @@ export function scheduleEntries(ev) {
   return ev.schedule.map(x => typeof x === 'string' ? x.trim() : [x?.label, shortTime(x?.time || x?.start_time)].map(v => String(v || '').trim()).filter(Boolean).join(' '))
     .filter(Boolean);
 }
+
+// Generated stand-in flyer for cards with no real flyer. Off: such cards show only
+// their details (no flyer panel, tab or corner). Set to true to bring it back.
+export const SHOW_FALLBACK_FLYER = false;
 
 // Fallback flyer content for events without a real flyer. Missing fields are
 // dropped (never "undefined"/"not listed" filler); details are short lines.
