@@ -21,7 +21,7 @@ test('touch/pen drag-select on calendar dates is not limited to mouse or range m
 
 test('a page scroll during a drag does not cancel it (second drag used to be dropped while the page glided)', () => {
   const js = read('sticky-calendar.mjs');
-  assert.doesNotMatch(js, /addEventListener\('scroll'/);
+  for (const m of js.matchAll(/addEventListener\('scroll',([^\n]*)/g)) assert.doesNotMatch(m[1], /drag/, 'a scroll listener must not touch drag state');
   // The range end still follows whatever date is under the pointer, so a scrolled page stays accurate.
   assert.match(js, /document\.elementFromPoint\(e\.clientX, e\.clientY\)/);
 });

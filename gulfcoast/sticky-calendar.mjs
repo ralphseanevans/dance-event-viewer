@@ -43,7 +43,7 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
       cell.type = 'button'; cell.dataset.date = key;
       cell.className = 'calendar-day' + (has.has(key) ? ' has-events' : ' no-events') + (key === active ? ' is-active' : '') + (key === today ? ' is-today' : '');
       cell.textContent = String(day);
-      cell.setAttribute('aria-label', `${fmtJump.format(d(key))}${key === today ? ', today' : ''}${has.has(key) ? ', events listed' : ', no events listed; available as a range boundary'}`);
+      cell.setAttribute('aria-label', `${fmtJump.format(d(key))}${key === today ? ', today' : ''}${has.has(key) ? ', events listed' : ', no events listed; jumps to the next day with events'}`);
       if (key === today) { cell.setAttribute('aria-current', 'date'); cell.title = 'Today'; }
       cells.push(cell);
     }
@@ -119,8 +119,9 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
       onRange?.(range);
       return;
     }
-    if (!b.classList.contains('has-events')) return;
-    active = tapped = b.dataset.date; render(); onJump?.(active);
+    // Any day jumps the list: a day with no events lands on the next day that has events.
+    const day = [...dates].sort().find(x => x >= key); if (!day) return;
+    active = tapped = day; shownMonth = day.slice(0, 7); holdSpy(); render(); onJump?.(active); holdSpy();
   });
   root.querySelector('#calendar-range-details')?.addEventListener('toggle', e => {
     if (!e.currentTarget.open) { pendingStart = null; paintRange(); }
@@ -134,20 +135,40 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
   // Band = 35%-45% of the viewport, but never above the line a tapped day scrolls to
   // (html scroll-padding-top + the block's scroll-margin-top). On phones the pinned
   // calendar puts that line below 45%, so a fixed band caught the day above the tapped one.
-  let spyBlocks = [], spyMargin = '';
+  let spyBlocks = [], spyMargin = '', bandTop = 0, bandBottom = 0, spyHeld = false, holdTimer = 0, jumpY = null;
+  // Picks the day from live positions, not from the observer's entries: a freshly built
+  // observer (the tap revealed a new page) can deliver a stale entry measured before the
+  // scroll, and with a thin band sub-pixel tops decided between it and the real one.
+  function pick() {
+    if (spyHeld || selectedRanges.length || pendingStart) return;
+    // Until the page moves again, the tapped day stays active even where it can't reach the
+    // band (last days of the list) or a new observer sends its first report.
+    if (jumpY !== null) { if (Math.abs((window.scrollY || 0) - jumpY) < 1) return; jumpY = null; }
+    let hit = null, hitTop = Infinity;
+    for (const b of spyBlocks) {
+      const r = b.getBoundingClientRect();
+      if (r.bottom > bandTop && r.top < bandBottom && r.top < hitTop) { hit = b; hitTop = r.top; }
+    }
+    const key = hit?.dataset.date;
+    if (!key || key === active) return;
+    active = key; const mo = key.slice(0, 7);
+    if (mo !== shownMonth) shownMonth = mo;
+    render();
+  }
+  // A tap/jump sets the active day itself; the spy stays quiet until that scroll ends
+  // (scrollend, or 200ms with no scroll events where scrollend is missing / nothing scrolls).
+  // Hand scrolling afterwards is tracked as before.
+  function holdSpy() { spyHeld = true; clearTimeout(holdTimer); holdTimer = setTimeout(releaseSpy, 200); }
+  function releaseSpy() { if (!spyHeld) return; spyHeld = false; clearTimeout(holdTimer); jumpY = window.scrollY || 0; }
+  window.addEventListener('scroll', () => { if (spyHeld) holdSpy(); }, { passive: true });
+  window.addEventListener('scrollend', releaseSpy);
   function spy() {
     const vh = window.innerHeight || 0, b0 = spyBlocks[0];
     const land = b0 ? (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0) + (parseFloat(getComputedStyle(b0).scrollMarginTop) || 0) : 0;
     spyMargin = spyRootMargin(vh, land);
+    const [t, , bm] = spyMargin.match(/\d+/g).map(Number); bandTop = t; bandBottom = vh - bm;
     observer?.disconnect();
-    observer = new IntersectionObserver(entries => {
-      const hit = entries.filter(x => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-      const key = hit?.target.dataset.date;
-      if (!key || key === active || selectedRanges.length || pendingStart) return;
-      active = key; const mo = key.slice(0, 7);
-      if (mo !== shownMonth) shownMonth = mo;
-      render();
-    }, { rootMargin: spyMargin });
+    observer = new IntersectionObserver(pick, { rootMargin: spyMargin });
     spyBlocks.forEach(b => observer.observe(b));
   }
 
