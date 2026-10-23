@@ -9,6 +9,14 @@ const fmtJump = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long
 const d = s => new Date(`${s}T12:00:00`);
 const iso = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
 
+// Scroll-spy band as an IntersectionObserver rootMargin: 35%-45% of the viewport, pushed
+// down to start 2px below `land` (where a tapped day's heading lands) when that is lower,
+// so the day above the tapped one (which ends exactly at `land`) is never caught.
+export function spyRootMargin(vh, land) {
+  const top = Math.round(Math.max(vh * .35, land + 2)), bottom = Math.round(Math.max(0, Math.min(vh * .55, vh - top - 1)));
+  return `-${top}px 0px -${bottom}px 0px`;
+}
+
 export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemoveDay }) {
   const month = root.querySelector('.calendar-month-label');
   const prev = root.querySelector('.calendar-prev'), next = root.querySelector('.calendar-next');
@@ -120,9 +128,37 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
   prev.addEventListener('click', () => step(-1));
   next.addEventListener('click', () => step(1));
 
+  // Scroll-spy keeps the month/active day in step with the list; the gliding
+  // line itself follows taps only (assumption: line follows tapped selections).
+  // Band = 35%-45% of the viewport, but never above the line a tapped day scrolls to
+  // (html scroll-padding-top + the block's scroll-margin-top). On phones the pinned
+  // calendar puts that line below 45%, so a fixed band caught the day above the tapped one.
+  let spyBlocks = [], spyMargin = '';
+  function spy() {
+    const vh = window.innerHeight || 0, b0 = spyBlocks[0];
+    const land = b0 ? (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0) + (parseFloat(getComputedStyle(b0).scrollMarginTop) || 0) : 0;
+    spyMargin = spyRootMargin(vh, land);
+    observer?.disconnect();
+    observer = new IntersectionObserver(entries => {
+      const hit = entries.filter(x => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      const key = hit?.target.dataset.date;
+      if (!key || key === active || selectedRanges.length || pendingStart) return;
+      active = key; const mo = key.slice(0, 7);
+      if (mo !== shownMonth) shownMonth = mo;
+      render();
+    }, { rootMargin: spyMargin });
+    spyBlocks.forEach(b => observer.observe(b));
+  }
+
   // Measured sticky height -> scroll margin for date groups (no hard-coded 244px).
   const sticky = root.querySelector('.calendar-sticky');
-  const setH = () => scrollHost.style.setProperty('--cal-h', `${Math.ceil(sticky.getBoundingClientRect().height)}px`);
+  let calH = '';
+  const setH = () => {
+    const h = `${Math.ceil(sticky.getBoundingClientRect().height)}px`;
+    if (h === calH) return;
+    calH = h; scrollHost.style.setProperty('--cal-h', h);
+    if (spyBlocks.length) spy(); // landing line moved with the calendar height
+  };
   if ('ResizeObserver' in window) new ResizeObserver(setH).observe(sticky);
 
   return {
@@ -135,19 +171,8 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
       // Empty results keep the current/last month so render() redraws it with no marks.
       if (dates.length && (!shownMonth || !months().includes(shownMonth))) shownMonth = active.slice(0, 7);
       render(); setH();
-      observer?.disconnect();
-      // Scroll-spy keeps the month/active day in step with the list; the gliding
-      // line itself follows taps only (assumption: line follows tapped selections).
-      observer = new IntersectionObserver(entries => {
-        const hit = entries.filter(x => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        const key = hit?.target.dataset.date;
-        if (!key || key === active || selectedRanges.length || pendingStart) return;
-        active = key; const mo = key.slice(0, 7);
-        if (mo !== shownMonth) shownMonth = mo;
-        render();
-      }, { rootMargin: '-35% 0px -55% 0px' });
-      blocks.forEach(b => observer.observe(b));
+      spyBlocks = blocks; spy();
     },
-    clear() { dates = []; active = tapped = null; selectedRanges = []; shownMonth = null; observer?.disconnect(); grid.replaceChildren(flow.line); month.textContent = ''; }
+    clear() { dates = []; spyBlocks = []; active = tapped = null; selectedRanges = []; shownMonth = null; observer?.disconnect(); grid.replaceChildren(flow.line); month.textContent = ''; }
   };
 }
