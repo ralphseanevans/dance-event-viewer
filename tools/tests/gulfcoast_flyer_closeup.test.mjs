@@ -24,7 +24,17 @@ test('overlay is an accessible modal dialog with a 44px Close flyer button', () 
 });
 
 test('never changes the URL', () => {
-  assert.doesNotMatch(lb, /location|history|pushState|replaceState|hash/);
+  // Reading location (e.g. new URL(src, location.href) or an origin check) is fine;
+  // assigning it, calling navigation methods, or touching history is not.
+  assert.doesNotMatch(lb, /\blocation\s*=(?!=)|\blocation\.(?:href|hash|search|pathname)\s*=(?!=)/, 'no location assignment');
+  assert.doesNotMatch(lb, /\blocation\.(?:assign|replace|reload)\s*\(/, 'no location navigation');
+  assert.doesNotMatch(lb, /\bhistory\b|pushState|replaceState|\.hash\s*=(?!=)/, 'no history/hash changes');
+});
+
+test('flyer file link downloads same-origin files and opens others in a new tab', () => {
+  assert.match(html, /<a class="lb-file" target="_blank" rel="noopener noreferrer">/, 'cross-origin files never replace the page');
+  assert.match(lb, /local \? fileLink\.setAttribute\('download', ''\) : fileLink\.removeAttribute\('download'\)/);
+  assert.match(lb, /new URL\(pages\[page\], location\.href\)/, 'absolute URL of the stored file');
 });
 
 test('full mode: whole flyer, uncropped, pinch-zoom allowed, scroll locked', () => {
