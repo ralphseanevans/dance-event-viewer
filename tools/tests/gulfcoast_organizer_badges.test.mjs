@@ -21,3 +21,40 @@ test("Traci avatar matches exact full name and does not claim every historic ser
 test("Bill badge removal preserves event content while leaving him unbadged",()=>{const ev={key:"ttdgc-bill-thrall-evermans-thursday",name:"Lesson with Bill Thrall",instructors:["Bill Thrall"]};const original=JSON.stringify(ev);assert(!BADGES.some(b=>b.id==="bill-thrall"));assert(!badgeIds(ev).includes("bill-thrall"));assert.equal(JSON.stringify(ev),original);});
 
 test("John and Alicia approved avatar remains unmapped without verified event identity",()=>{assert.equal(BADGES.find(b=>b.id==="john-alicia").name,"John & Alicia");assert.equal(badgeAssetFile("john-alicia",40),"john-alicia-teacher-avatar.png");assert(!badgeIds({name:"John & Alicia social",instructors:["John Plott","Alicia"]}).includes("john-alicia"));});
+
+import {readFileSync} from 'node:fs';import {createHash} from 'node:crypto';
+const gc=f=>new URL('../../gulfcoast/'+f,import.meta.url);
+const css=readFileSync(gc('organizer-badges.css'),'utf8');
+test('every badge declares how it is drawn on the beige card; light one-colour logos are inked, USA Dance stays colour, instructors stay photos',()=>{
+  const by=Object.fromEntries(BADGES.map(b=>[b.id,b.card]));
+  for(const id of ['psds','twym','seaside','mobile-wcs','coastals','starlite','todd-jamie'])assert.equal(by[id],'ink',id);
+  assert.equal(by['usa-dance'],'color');
+  for(const id of ['nina-travis','rachel-zander','traci-bell','john-alicia'])assert.equal(by[id],'photo',id);
+  assert(BADGES.every(b=>['ink','color','photo'].includes(b.card)));
+});
+test('USA Dance card copy has inked figures; the picker keeps the original artwork',()=>{
+  assert.equal(badgeAssetFile('usa-dance',30),'usa-dance-card.png');assert.equal(badgeAssetFile('usa-dance',40),'usa-dance-240.png');
+  assert(readFileSync(gc('assets/organizer-badges/usa-dance-card.png')).length>1000);
+});
+test('ink logos use a shape-preserving dark filter in every view; photo badges get no filter',()=>{
+  assert.match(css,/\.organizer-card-badge\.organizer-card-badge-ink\{filter:brightness\(0\) invert\(\.094\)\}/);
+  assert(!/organizer-card-badge-color[^{]*\{[^}]*filter/.test(css));
+  assert(!/data-zoom="0"\]\) \.organizer-card-badge:not\(\.organizer-card-badge-color\)\{filter/.test(css),'old compact-only darkening removed');
+});
+test('logo size follows the card body width: container query clamp, 42px floor, 64px cap, compact limits divided by --z',()=>{
+  assert.match(css,/\.tile-body\.has-organizer-badge\{[^}]*container-type:inline-size[^}]*--logo:clamp\(42px,61cqi,64px\)/);
+  assert.match(css,/#simple-groups:not\(\[data-zoom="0"\]\) \.tile-body\.has-organizer-badge\{--logo:clamp\(calc\(42px \/ var\(--z,\.78\)\),61cqi,calc\(64px \/ var\(--z,\.78\)\)\)\}/);
+  assert.match(css,/\.organizer-card-badge\{[^}]*width:var\(--logo,42px\)!important;height:var\(--logo,42px\)!important/);
+  assert.match(css,/\.tile-body\.has-organizer-badge \.tile-style\{padding-right:calc\(var\(--logo,42px\) \+ 8px\);min-height:max\(52px,calc\(var\(--logo,0px\) - 6px\)\)/);
+});
+test('instructor photo badges keep their fixed 56px size and opt out of the scaling logo variable',()=>{
+  assert.match(css,/\.organizer-card-badge\.organizer-card-badge-color\{top:8px;right:8px;width:56px!important;height:56px!important\}/);
+  assert.match(css,/calc\(56px \/ var\(--z,\.78\)\)!important/);
+  assert.match(css,/has\(\.organizer-card-badge-color\)[^{]*\{--logo:initial\}/);
+});
+test('cache-busters match the first 8 sha1 characters of the changed badge files',()=>{
+  const h=f=>createHash('sha1').update(readFileSync(gc(f))).digest('hex').slice(0,8);
+  assert(readFileSync(gc('index.html'),'utf8').includes('organizer-badges.css?v='+h('organizer-badges.css')));
+  assert(readFileSync(gc('index.html'),'utf8').includes('simple-flow.mjs?v='+h('simple-flow.mjs')));
+  assert(readFileSync(gc('simple-flow.mjs'),'utf8').includes('organizer-badges.mjs?v='+h('organizer-badges.mjs')));
+});
