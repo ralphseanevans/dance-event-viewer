@@ -66,3 +66,23 @@ test('the card renders titles as plain inline nowrap spans (no inline-block), ev
   assert.match(css, /\.tile-name\{margin:0 0 18px;font:700 [^}]*overflow-wrap:anywhere\}/);
   assert.match(css, /#simple-groups:not\(\[data-zoom="0"\]\) \.tile-name\{[^}]*overflow-wrap:anywhere\}/);
 });
+
+// QA #77 at 7a06cbc: on a 390x844 phone, Next → November, tap 22 enlarged 21 and the Nov 22 heading landed at
+// 425.6 instead of main's 380.6, because .loose-tail was only added ~360ms later by the ResizeObserver, after the
+// calendar had measured the jump. Title fitting must run synchronously in render(), after the tiles are in the
+// DOM and before calendar.set() / the jump (onJump calls render() then scrollIntoView immediately).
+// Browser repro: tools/browser/gulfcoast_phone_tap.mjs.
+test('title fitting runs synchronously on render, before the calendar measures the jump', () => {
+  const js = read('simple-flow.mjs');
+  const body = js.slice(js.indexOf('function render('), js.indexOf('\n}\n', js.indexOf('function render(')));
+  const insert = body.indexOf('el.groups.replaceChildren(...blocks);');
+  const fit = body.indexOf("fitTitles([...el.groups.querySelectorAll('.tile-name')]);");
+  const cal = body.indexOf('calendar.set(groups.map(g => g.day)');
+  assert.ok(insert > 0 && fit > insert && cal > fit, 'render(): replaceChildren(...blocks) → fitTitles(...) → calendar.set(...)');
+  assert.doesNotMatch(body.slice(insert, fit), /requestAnimationFrame|setTimeout|await|\.then\(/, 'fit is not deferred');
+  // The jump scrolls straight after render(), so the fit must already be done by then.
+  assert.match(js, /render\(\); \}\n    \}\n    if \(state\.dateRanges\.length\)[^\n]*\n    document\.getElementById\(`simple-date-\$\{day\}`\)\?\.scrollIntoView/);
+  // The late paths stay as fallbacks for width changes and web-font swaps.
+  assert.match(js, /new ResizeObserver\(/);
+  assert.match(js, /document\.fonts\?\.ready\.then\(\(\) => fitTitles\(/);
+});

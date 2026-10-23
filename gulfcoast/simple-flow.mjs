@@ -384,6 +384,9 @@ function render({ tapped, tappedStyle } = {}) {
   }
   const blocks = shown.map(dateBlock);
   el.groups.replaceChildren(...blocks);
+  // Settle title wrapping now (not in the later ResizeObserver pass) so the layout is final before
+  // the calendar measures a date heading to jump to; otherwise late .loose-tail lines push it down.
+  fitTitles([...el.groups.querySelectorAll('.tile-name')]);
   el.more.hidden = groups.length <= shown.length;
   calendar.set(groups.map(g => g.day), blocks, state.dateRanges);
 }
