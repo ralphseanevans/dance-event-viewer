@@ -3,7 +3,7 @@ import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badge
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=a03e5726';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=3d85283d';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -486,16 +486,23 @@ function tile({ ev, canceled, day }) {
   if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
   const links = document.createElement('p'); links.className = 'tile-links';
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
-  const flyers = flyersFor(ev, state.logoMap).map(resolve);
-  // Every card gets a flyer panel: the real flyer when one exists, otherwise a
-  // generated placeholder (it also takes over if the real image fails to load).
+  const flyers = hasRealFlyer(ev, state.logoMap) ? flyersFor(ev, state.logoMap).map(resolve) : [];
+  // Cards with a real flyer get a flyer panel. Without one, the card is just its
+  // details (no panel, tab or corner) unless SHOW_FALLBACK_FLYER brings back the
+  // generated placeholder (which also covers a real image that fails to load).
+  if (!flyers.length && !SHOW_FALLBACK_FLYER) { body.appendChild(links); a.appendChild(body); return a; }
   a.classList.add('has-flyer');
   let preview;
   if (flyers.length) {
     preview = document.createElement('button'); preview.type = 'button'; preview.className = 'tile-flyer-preview';
     preview.setAttribute('aria-label', 'Enlarge flyer for ' + ev.name);
     const image = document.createElement('img'); image.addEventListener('load', () => trimFlyerBorder(image)); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
-    image.addEventListener('error', () => { a.dispatchEvent(new Event('flip-reset')); const fb = fallbackFlyer(ev, day); fb.inert = preview.inert; preview.replaceWith(fb); preview = fb; a.classList.remove('has-real-flyer'); a.querySelector('.tile-flip-corner')?.remove(); }, { once: true });
+    image.addEventListener('error', () => {
+      a.dispatchEvent(new Event('flip-reset'));
+      if (!SHOW_FALLBACK_FLYER) { preview.remove(); a.querySelector('.tile-flyer-tab')?.remove(); a.classList.remove('has-flyer', 'flyer-open'); }
+      else { const fb = fallbackFlyer(ev, day); fb.inert = preview.inert; preview.replaceWith(fb); preview = fb; }
+      a.classList.remove('has-real-flyer'); a.querySelector('.tile-flip-corner')?.remove();
+    }, { once: true });
     preview.appendChild(image);
     // Tapping a flipped compact card's flyer opens it full screen; focus returns to the card.
     preview.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const flipped = a.classList.contains('is-flipped'); openLightbox(flyers, ev.name, flipped ? a : preview, flipped); });
