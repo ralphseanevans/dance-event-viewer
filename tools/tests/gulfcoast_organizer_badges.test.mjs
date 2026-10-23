@@ -42,11 +42,17 @@ test('ink logos use a shape-preserving dark filter in every view; photo badges g
   assert(!/organizer-card-badge-color[^{]*\{[^}]*filter/.test(css));
   assert(!/data-zoom="0"\]\) \.organizer-card-badge:not\(\.organizer-card-badge-color\)\{filter/.test(css),'old compact-only darkening removed');
 });
-test('logo size follows the card body width: cqi clamp behind @supports, 42px floor on Full, 24px on-screen floor on compact, 64px cap',()=>{
+test('logo size follows the card body width: cqi clamp behind @supports, 42px floor on Full and on compact cards >= a 4-across phone card, 24px only below that, 64px cap',()=>{
   const sup=css.match(/@supports\(width:1cqi\)\{([\s\S]*?)\n\}/);assert(sup,'cqi sizes wrapped in @supports');
   assert.match(sup[1],/\.tile-body\.has-organizer-badge\{--logo:clamp\(42px,61cqi,64px\)\}/);
-  assert.match(sup[1],/#simple-groups:not\(\[data-zoom="0"\]\) \.tile-body\.has-organizer-badge\{--logo:clamp\(calc\(24px \/ var\(--z,\.78\)\),61cqi,calc\(64px \/ var\(--z,\.78\)\)\)\}/);
-  assert(!/cqi/.test(css.replace(/\/\*[\s\S]*?\*\//g,'').replace(sup[0],'').replace(/min\(calc\(56px \/ var\(--z,\.78\)\),61cqi\)/g,'')),'no cqi outside @supports except the photo min() that has a plain fallback before it');
+  assert.match(sup[1],/#simple-groups:not\(\[data-zoom="0"\]\) \.tile-body\.has-organizer-badge\{--logo:clamp\(var\(--logo-min\),61cqi,calc\(64px \/ var\(--z,\.78\)\)\)\}/);
+  // On-screen floor: 42px unless the card (194px x --z) is narrower than ~72px (z < .37), then 24px.
+  assert.match(css,/#simple-groups:not\(\[data-zoom="0"\]\) \.tile-body\.has-organizer-badge\{--logo-min:calc\(clamp\(24px,calc\(\(var\(--z,\.78\) - \.37\) \* 10000px \+ 24px\),42px\) \/ var\(--z,\.78\)\)\}/);
+  const floor=z=>Math.min(42,Math.max(24,(z-.37)*10000+24));
+  // 4 across at 375/390/430 and 10 across desktop keep 42; 5 across at 430/390/375 and 12 across shrink.
+  for(const z of [.387,.407,.464,.386])assert.equal(floor(z),42,`z=${z}`);
+  for(const z of [.356,.315,.30,.31])assert.equal(floor(z),24,`z=${z}`);
+  assert(!/cqi/.test(css.replace(/\/\*[\s\S]*?\*\//g,'').replace(sup[0],'').replace(/clamp\(var\(--logo-min\),61cqi,calc\(56px \/ var\(--z,\.78\)\)\)/g,'')),'no cqi outside @supports except the photo min() that has a plain fallback before it');
   assert.match(css,/\.tile-body\.has-organizer-badge\{position:relative;container-type:inline-size\}/);
   assert.match(css,/\.organizer-card-badge\{float:right;[^}]*width:var\(--logo,42px\)!important;height:var\(--logo,42px\)!important/);
 });
@@ -57,7 +63,7 @@ test('the logo floats inside the style label so the label wraps beside/below it 
 });
 test('instructor photo badges stay 56px but shrink with compact cards (plain fallback first) and opt out of --logo',()=>{
   assert.match(css,/\.organizer-card-badge\.organizer-card-badge-color\{[^}]*width:56px!important;height:56px!important\}/);
-  assert.match(css,/width:calc\(56px \/ var\(--z,\.78\)\)!important;height:calc\(56px \/ var\(--z,\.78\)\)!important;width:min\(calc\(56px \/ var\(--z,\.78\)\),61cqi\)!important/);
+  assert.match(css,/width:calc\(56px \/ var\(--z,\.78\)\)!important;height:calc\(56px \/ var\(--z,\.78\)\)!important;width:clamp\(var\(--logo-min\),61cqi,calc\(56px \/ var\(--z,\.78\)\)\)!important/);
   assert.match(css,/has\(\.organizer-card-badge-color\)[^{]*\{--logo:initial\}/);
 });
 test('cache-busters match the first 8 sha1 characters of the changed badge files',()=>{
