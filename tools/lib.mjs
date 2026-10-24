@@ -192,3 +192,36 @@ export function mapsSearchUrl(venue, stateCode) {
   const needsState = st && !new RegExp(`\\b${st.replace(/[^A-Za-z]/g, '')}\\b`, 'i').test(v);
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(needsState ? `${v}, ${st}` : v);
 }
+
+// Full "Where:" text for an /e/*.html event page, built from the event's venue
+// string and state: venue name, street address, city, state (ZIP and
+// parenthetical notes dropped), e.g. "Venue Name, 123 Main St, Orlando, FL".
+// Falls back to whatever is present (a bare city, a venue name) and never
+// repeats a part ("FL, FL"). Returns '' when there's no venue at all.
+export function eventWhere(venue, stateCode) {
+  const st = typeof stateCode === 'string' ? stateCode.trim().toUpperCase() : '';
+  const clean = typeof venue === 'string'
+    ? venue.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim().replace(/^,+|,+$/g, '').trim() : '';
+  if (!clean) return '';
+  const parts = [];
+  for (const raw of clean.split(',')) {
+    let p = raw.trim();
+    if (!p) continue;
+    const zip = /^([A-Za-z]{2})\s+\d{5}(?:-\d{4})?$/.exec(p);
+    if (zip) p = zip[1].toUpperCase();
+    else if (/^\d{5}(?:-\d{4})?$/.test(p)) continue; // lone ZIP
+    if (parts.some(q => q.toLowerCase() === p.toLowerCase())) continue;
+    parts.push(p);
+  }
+  const last = parts.at(-1) || '';
+  const hasState = st && (last.toUpperCase() === st || new RegExp(`\\b${st.replace(/[^A-Z]/g, '')}$`, 'i').test(last));
+  if (st && !hasState && /^[A-Z]{2}$/.test(st)) parts.push(st);
+  return parts.join(', ');
+}
+
+// Google Maps search link for an event page: the most complete address we have
+// (same text as eventWhere), falling back to the city. null when nothing to map.
+export function eventMapsUrl(venue, stateCode) {
+  const q = eventWhere(venue, stateCode);
+  return q ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q) : null;
+}

@@ -15,7 +15,7 @@
 // For a dry run, pass --out to a temp dir so committed pages are untouched.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
-import { mapsSearchUrl } from './lib.mjs';
+import { eventWhere, eventMapsUrl } from './lib.mjs';
 import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor, cancelLabelText } from './event_schedule.mjs';
 import { buildHubPages, sitemapFor } from './build_hub_pages.mjs';
 const args = process.argv.slice(2);
@@ -227,6 +227,7 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
   main{max-width:640px;margin:0 auto;padding:24px 16px 48px}
   h1{font-size:1.5rem;margin:.25rem 0 .75rem}
   .meta{color:#a9b7c2;margin:.25rem 0}
+  .meta.where{overflow-wrap:anywhere}
   img.flyer{max-width:100%;height:auto;border-radius:12px;margin:12px 0}
   .flyer-frame{margin:12px 0}
   .flyer-frame img.flyer{display:block;width:100%;margin:0}
@@ -246,7 +247,7 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
   <h1>${esc(ev.name)}</h1>
   ${past ? '<p class="meta"><strong>This event has passed</strong></p>' : ''}
   ${sched(ev) ? `<p class="meta"><strong>When:</strong> ${esc(sched(ev))}</p>` : ''}
-  ${ev.venue ? `<p class="meta"><strong>Where:</strong> ${esc(placeFor(ev).where)}${mapsSearchUrl(ev.venue, ev.state) ? ` · <a href="${esc(mapsSearchUrl(ev.venue, ev.state))}" target="_blank" rel="noopener noreferrer">Directions / map</a>` : ''}</p>` : ''}
+  ${eventWhere(ev.venue, ev.state) ? `<p class="meta where"><strong>Where:</strong> ${esc(eventWhere(ev.venue, ev.state))} · <a href="${esc(eventMapsUrl(ev.venue, ev.state))}" target="_blank" rel="noopener noreferrer">Directions / map</a></p>` : ''}
   ${ev.cost ? `<p class="meta"><strong>Cost:</strong> ${esc(ev.cost)}</p>` : ''}
   ${ev.style ? `<p class="meta"><strong>Style:</strong> ${esc(ev.style)}</p>` : ''}
   ${cancelNote}${flyer}${cancelReason}
