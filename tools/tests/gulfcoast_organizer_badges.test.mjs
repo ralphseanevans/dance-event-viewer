@@ -88,3 +88,20 @@ test('cache-busters match the first 8 sha1 characters of the changed badge files
   assert(readFileSync(gc('index.html'),'utf8').includes('simple-flow.mjs?v='+h('simple-flow.mjs')));
   assert(readFileSync(gc('simple-flow.mjs'),'utf8').includes('organizer-badges.mjs?v='+h('organizer-badges.mjs')));
 });
+test('portrait badges carry a visible, readable Organizer label; logos do not',async()=>{
+  const {organizerLabel}=await import('../../gulfcoast/organizer-badges.mjs');
+  assert.equal(organizerLabel(1),'Organizer');assert.equal(organizerLabel(2),'Organizers');
+  const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/if\(item\.card==='photo'\)\{[^}]*className='organizer-card-label'/);
+  assert.match(css,/\.organizer-card-label\{float:right;clear:right;[^}]*font:700 11px\/1\.2 var\(--body\);[^}]*color:#25251f/);
+  // WCAG AA: #25251f text on the #d8d0bd card must be at least 4.5:1.
+  const L=h=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:((v+.055)/1.055)**2.4);return .2126*c[0]+.7152*c[1]+.0722*c[2];};
+  assert((L('#d8d0bd')+.05)/(L('#25251f')+.05)>=4.5);
+});
+test('pair portrait badges say Organizers; single-person badges say Organizer',async()=>{
+  const {badgeLabel}=await import('../../gulfcoast/organizer-badges.mjs');
+  for(const id of ['nina-travis','rachel-zander','john-alicia'])assert.equal(badgeLabel(id),'Organizers',id);
+  assert.equal(badgeLabel('traci-bell'),'Organizer');
+  // Every badge named as a pair ("A & B") or kind 'Instructors' is counted as two people.
+  for(const b of BADGES.filter(b=>b.card==='photo'))assert.equal(badgeLabel(b.id),(b.kind==='Instructors'||/&/.test(b.name))?'Organizers':'Organizer',b.id);
+  const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/h\.textContent=badgeLabel\(id\)/);
+});
