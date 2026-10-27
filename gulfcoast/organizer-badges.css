@@ -62,3 +62,9 @@
 }
 /* Style phrases (one per " / " part, see organizer-badges.mjs) stay together beside or below the logo. */
 .tile-body.has-organizer-badge .tile-style-part{display:inline-block;max-width:100%}
+/* "Organizer" heading over portrait badges: site body font, card ink (#25251f on #d8d0bd ~ 11:1),
+   right-aligned above the photo (which clears below it). Compact cards are zoomed whole, so the
+   label uses card units (like .tile-style) and scales with the card instead of outgrowing it. */
+.organizer-card-label{float:right;clear:right;margin:-8px -8px 3px 8px;font:700 11px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#25251f;white-space:nowrap}
+#simple-groups .organizer-card-label+.organizer-card-badge{clear:right;margin-top:0}
+#simple-groups:not([data-zoom="0"]) .organizer-card-label{font-size:12px;margin:-6px -4px 3px 4px}
