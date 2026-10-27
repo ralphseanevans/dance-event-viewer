@@ -10,11 +10,11 @@ export const BADGES = Object.freeze([
   {id:'usa-dance',name:'USA Dance',kind:'National organization',card:'color'},
   {id:'coastals',name:'Pensacola Coastals',kind:'Studio',card:'ink'},
   {id:'starlite',name:'Starlite Ballroom',kind:'Studio · Mobile',card:'ink'},
-  {id:'todd-jamie',name:'Let’s Dance Pensacola (Todd and Jamie)',kind:'Group',card:'photo'},
-  {id:'nina-travis',name:'Nina & Travis',kind:'Instructors',card:'photo'},
-  {id:'rachel-zander',name:'Rachel & Zander',kind:'Instructors',card:'photo'},
+  {id:'todd-jamie',name:'Let’s Dance Pensacola (Todd and Jamie)',kind:'Group',card:'photo',people:2},
+  {id:'nina-travis',name:'Nina & Travis',kind:'Instructors',card:'photo',people:2},
+  {id:'rachel-zander',name:'Rachel & Zander',kind:'Instructors',card:'photo',people:2},
   {id:'traci-bell',name:'Traci Bell',kind:'Instructor',card:'photo'},
-  {id:'john-alicia',name:'John & Alicia',kind:'Instructors',card:'photo'},
+  {id:'john-alicia',name:'John & Alicia',kind:'Instructors',card:'photo',people:2},
   {id:'gary-jobst',name:'Gary Jobst',kind:'Instructor',card:'photo'}
 ]);
 const norm=s=>String(s||'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim();
@@ -53,7 +53,13 @@ export function addCardBadge(host,ev) {
   if(!label.children.length){const parts=label.textContent.split(/\s*\/\s*/).filter(Boolean);label.textContent='';
     parts.forEach((t,i)=>{const s=document.createElement('span');s.className='tile-style-part';s.textContent=t+(i<parts.length-1?' /':'');label.append(s);if(i<parts.length-1)label.append(' ');});}
   label.prepend(img);
+  // Portrait (instructor photo) badges get a small visible "Organizer(s)" heading above them, read once
+  // just before the photo's alt name. It floats right, so the badge (clear:right) sits under it.
+  if(item.card==='photo'){const h=document.createElement('span');h.className='organizer-card-label';h.textContent=badgeLabel(id);label.prepend(h);}
 }
+export const organizerLabel=n=>n>1?'Organizers':'Organizer';
+// Label for one badge: a pair badge (people:2, e.g. Nina & Travis) counts as two organizers.
+export const badgeLabel=id=>organizerLabel(BADGES.find(b=>b.id===id)?.people||1);
 export function createBadgePicker(after,onChange) {
   const selected=new Set();const section=document.createElement('section');section.className='organizer-picker';section.hidden=true;
   const heading=document.createElement('h3');heading.className='badge-sr-only';heading.textContent='Groups, studios & instructors';section.appendChild(heading);

@@ -9,7 +9,14 @@
 @media(hover:hover){.organizer-choice:hover{border-color:var(--line)}.organizer-choice[aria-pressed=true]:hover{border-color:var(--red)}.organizer-clear:hover{color:var(--paper)}}
 /* Card corner logos. The card body is a size container so the group/studio logo follows the CARD
    width (and so the Card size slider), not the screen: --logo = 61% of the body's inner width,
-   capped at 64px on screen (so the style label and title keep their room at 1 across / Full).
+   capped at 64px on screen on compact cards. Full cards keep growing with the card: 42px + 8% of
+   the body width, never below the 64px above (about 11% of a wide card: ~100px on an 800px card, ~118px on a 1020px card),
+   capped at 130px. Above 560px wide the card padding/border step up (18->28px, 10->14px), which takes
+   ~24px off the body; --logo-step adds 2.4px (8% of 30px) there so the logo never shrinks at that step.
+   On wide Full cards (body >= 420px, i.e. tablet/desktop, not phones) the label is
+   not a flow-root, so the bigger logo float reaches into the title and detail lines, which wrap
+   beside it (they never run under it) instead of leaving a tall empty band above the title; the
+   title is balanced there so a wrapped title never leaves one word (e.g. "Swing- | Outs") alone.
    Floor: 42px on screen (Sean's iPhone size at 4 across) on every card at least as wide as a
    4-across phone card. Compact cards are drawn at native size and scaled by zoom:var(--z), so the
    on-screen card width is 194px x --z and px limits are divided by --z. --logo-min steps from 42px
@@ -22,11 +29,13 @@
    --logo is only set where cqi is supported; elsewhere var(--logo,...) falls back to plain px. */
 #simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge{--logo-min:calc(clamp(24px,calc((var(--z,.78) - .37) * 10000px + 24px),42px) / var(--z,.78))}
 @supports(width:1cqi){
-.tile-body.has-organizer-badge{--logo:clamp(42px,61cqi,64px)}
+.tile-body.has-organizer-badge{--logo:clamp(42px,min(61cqi,max(64px,calc(42px + 8cqi + var(--logo-step,0px)))),130px)}
+@media(min-width:561px){.tile-body.has-organizer-badge{--logo-step:2.4px}}
 #simple-groups:not([data-zoom="0"]) .tile-body.has-organizer-badge{--logo:clamp(var(--logo-min),61cqi,calc(64px / var(--z,.78)))}
 }
 .tile-body.has-organizer-badge{position:relative;container-type:inline-size}
 .tile-body.has-organizer-badge .tile-style{display:flow-root;text-wrap:balance}
+@container (min-width:420px){#simple-groups[data-zoom="0"] .tile-body.has-organizer-badge .tile-style{display:block}#simple-groups[data-zoom="0"] .tile-body.has-organizer-badge .organizer-card-badge{margin-left:16px}#simple-groups[data-zoom="0"] .tile-body.has-organizer-badge .tile-name{text-wrap:balance}}
 .organizer-card-badge{float:right;margin:-6px -6px 4px 8px;width:var(--logo,42px)!important;height:var(--logo,42px)!important;object-fit:contain;pointer-events:none}
 /* Compact: same on-screen spot as before (10px from the card's top and right edges), 8px gap to the label. */
 #simple-groups:not([data-zoom="0"]) .organizer-card-badge{width:var(--logo,calc(42px / var(--z,.78)))!important;height:var(--logo,calc(42px / var(--z,.78)))!important;margin:calc(10px / var(--z,.78) - 18px) calc(10px / var(--z,.78) - 12px) 4px max(4px,calc(12px - 2px / var(--z,.78)))}
@@ -53,3 +62,9 @@
 }
 /* Style phrases (one per " / " part, see organizer-badges.mjs) stay together beside or below the logo. */
 .tile-body.has-organizer-badge .tile-style-part{display:inline-block;max-width:100%}
+/* "Organizer" heading over portrait badges: site body font, card ink (#25251f on #d8d0bd ~ 11:1),
+   right-aligned above the photo (which clears below it). Compact cards are zoomed whole, so the
+   label uses card units (like .tile-style) and scales with the card instead of outgrowing it. */
+.organizer-card-label{float:right;clear:right;margin:-8px -8px 3px 8px;font:700 11px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#25251f;white-space:nowrap}
+#simple-groups .organizer-card-label+.organizer-card-badge{clear:right;margin-top:0}
+#simple-groups:not([data-zoom="0"]) .organizer-card-label{font-size:12px;margin:-6px -4px 3px 4px}

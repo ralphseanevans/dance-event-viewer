@@ -71,6 +71,17 @@ button.calendar-day.is-active{color:var(--red)}
 .tile-name-link{color:inherit;text-decoration:none}
 .tile-name-link:hover,.tile-name-link:focus-visible{text-decoration:underline;text-decoration-color:var(--red);text-underline-offset:3px}
 .tile-name-link:focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:2px}
+/* No lone last word: the last two words of a title (.tile-name-tail, simple-flow.mjs) stay on one line,
+   and a hyphenated word (.tile-name-nobr) never breaks at its hyphen. Both are plain inline nowrap spans
+   (no inserted characters, no inline-block), so find-in-page, copy and the accessible name see the
+   original title and the link underline runs unbroken. Last resort, set by simple-flow.mjs only while
+   the title would overflow its card: .loose-tail lets the tail wrap, .loose-all also the hyphenated
+   words, with overflow-wrap:anywhere. Balance on every card (not pretty: it also stops a single word
+   stranded on a middle line, e.g. "Friday Swing Dance | with | Seaside Swing-Outs" on a phone, and
+   Safari has it from 17.5); older browsers still get the tail. */
+.tile-name{text-wrap:balance}
+.tile-name-tail,.tile-name-nobr{white-space:nowrap}
+.tile-name.loose-tail .tile-name-tail,.tile-name.loose-all .tile-name-nobr{white-space:normal;overflow-wrap:anywhere}
 .tile-meta{margin:0 0 6px;font-size:13px;color:#35352f}
 .tile-meta strong{color:var(--red);font-weight:700}
 .tile-venue{margin:0;font-size:12px;line-height:1.45;color:#5e5d55}
@@ -142,7 +153,7 @@ button.calendar-day.is-active{color:var(--red)}
 .calendar-day.in-range{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
 .calendar-day.range-start,.calendar-day.range-end,.calendar-day.range-pending{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
 button.calendar-day{touch-action:none;user-select:none;-webkit-user-select:none}
-button.calendar-day.no-events{cursor:crosshair}
+button.calendar-day.no-events{cursor:pointer}
 
 /* Reference card: spacious editorial typography and icon-led details. */
 .day-events{grid-template-columns:minmax(0,1fr);gap:18px}
@@ -368,9 +379,9 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 button.calendar-day.is-today{position:relative;font-weight:800}
 button.calendar-day.is-today::after{content:"";position:absolute;bottom:2px;left:50%;width:5px;height:5px;border-radius:50%;background:var(--paper);transform:translateX(-50%);pointer-events:none}
 
-/* Phones: a swipe on the calendar scrolls the page; drag-to-select (touch-action:none) only while the range panel is open. */
-button.calendar-day{touch-action:manipulation}
-.calendar-sticky:has(#calendar-range-details[open]) button.calendar-day{touch-action:none}
+/* Phones: a finger swipe on the calendar grid selects a date range (it does not scroll);
+   swipes anywhere else on the page scroll as normal. */
+.calendar-days,.calendar-days button.calendar-day{touch-action:none}
 
 /* Schedule list is a compact-card feature; Full cards keep their single time line. */
 .tile-schedule{display:none}
