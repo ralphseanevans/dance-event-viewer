@@ -97,3 +97,11 @@ test('portrait badges carry a visible, readable Organizer label; logos do not',a
   const L=h=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:((v+.055)/1.055)**2.4);return .2126*c[0]+.7152*c[1]+.0722*c[2];};
   assert((L('#d8d0bd')+.05)/(L('#25251f')+.05)>=4.5);
 });
+test('pair portrait badges say Organizers; single-person badges say Organizer',async()=>{
+  const {badgeLabel}=await import('../../gulfcoast/organizer-badges.mjs');
+  for(const id of ['nina-travis','rachel-zander','john-alicia'])assert.equal(badgeLabel(id),'Organizers',id);
+  assert.equal(badgeLabel('traci-bell'),'Organizer');
+  // Every badge named as a pair ("A & B") or kind 'Instructors' is counted as two people.
+  for(const b of BADGES.filter(b=>b.card==='photo'))assert.equal(badgeLabel(b.id),(b.kind==='Instructors'||/&/.test(b.name))?'Organizers':'Organizer',b.id);
+  const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/h\.textContent=badgeLabel\(id\)/);
+});
