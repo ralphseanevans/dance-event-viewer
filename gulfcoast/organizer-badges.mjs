@@ -40,7 +40,7 @@ export function badgeIds(ev={}) {
 export const matchesBadge=(ev,ids)=>{const chosen=Array.isArray(ids)?ids:ids?[ids]:[];return !chosen.length||badgeIds(ev).some(id=>chosen.includes(id));};
 const vectors=new Set(['coastals','starlite','bill-thrall']);
 export const badgeAssetFile=(id,size)=>(size===30&&id==='usa-dance')?'usa-dance-card.png':['rachel-zander','traci-bell','john-alicia','nina-travis','gary-jobst','todd-jamie'].includes(id)?id+'-teacher-avatar.png':vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
-const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v='+(id==='john-alicia'?'ja-v3':id==='nina-travis'?'db587e27':id==='gary-jobst'?'d9bc17e5':id==='todd-jamie'?'e20746a6':'sharp-4'),import.meta.url).href;
+const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v='+(id==='john-alicia'?'ja-v3':id==='nina-travis'?'a59ecadd':id==='gary-jobst'?'d9bc17e5':id==='todd-jamie'?'e20746a6':'sharp-4'),import.meta.url).href;
 export function addCardBadge(host,ev) {
   const id=badgeIds(ev)[0];if(!id)return;
   const item=BADGES.find(b=>b.id===id),img=document.createElement('img');
