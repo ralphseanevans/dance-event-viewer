@@ -471,10 +471,12 @@ const overflows = el => { const w = el.getBoundingClientRect().width + 0.02; // 
 function fitTitles(list) {
   list.forEach(el => { el.classList.remove('loose-tail', 'loose-all'); el.style.zoom = ''; });
   let over = list.filter(overflows); const loose = [];
-  // Measure all, then scale all; again for any still a hair too wide (small text doesn't scale exactly).
-  for (let pass = 0; pass < 3 && over.length; pass++) {
-    over.map(el => { const z = parseFloat(el.style.zoom) || 1; return [el, z, titleFitScale(el.getBoundingClientRect().width, pieces(el), 0.8 / z)]; })
-      .forEach(([el, z, k]) => { if (k) el.style.zoom = String(Math.floor(z * k * 1000) / 1000); else loose.push(el); });
+  // Measure all, then scale all; again for any still a hair too wide (small text does not scale exactly, so
+  // each retry goes a further 1%, 2%, 3%... smaller). Never below 80%, and at most 6 passes.
+  for (let pass = 0; pass < 6 && over.length; pass++) {
+    over.map(el => { const z = parseFloat(el.style.zoom) || 1; const k = titleFitScale(el.getBoundingClientRect().width, pieces(el), 0.8 / z);
+      return [el, k && Math.floor(Math.min(z * k, z - 0.01 * pass) * 1000) / 1000]; })
+      .forEach(([el, z]) => { if (z >= 0.8) el.style.zoom = String(z); else loose.push(el); });
     over = over.filter(el => !loose.includes(el) && overflows(el));
   }
   loose.push(...over);

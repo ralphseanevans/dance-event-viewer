@@ -112,6 +112,6 @@ test('fitTitles tries the scale-down before letting the tail wrap', () => {
   const body = js.slice(js.indexOf('function fitTitles('), js.indexOf('\n}\n', js.indexOf('function fitTitles(')));
   const reset = body.indexOf("el.style.zoom = ''; });"), scale = body.indexOf('titleFitScale('), loose = body.indexOf("classList.add('loose-tail')");
   assert.ok(reset > 0 && scale > reset && loose > scale, 'reset → scale down → .loose-tail only if still too wide');
-  assert.match(body, /for \(let pass = 0; pass < 3 && over\.length; pass\+\+\)/, 'a few measured passes, never an open-ended loop');
+  assert.match(body, /for \(let pass = 0; pass < 6 && over\.length; pass\+\+\)/, 'a few measured passes, never an open-ended loop');
   assert.match(body, /loose\.filter\(overflows\)\.forEach\(el => el\.classList\.add\('loose-all'\)\)/);
 });
