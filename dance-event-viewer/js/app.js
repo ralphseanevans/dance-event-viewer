@@ -3307,6 +3307,17 @@ function ensureLeaflet() {
   });
   return leafletPromise;
 }
+/* Popup size limits for a map of the given pixel size: never taller than the map (the
+   card scrolls instead), and autoPan keeps it clear of the +/- zoom control (top-left). */
+function mapPopupOptions(mapWidth, mapHeight) {
+  const w = mapWidth || 300, h = mapHeight || 360;
+  return {
+    maxWidth: Math.max(160, Math.min(280, w - 90)),
+    maxHeight: Math.max(140, h - 90),
+    autoPanPaddingTopLeft: [50, 10],
+    autoPanPaddingBottomRight: [10, 10],
+  };
+}
 function renderMap(main, visible) {
   const wrap = document.createElement("section");
   wrap.setAttribute("aria-label", "Event map");
@@ -3348,6 +3359,10 @@ function renderMap(main, visible) {
     mapInstance.setView([30.5, -87.5], 8);   // Pensacola/Mobile region, no pins to fit
   } else {
     const bounds = [];
+    // 2026-10-27 (Sean-approved): size popups to the map. A popup taller than the map
+    // made Leaflet's autoPan pin the popup's top to the map's top, dragging the marker
+    // (and the title, details and links beside it) hundreds of px off-screen.
+    const popupFit = mapPopupOptions(canvas.clientWidth, canvas.clientHeight);
     for (const { d, coords } of pins) {
       const color = MAP_MARKER_COLORS[d.category] || MAP_MARKER_COLORS.Other;
       const marker = L.circleMarker([coords.lat, coords.lon], {
@@ -3356,7 +3371,7 @@ function renderMap(main, visible) {
       const popupEl = document.createElement("div");
       popupEl.className = "map-pin-popup";
       popupEl.appendChild(card(d, { showWhen: true }));
-      marker.bindPopup(popupEl, { maxWidth: 280 });
+      marker.bindPopup(popupEl, popupFit);
       // Activity Pulse signal — selecting an event marker on the Map view.
       if (typeof d.ev.key === "string") {
         marker.on("popupopen", () => {
