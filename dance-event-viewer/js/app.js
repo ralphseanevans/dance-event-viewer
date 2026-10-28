@@ -2927,10 +2927,17 @@ function init() {
   // "Choose another location…" reveals the cascading dropdowns; back/forward re-applies
   // filters from the URL. Filters take effect immediately, so the panel needs no apply button.
   // The panel closes through the ✕, the dimmed mobile backdrop, or the Escape key.
-  document.getElementById("filters-close")?.addEventListener("click", () => setFiltersOpen(false));
+  // Keyboard closes (✕, Escape) hand focus back to the Advanced button (2026-10-27) instead of
+  // leaving it on the now-hidden panel, unless focus is elsewhere (e.g. the Theme menu).
+  const filtersToggle = document.getElementById("filters-toggle");
+  document.getElementById("filters-close")?.addEventListener("click", () => { setFiltersOpen(false); filtersToggle.focus(); });
   document.getElementById("filter-backdrop")?.addEventListener("click", () => setFiltersOpen(false));
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state.filtersOpen) setFiltersOpen(false);
+    if (e.key !== "Escape" || !state.filtersOpen) return;
+    const a = document.activeElement;
+    const refocus = !a || a === document.body || a === filtersToggle || document.getElementById("filter-panel").contains(a);
+    setFiltersOpen(false);
+    if (refocus) filtersToggle.focus();
   });
   const locMore = document.getElementById("loc-more");
   const toggleLocationSelects = () => {
