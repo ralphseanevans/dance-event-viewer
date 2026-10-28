@@ -435,32 +435,17 @@
     const tile = document.createElement('article');
     tile.className = 'event-tile';
     if (event.style) tile.dataset.style = event.style;
-    const flyer = document.createElement('div');
-    flyer.className = 'flyer-wrap';
     const flyerUrl = logoFor(event.key);
+    let flyer = null;
     if (flyerUrl) {
+      flyer = document.createElement('div');
+      flyer.className = 'flyer-wrap';
       const image = document.createElement('img');
       image.className = 'event-flyer';
       image.src = resolveLogo(flyerUrl);
       image.alt = `${event.name || 'Dance event'} flyer`;
       image.loading = 'lazy';
       flyer.appendChild(image);
-    } else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'flyer-placeholder';
-      const placeholderLabel = document.createElement('span');
-      placeholderLabel.className = 'flyer-placeholder-label';
-      placeholderLabel.textContent = event.style || 'Flyer not available';
-      const uploadLink = document.createElement('a');
-      uploadLink.className = 'flyer-upload-link';
-      const uploadUrl = new URL('../../submit-event.html', window.location.href);
-      if (event.key) uploadUrl.searchParams.set('event', event.key);
-      uploadUrl.searchParams.set('purpose', 'flyer');
-      uploadLink.href = uploadUrl.href;
-      uploadLink.textContent = 'Upload a flyer';
-      uploadLink.setAttribute('aria-label', `Upload a flyer for ${event.name || 'this dance event'}`);
-      placeholder.append(placeholderLabel, uploadLink);
-      flyer.appendChild(placeholder);
     }
 
     const name = document.createElement('h3');
@@ -485,8 +470,21 @@
     details.append(time);
     const extra = [event.style, event.cost].filter(Boolean).join(' · ');
     if (extra) details.append(document.createTextNode(` · ${extra}`));
+    if (!flyer) {
+      // No real flyer: details only, plus a small link to send one in.
+      const uploadLink = document.createElement('a');
+      uploadLink.className = 'flyer-upload-link';
+      const uploadUrl = new URL('../../submit-event.html', window.location.href);
+      if (event.key) uploadUrl.searchParams.set('event', event.key);
+      uploadUrl.searchParams.set('purpose', 'flyer');
+      uploadLink.href = uploadUrl.href;
+      uploadLink.textContent = 'Upload a flyer';
+      uploadLink.setAttribute('aria-label', `Upload a flyer for ${event.name || 'this dance event'}`);
+      details.append(uploadLink);
+    }
 
-    tile.append(flyer, name, venueBox, details);
+    if (flyer) tile.append(flyer);
+    tile.append(name, venueBox, details);
     return tile;
   }
 

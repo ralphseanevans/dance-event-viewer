@@ -321,11 +321,11 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 }
 .style-choice.has-style-badge.is-unavailable,
 .style-choice.has-style-badge.is-unavailable[aria-pressed="true"]{
-  opacity:.34;
+  opacity:.4;
 }
 .style-choice.has-style-badge.is-unavailable img,
 .style-choice.has-style-badge.is-unavailable[aria-pressed="true"] img{
-  filter:grayscale(.85) brightness(.715) saturate(.45);
+  filter:grayscale(.85) brightness(1.05) saturate(.45);
 }
 @media(hover:hover){
   .style-choice.has-style-badge:hover,
@@ -336,8 +336,9 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
   .style-choice.has-style-badge[aria-pressed="true"]:hover img{
     filter:brightness(var(--badge-brightness,1.144)) saturate(var(--badge-saturation,.9));
   }
+  .style-choice.has-style-badge.is-unavailable:hover{opacity:.4}
   .style-choice.has-style-badge.is-unavailable:hover img{
-    filter:grayscale(.85) brightness(.715) saturate(.45);
+    filter:grayscale(.85) brightness(1.05) saturate(.45);
   }
 }
 @media(max-width:700px){
