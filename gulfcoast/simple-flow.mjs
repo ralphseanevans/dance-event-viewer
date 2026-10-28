@@ -3,7 +3,7 @@ import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badge
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts, titleRuns } from './simple-core.mjs?v=f223811b';
+import { upcomingIn, availableStyles, styleChoices, toggleStyle, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts, titleRuns } from './simple-core.mjs?v=e7f04144';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -286,12 +286,13 @@ el.styleChoices.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.classList.contains('solo-toggle')) { state.soloOpen = !state.soloOpen; render(); return; }
   const s = b.dataset.style; if (!s) return;
-  if (state.styles.has(s)) state.styles.delete(s); else state.styles.add(s);
+  if (b.getAttribute('aria-disabled') === 'true') return; // dimmed: no events, so no empty filter
+  state.styles = toggleStyle(state.styles, s, true);
   state.pages = 1;
   render({ tappedStyle: state.styles.has(s) ? s : null });
 });
 
-function styleButton(style, cls, available = true) {
+function styleButton(style, cls, available = true, offeredNearby = false) {
   const b = document.createElement('button');
   b.type = 'button'; b.className = cls; b.dataset.style = style;
   const badgeFile = STYLE_BADGES[style];
@@ -317,7 +318,16 @@ function styleButton(style, cls, available = true) {
     b.textContent = style;
   }
   b.setAttribute('aria-pressed', String(state.styles.has(style)));
-  if (!available) { b.disabled = true; b.classList.add('is-unavailable'); b.title = 'No upcoming events in the selected places'; }
+  if (!available) {
+    // Stays focusable so screen readers hear why; clicks are ignored in the handler above.
+    b.setAttribute('aria-disabled', 'true'); b.classList.add('is-unavailable');
+    const why = offeredNearby ? `No upcoming ${style} events in the selected places` : `No upcoming ${style} events right now`;
+    b.setAttribute('aria-label', style); // name stays just the style; the reason is the description
+    b.title = why;
+    const desc = document.createElement('span');
+    desc.className = 'sr-only'; desc.id = `style-why-${style.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`; desc.textContent = why;
+    b.setAttribute('aria-describedby', desc.id); b.appendChild(desc);
+  }
   return b;
 }
 
@@ -338,8 +348,9 @@ function render({ tapped, tappedStyle } = {}) {
   const styleMarkets = MARKETS.map(m => m.id);
   const styleCatalog = upcomingIn(state.events, styleMarkets, today);
   const { partner, solo } = availableStyles(styleCatalog);
-  const { partner: availablePartner, solo: availableSolo } = availableStyles(nearbyItems);
-  const availableHere = new Set([...availablePartner, ...availableSolo]);
+  const choices = styleChoices(styleCatalog, nearbyItems, Object.keys(STYLE_BADGES));
+  const availableHere = new Set([...choices.partner, ...choices.solo].filter(c => c.active).map(c => c.style));
+  const offered = new Set([...partner, ...solo]);
   [...state.styles].forEach(s => { if (!availableHere.has(s)) state.styles.delete(s); });
 
   // Styles step
@@ -347,14 +358,15 @@ function render({ tapped, tappedStyle } = {}) {
   el.styles.hidden = false;
   if (wasHidden) { el.styles.classList.remove('is-opening'); void el.styles.offsetWidth; el.styles.classList.add('is-opening'); }
   // Hide only the generic Swing selector; keep its events in the unfiltered results.
-  const kids = partner.filter(s => s !== 'Swing').map(s => styleButton(s, 'style-choice', availableHere.has(s)));
-  if (solo.length) {
+  const kids = choices.partner.filter(c => c.style !== 'Swing').map(c => styleButton(c.style, 'style-choice', c.active, offered.has(c.style)));
+  const soloChoices = choices.solo.map(c => c.style);
+  if (soloChoices.length) {
     const t = document.createElement('button');
     t.type = 'button'; t.className = 'style-choice solo-toggle'; t.setAttribute('aria-expanded', String(state.soloOpen));
-    t.classList.toggle('has-selection', solo.some(s => state.styles.has(s)));
-    t.innerHTML = `${state.soloOpen ? 'Hide' : 'Show'} solo styles (${solo.length}) <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
+    t.classList.toggle('has-selection', soloChoices.some(s => state.styles.has(s)));
+    t.innerHTML = `${state.soloOpen ? 'Hide' : 'Show'} solo styles (${soloChoices.length}) <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
     kids.push(t);
-    if (state.soloOpen) solo.forEach(s => kids.push(styleButton(s, 'style-choice solo-choice', availableHere.has(s))));
+    if (state.soloOpen) choices.solo.forEach(c => kids.push(styleButton(c.style, 'style-choice solo-choice', c.active, offered.has(c.style))));
   }
   if (!partner.length && !solo.length) { const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances listed here yet. Try another place.'; kids.push(p); }
   el.styleChoices.classList.toggle('has-style-badges', kids.some(node => node.classList?.contains('has-style-badge')));

@@ -114,6 +114,26 @@ export function upcomingIn(events, markets, today, through = null) {
 }
 export const availableStyles = items => orderStyles(items.flatMap(x => eventStyles(x.ev)));
 
+// Picker choices: every style with events anywhere in the markets, plus every badged style
+// (so people can see it is offered sometimes). A choice is active only when the places in
+// view have upcoming events in that style; otherwise it shows dimmed and can't be picked.
+// Order is stable (West Coast Swing first, then A–Z), so badges don't move as events come and go.
+export function styleChoices(catalogItems, hereItems, badgeStyles = []) {
+  const here = availableStyles(hereItems);
+  const active = new Set([...here.partner, ...here.solo]);
+  const all = orderStyles([...catalogItems.flatMap(x => eventStyles(x.ev)), ...badgeStyles]);
+  const tag = s => ({ style: s, active: active.has(s) });
+  return { partner: all.partner.map(tag), solo: all.solo.map(tag) };
+}
+
+// Toggle a style in the selection. Dimmed (inactive) styles never change it.
+export function toggleStyle(selected, style, active) {
+  const next = new Set(selected);
+  if (!active) return next;
+  if (next.has(style)) next.delete(style); else next.add(style);
+  return next;
+}
+
 // Date groups (chronological). Within a day: active before canceled, then time, then name/key.
 export function groupByDate(items, styles) {
   const want = new Set(styles);
