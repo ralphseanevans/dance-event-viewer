@@ -25,6 +25,14 @@ export function styleFacets(style) {
     .map(x => (/^Country(?:\s+Western)?\b/i.test(x) && !/swing/i.test(x) ? 'Country' : /^Ballroom\b/i.test(x) ? 'Ballroom' : x));
   return parts.length ? [...new Set(parts)] : [v];
 }
+// Facets for one listing: its style tag, plus Bachata when the title names it but the tag is
+// broader (e.g. 'Latin' on "Sensual Sundays -- Bachata Class & Social"). Used for both the
+// picker options and the filter, so an option only appears when it has events.
+export function eventStyles(ev) {
+  const s = styleFacets(ev?.style).slice();
+  if (!s.includes('Bachata') && /\bbachata\b/i.test(`${ev?.name || ''} ${ev?.card_title || ''}`)) s.push('Bachata');
+  return s;
+}
 // West Coast Swing first, then A–Z; solo styles separate (shown behind the Solo toggle).
 export function orderStyles(styles) {
   const uniq = [...new Set(styles)];
@@ -104,12 +112,32 @@ export function upcomingIn(events, markets, today, through = null) {
   }
   return rows;
 }
-export const availableStyles = items => orderStyles(items.flatMap(x => styleFacets(x.ev.style)));
+export const availableStyles = items => orderStyles(items.flatMap(x => eventStyles(x.ev)));
+
+// Picker choices: every style with events anywhere in the markets, plus every badged style
+// (so people can see it is offered sometimes). A choice is active only when the places in
+// view have upcoming events in that style; otherwise it shows dimmed and can't be picked.
+// Order is stable (West Coast Swing first, then A–Z), so badges don't move as events come and go.
+export function styleChoices(catalogItems, hereItems, badgeStyles = []) {
+  const here = availableStyles(hereItems);
+  const active = new Set([...here.partner, ...here.solo]);
+  const all = orderStyles([...catalogItems.flatMap(x => eventStyles(x.ev)), ...badgeStyles]);
+  const tag = s => ({ style: s, active: active.has(s) });
+  return { partner: all.partner.map(tag), solo: all.solo.map(tag) };
+}
+
+// Toggle a style in the selection. Dimmed (inactive) styles never change it.
+export function toggleStyle(selected, style, active) {
+  const next = new Set(selected);
+  if (!active) return next;
+  if (next.has(style)) next.delete(style); else next.add(style);
+  return next;
+}
 
 // Date groups (chronological). Within a day: active before canceled, then time, then name/key.
 export function groupByDate(items, styles) {
   const want = new Set(styles);
-  const rows = items.filter(x => styleFacets(x.ev.style).some(s => want.has(s))).map(x => ({ ...x, day: iso(x.date) }));
+  const rows = items.filter(x => eventStyles(x.ev).some(s => want.has(s))).map(x => ({ ...x, day: iso(x.date) }));
   rows.forEach(r => { r.canceled = isCanceledOn(r.ev, r.day); });
   rows.sort((a, b) => a.day.localeCompare(b.day) || (a.canceled - b.canceled)
     || String(a.ev.start_time || '99').localeCompare(String(b.ev.start_time || '99'))
