@@ -3,7 +3,7 @@ import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badge
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts, titleRuns } from './simple-core.mjs?v=9d4c8ff4';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts, titleRuns } from './simple-core.mjs?v=f223811b';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
