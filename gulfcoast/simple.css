@@ -74,8 +74,9 @@ button.calendar-day.is-active{color:var(--red)}
 /* No lone last word: the last two words of a title (.tile-name-tail, simple-flow.mjs) stay on one line,
    and a hyphenated word (.tile-name-nobr) never breaks at its hyphen. Both are plain inline nowrap spans
    (no inserted characters, no inline-block), so find-in-page, copy and the accessible name see the
-   original title and the link underline runs unbroken. Last resort, set by simple-flow.mjs only while
-   the title would overflow its card: .loose-tail lets the tail wrap, .loose-all also the hyphenated
+   original title and the link underline runs unbroken. If the tail is wider than the card, simple-flow.mjs
+   first scales the title down (zoom, to 80% at most) so it fits; only if it still overflows, last resort:
+   .loose-tail lets the tail wrap, .loose-all also the hyphenated
    words, with overflow-wrap:anywhere. Balance on every card (not pretty: it also stops a single word
    stranded on a middle line, e.g. "Friday Swing Dance | with | Seaside Swing-Outs" on a phone, and
    Safari has it from 17.5); older browsers still get the tail. */

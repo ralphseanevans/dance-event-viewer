@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { titleParts, titleRuns } from '../../gulfcoast/simple-core.mjs';
+import { titleParts, titleRuns, titleFitScale } from '../../gulfcoast/simple-core.mjs';
 
 const read = f => readFileSync(new URL('../../gulfcoast/' + f, import.meta.url), 'utf8');
 const INVISIBLE = /[\u2060\u2011\u00ad\u200b-\u200d\ufeff]/;
@@ -48,7 +48,7 @@ test('rendered title text equals the original title exactly, with no U+2060 / U+
 
 test('the card renders titles as plain inline nowrap spans (no inline-block), event data untouched', () => {
   const js = read('simple-flow.mjs');
-  assert.match(js, /titleParts, titleRuns \} from '\.\/simple-core\.mjs\?v=/);
+  assert.match(js, /titleParts, titleRuns, titleFitScale \} from '\.\/simple-core\.mjs\?v=/);
   assert.match(js, /function fillTitle\(el, text\) \{\n  const \[head, tail\] = titleParts\(text\);/);
   assert.match(js, /s\.className = 'tile-name-tail'/);
   assert.match(js, /s\.className = 'tile-name-nobr'/);
@@ -85,4 +85,33 @@ test('title fitting runs synchronously on render, before the calendar measures t
   // The late paths stay as fallbacks for width changes and web-font swaps.
   assert.match(js, /new ResizeObserver\(/);
   assert.match(js, /document\.fonts\?\.ready\.then\(\(\) => fitTitles\(/);
+});
+
+// DEV Sentinel, Oct 23 (#77): on compact cards (and Full at 320px) "Seaside Swing-Outs" / "Something Different"
+// is a little wider than the card, so .loose-tail let the tail wrap and the last line was one word
+// ("Seaside / Swing-Outs", "Something / Different"). Now the title first scales down (to 80% at most) so
+// the last two words fit together; .loose-tail is only the fallback when even 80% is too wide.
+test('titleFitScale shrinks a too-wide tail just enough to fit, never below the floor', () => {
+  // Measured in Chrome: compact card 168px wide, "Something Different" 197px, "Seaside Swing-Outs" 191px;
+  // 320px Full card 229px wide, "Seaside Swing-Outs" 255px.
+  for (const [width, piece] of [[168, 197], [168, 191], [229, 255], [229, 262.41], [61.09, 72.91]]) {
+    const k = titleFitScale(width, [piece]);
+    assert.ok(k >= 0.8 && k < 1, `${piece} in ${width}: ${k}`);
+    assert.ok(piece * k <= width, `${piece} * ${k} fits in ${width}`);
+    assert.ok(piece * (k + 0.002) > width, 'shrinks no more than needed');
+  }
+  assert.equal(titleFitScale(299, [255, 90]), 1, 'already fits: unchanged');
+  assert.equal(titleFitScale(168, []), 1, 'one-word title: nothing to fit');
+  assert.equal(titleFitScale(100, [80, 140]), 0, 'widest piece decides; under 80% falls back to wrapping');
+  assert.equal(titleFitScale(100, [125]), 0.8);
+  assert.equal(titleFitScale(0, [50]), 1, 'unlaid-out card is left alone');
+});
+
+test('fitTitles tries the scale-down before letting the tail wrap', () => {
+  const js = read('simple-flow.mjs');
+  const body = js.slice(js.indexOf('function fitTitles('), js.indexOf('\n}\n', js.indexOf('function fitTitles(')));
+  const reset = body.indexOf("el.style.zoom = ''; });"), scale = body.indexOf('titleFitScale('), loose = body.indexOf("classList.add('loose-tail')");
+  assert.ok(reset > 0 && scale > reset && loose > scale, 'reset → scale down → .loose-tail only if still too wide');
+  assert.match(body, /for \(let pass = 0; pass < 3 && over\.length; pass\+\+\)/, 'a few measured passes, never an open-ended loop');
+  assert.match(body, /loose\.filter\(overflows\)\.forEach\(el => el\.classList\.add\('loose-all'\)\)/);
 });

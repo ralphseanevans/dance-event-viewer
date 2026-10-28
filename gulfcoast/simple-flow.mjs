@@ -3,7 +3,7 @@ import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badge
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts, titleRuns } from './simple-core.mjs?v=9d4c8ff4';
+import { upcomingIn, availableStyles, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts, titleRuns, titleFitScale } from './simple-core.mjs?v=52ef202f';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
@@ -447,23 +447,34 @@ function trimFlyerBorder(image) {
     image.src=cropped.toDataURL('image/png');
   } catch { /* Cross-origin images without pixel access retain their original preview. */ }
 }
-// Last resort for a title piece wider than its card: while the nowrap tail would overflow, let it wrap
-// (.loose-tail); if a hyphenated word alone still overflows, let that wrap too (.loose-all, where
-// overflow-wrap:anywhere applies). Re-checked whenever a title's width changes and once fonts load.
+// A title piece (the nowrap tail or a hyphenated word) wider than its card: first scale the title down
+// (CSS zoom, at most to 80%) so the piece fits and the last two words stay together; only if it still
+// won't fit, let the tail wrap (.loose-tail), and if a hyphenated word alone still overflows, let that
+// wrap too (.loose-all, where overflow-wrap:anywhere applies). The text itself is never split or changed.
+// Re-checked whenever a title's width changes and once fonts load.
 const titleWidths = new WeakMap();
+const pieces = el => [...el.querySelectorAll('.tile-name-tail,.tile-name-nobr')].map(s => s.getBoundingClientRect().width);
 const overflows = el => { const w = el.getBoundingClientRect().width + 0.02; // sub-pixel exact, like the browser's own wrapping
-  return el.scrollWidth > el.clientWidth || [...el.querySelectorAll('.tile-name-tail,.tile-name-nobr')].some(s => s.getBoundingClientRect().width > w); };
+  return el.scrollWidth > el.clientWidth || pieces(el).some(p => p > w); };
 function fitTitles(list) {
-  list.forEach(el => el.classList.remove('loose-tail', 'loose-all'));
-  const over = list.filter(overflows);
-  over.forEach(el => el.classList.add('loose-tail'));
-  over.filter(overflows).forEach(el => el.classList.add('loose-all'));
+  list.forEach(el => { el.classList.remove('loose-tail', 'loose-all'); el.style.zoom = ''; });
+  let over = list.filter(overflows); const loose = [];
+  // Measure all, then scale all; again for any still a hair too wide (small text doesn't scale exactly).
+  for (let pass = 0; pass < 3 && over.length; pass++) {
+    over.map(el => { const z = parseFloat(el.style.zoom) || 1; return [el, z, titleFitScale(el.getBoundingClientRect().width, pieces(el), 0.8 / z)]; })
+      .forEach(([el, z, k]) => { if (k) el.style.zoom = String(Math.floor(z * k * 1000) / 1000); else loose.push(el); });
+    over = over.filter(el => !loose.includes(el) && overflows(el));
+  }
+  loose.push(...over);
+  loose.forEach(el => { el.style.zoom = ''; el.classList.add('loose-tail'); });
+  loose.filter(overflows).forEach(el => el.classList.add('loose-all'));
 }
 const titleFit = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
   const changed = [];
   for (const { target: el, contentRect: r } of entries) {
     if (!el.isConnected) { titleFit.unobserve(el); continue; }
-    if (titleWidths.get(el) !== r.width) { titleWidths.set(el, r.width); changed.push(el); }
+    const w = r.width * (parseFloat(el.style.zoom) || 1); // the card's width, not the zoomed title's own
+    if (Math.abs((titleWidths.get(el) ?? -1) - w) > 0.05) { titleWidths.set(el, w); changed.push(el); }
   }
   if (changed.length) fitTitles(changed);
 }) : null;

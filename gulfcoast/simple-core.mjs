@@ -161,6 +161,16 @@ export function titleRuns(text) {
   return String(text ?? '').split(/(\S*[\p{L}\p{N}]-[\p{L}\p{N}]\S*)/u).map((t, i) => ({ text: t, nobr: i % 2 === 1 })).filter(r => r.text);
 }
 
+// When the last two words (or a hyphenated word) are wider than the card, the title is scaled down
+// just enough for that piece to fit on one line, but never below `min` of its size. Returns the scale
+// (1 when it already fits), or 0 when even `min` is too wide; then the tail has to wrap (.loose-tail).
+export function titleFitScale(width, pieces, min = 0.8) {
+  const need = Math.max(0, ...pieces);
+  if (!(width > 0) || need <= width) return 1;
+  const k = Math.floor((width / need) * 1000) / 1000;
+  return k >= min ? k : 0;
+}
+
 // Generated stand-in flyer for cards with no real flyer. Off: such cards show only
 // their details (no flyer panel, tab or corner). Set to true to bring it back.
 export const SHOW_FALLBACK_FLYER = false;
