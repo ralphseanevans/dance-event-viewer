@@ -68,7 +68,8 @@ const STYLE_BADGES = Object.freeze({
   'East Coast Swing': 'east-coast-swing.png',
   'Hustle': 'hustle.png',
   'Latin': 'latin.png',
-  'Lindy Hop': 'lindy-hop.png'
+  'Lindy Hop': 'lindy-hop.png',
+  'TripleTwo': 'triple-two.png'
 });
 
 const state = { flyersOnly: false, markets: new Set(), styles: new Set(), dateRanges: [], soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, eventPages: new Set(), loaded: false };
