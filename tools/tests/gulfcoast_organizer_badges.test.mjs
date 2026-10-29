@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {BADGES,badgeIds,matchesBadge,badgeAssetFile} from '../../gulfcoast/organizer-badges.mjs';
-test('trial has thirteen distinct identities, eight groups/studios and no withheld Taylor',()=>{assert.equal(BADGES.length,13);assert.equal(new Set(BADGES.map(x=>x.id)).size,13);assert.equal(BADGES.filter(x=>!x.kind.includes('Instructor')).length,8);assert(!BADGES.some(x=>/oblow/i.test(x.name)));});
+test('trial has fourteen distinct identities, eight groups/studios and no withheld Taylor',()=>{assert.equal(BADGES.length,14);assert.equal(new Set(BADGES.map(x=>x.id)).size,14);assert.equal(BADGES.filter(x=>!x.kind.includes('Instructor')).length,8);assert(!BADGES.some(x=>/oblow/i.test(x.name)));});
 test('Taylor Morton uses PSDS; Taylor Oblow and personal relationships do not',()=>{assert.deepEqual(badgeIds({name:'Workshop',instructors:['Taylor Morton']}),['psds']);assert.deepEqual(badgeIds({name:'Workshop',instructors:['Taylor Oblow','Jake']}),[]);});
 test('unrelated first/third Saturday events and unknown instructors stay unassigned',()=>{assert.deepEqual(badgeIds({key:'ga-marietta-tango-social-3rd-saturday-milonga-2026-08-15',name:'Third Saturday Milonga'}),[]);assert.deepEqual(badgeIds({name:'West Coast Swing',venue:'Ragon Hall'}),[]);assert.deepEqual(badgeIds({name:'Workshop',instructors:['John Doe']}),[]);});
 test('source-backed Seaside event at TWYM matches both, with organizer card first',()=>{const ev={key:'sso-lindy-and-blues-fridays-the-way-you-move',name:'SSO Lindy & Blues',venue:'The Way You Move, Pensacola'};assert.deepEqual(badgeIds(ev),['seaside','twym']);assert(matchesBadge(ev,'seaside'));assert(matchesBadge(ev,'twym'));assert(!matchesBadge(ev,'psds'));});
@@ -30,7 +30,7 @@ test('every badge declares how it is drawn on the beige card; light one-colour l
   const by=Object.fromEntries(BADGES.map(b=>[b.id,b.card]));
   for(const id of ['psds','twym','seaside','mobile-wcs','coastals','starlite'])assert.equal(by[id],'ink',id);
   assert.equal(by['usa-dance'],'color');
-  for(const id of ['nina-travis','rachel-zander','traci-bell','john-alicia','gary-jobst','todd-jamie'])assert.equal(by[id],'photo',id);
+  for(const id of ['nina-travis','rachel-zander','traci-bell','john-alicia','gary-jobst','todd-jamie','bree'])assert.equal(by[id],'photo',id);
   assert(BADGES.every(b=>['ink','color','photo'].includes(b.card)));
 });
 test('USA Dance card copy has inked figures; the picker keeps the original artwork',()=>{
@@ -92,9 +92,9 @@ test('Gary Jobst photo badge matches his exact full name only (the PCDA Round-Up
   assert.deepEqual(badgeIds({key:'pcda-wednesday-night-round-up-ragon-hall',name:'The Wednesday Night Round-Up with PCDA at Ragon Hall',instructors:['Gary Jobst','Taylor Oblow','Jake Twork']}),['gary-jobst']);
   assert.deepEqual(badgeIds({name:'Workshop',instructors:['Gary']}),[]);assert.deepEqual(badgeIds({name:'Workshop',instructors:['Gary Jobson']}),[]);
 });
-test('Gary and Todd & Jamie photo badges use the instructor avatar format and file-tracking cache-busters',()=>{
+test('Gary, Todd & Jamie and Bree photo badges use the instructor avatar format and file-tracking cache-busters',()=>{
   const src=readFileSync(gc('organizer-badges.mjs'),'utf8');
-  for(const id of ['gary-jobst','todd-jamie']){
+  for(const id of ['gary-jobst','todd-jamie','bree']){
     assert.equal(badgeAssetFile(id,30),id+'-teacher-avatar.png');assert.equal(badgeAssetFile(id,40),id+'-teacher-avatar.png');
     const png=readFileSync(gc('assets/organizer-badges/'+id+'-teacher-avatar.png'));
     assert.equal(png.readUInt32BE(16),336);assert.equal(png.readUInt32BE(20),336);assert.equal(png[25],6);assert(png.length<250*1024);
@@ -113,9 +113,22 @@ test('portrait badges carry a visible, readable Organizer label; logos do not',a
 test('pair portrait badges say Organizers; single-person badges say Organizer',async()=>{
   const {badgeLabel}=await import('../../gulfcoast/organizer-badges.mjs');
   for(const id of ['nina-travis','rachel-zander','john-alicia','todd-jamie'])assert.equal(badgeLabel(id),'Organizers',id);
-  for(const id of ['traci-bell','gary-jobst'])assert.equal(badgeLabel(id),'Organizer',id);
+  for(const id of ['traci-bell','gary-jobst','bree'])assert.equal(badgeLabel(id),'Organizer',id);
   // Every badge named as a pair ("A & B", or "Todd and Jamie") or kind 'Instructors' is counted as two people.
   for(const b of BADGES.filter(b=>b.card==='photo'))assert.equal(badgeLabel(b.id),(b.kind==='Instructors'||/&|\band\b/.test(b.name))?'Organizers':'Organizer',b.id);
   for(const b of BADGES.filter(b=>/&/.test(b.name)))assert.equal(b.people,2,b.id);
   const src=readFileSync(gc('organizer-badges.mjs'),'utf8');assert.match(src,/h\.textContent=badgeLabel\(id\)/);
+});
+test('Bree photo badge matches her line-dance listings by her whole first name; "Breeze" does not',()=>{
+  // Real listings (dance_events.json / live feed): the weekly Moonshine Saloon Thursday and two Mathieson Brewing nights.
+  const evs=[
+    {key:'ttdgc-moonshine-saloon-thursday',name:'Line Dancing with Bree at Moonshine Saloon',venue:'Moonshine Saloon, 9722 Highway 98, Pensacola, FL'},
+    {key:'line-dance-bree-mathieson-brewing-2026-10-27',name:'Line Dancing with Bree at Mathieson Brewing Company (MBC)',venue:'Mathieson Brewing Company, 500 East Heinberg Street, Pensacola, FL 32502'},
+    {key:'eventbrite-line-dance-bree-mbc-2026-09-08',name:'Line Dance w/ Bree at MBC',venue:'Mathieson Brewing Company, 500 East Heinberg Street, Pensacola, FL 32502'}];
+  for(const ev of evs){assert.deepEqual(badgeIds(ev),['bree'],ev.key);assert(matchesBadge(ev,'bree'));}
+  const repo=JSON.parse(readFileSync(new URL('../../dance_events.json',import.meta.url),'utf8')).events;
+  for(const key of ['ttdgc-moonshine-saloon-thursday','eventbrite-line-dance-bree-mbc-2026-09-08'])assert.deepEqual(badgeIds(repo.find(e=>e.key===key)),['bree'],key);
+  assert.deepEqual(badgeIds({name:'Breeze Line Dance Night',venue:'Breeze Bar'}),[]);assert.deepEqual(badgeIds({name:'Workshop',instructors:['Breeze']}),[]);
+  assert.deepEqual(badgeIds({name:'Social',instructors:['Bree']}),['bree']);
+  assert.equal(BADGES.find(b=>b.id==='bree').name,'Line Dancing with Bree');
 });
