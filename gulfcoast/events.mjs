@@ -1,3 +1,4 @@
+import '../dance-event-viewer/js/cancel-core.js?v=26fb5abf'; // sets globalThis.DEVCancel (shared cancel rules)
 export const FEED='https://xyyxbwetagfexsqtokpk.supabase.co/functions/v1/dance-events/dance_events_live.json';
 const weekdays=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 export const dateKey=d=>d.toISOString().slice(0,10);
@@ -16,10 +17,17 @@ export function occursOn(e,key){
  if(Array.isArray(e.exclude_dates)&&e.exclude_dates.includes(key))return false;
  if(Array.isArray(e.exclude_monthly_rules)&&e.exclude_monthly_rules.some(r=>monthlyMatches(r,key)))return false;
  if(e.type==='one_time')return Boolean(e.start_date&&key>=e.start_date&&key<=(e.end_date||e.start_date));
- if(e.type==='weekly_recurring')return weekdays[parseDate(key).getUTCDay()].toLowerCase()===String(e.day_of_week||'').toLowerCase();
- if(e.type==='monthly_recurring')return monthlyMatches(e.monthly_rule,key);
+ const onDay=()=>weekdays[parseDate(key).getUTCDay()].toLowerCase()===String(e.day_of_week||'').toLowerCase();
+ if(e.type==='weekly_recurring')return onDay();
+ // Every other week from start_date (required, same as the main viewer).
+ if(e.type==='biweekly_recurring'){const s=parseDate(e.start_date);return Boolean(s&&onDay()&&Math.round((parseDate(key)-s)/864e5)%14===0)}
+ if(e.type==='monthly_recurring')return monthlyMatches(e.monthly_rule,key)||dayOfMonthMatches(e.monthly_rule,key);
  return false;
 }
+// "15" / "15th": that calendar day only (months without it are skipped, never moved).
+export function dayOfMonthMatches(rule,key){const m=/^\s*(\d{1,2})(?:st|nd|rd|th)?\s*$/i.exec(String(rule||''));return Boolean(m&&+m[1]>=1&&+m[1]<=31&&parseDate(key).getUTCDate()===+m[1])}
+// The cancellation for event e on date key (YYYY-MM-DD), or null. Shared rules: ../dance-event-viewer/js/cancel-core.js.
+export const cancellationOn=(e,key)=>globalThis.DEVCancel.cancellationFor(e,key);
 export function dateRange(mode,today=todayKey()){
  if(mode==='today')return[today,today];
  if(mode==='weekend'){
@@ -58,7 +66,7 @@ export function placeMatches(e,place){
 }
 export function searchEvents(events,{place='gulf',style='all',when='30',query='',savedOnly=false,saved=new Set(),includeUnverified=false,today=todayKey()}={}){
  const [start,end]=dateRange(when,today);const terms=query.toLowerCase().trim().split(/\s+/).filter(Boolean);
- return events.filter(e=>e&&e.key&&(includeUnverified||!e.unverified)&&placeMatches(e,place)&&styleMatches(e,style)&&(!savedOnly||saved.has(e.key))&&terms.every(t=>[e.name,e.venue,e.style,e.state].join(' ').toLowerCase().includes(t))).map(event=>({event,date:nextOccurrence(event,start,end)})).filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)||(a.event.start_time||'99').localeCompare(b.event.start_time||'99')||a.event.name.localeCompare(b.event.name));
+ return events.filter(e=>e&&e.key&&(includeUnverified||!e.unverified)&&placeMatches(e,place)&&styleMatches(e,style)&&(!savedOnly||saved.has(e.key))&&terms.every(t=>[e.name,e.venue,e.style,e.state].join(' ').toLowerCase().includes(t))).map(event=>({event,date:nextOccurrence(event,start,end)})).filter(x=>x.date).map(x=>({...x,cancel:cancellationOn(x.event,x.date)})).sort((a,b)=>a.date.localeCompare(b.date)||(a.event.start_time||'99').localeCompare(b.event.start_time||'99')||a.event.name.localeCompare(b.event.name));
 }
 export function timeLabel(value){if(!/^\d{1,2}:\d{2}/.test(value||''))return'Time not listed';const [h,m]=value.split(':').map(Number);return `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`}
 export const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

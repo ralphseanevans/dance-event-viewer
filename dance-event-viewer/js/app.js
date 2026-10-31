@@ -607,52 +607,25 @@ function flyersFor(ev) {
 
 /* ---------- Cancel banners (2026-10-09, Sean-approved) ----------
    A canceled event or occurrence keeps showing, with a yellow bar across its graphic
-   (css/cancel-banner.css). Exactly three variants, chosen by `cancel_status`; anything
-   missing or unknown is "likely". Visible text lives in the CSS modifier classes; keep these
-   strings in sync with them. Data shapes (all optional — events without them are untouched):
-     whole event:     ev.cancel_status = "confirmed" | "likely" | "owner"
-                      (legacy ev.canceled === true / ev.cancelled === true → "likely")
-     one occurrence:  ev.canceled_dates = [{ date: "YYYY-MM-DD", cancel_status, reason }]
-                      (a bare "YYYY-MM-DD" string is accepted too → "likely")
+   (css/cancel-banner.css). Exactly three variants: confirmed | likely | owner; anything
+   missing or unknown is "likely", and "owner" only when the data says so.
+   The rules (accepted shapes, precedence, labels) live in ONE place, js/cancel-core.js
+   (window.DEVCancel), shared with /gulfcoast/ and tools/event_schedule.mjs. Visible label
+   text lives in the CSS modifier classes; keep DEVCancel.LABELS in sync with them.
    Unlike exclude_dates (which hides a date), a canceled date still appears on the calendar.
    See docs/cancel-banners.md. */
-const CANCEL_BANNER_LABELS = Object.freeze({
-  confirmed: "CONFIRMED CANCELED",
-  likely: "LIKELY CANCELED",
-  owner: "Officially canceled.",   // host/owner-authorized only; never a default
-});
-const CANCEL_STATUS_DEFAULT = "likely";
-function normCancelStatus(s) {
-  const k = typeof s === "string" ? s.trim().toLowerCase() : "";
-  return Object.prototype.hasOwnProperty.call(CANCEL_BANNER_LABELS, k) ? k : CANCEL_STATUS_DEFAULT;
-}
 /* A label without its trailing period, for use inside a sentence or tooltip
-   ("Officially canceled." -> "Officially canceled"). Same as cancelLabelText() in tools/event_schedule.mjs. */
+   ("Officially canceled." -> "Officially canceled"). */
 function cancelLabelText(label) {
-  return String(label || "").replace(/\.+$/, "");
+  return DEVCancel.labelText(label);
 }
 function isoDay(dt) {
   return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
 }
 /* The cancellation that applies to `ev` (optionally on occurrence date `dt`), or null.
-   Returns { status, label, reason }. Never throws on malformed data. */
+   Returns { status, label, whole, note, reason }. Never throws on malformed data. */
 function cancellationFor(ev, dt) {
-  if (!ev) return null;
-  const make = (status, reason) => {
-    const s = normCancelStatus(status);
-    return { status: s, label: CANCEL_BANNER_LABELS[s], reason: typeof reason === "string" ? reason : null };
-  };
-  if (typeof ev.cancel_status === "string" && ev.cancel_status.trim()) return make(ev.cancel_status, ev.cancel_reason);
-  if (ev.canceled === true || ev.cancelled === true) return make(null, ev.cancel_reason);
-  const list = ev.canceled_dates;
-  if (dt instanceof Date && !isNaN(dt) && Array.isArray(list) && list.length) {
-    const iso = isoDay(dt);
-    for (const c of list) {
-      if (c === iso) return make(null, null);
-      if (c && typeof c === "object" && c.date === iso) return make(c.cancel_status, c.reason);
-    }
-  }
-  return null;
+  return DEVCancel.cancellationFor(ev, dt instanceof Date && !isNaN(dt) ? isoDay(dt) : null);
 }
 /* The one reusable helper: mark an image wrapper as canceled. Adds the CSS classes, a
    screen-reader sentence, and (for wrappers that are buttons) a prefixed aria-label. */

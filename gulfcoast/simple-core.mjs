@@ -1,6 +1,7 @@
 // Pure logic for Exp2 Simple mode: styles, next occurrences, date groups.
 // No DOM, no fetch; tested in tools/tests/experience_2_simple.test.mjs.
 import { marketOf } from './markets.mjs?v=76ee9962';
+import '../dance-event-viewer/js/cancel-core.js?v=26fb5abf'; // sets globalThis.DEVCancel
 
 export const SOLO_STYLES = Object.freeze(['Ballet', 'Jazz', 'Hip Hop', 'Contemporary', 'Heels', 'Pom', 'Musical Theatre', 'Dance Fit', 'Line Dance', 'Belly Dance']);
 export const GROUPS_PER_PAGE = 10;
@@ -88,12 +89,10 @@ export function nextOccurrence(ev, today) {
   return null;
 }
 
-// Same rules as cancellationFor() in js/app.js / tools/event_schedule.mjs (whole-series or this date).
-export function isCanceledOn(ev, day) {
-  if (typeof ev.cancel_status === 'string' && ev.cancel_status.trim()) return true;
-  if (ev.canceled === true || ev.cancelled === true) return true;
-  return Array.isArray(ev.canceled_dates) && ev.canceled_dates.some(c => c === day || (c && typeof c === 'object' && c.date === day));
-}
+// Whole-series or this-date cancellation. The rules live in ../dance-event-viewer/js/cancel-core.js
+// (shared with js/app.js and tools/event_schedule.mjs).
+export const cancellationOn = (ev, day) => globalThis.DEVCancel.cancellationFor(ev, day);
+export const isCanceledOn = (ev, day) => !!cancellationOn(ev, day);
 const isUnverified = ev => ev.unverified === true || ev.research_confidence === 'low';
 
 // Upcoming, verified records in the selected markets, with their next date.

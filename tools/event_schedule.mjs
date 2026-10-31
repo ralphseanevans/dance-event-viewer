@@ -1,24 +1,14 @@
 // Shared pure schedule helpers for event pages and location/style hubs.
+import '../dance-event-viewer/js/cancel-core.js'; // sets globalThis.DEVCancel
 const WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function iso(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 
-// Cancel banners: same rules as cancellationFor() in dance-event-viewer/js/app.js.
-const CANCEL_BANNER_LABELS = { confirmed: 'CONFIRMED CANCELED', likely: 'LIKELY CANCELED', owner: 'Officially canceled.' };
-const normCancelStatus = s => { const k = typeof s === 'string' ? s.trim().toLowerCase() : ''; return CANCEL_BANNER_LABELS[k] ? k : 'likely'; };
+// Cancel banners: the one shared copy of the rules lives in dance-event-viewer/js/cancel-core.js.
+const { DEVCancel } = globalThis;
 // A label without its trailing period, for use inside a sentence ("Officially canceled: <date>").
-export const cancelLabelText = label => String(label || '').replace(/\.+$/, '');
-// Returns { status, label, whole, reason } or null. `day` is an optional YYYY-MM-DD occurrence.
-export function cancellationFor(ev, day){
-  if (!ev) return null;
-  const make = (status, whole, reason) => { const s = normCancelStatus(status); return { status: s, label: CANCEL_BANNER_LABELS[s], whole, reason: typeof reason === 'string' && reason.trim() ? reason.trim() : null }; };
-  if (typeof ev.cancel_status === 'string' && ev.cancel_status.trim()) return make(ev.cancel_status, true, ev.cancel_reason);
-  if (ev.canceled === true || ev.cancelled === true) return make(null, true, ev.cancel_reason);
-  if (day && Array.isArray(ev.canceled_dates)) for (const c of ev.canceled_dates) {
-    if (c === day) return make(null, false);
-    if (c && typeof c === 'object' && c.date === day) return make(c.cancel_status, false, c.reason);
-  }
-  return null;
-}
+export const cancelLabelText = label => DEVCancel.labelText(label);
+// Returns { status, label, whole, note, reason } or null. `day` is an optional YYYY-MM-DD occurrence.
+export const cancellationFor = (ev, day) => DEVCancel.cancellationFor(ev, day);
 
 // Ordinal-weekday parsing for monthly rules and weekly exclusions ("3rd Saturday").
 function parseOrdinalRule(rule){
@@ -38,6 +28,7 @@ function nthWeekdayOfMonth(year, month, ord, weekday){ // month 0-based
   const d = new Date(year, month, 1 + offset + (ord - 1) * 7, 12);
   return d.getMonth() === first.getMonth() ? d : null;
 }
+const dayOfMonthRule = r => { const m = /^\s*(\d{1,2})(?:st|nd|rd|th)?\s*$/i.exec(String(r || '')); const n = m ? +m[1] : 0; return n >= 1 && n <= 31 ? n : null; };
 function matchesOrdinalRule(date, rule){
   const r = parseOrdinalRule(rule);
   if (!r) return false;
@@ -62,14 +53,34 @@ export function nextOccurrence(ev, today){
     return null;
   }
   if (ev.type === 'monthly_recurring' && ev.monthly_rule) {
-    const r = parseOrdinalRule(ev.monthly_rule);
-    if (!r) return null;
-    for (let i = 0; i < 4; i++) {
-      const d = nthWeekdayOfMonth(from.getFullYear(), from.getMonth() + i, r.ord, r.weekday);
+    const r = parseOrdinalRule(ev.monthly_rule), dom = r ? null : dayOfMonthRule(ev.monthly_rule);
+    if (!r && !dom) return null;
+    for (let i = 0; i < 14; i++) {
+      const y = from.getFullYear(), m = from.getMonth() + i;
+      // "15th": skip months without that day (no Feb 30th), never invent a nearby date.
+      const d = r ? nthWeekdayOfMonth(y, m, r.ord, r.weekday)
+        : (dom <= new Date(y, m + 1, 0).getDate() ? new Date(y, m, dom, 12) : null);
       if (d && d >= from && !excluded.has(iso(d))) return ended(d) ? null : iso(d);
     }
     return null;
   }
+  // Every other week, anchored on start_date (required, same as the viewer's app.js).
+  if (ev.type === 'biweekly_recurring' && ev.day_of_week) {
+    const wd = WEEKDAYS.findIndex(w => w.toLowerCase() === String(ev.day_of_week).toLowerCase());
+    if (wd < 0 || !ev.start_date) return null;
+    const anchor = new Date(ev.start_date + 'T12:00:00');
+    anchor.setDate(anchor.getDate() + ((wd - anchor.getDay() + 7) % 7));
+    const d = new Date(from < anchor ? anchor : from);
+    d.setDate(d.getDate() + ((wd - d.getDay() + 7) % 7));
+    if (Math.round((d - anchor) / 864e5) % 14) d.setDate(d.getDate() + 7);
+    for (let i = 0; i < 60; i++) {
+      if (ended(d)) return null;
+      if (!excluded.has(iso(d))) return iso(d);
+      d.setDate(d.getDate() + 14);
+    }
+    return null;
+  }
+  if (/recurring$/.test(ev.type)) return null; // a recurring rule we can't read: no date, never a stale start_date
   return ev.start_date || null; // one_time / tentative: use the published date even if past
 }
 export function isPast(ev, today){
