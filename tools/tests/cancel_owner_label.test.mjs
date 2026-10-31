@@ -22,10 +22,10 @@ test('missing, unknown or legacy cancel status never falls back to the owner tex
   }
 });
 
-test('viewer app.js and CSS: default is likely, owner text only on the owner variant', () => {
-  const app = readFileSync(new URL('../../dance-event-viewer/js/app.js', import.meta.url), 'utf8');
+test('shared cancel-core.js and CSS: default is likely, owner text only on the owner variant', () => {
+  const app = readFileSync(new URL('../../dance-event-viewer/js/cancel-core.js', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../../dance-event-viewer/css/cancel-banner.css', import.meta.url), 'utf8');
-  assert.match(app, /const CANCEL_STATUS_DEFAULT = "likely";/);
+  assert.match(app, /var DEFAULT_STATUS = "likely";/);
   assert.match(app, /owner: "Officially canceled\."/);
   assert.match(app, /confirmed: "CONFIRMED CANCELED"/);
   assert.match(app, /likely: "LIKELY CANCELED"/);

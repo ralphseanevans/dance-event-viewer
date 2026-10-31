@@ -14,8 +14,10 @@ function slice(from, to) {
   return src.slice(a, b);
 }
 const ctx = vm.createContext({});
+// The shared rules (js/cancel-core.js) load first, as in index.html.
+vm.runInContext(readFileSync(new URL('../../dance-event-viewer/js/cancel-core.js', import.meta.url), 'utf8'), ctx);
 vm.runInContext(
-  slice('const CANCEL_BANNER_LABELS', 'function applyCancelBanner(') +
+  slice('function cancelLabelText(', 'function applyCancelBanner(') +
   slice('function sortCanceledLast(', 'function bucketize(') +
   '\nthis.sortCanceledLast = sortCanceledLast;', ctx);
 
