@@ -31,6 +31,7 @@ export function createStickyCalendar({ root, scrollHost, onJump, onRange, onRemo
     if (!shownMonth) return;
     const [y, m] = shownMonth.split('-').map(Number);
     month.textContent = fmtMonth.format(new Date(y, m - 1, 1));
+    month.style.setProperty('--chars', month.textContent.length); // simple.css sizes the title so the longest month fits between the arrows
     const list = months(), i = list.indexOf(shownMonth);
     prev.disabled = i <= 0; next.disabled = i < 0 || i >= list.length - 1;
     const cells = [];

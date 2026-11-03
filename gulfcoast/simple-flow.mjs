@@ -7,7 +7,7 @@ import { upcomingIn, availableStyles, styleChoices, toggleStyle, groupByDate, fl
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
-import { createStickyCalendar } from './sticky-calendar.mjs?v=5de6ba5f';
+import { createStickyCalendar } from './sticky-calendar.mjs?v=b68a3b17';
 
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../dance-event-viewer/', import.meta.url); // /dance-event-viewer/
