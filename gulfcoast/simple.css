@@ -359,7 +359,8 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 .calendar-head button{flex-shrink:0}
 
 .calendar-head{container-type:inline-size;gap:10px}
-.calendar-month-label{font-size:clamp(20px,10cqw,40px)}
+/* Title fits between the arrows: 100cqw minus two 44px arrows and two 10px gaps, ~.46em per uppercase Barlow character. */
+.calendar-month-label{font-size:clamp(12px,min(10cqw,(100cqw - 108px) / (var(--chars,14) * .46)),40px)}
 .calendar-head button{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(220,80,57,.65);border-radius:14px;background:#242421;color:var(--red);cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .15s ease}
 .calendar-head button svg{width:22px;height:22px;transition:transform .18s ease}
 .calendar-head button:disabled{opacity:.25;cursor:default}
@@ -501,7 +502,8 @@ button.calendar-day.is-today::after{content:"";position:absolute;bottom:2px;left
 .calendar-sticky{padding-top:6px;padding-bottom:6px;margin-bottom:12px}
 .calendar-head{margin:0 46px 2px 0;gap:6px}
 .calendar-head button{width:40px;height:40px;border-radius:12px}
-.calendar-month-label{font-size:clamp(18px,8cqw,28px)}
+/* 100cqw minus two 40px arrows and two 6px gaps (the + sits in the 46px right margin). */
+.calendar-month-label{font-size:clamp(12px,min(8cqw,(100cqw - 92px) / (var(--chars,14) * .46)),28px)}
 .calendar-range{margin:0;padding:0;border:0}
 .calendar-range summary{position:absolute;top:6px;right:var(--pad);box-sizing:border-box;width:40px;height:40px;min-height:40px;justify-content:center;border:1px solid var(--line);border-radius:12px}
 .calendar-range[open]{margin:2px 0;border-bottom:1px solid var(--line)}
