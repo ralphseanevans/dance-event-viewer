@@ -29,7 +29,7 @@ test('South-wide viewer stays at its path and links back to Gulf Coast', () => {
   const viewer = read('dance-event-viewer/index.html');
   assert.equal(canonical(viewer), 'https://danceeventviewer.net/dance-event-viewer/');
   assert.doesNotMatch(viewer, /http-equiv="refresh"/);
-  assert.match(viewer, /<a href="\.\.\/gulfcoast\/" class="experimental-viewer-link">Pensacola &amp; Gulf Coast dances<\/a>/);
+  assert.match(viewer, /<a href="\.\.\/gulfcoast\/" class="experimental-viewer-link nav-gulfcoast">Pensacola &amp; Gulf Coast dances<\/a>/);
   assert.match(viewer, /google-site-verification" content="9asRWpgwsR3krpG9mZA1Np_EPLmDSkor_2EmcFJ7jbQ"/);
   assert.match(read('dance-event-viewer/css/styles.css'), /a\[href="\.\.\/gulfcoast\/"\]/);
 });
