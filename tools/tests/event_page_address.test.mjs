@@ -27,6 +27,37 @@ test('never duplicates state or other parts', () => {
   assert.ok(!/FL, FL/.test(eventWhere('Tampa, FL 33602', 'FL')));
 });
 
+test('a city that already has its state does not also keep a metro city', () => {
+  assert.equal(eventWhere('La Industria Mexican Grill, 3466 Holcomb Bridge Rd, Peachtree Corners, GA, Atlanta', 'GA'),
+    'La Industria Mexican Grill, 3466 Holcomb Bridge Rd, Peachtree Corners, GA');
+  assert.equal(eventWhere('VK Dance ARENA, 3129 W Hallandale Beach Blvd, Hallandale Beach, FL 33009, Miami', 'FL'),
+    'VK Dance ARENA, 3129 W Hallandale Beach Blvd, Hallandale Beach, FL');
+  assert.equal(eventWhere('W Fort Lauderdale, North Fort Lauderdale Beach Blvd, Fort Lauderdale, FL, Miami', 'FL'),
+    'W Fort Lauderdale, North Fort Lauderdale Beach Blvd, Fort Lauderdale, FL');
+  assert.equal(eventWhere('Walt Disney World Swan Reserve, 1255 Epcot Resorts Blvd, Lake Buena Vista, FL 32830, Orlando', 'FL'),
+    'Walt Disney World Swan Reserve, 1255 Epcot Resorts Blvd, Lake Buena Vista, FL');
+  assert.equal(eventWhere('Templo Dance Studio, 5644 Commerce Dr, Edgewood, FL 32839, Orlando', 'FL'),
+    'Templo Dance Studio, 5644 Commerce Dr, Edgewood, FL');
+  assert.equal(eventWhere('Pooler Ballroom, 301 US Hwy 80, Pooler, GA 31322, Savannah (Pooler)', 'GA'),
+    'Pooler Ballroom, 301 US Hwy 80, Pooler, GA');
+});
+
+test('ZIP and a semicolon meetup note are dropped from the Where line and the map link', () => {
+  const venue = 'Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526 (workshops & competitions); Beach Day meetup Fri 9am at Gulfside Pavilion, Casino Beach';
+  assert.equal(eventWhere(venue, 'FL'), 'Ragon Hall, 2600 Stratford Rd, Pensacola, FL');
+  assert.equal(eventMapsUrl(venue, 'FL'), M + encodeURIComponent('Ragon Hall, 2600 Stratford Rd, Pensacola, FL'));
+  assert.equal(eventWhere('La Vie Dance and Culture, San Diego, CA (primary venue; Guerrilla Tango at Balboa Park)', 'CA'),
+    'La Vie Dance and Culture, San Diego, CA');
+  assert.equal(eventWhere("Lynn Warwick's House, West Mobile, AL — Contact Lynn for directions", 'AL'),
+    "Lynn Warwick's House, West Mobile, AL");
+  assert.equal(eventWhere("Washington, DC/VA (exact venue not listed on WSDC's event list -- see event website)", 'DC'),
+    'Washington, DC/VA');
+  assert.equal(eventWhere("Washington, DC/MD (exact venue not listed on WSDC's event list -- see event website)", 'DC'),
+    'Washington, DC/MD');
+  assert.equal(eventWhere('Royal Caribbean Ovation of the Seas, Port of Los Angeles, CA to Ensenada, CA', 'CA'),
+    'Royal Caribbean Ovation of the Seas, Port of Los Angeles, CA to Ensenada, CA');
+});
+
 test('missing venue gives no Where line', () => {
   assert.equal(eventWhere('', 'FL'), '');
   assert.equal(eventWhere(null, 'FL'), '');
