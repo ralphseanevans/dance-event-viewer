@@ -3,7 +3,7 @@
 // Usage: node tools/check_site.mjs [--root .] [--live]
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, join, dirname, sep } from 'node:path';
-import { mapsSearchUrl } from './lib.mjs';
+import { eventMapsUrl } from './lib.mjs';
 
 const SITE_HOST = 'danceeventviewer.net';
 const SITE_ORIGIN = `https://${SITE_HOST}`;
@@ -170,7 +170,7 @@ export async function checkSite(rootPath = '.', { live = false, fetcher = fetch 
       const mapsLink = html.match(/href="(https:\/\/www\.google\.com\/maps\/[^"]*)"/);
       const ev = venueByKey?.get(pageFile.slice(pagesDir.length + 1).replace(/\.html$/, ''));
       if (mapsLink && ev) {
-        const expected = mapsSearchUrl(ev.venue, ev.state);
+        const expected = eventMapsUrl(ev.venue, ev.state);
         if (mapsLink[1].replace(/&amp;/g, '&') !== expected)
           errors.push(`${page}: Google Maps link does not match the event's venue "${ev.venue}"`);
       }
