@@ -193,22 +193,35 @@ export function mapsSearchUrl(venue, stateCode) {
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(needsState ? `${v}, ${st}` : v);
 }
 
+// A parenthetical is a city/area only when it is a short place name. Notes
+// ("exact venue not listed", "East Hill neighborhood", building aliases) are not.
+function localityInParens(text) {
+  const t = text.trim();
+  if (!t || t.length > 40 || /[;/0-9]/.test(t) || /--/.test(t)) return '';
+  if (/\b(see|website|venue|hotel|listed|exact|neighborhood|workshop|upstairs|host|primary|tbd|near|hall|ballroom|house|church|opera|post|floor|room|westin|waterfront|intercontinental|legion|by the|center|studio|club)\b/i.test(t)) return '';
+  const place = /^(?:North|South|East|West|Downtown|Uptown|Midtown|Central|Galleria)(?:\s+[A-Z][A-Za-z'.-]*)?$|^[A-Z][A-Za-z'.-]+(?:\s+[A-Z][A-Za-z'.-]+){0,2}$/;
+  return place.test(t) ? t : '';
+}
+
 // Full "Where:" text for an /e/*.html event page, built from the event's venue
 // string and state: venue name, street address, city, state. ZIP codes,
 // parenthetical notes, and text after a semicolon (a second meetup, not the
-// venue) are dropped. A city already followed by its state is kept, and a
-// later metro name ("Peachtree Corners, GA, Atlanta") is not added again.
+// venue) are dropped. When the venue has no city of its own and the
+// parenthetical is that city ("Eclipse Di Luna (Dunwoody), GA"), the city stays.
+// A city already followed by its state is kept, and a later metro name
+// ("Peachtree Corners, GA, Atlanta") is not added again.
 // Falls back to whatever is present (a bare city, a venue name) and never
 // repeats a part ("FL, FL"). Returns '' when there's no venue at all.
 export function eventWhere(venue, stateCode) {
   const st = typeof stateCode === 'string' ? stateCode.trim().toUpperCase() : '';
-  const clean = typeof venue === 'string'
-    ? venue.replace(/\([^)]*\)/g, ' ').split(';')[0].split(' — ')[0].replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim().replace(/^,+|,+$/g, '').trim() : '';
-  if (!clean) return '';
+  const raw = typeof venue === 'string' ? venue : '';
+  const parenCities = [...raw.matchAll(/\(([^)]*)\)/g)].map(m => localityInParens(m[1])).filter(Boolean);
+  const clean = raw.replace(/\([^)]*\)/g, ' ').split(';')[0].split(' — ')[0].replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim().replace(/^,+|,+$/g, '').trim();
+  if (!clean && !parenCities.length) return '';
   const parts = [];
   const stateHere = p => st && new RegExp(`^${st}(?:$|[^A-Za-z])`, 'i').test(p);
-  for (const raw of clean.split(',')) {
-    let p = raw.trim();
+  for (const rawPart of clean.split(',')) {
+    let p = rawPart.trim();
     if (!p) continue;
     const zip = /^([A-Za-z]{2})\s+\d{5}(?:-\d{4})?(?:\b.*)?$/.exec(p);
     if (zip) p = zip[1].toUpperCase();
@@ -218,8 +231,17 @@ export function eventWhere(venue, stateCode) {
   }
   // "Peachtree Corners, GA, Atlanta" — once the state is its own part, a later
   // bare metro name is not a second address. Keep "CA to Ensenada, CA".
-  const stateAt = st ? parts.findIndex(p => p.toUpperCase() === st) : -1;
+  let stateAt = st ? parts.findIndex(p => p.toUpperCase() === st) : -1;
   if (stateAt >= 0) parts.splice(stateAt + 1);
+  const cityLike = p => !/^\d/.test(p) && !/^(suite|ste\.?|apt|unit|bldg|building|#)\b/i.test(p);
+  const hasOwnCity = parts.some((p, i) => i > 0 && p.toUpperCase() !== st && cityLike(p));
+  if (!hasOwnCity) {
+    const city = parenCities.find(c => !parts.some(p => p.toLowerCase() === c.toLowerCase()));
+    if (city) {
+      stateAt = st ? parts.findIndex(p => p.toUpperCase() === st) : -1;
+      parts.splice(stateAt >= 0 ? stateAt : parts.length, 0, city);
+    }
+  }
   const hasState = parts.some(p => stateHere(p) || (st && new RegExp(`\\b${st}$`, 'i').test(p)));
   if (st && !hasState && /^[A-Z]{2}$/.test(st)) parts.push(st);
   return parts.join(', ');

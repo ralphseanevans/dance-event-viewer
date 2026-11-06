@@ -58,6 +58,24 @@ test('ZIP and a semicolon meetup note are dropped from the Where line and the ma
     'Royal Caribbean Ovation of the Seas, Port of Los Angeles, CA to Ensenada, CA');
 });
 
+test('a parenthetical city stays when the venue has no other city', () => {
+  assert.equal(eventWhere('Eclipse Di Luna (Dunwoody), GA', 'GA'), 'Eclipse Di Luna, Dunwoody, GA');
+  assert.equal(eventMapsUrl('Eclipse Di Luna (Dunwoody), GA', 'GA'), M + encodeURIComponent('Eclipse Di Luna, Dunwoody, GA'));
+  assert.equal(eventWhere('Esquina Tango (East Austin), TX', 'TX'), 'Esquina Tango, East Austin, TX');
+  assert.equal(eventMapsUrl('Esquina Tango (East Austin), TX', 'TX'), M + encodeURIComponent('Esquina Tango, East Austin, TX'));
+  assert.equal(eventWhere('Mavericks Dance Hall (Pflugerville), TX', 'TX'), 'Mavericks Dance Hall, Pflugerville, TX');
+  assert.equal(eventWhere('Cabana Club ATX (East Austin), TX', 'TX'), 'Cabana Club ATX, East Austin, TX');
+  assert.equal(eventWhere("Donn's Depot (West Austin), TX", 'TX'), "Donn's Depot, West Austin, TX");
+  assert.equal(eventWhere('The White Horse (East Austin), TX', 'TX'), 'The White Horse, East Austin, TX');
+  assert.equal(eventWhere("Sam's Town Point (South Austin), TX", 'TX'), "Sam's Town Point, South Austin, TX");
+  assert.equal(eventWhere('Sagebrush (South Austin), TX', 'TX'), 'Sagebrush, South Austin, TX');
+  assert.equal(eventWhere('Austin Uptown Dance (North Austin), TX', 'TX'), 'Austin Uptown Dance, North Austin, TX');
+  assert.equal(eventWhere('Austin Uptown Dance (North), TX', 'TX'), 'Austin Uptown Dance, North, TX');
+  assert.equal(eventWhere('Salsa Heat Dance Studio (Union Park), Orlando, FL', 'FL'), 'Salsa Heat Dance Studio, Orlando, FL');
+  assert.equal(eventWhere('Blue Moon Dance Co. (South Lamar), Austin, TX', 'TX'), 'Blue Moon Dance Co., Austin, TX');
+  assert.equal(eventWhere('The Westin Boston Seaport District (Westin Waterfront), MA', 'MA'), 'The Westin Boston Seaport District, MA');
+});
+
 test('missing venue gives no Where line', () => {
   assert.equal(eventWhere('', 'FL'), '');
   assert.equal(eventWhere(null, 'FL'), '');
