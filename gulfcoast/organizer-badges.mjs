@@ -1,17 +1,22 @@
+// card: how the badge is drawn on the beige event card. 'ink' = one-colour light logo, shown in the
+// page's dark ink (CSS filter, shape untouched); 'color' = multi-colour logo kept in colour (USA Dance
+// uses a card copy with its cream figures recoloured to ink); 'photo' = instructor photo, unchanged.
 // Explicit identity rules only. A venue match means "at this studio", not ownership.
 export const BADGES = Object.freeze([
-  {id:'psds',name:'Pensacola Swing Dance Society',kind:'Group'},
-  {id:'twym',name:'The Way You Move',kind:'Studio / venue'},
-  {id:'seaside',name:'Seaside Swing-Outs',kind:'Group'},
-  {id:'mobile-wcs',name:'Mobile WCS',kind:'Community'},
-  {id:'usa-dance',name:'USA Dance',kind:'National organization'},
-  {id:'coastals',name:'Pensacola Coastals',kind:'Studio'},
-  {id:'starlite',name:'Starlite Ballroom',kind:'Studio · Mobile'},
-  {id:'todd-jamie',name:'Let’s Dance Pensacola (Todd and Jamie)',kind:'Group'},
-  {id:'nina-travis',name:'Nina & Travis',kind:'Instructors'},
-  {id:'rachel-zander',name:'Rachel & Zander',kind:'Instructors'},
-  {id:'traci-bell',name:'Traci Bell',kind:'Instructor'},
-  {id:'john-alicia',name:'John & Alicia',kind:'Instructors'}
+  {id:'psds',name:'Pensacola Swing Dance Society',kind:'Group',card:'ink'},
+  {id:'twym',name:'The Way You Move',kind:'Studio / venue',card:'ink'},
+  {id:'seaside',name:'Seaside Swing-Outs',kind:'Group',card:'ink'},
+  {id:'mobile-wcs',name:'Mobile WCS',kind:'Community',card:'ink'},
+  {id:'usa-dance',name:'USA Dance',kind:'National organization',card:'color'},
+  {id:'coastals',name:'Pensacola Coastals',kind:'Studio',card:'ink'},
+  {id:'starlite',name:'Starlite Ballroom',kind:'Studio · Mobile',card:'ink'},
+  {id:'todd-jamie',name:'Let’s Dance Pensacola (Todd and Jamie)',kind:'Group',card:'photo',people:2},
+  {id:'nina-travis',name:'Nina & Travis',kind:'Instructors',card:'photo',people:2},
+  {id:'rachel-zander',name:'Rachel & Zander',kind:'Instructors',card:'photo',people:2},
+  {id:'traci-bell',name:'Traci Bell',kind:'Instructor',card:'photo'},
+  {id:'john-alicia',name:'John & Alicia',kind:'Instructors',card:'photo',people:2},
+  {id:'gary-jobst',name:'Gary Jobst',kind:'Instructor',card:'photo'},
+  {id:'bree',name:'Line Dancing with Bree',kind:'Instructor',card:'photo'}
 ]);
 const norm=s=>String(s||'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim();
 export function badgeIds(ev={}) {
@@ -29,19 +34,35 @@ export function badgeIds(ev={}) {
   if(key==='ttdgc-dancing-nina-travis-andy-tuesday'||(/\bnina outlaw\b/.test(text)&&/\btravis outlaw\b/.test(text)&&/\bandy\b/.test(text)))ids.push('nina-travis');
   if(/\brachel\s*(?:&|and)\s*zander\b/.test(text))ids.push('rachel-zander');
   if(/\btraci bell\b/.test(text))ids.push('traci-bell');
+  if(/\bgary jobst\b/.test(text))ids.push('gary-jobst');
+  // Bree (line dancing): her first name as a whole word only, so "Breeze" never matches.
+  if(/\bbree\b/.test(text))ids.push('bree');
   // John & Alicia: approved shared identity; event associations await verified evidence.
   return ids.sort((a,b)=>(a==='twym')-(b==='twym'));
 }
 export const matchesBadge=(ev,ids)=>{const chosen=Array.isArray(ids)?ids:ids?[ids]:[];return !chosen.length||badgeIds(ev).some(id=>chosen.includes(id));};
-const vectors=new Set(['coastals','starlite','todd-jamie','bill-thrall']);
-export const badgeAssetFile=(id,size)=>['rachel-zander','traci-bell','john-alicia','nina-travis'].includes(id)?id+'-teacher-avatar.png':vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
-const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v='+(id==='john-alicia'?'ja-v3':'sharp-4'),import.meta.url).href;
+const vectors=new Set(['coastals','starlite','bill-thrall']);
+export const badgeAssetFile=(id,size)=>(size===30&&id==='usa-dance')?'usa-dance-card.png':['rachel-zander','traci-bell','john-alicia','nina-travis','gary-jobst','todd-jamie','bree'].includes(id)?id+'-teacher-avatar.png':vectors.has(id)?id+((size===30&&['starlite'].includes(id))?'-card':'')+'.svg':id+'-240.png';
+const asset=(id,size)=>new URL('assets/organizer-badges/'+badgeAssetFile(id,size)+'?v='+(id==='john-alicia'?'ja-v3':id==='nina-travis'?'db587e27':id==='gary-jobst'?'d9bc17e5':id==='todd-jamie'?'e20746a6':id==='bree'?'ea64cb47':'sharp-4'),import.meta.url).href;
 export function addCardBadge(host,ev) {
   const id=badgeIds(ev)[0];if(!id)return;
   const item=BADGES.find(b=>b.id===id),img=document.createElement('img');
-  img.className='organizer-card-badge'+(['nina-travis','rachel-zander','traci-bell','john-alicia'].includes(id)?' organizer-card-badge-color':'');img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
-  img.addEventListener('error',()=>img.remove(),{once:true});host.classList.add('has-organizer-badge');host.appendChild(img);
+  img.className='organizer-card-badge'+(item.card==='photo'?' organizer-card-badge-color':item.card==='ink'?' organizer-card-badge-ink':'');img.width=30;img.height=30;img.src=asset(id,30);img.alt=item.name;img.title=item.name;img.decoding='async';
+  img.addEventListener('error',()=>img.remove(),{once:true});host.classList.add('has-organizer-badge');
+  // Float the logo inside the style label so the label wraps beside/below it and never runs under it.
+  const label=host.querySelector('.tile-style');if(!label){host.appendChild(img);return;}
+  // Keep each style phrase ("West Coast Swing") together: one inline-block per " / " part, so a phrase
+  // either fits beside the logo or drops below it whole. textContent stays identical.
+  if(!label.children.length){const parts=label.textContent.split(/\s*\/\s*/).filter(Boolean);label.textContent='';
+    parts.forEach((t,i)=>{const s=document.createElement('span');s.className='tile-style-part';s.textContent=t+(i<parts.length-1?' /':'');label.append(s);if(i<parts.length-1)label.append(' ');});}
+  label.prepend(img);
+  // Portrait (instructor photo) badges get a small visible "Organizer(s)" heading above them, read once
+  // just before the photo's alt name. It floats right, so the badge (clear:right) sits under it.
+  if(item.card==='photo'){const h=document.createElement('span');h.className='organizer-card-label';h.textContent=badgeLabel(id);label.prepend(h);}
 }
+export const organizerLabel=n=>n>1?'Organizers':'Organizer';
+// Label for one badge: a pair badge (people:2, e.g. Nina & Travis) counts as two organizers.
+export const badgeLabel=id=>organizerLabel(BADGES.find(b=>b.id===id)?.people||1);
 export function createBadgePicker(after,onChange) {
   const selected=new Set();const section=document.createElement('section');section.className='organizer-picker';section.hidden=true;
   const heading=document.createElement('h3');heading.className='badge-sr-only';heading.textContent='Groups, studios & instructors';section.appendChild(heading);

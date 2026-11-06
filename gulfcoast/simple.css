@@ -71,6 +71,18 @@ button.calendar-day.is-active{color:var(--red)}
 .tile-name-link{color:inherit;text-decoration:none}
 .tile-name-link:hover,.tile-name-link:focus-visible{text-decoration:underline;text-decoration-color:var(--red);text-underline-offset:3px}
 .tile-name-link:focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:2px}
+/* No lone last word: the last two words of a title (.tile-name-tail, simple-flow.mjs) stay on one line,
+   and a hyphenated word (.tile-name-nobr) never breaks at its hyphen. Both are plain inline nowrap spans
+   (no inserted characters, no inline-block), so find-in-page, copy and the accessible name see the
+   original title and the link underline runs unbroken. If the tail is wider than the card, simple-flow.mjs
+   first scales the title down (zoom, to 80% at most) so it fits; only if it still overflows, last resort:
+   .loose-tail lets the tail wrap, .loose-all also the hyphenated
+   words, with overflow-wrap:anywhere. Balance on every card (not pretty: it also stops a single word
+   stranded on a middle line, e.g. "Friday Swing Dance | with | Seaside Swing-Outs" on a phone, and
+   Safari has it from 17.5); older browsers still get the tail. */
+.tile-name{text-wrap:balance}
+.tile-name-tail,.tile-name-nobr{white-space:nowrap}
+.tile-name.loose-tail .tile-name-tail,.tile-name.loose-all .tile-name-nobr{white-space:normal;overflow-wrap:anywhere}
 .tile-meta{margin:0 0 6px;font-size:13px;color:#35352f}
 .tile-meta strong{color:var(--red);font-weight:700}
 .tile-venue{margin:0;font-size:12px;line-height:1.45;color:#5e5d55}
@@ -142,7 +154,7 @@ button.calendar-day.is-active{color:var(--red)}
 .calendar-day.in-range{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
 .calendar-day.range-start,.calendar-day.range-end,.calendar-day.range-pending{border-radius:999px;background:rgba(220,80,57,.2);color:var(--paper)}
 button.calendar-day{touch-action:none;user-select:none;-webkit-user-select:none}
-button.calendar-day.no-events{cursor:crosshair}
+button.calendar-day.no-events{cursor:pointer}
 
 /* Reference card: spacious editorial typography and icon-led details. */
 .day-events{grid-template-columns:minmax(0,1fr);gap:18px}
@@ -168,6 +180,10 @@ button.calendar-day.no-events{cursor:crosshair}
 .tile-extra{margin:8px 0 8px 42px;font:400 15px/1.45 var(--body);color:#34352d}
 .tile-extra summary{cursor:pointer;font-size:12px;text-decoration:underline;text-underline-offset:3px}
 .tile-extra p{margin:8px 0;white-space:pre-wrap}
+/* Long pricing only (see fitPricing in simple-flow.mjs): clamp to 5 lines behind a Pricing details toggle. */
+.tile-ticket span{white-space:pre-wrap}
+.is-price-clamped span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;line-clamp:5;overflow:hidden}
+.tile-extra-pricing[hidden]{display:none}
 @media(max-width:560px){.tile-extra{margin-left:34px}}
 
 /* Flyer sits beside the card copy; on phones it floats at the top right. */
@@ -305,11 +321,11 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 }
 .style-choice.has-style-badge.is-unavailable,
 .style-choice.has-style-badge.is-unavailable[aria-pressed="true"]{
-  opacity:.34;
+  opacity:.4;
 }
 .style-choice.has-style-badge.is-unavailable img,
 .style-choice.has-style-badge.is-unavailable[aria-pressed="true"] img{
-  filter:grayscale(.85) brightness(.715) saturate(.45);
+  filter:grayscale(.85) brightness(1.05) saturate(.45);
 }
 @media(hover:hover){
   .style-choice.has-style-badge:hover,
@@ -320,8 +336,9 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
   .style-choice.has-style-badge[aria-pressed="true"]:hover img{
     filter:brightness(var(--badge-brightness,1.144)) saturate(var(--badge-saturation,.9));
   }
+  .style-choice.has-style-badge.is-unavailable:hover{opacity:.4}
   .style-choice.has-style-badge.is-unavailable:hover img{
-    filter:grayscale(.85) brightness(.715) saturate(.45);
+    filter:grayscale(.85) brightness(1.05) saturate(.45);
   }
 }
 @media(max-width:700px){
@@ -342,7 +359,8 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 .calendar-head button{flex-shrink:0}
 
 .calendar-head{container-type:inline-size;gap:10px}
-.calendar-month-label{font-size:clamp(20px,10cqw,40px)}
+/* Title fits between the arrows: 100cqw minus two 44px arrows and two 10px gaps, ~.46em per uppercase Barlow character. */
+.calendar-month-label{font-size:clamp(12px,min(10cqw,(100cqw - 108px) / (var(--chars,14) * .46)),40px)}
 .calendar-head button{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(220,80,57,.65);border-radius:14px;background:#242421;color:var(--red);cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .15s ease}
 .calendar-head button svg{width:22px;height:22px;transition:transform .18s ease}
 .calendar-head button:disabled{opacity:.25;cursor:default}
@@ -364,9 +382,9 @@ button.calendar-day.event-date{outline:2px solid var(--red);outline-offset:-2px;
 button.calendar-day.is-today{position:relative;font-weight:800}
 button.calendar-day.is-today::after{content:"";position:absolute;bottom:2px;left:50%;width:5px;height:5px;border-radius:50%;background:var(--paper);transform:translateX(-50%);pointer-events:none}
 
-/* Phones: a swipe on the calendar scrolls the page; drag-to-select (touch-action:none) only while the range panel is open. */
-button.calendar-day{touch-action:manipulation}
-.calendar-sticky:has(#calendar-range-details[open]) button.calendar-day{touch-action:none}
+/* Phones: a finger swipe on the calendar grid selects a date range (it does not scroll);
+   swipes anywhere else on the page scroll as normal. */
+.calendar-days,.calendar-days button.calendar-day{touch-action:none}
 
 /* Schedule list is a compact-card feature; Full cards keep their single time line. */
 .tile-schedule{display:none}
@@ -484,7 +502,8 @@ button.calendar-day{touch-action:manipulation}
 .calendar-sticky{padding-top:6px;padding-bottom:6px;margin-bottom:12px}
 .calendar-head{margin:0 46px 2px 0;gap:6px}
 .calendar-head button{width:40px;height:40px;border-radius:12px}
-.calendar-month-label{font-size:clamp(18px,8cqw,28px)}
+/* 100cqw minus two 40px arrows and two 6px gaps (the + sits in the 46px right margin). */
+.calendar-month-label{font-size:clamp(12px,min(8cqw,(100cqw - 92px) / (var(--chars,14) * .46)),28px)}
 .calendar-range{margin:0;padding:0;border:0}
 .calendar-range summary{position:absolute;top:6px;right:var(--pad);box-sizing:border-box;width:40px;height:40px;min-height:40px;justify-content:center;border:1px solid var(--line);border-radius:12px}
 .calendar-range[open]{margin:2px 0;border-bottom:1px solid var(--line)}
