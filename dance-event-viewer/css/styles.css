@@ -1057,6 +1057,14 @@ button.venue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
   .header-actions { gap: 6px; }
   .experimental-viewer-link,
   .header-actions .submit-event-btn { padding-inline: 10px; font-size: .78rem; }
+  /* The Gulf Coast label is longer than the other header pills. Let it wrap
+     inside the pill so a narrow phone row does not scroll sideways. */
+  .header-actions a[href="../gulfcoast/"] {
+    white-space: normal;
+    line-height: 1.15;
+    text-align: center;
+    max-width: 11rem;
+  }
 }
 .site-header { position: relative; }
 
