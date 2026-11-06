@@ -15,6 +15,7 @@
 // For a dry run, pass --out to a temp dir so committed pages are untouched.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
+import { createHash } from 'crypto';
 import { mapsSearchUrl } from './lib.mjs';
 import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor, cancelLabelText } from './event_schedule.mjs';
 import { buildHubPages, sitemapFor } from './build_hub_pages.mjs';
@@ -39,6 +40,31 @@ function sched(ev){
   if (ev.type === 'monthly_recurring' && ev.monthly_rule) return `${ev.monthly_rule}${t}`;
   if (ev.start_date) { const d = new Date(ev.start_date + 'T12:00:00'); return d.toLocaleDateString('en-US', DAYS_FMT) + t; }
   return t.slice(3);
+}
+// Cache-bust stamp for local flyer images (graphics/logos, e/img are browser-cached for a
+// week via _headers): first 8 hex chars of the file's sha1, same scheme as the css/js ?v=.
+// A replaced flyer gets a new ?v= so browsers fetch it at once.
+const IMAGE_DIRS = ['graphics/logos', 'e/img'];
+const sha8 = file => createHash('sha1').update(readFileSync(file)).digest('hex').slice(0, 8);
+function imageVersions(){
+  const versions = {};
+  for (const dir of IMAGE_DIRS) {
+    const abs = join(root, ...dir.split('/'));
+    if (!existsSync(abs)) continue;
+    for (const name of readdirSync(abs).sort()) {
+      if (!/\.(png|jpe?g|webp|gif|svg|avif)$/i.test(name)) continue;
+      versions[`${dir}/${name}`] = sha8(join(abs, name));
+    }
+  }
+  return versions;
+}
+const IMAGE_VERSIONS = imageVersions();
+// Append ?v=<sha1-8> to a same-site image URL when we know the file; others pass through.
+function versioned(url){
+  const u = new URL(url);
+  if (u.origin !== SITE || u.search) return url;
+  const v = IMAGE_VERSIONS[decodeURIComponent(u.pathname.slice(1))];
+  return v ? `${url}?v=${v}` : url;
 }
 function logoFor(key){
   const first = value => Array.isArray(value)
@@ -183,8 +209,9 @@ for (const ev of data.events) {
   // raw flyer from logo-map.json, else the site card.
   const composed = join(root, 'e', 'img', ev.key + '.jpg');
   const img = logoFor(ev.key);
-  const imgUrl = existsSync(composed) ? `${SITE}/e/img/${ev.key}.jpg`
+  const imgUrlRaw = existsSync(composed) ? `${SITE}/e/img/${ev.key}.jpg`
     : img ? new URL(img, `${SITE}/dance-event-viewer/`).href : SITE + '/dance-event-viewer/assets/og-card.png';
+  const imgUrl = versioned(imgUrlRaw);
   const desc = descriptionFor(ev);
   const past = isPast(ev);
   const title = esc(ev.name) + ' — Dance Event Viewer';
@@ -262,6 +289,10 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
 // Build supported hubs and include them alongside upcoming event pages.
 const hubs = buildHubPages(data.events, today, out);
 writeFileSync(join(out, 'sitemap.xml'), sitemapFor(data.events, today));
+
+// Image version manifest the viewers read at render time (see versioned() above).
+mkdirSync(join(out, 'dance-event-viewer'), { recursive: true });
+writeFileSync(join(out, 'dance-event-viewer', 'image-versions.json'), JSON.stringify(IMAGE_VERSIONS, null, 1) + '\n');
 
 // Preserve all viewer markup outside the opt-in block; --out never changes root.
 const viewerPath = join(root, 'dance-event-viewer', 'index.html');
