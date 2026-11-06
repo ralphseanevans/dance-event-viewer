@@ -1,6 +1,7 @@
 // Pure logic for Exp2 Simple mode: styles, next occurrences, date groups.
 // No DOM, no fetch; tested in tools/tests/experience_2_simple.test.mjs.
 import { marketOf } from './markets.mjs?v=76ee9962';
+import '../dance-event-viewer/js/cancel-core.js?v=26fb5abf'; // sets globalThis.DEVCancel
 
 export const SOLO_STYLES = Object.freeze(['Ballet', 'Jazz', 'Hip Hop', 'Contemporary', 'Heels', 'Pom', 'Musical Theatre', 'Dance Fit', 'Line Dance', 'Belly Dance']);
 export const GROUPS_PER_PAGE = 10;
@@ -24,6 +25,14 @@ export function styleFacets(style) {
   const parts = clean.split(/\s*\/\s*/).map(x => x.trim()).filter(Boolean)
     .map(x => (/^Country(?:\s+Western)?\b/i.test(x) && !/swing/i.test(x) ? 'Country' : /^Ballroom\b/i.test(x) ? 'Ballroom' : x));
   return parts.length ? [...new Set(parts)] : [v];
+}
+// Facets for one listing: its style tag, plus Bachata when the title names it but the tag is
+// broader (e.g. 'Latin' on "Sensual Sundays -- Bachata Class & Social"). Used for both the
+// picker options and the filter, so an option only appears when it has events.
+export function eventStyles(ev) {
+  const s = styleFacets(ev?.style).slice();
+  if (!s.includes('Bachata') && /\bbachata\b/i.test(`${ev?.name || ''} ${ev?.card_title || ''}`)) s.push('Bachata');
+  return s;
 }
 // West Coast Swing first, then A–Z; solo styles separate (shown behind the Solo toggle).
 export function orderStyles(styles) {
@@ -80,26 +89,54 @@ export function nextOccurrence(ev, today) {
   return null;
 }
 
-// Same rules as cancellationFor() in js/app.js / tools/event_schedule.mjs (whole-series or this date).
-export function isCanceledOn(ev, day) {
-  if (typeof ev.cancel_status === 'string' && ev.cancel_status.trim()) return true;
-  if (ev.canceled === true || ev.cancelled === true) return true;
-  return Array.isArray(ev.canceled_dates) && ev.canceled_dates.some(c => c === day || (c && typeof c === 'object' && c.date === day));
-}
+// Whole-series or this-date cancellation. The rules live in ../dance-event-viewer/js/cancel-core.js
+// (shared with js/app.js and tools/event_schedule.mjs).
+export const cancellationOn = (ev, day) => globalThis.DEVCancel.cancellationFor(ev, day);
+export const isCanceledOn = (ev, day) => !!cancellationOn(ev, day);
 const isUnverified = ev => ev.unverified === true || ev.research_confidence === 'low';
 
 // Upcoming, verified records in the selected markets, with their next date.
-export function upcomingIn(events, markets, today) {
-  const set = new Set(markets);
-  return events.filter(ev => ev && ev.key && ev.name && !isUnverified(ev) && set.has(marketOf(ev)))
-    .map(ev => ({ ev, date: nextOccurrence(ev, today) })).filter(x => x.date);
+export function upcomingIn(events, markets, today, through = null) {
+  const set = new Set(markets), rows = [];
+  for (const ev of events.filter(ev => ev && ev.key && ev.name && !isUnverified(ev) && set.has(marketOf(ev)))) {
+    let date = nextOccurrence(ev, today);
+    // Materialize a bounded view window, without cloning or changing the series record.
+    for (let n = 0; date && n < 3660; n++) {
+      if (through && date > through) break;
+      rows.push({ ev, date });
+      if (!through || !['weekly_recurring', 'biweekly_recurring', 'monthly_recurring'].includes(ev.type)) break;
+      const after = new Date(date); after.setDate(after.getDate() + 1);
+      date = nextOccurrence(ev, after);
+    }
+  }
+  return rows;
 }
-export const availableStyles = items => orderStyles(items.flatMap(x => styleFacets(x.ev.style)));
+export const availableStyles = items => orderStyles(items.flatMap(x => eventStyles(x.ev)));
+
+// Picker choices: every style with events anywhere in the markets, plus every badged style
+// (so people can see it is offered sometimes). A choice is active only when the places in
+// view have upcoming events in that style; otherwise it shows dimmed and can't be picked.
+// Order is stable (West Coast Swing first, then A–Z), so badges don't move as events come and go.
+export function styleChoices(catalogItems, hereItems, badgeStyles = []) {
+  const here = availableStyles(hereItems);
+  const active = new Set([...here.partner, ...here.solo]);
+  const all = orderStyles([...catalogItems.flatMap(x => eventStyles(x.ev)), ...badgeStyles]);
+  const tag = s => ({ style: s, active: active.has(s) });
+  return { partner: all.partner.map(tag), solo: all.solo.map(tag) };
+}
+
+// Toggle a style in the selection. Dimmed (inactive) styles never change it.
+export function toggleStyle(selected, style, active) {
+  const next = new Set(selected);
+  if (!active) return next;
+  if (next.has(style)) next.delete(style); else next.add(style);
+  return next;
+}
 
 // Date groups (chronological). Within a day: active before canceled, then time, then name/key.
 export function groupByDate(items, styles) {
   const want = new Set(styles);
-  const rows = items.filter(x => styleFacets(x.ev.style).some(s => want.has(s))).map(x => ({ ...x, day: iso(x.date) }));
+  const rows = items.filter(x => eventStyles(x.ev).some(s => want.has(s))).map(x => ({ ...x, day: iso(x.date) }));
   rows.forEach(r => { r.canceled = isCanceledOn(r.ev, r.day); });
   rows.sort((a, b) => a.day.localeCompare(b.day) || (a.canceled - b.canceled)
     || String(a.ev.start_time || '99').localeCompare(String(b.ev.start_time || '99'))
@@ -135,6 +172,36 @@ export function scheduleEntries(ev) {
     .filter(Boolean);
 }
 
+// Card titles never strand one word on the last line, and never split a hyphenated word
+// ("Swing- | Outs"). titleParts splits the title, character for character, into the head and the
+// last two words (the tail, kept on one line when it fits; see .tile-name-tail). titleRuns splits a
+// piece into plain text and letter-hyphen-letter words ({ nobr: true }, put in a .tile-name-nobr span).
+// Nothing is inserted or replaced: joining the pieces gives back the exact title, so find-in-page,
+// copied text and the heading's accessible name match the event data.
+export function titleParts(text) {
+  const t = String(text ?? '');
+  const m = t.match(/^([\s\S]*?)(\S+\s+\S+\s*)$/);
+  return m ? [m[1], m[2]] : [t, ''];
+}
+
+export function titleRuns(text) {
+  return String(text ?? '').split(/(\S*[\p{L}\p{N}]-[\p{L}\p{N}]\S*)/u).map((t, i) => ({ text: t, nobr: i % 2 === 1 })).filter(r => r.text);
+}
+
+// When the last two words (or a hyphenated word) are wider than the card, the title is scaled down
+// just enough for that piece to fit on one line, but never below `min` of its size. Returns the scale
+// (1 when it already fits), or 0 when even `min` is too wide; then the tail has to wrap (.loose-tail).
+export function titleFitScale(width, pieces, min = 0.8) {
+  const need = Math.max(0, ...pieces);
+  if (!(width > 0) || need <= width) return 1;
+  const k = Math.floor((width / need) * 1000) / 1000;
+  return k >= min ? k : 0;
+}
+
+// Generated stand-in flyer for cards with no real flyer. Off: such cards show only
+// their details (no flyer panel, tab or corner). Set to true to bring it back.
+export const SHOW_FALLBACK_FLYER = false;
+
 // Fallback flyer content for events without a real flyer. Missing fields are
 // dropped (never "undefined"/"not listed" filler); details are short lines.
 export function fallbackFlyerData(ev, day) {
@@ -147,4 +214,18 @@ export function fallbackFlyerData(ev, day) {
   const place = clean(ev.address_line_1) ? [clean(ev.address_line_1), clean(ev.address_line_2)].filter(Boolean).join(', ') : clean(ev.venue);
   const details = [list(ev.levels), list(ev.instructors) && 'With ' + list(ev.instructors), clean(ev.cost_display) || clean(ev.cost)].filter(Boolean);
   return { kicker: clean(ev.style) || 'Dance', name, date, time, location: place, details };
+}
+
+// Pricing on a card collapses behind a "Pricing details" toggle only when that
+// actually saves space: the full text must run past PRICE_MAX_LINES lines, and
+// the collapsed view (clamped text + the toggle row) must be at least
+// PRICE_MIN_SAVED_LINES lines shorter than the full text. Heights are in px,
+// measured after render; lineHeight is the price row's line height.
+export const PRICE_MAX_LINES = 5;
+export const PRICE_MIN_SAVED_LINES = 2;
+export function shouldCollapsePricing({ fullHeight, collapsedHeight, toggleHeight, lineHeight }) {
+  if (!(lineHeight > 0) || !(fullHeight > 0)) return false;
+  const tooLong = fullHeight > PRICE_MAX_LINES * lineHeight + 0.5 * lineHeight;
+  const saved = fullHeight - (collapsedHeight + toggleHeight);
+  return tooLong && saved >= PRICE_MIN_SAVED_LINES * lineHeight - 1;
 }

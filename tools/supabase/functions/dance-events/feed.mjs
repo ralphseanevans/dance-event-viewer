@@ -1,4 +1,4 @@
-export const FIELDS = ['key','name','style','type','day_of_week','monthly_rule','exclude_monthly_rules','exclude_dates','start_date','end_date','start_time','end_time','venue','state','cost','source_url','unverified','verified_on','added_on','added_by'];
+export const FIELDS = ['key','name','style','type','day_of_week','monthly_rule','exclude_monthly_rules','exclude_dates','start_date','end_date','start_time','end_time','venue','state','cost','source_url','unverified','verified_on','added_on','added_by','canceled_dates','cancel_status'];
 const headers = {
   'Content-Type': 'application/json; charset=utf-8',
   'Cache-Control': 'no-store, no-cache, max-age=0, must-revalidate',
