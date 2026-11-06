@@ -394,8 +394,9 @@ function render({ tapped, tappedStyle } = {}) {
 
   // Results are always available. Empty style selection means all available styles.
   const visibleStyles = state.styles.size ? [...state.styles] : [...partner, ...solo];
-  // Flyers only: keep events with a real flyer image; empty date groups drop out with them.
-  const listed = state.flyersOnly ? items.filter(x => flyersFor(x.ev, state.logoMap).length) : items;
+  // Flyers only: keep events with a real flyer image (same rule as the flip corner);
+  // empty date groups drop out with them, and the list becomes a flyer-only gallery.
+  const listed = state.flyersOnly ? items.filter(x => hasRealFlyer(x.ev, state.logoMap)) : items;
   const allGroups = groupByDate(listed, visibleStyles);
   state.allDays = allGroups.map(g => g.day);
   const groups = state.dateRanges.length
@@ -411,11 +412,19 @@ function render({ tapped, tappedStyle } = {}) {
       : state.dateRanges.length ? 'No events fall within the selected date ranges.' : 'No upcoming dances for this pick yet.';
     el.groups.replaceChildren(p); calendar.set([], [], state.dateRanges); el.more.hidden = true; return;
   }
-  const blocks = shown.map(dateBlock);
-  el.groups.replaceChildren(...blocks);
-  // Settle title wrapping now (not in the later ResizeObserver pass) so the layout is final before
-  // the calendar measures a date heading to jump to; otherwise late .loose-tail lines push it down.
-  fitTitles([...el.groups.querySelectorAll('.tile-name')]);
+  el.groups.classList.toggle('is-flyer-gallery', state.flyersOnly);
+  let blocks;
+  if (state.flyersOnly) {
+    const gallery = document.createElement('div'); gallery.className = 'flyer-gallery';
+    blocks = shown.map(g => { const thumbs = g.items.map(flyerThumb); thumbs[0].id = `simple-date-${g.day}`; gallery.append(...thumbs); return thumbs[0]; });
+    el.groups.replaceChildren(gallery);
+  } else {
+    blocks = shown.map(dateBlock);
+    el.groups.replaceChildren(...blocks);
+    // Settle title wrapping now (not in the later ResizeObserver pass) so the layout is final before
+    // the calendar measures a date heading to jump to; otherwise late .loose-tail lines push it down.
+    fitTitles([...el.groups.querySelectorAll('.tile-name')]);
+  }
   el.more.hidden = groups.length <= shown.length;
   calendar.set(groups.map(g => g.day), blocks, state.dateRanges);
 }
@@ -431,6 +440,17 @@ el.groups.addEventListener('card-zoom-change', () => {
 });
 
 const fmtHead = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+// Flyers only gallery tile: just the flyer image; tapping opens the full-screen close-up.
+function flyerThumb({ ev, day }) {
+  const flyers = flyersFor(ev, state.logoMap).map(resolve);
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'flyer-thumb'; b.dataset.date = day;
+  b.setAttribute('aria-label', 'Open flyer for ' + ev.name);
+  const img = document.createElement('img'); img.src = flyers[0]; img.alt = 'Flyer for ' + ev.name; img.loading = 'lazy'; img.decoding = 'async';
+  img.addEventListener('error', () => b.remove(), { once: true });
+  b.appendChild(img);
+  b.addEventListener('click', () => openLightbox(flyers, ev.name, b, true));
+  return b;
+}
 function dateBlock(g) {
   const sec = document.createElement('section');
   sec.className = 'date-block'; sec.id = `simple-date-${g.day}`; sec.dataset.date = g.day;
