@@ -9,6 +9,8 @@ test('viewer nav no longer has "Find a Dance Near You"', () => {
   const nav = /<div class="header-actions">([\s\S]*?)<\/div>/.exec(html)[1];
   assert.doesNotMatch(html, /Find a Dance Near You/);
   assert.doesNotMatch(nav, /location-discovery/);
+  assert.match(nav, /<a href="\.\.\/gulfcoast\/" class="experimental-viewer-link nav-gulfcoast">Pensacola &amp; Gulf Coast dances<\/a>/);
+  assert.doesNotMatch(nav, />Gulf Coast</);
   assert.match(nav, /Submit an Event/);
   assert.match(nav, /Edit Events/);
 });

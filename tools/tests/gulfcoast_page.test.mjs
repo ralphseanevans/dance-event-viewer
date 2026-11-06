@@ -29,9 +29,9 @@ test('old experience-2 URL is a tiny redirect that keeps query and hash', () => 
   assert.ok(!existsSync(new URL('../../dance-event-viewer/experiments/experience-2/simple-flow.mjs', import.meta.url)), 'only one copy of the page');
 });
 
-test('viewer nav links say Gulf Coast and no visible "Experimental" label', () => {
+test('viewer nav links to Pensacola and Gulf Coast dances and has no visible "Experimental" label', () => {
   const html = r('dance-event-viewer/index.html');
-  assert.match(html, /<a href="\.\.\/gulfcoast\/" class="experimental-viewer-link nav-gulfcoast">Gulf Coast<\/a>/);
+  assert.match(html, /<a href="\.\.\/gulfcoast\/" class="experimental-viewer-link nav-gulfcoast">Pensacola &amp; Gulf Coast dances<\/a>/);
   assert.doesNotMatch(html, /experience-2/);
   assert.doesNotMatch(html.replace(/<[^>]*>/g, ' '), /Experimental/);
   assert.doesNotMatch(r('dance-event-viewer/experiments/location-discovery/index.html').replace(/<[^>]*>/g, ' '), /Experimental/);
