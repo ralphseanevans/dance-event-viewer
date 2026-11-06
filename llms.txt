@@ -7,7 +7,8 @@
 
 ## Main pages
 
-- [Event calendar (list, calendar, and map views)](https://danceeventviewer.net/dance-event-viewer/)
+- [Pensacola & Gulf Coast dances](https://danceeventviewer.net/gulfcoast/) — homepage for Pensacola, Mobile, and the Emerald Coast
+- [Dance events across the South (list, calendar, and map views)](https://danceeventviewer.net/dance-event-viewer/)
 - [Submit an event](https://danceeventviewer.net/dance-event-viewer/submit-event.html)
 
 ## Event pages

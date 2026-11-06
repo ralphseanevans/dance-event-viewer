@@ -18,7 +18,10 @@ test('flip block sits after the compact block and before the fallback flyer bloc
   const a = css.indexOf('/* Compact card view'), b = css.indexOf('/* Compact flip corner'), c = css.indexOf('/* Fallback flyer');
   assert.ok(a >= 0 && a < b && b < c, 'block order');
   assert.ok(block.length > 200);
-  assert.doesNotMatch(css.slice(c), /rotate|perspective/, 'fallback flyer block stays flat');
+  // The fallback flyer block alone (it ends at the next blank line), not every block after it.
+  const end = css.indexOf('\n\n', c);
+  assert.ok(end > c);
+  assert.doesNotMatch(css.slice(c, end), /rotate|perspective/, 'fallback flyer block stays flat');
 });
 
 test('corner is a real button with aria-label, aria-pressed and a 44px tap target', () => {

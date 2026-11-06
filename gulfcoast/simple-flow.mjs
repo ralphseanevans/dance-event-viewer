@@ -1,17 +1,57 @@
-import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=500e0e2d';
+import { createBadgePicker, matchesBadge, addCardBadge } from './organizer-badges.mjs?v=65ccce18';
 // Exp2 Simple mode: Where -> Styles -> When (sticky calendar) -> cards, each step
 // revealed after the previous one (Exp1 order). Mode choice lives in memory only:
 // every load opens Simple. Guiding rule: simple first, complexity added on top.
 import { MARKETS } from './markets.mjs?v=76ee9962';
-import { upcomingIn, availableStyles, groupByDate, flyersFor, fallbackFlyerData, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries } from './simple-core.mjs?v=a03e5726';
+import { upcomingIn, availableStyles, styleChoices, toggleStyle, groupByDate, flyersFor, hasRealFlyer, fallbackFlyerData, SHOW_FALLBACK_FLYER, timeRange, atMidnight, GROUPS_PER_PAGE, scheduleEntries, shouldCollapsePricing, titleParts, titleRuns, titleFitScale } from './simple-core.mjs?v=7f0714a7';
 import { createFlowLine } from './flow-line.mjs?v=a3dd97bd';
 import { initCardZoom } from './card-zoom.mjs?v=a2cb8163';
 import { initFlyersOnly } from './flyers-only.mjs?v=438158ec';
-import { createStickyCalendar } from './sticky-calendar.mjs?v=99052a08';
+import { createStickyCalendar } from './sticky-calendar.mjs?v=b68a3b17';
 
 const $ = (s, r = document) => r.querySelector(s);
 const VIEWER = new URL('../dance-event-viewer/', import.meta.url); // /dance-event-viewer/
-const SITE = new URL('../', import.meta.url);                   // site root
+const SITE = new URL('../', import.meta.url);
+
+// Price row: full pricing inline unless it runs past 5 lines AND collapsing saves
+// at least 2 lines after paying for the toggle row (rule in simple-core.mjs).
+// Collapsed = the short summary (or the full text) clamped to 5 lines plus a
+// "Pricing details" toggle; opening it swaps the row to the full text in place,
+// so nothing is shown twice. Measured after render and re-checked on resize.
+const priceObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
+  for (const { target } of entries) target._fitPricing?.();
+}) : null;
+function fitPricing(span, full, summary) {
+  const row = span.parentElement;
+  const details = document.createElement('details'); details.className = 'tile-extra tile-extra-pricing';
+  const label = document.createElement('summary'); label.textContent = 'Pricing details';
+  details.appendChild(label); details.hidden = true; row.after(details);
+  let lastWidth = -1, collapsible = false;
+  const show = () => {
+    const open = collapsible && details.open;
+    span.textContent = collapsible && !open ? (summary || full) : full;
+    row.classList.toggle('is-price-clamped', collapsible && !open);
+    details.hidden = !collapsible;
+  };
+  row._fitPricing = () => {
+    const width = row.clientWidth;
+    if (!width || width === lastWidth) return;
+    lastWidth = width;
+    const cs = getComputedStyle(span);
+    const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3;
+    row.classList.remove('is-price-clamped'); span.textContent = full;
+    const fullHeight = span.offsetHeight;
+    span.textContent = summary || full; row.classList.add('is-price-clamped');
+    const collapsedHeight = span.offsetHeight;
+    details.hidden = false;
+    const dcs = getComputedStyle(details);
+    const toggleHeight = details.offsetHeight + parseFloat(dcs.marginTop) + parseFloat(dcs.marginBottom);
+    collapsible = shouldCollapsePricing({ fullHeight, collapsedHeight, toggleHeight, lineHeight });
+    show();
+  };
+  details.addEventListener('toggle', show);
+  if (priceObserver) priceObserver.observe(row);
+}
 const FIELDS = 'key,name,style,type,day_of_week,monthly_rule,exclude_monthly_rules,exclude_dates,start_date,end_date,start_time,end_time,venue,state,cost,source_url,unverified,verified_on,flyer_url,card_title,instructors,levels,address_line_1,address_line_2,cost_display';
 const CANCEL_FIELDS = 'canceled_dates,cancel_status';
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -28,7 +68,8 @@ const STYLE_BADGES = Object.freeze({
   'East Coast Swing': 'east-coast-swing.png',
   'Hustle': 'hustle.png',
   'Latin': 'latin.png',
-  'Lindy Hop': 'lindy-hop.png'
+  'Lindy Hop': 'lindy-hop.png',
+  'TripleTwo': 'triple-two.png'
 });
 
 const state = { flyersOnly: false, markets: new Set(), styles: new Set(), dateRanges: [], soloOpen: false, pages: 1, allDays: [], events: [], logoMap: { logos: {}, patterns: [] }, eventPages: new Set(), loaded: false };
@@ -262,12 +303,13 @@ el.styleChoices.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.classList.contains('solo-toggle')) { state.soloOpen = !state.soloOpen; render(); return; }
   const s = b.dataset.style; if (!s) return;
-  if (state.styles.has(s)) state.styles.delete(s); else state.styles.add(s);
+  if (b.getAttribute('aria-disabled') === 'true') return; // dimmed: no events, so no empty filter
+  state.styles = toggleStyle(state.styles, s, true);
   state.pages = 1;
   render({ tappedStyle: state.styles.has(s) ? s : null });
 });
 
-function styleButton(style, cls, available = true) {
+function styleButton(style, cls, available = true, offeredNearby = false) {
   const b = document.createElement('button');
   b.type = 'button'; b.className = cls; b.dataset.style = style;
   const badgeFile = STYLE_BADGES[style];
@@ -293,7 +335,16 @@ function styleButton(style, cls, available = true) {
     b.textContent = style;
   }
   b.setAttribute('aria-pressed', String(state.styles.has(style)));
-  if (!available) { b.disabled = true; b.classList.add('is-unavailable'); b.title = 'No upcoming events in the selected places'; }
+  if (!available) {
+    // Stays focusable so screen readers hear why; clicks are ignored in the handler above.
+    b.setAttribute('aria-disabled', 'true'); b.classList.add('is-unavailable');
+    const why = offeredNearby ? `No upcoming ${style} events in the selected places` : `No upcoming ${style} events right now`;
+    b.setAttribute('aria-label', style); // name stays just the style; the reason is the description
+    b.title = why;
+    const desc = document.createElement('span');
+    desc.className = 'sr-only'; desc.id = `style-why-${style.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`; desc.textContent = why;
+    b.setAttribute('aria-describedby', desc.id); b.appendChild(desc);
+  }
   return b;
 }
 
@@ -314,8 +365,9 @@ function render({ tapped, tappedStyle } = {}) {
   const styleMarkets = MARKETS.map(m => m.id);
   const styleCatalog = upcomingIn(state.events, styleMarkets, today);
   const { partner, solo } = availableStyles(styleCatalog);
-  const { partner: availablePartner, solo: availableSolo } = availableStyles(nearbyItems);
-  const availableHere = new Set([...availablePartner, ...availableSolo]);
+  const choices = styleChoices(styleCatalog, nearbyItems, Object.keys(STYLE_BADGES));
+  const availableHere = new Set([...choices.partner, ...choices.solo].filter(c => c.active).map(c => c.style));
+  const offered = new Set([...partner, ...solo]);
   [...state.styles].forEach(s => { if (!availableHere.has(s)) state.styles.delete(s); });
 
   // Styles step
@@ -323,14 +375,15 @@ function render({ tapped, tappedStyle } = {}) {
   el.styles.hidden = false;
   if (wasHidden) { el.styles.classList.remove('is-opening'); void el.styles.offsetWidth; el.styles.classList.add('is-opening'); }
   // Hide only the generic Swing selector; keep its events in the unfiltered results.
-  const kids = partner.filter(s => s !== 'Swing').map(s => styleButton(s, 'style-choice', availableHere.has(s)));
-  if (solo.length) {
+  const kids = choices.partner.filter(c => c.style !== 'Swing').map(c => styleButton(c.style, 'style-choice', c.active, offered.has(c.style)));
+  const soloChoices = choices.solo.map(c => c.style);
+  if (soloChoices.length) {
     const t = document.createElement('button');
     t.type = 'button'; t.className = 'style-choice solo-toggle'; t.setAttribute('aria-expanded', String(state.soloOpen));
-    t.classList.toggle('has-selection', solo.some(s => state.styles.has(s)));
-    t.innerHTML = `${state.soloOpen ? 'Hide' : 'Show'} solo styles (${solo.length}) <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
+    t.classList.toggle('has-selection', soloChoices.some(s => state.styles.has(s)));
+    t.innerHTML = `${state.soloOpen ? 'Hide' : 'Show'} solo styles (${soloChoices.length}) <span aria-hidden="true">${state.soloOpen ? '−' : '+'}</span>`;
     kids.push(t);
-    if (state.soloOpen) solo.forEach(s => kids.push(styleButton(s, 'style-choice solo-choice', availableHere.has(s))));
+    if (state.soloOpen) choices.solo.forEach(c => kids.push(styleButton(c.style, 'style-choice solo-choice', c.active, offered.has(c.style))));
   }
   if (!partner.length && !solo.length) { const p = document.createElement('p'); p.className = 'simple-empty'; p.textContent = 'No upcoming dances listed here yet. Try another place.'; kids.push(p); }
   el.styleChoices.classList.toggle('has-style-badges', kids.some(node => node.classList?.contains('has-style-badge')));
@@ -360,6 +413,9 @@ function render({ tapped, tappedStyle } = {}) {
   }
   const blocks = shown.map(dateBlock);
   el.groups.replaceChildren(...blocks);
+  // Settle title wrapping now (not in the later ResizeObserver pass) so the layout is final before
+  // the calendar measures a date heading to jump to; otherwise late .loose-tail lines push it down.
+  fitTitles([...el.groups.querySelectorAll('.tile-name')]);
   el.more.hidden = groups.length <= shown.length;
   calendar.set(groups.map(g => g.day), blocks, state.dateRanges);
 }
@@ -420,6 +476,42 @@ function trimFlyerBorder(image) {
     image.src=cropped.toDataURL('image/png');
   } catch { /* Cross-origin images without pixel access retain their original preview. */ }
 }
+// A title piece (the nowrap tail or a hyphenated word) wider than its card: first scale the title down
+// (CSS zoom, at most to 80%) so the piece fits and the last two words stay together; only if it still
+// won't fit, let the tail wrap (.loose-tail), and if a hyphenated word alone still overflows, let that
+// wrap too (.loose-all, where overflow-wrap:anywhere applies). The text itself is never split or changed.
+// Re-checked whenever a title's width changes and once fonts load.
+const titleWidths = new WeakMap();
+const pieces = el => [...el.querySelectorAll('.tile-name-tail,.tile-name-nobr')].map(s => s.getBoundingClientRect().width);
+const overflows = el => { const w = el.getBoundingClientRect().width + 0.02; // sub-pixel exact, like the browser's own wrapping
+  return el.scrollWidth > el.clientWidth || pieces(el).some(p => p > w); };
+function fitTitles(list) {
+  list.forEach(el => { el.classList.remove('loose-tail', 'loose-all'); el.style.zoom = ''; });
+  let over = list.filter(overflows); const loose = [];
+  // Measure all, then scale all; again for any still a hair too wide (small text does not scale exactly, so
+  // each retry goes a further 1%, 2%, 3%... smaller). Never below 80%, and at most 6 passes.
+  for (let pass = 0; pass < 6 && over.length; pass++) {
+    over.map(el => { const z = parseFloat(el.style.zoom) || 1; const k = titleFitScale(el.getBoundingClientRect().width, pieces(el), 0.8 / z);
+      return [el, k && Math.floor(Math.min(z * k, z - 0.01 * pass) * 1000) / 1000]; })
+      .forEach(([el, z]) => { if (z >= 0.8) el.style.zoom = String(z); else loose.push(el); });
+    over = over.filter(el => !loose.includes(el) && overflows(el));
+  }
+  loose.push(...over);
+  loose.forEach(el => { el.style.zoom = ''; el.classList.add('loose-tail'); });
+  loose.filter(overflows).forEach(el => el.classList.add('loose-all'));
+}
+const titleFit = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
+  const changed = [];
+  for (const { target: el, contentRect: r } of entries) {
+    if (!el.isConnected) { titleFit.unobserve(el); continue; }
+    const w = r.width * (parseFloat(el.style.zoom) || 1); // the card's width, not the zoomed title's own
+    if (Math.abs((titleWidths.get(el) ?? -1) - w) > 0.05) { titleWidths.set(el, w); changed.push(el); }
+  }
+  if (changed.length) fitTitles(changed);
+}) : null;
+function watchTitle(el) { titleFit?.observe(el); }
+document.fonts?.ready.then(() => fitTitles([...document.querySelectorAll('#simple-groups .tile-name')]));
+
 // Placeholder flyer drawn from the event data (no logos, no images).
 function fallbackFlyer(ev, day) {
   const d = fallbackFlyerData(ev, day);
@@ -435,6 +527,23 @@ function fallbackFlyer(ev, day) {
   if (d.details.length) { const ul = add('ul', 'ff-details', ''); d.details.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); }); }
   return f;
 }
+// Title text: everything but the last two words as plain text, those two in an inline .tile-name-tail
+// (white-space:nowrap) and every hyphenated word in a nowrap .tile-name-nobr. All plain inline content:
+// no inserted characters and no inline-block, so Ctrl+F across the whole title, copying and the
+// accessible name all see the original text, and the hover underline is one continuous line.
+function addTitleRuns(el, text) {
+  for (const r of titleRuns(text)) {
+    if (r.nobr) { const s = document.createElement('span'); s.className = 'tile-name-nobr'; s.textContent = r.text; el.appendChild(s); }
+    else el.appendChild(document.createTextNode(r.text));
+  }
+}
+function fillTitle(el, text) {
+  const [head, tail] = titleParts(text);
+  el.textContent = '';
+  addTitleRuns(el, head);
+  if (tail) { const s = document.createElement('span'); s.className = 'tile-name-tail'; addTitleRuns(s, tail); el.appendChild(s); }
+}
+
 function tile({ ev, canceled, day }) {
   const a = document.createElement('article');
   a.className = 'event-tile' + (canceled ? ' is-canceled' : '');
@@ -450,9 +559,10 @@ function tile({ ev, canceled, day }) {
   addCardBadge(body, ev);
   if (canceled) { const c = document.createElement('p'); c.className = 'tile-cancel'; c.textContent = 'Canceled this date'; c.title = c.textContent; body.appendChild(c); }
   const name = document.createElement('h4'); name.className = 'tile-name'; name.title = ev.name;
-  if (typeof ev.key === 'string' && state.eventPages.has(ev.key)) { const t = document.createElement('a'); t.className = 'tile-name-link'; t.href = new URL('e/' + ev.key + '.html', SITE).href; t.textContent = ev.card_title || ev.name; name.appendChild(t); }
-  else name.textContent = ev.card_title || ev.name;
+  if (typeof ev.key === 'string' && state.eventPages.has(ev.key)) { const t = document.createElement('a'); t.className = 'tile-name-link'; t.href = new URL('e/' + ev.key + '.html', SITE).href; fillTitle(t, ev.card_title || ev.name); name.appendChild(t); }
+  else fillTitle(name, ev.card_title || ev.name);
   body.appendChild(name);
+  watchTitle(name);
   const paths = {
     instructor: '<circle cx="12" cy="7" r="4" fill="currentColor" stroke="none"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z" fill="currentColor" stroke="none"/>',
     level: '<path d="M4 21v-5h4v5Zm6 0V10h4v11Zm6 0V3h4v18Z" fill="currentColor" stroke="none"/>',
@@ -490,7 +600,7 @@ function tile({ ev, canceled, day }) {
     const second = document.createElement('span'); second.className = 'tile-address-line';
     second.textContent = ev.address_line_2; location.appendChild(second);
   }
-  const price = row('ticket', ev.cost_display || ev.cost || 'Cover not listed');
+  const price = row('ticket', ev.cost || ev.cost_display || 'Cover not listed');
   if (!ev.cost_display && !ev.cost) price.parentElement.classList.add('is-placeholder');
   const detail = (label, text, kind) => {
     const details = document.createElement('details'); details.className = 'tile-extra' + (kind ? ' tile-extra-' + kind : '');
@@ -499,19 +609,26 @@ function tile({ ev, canceled, day }) {
     details.append(summary, p); body.appendChild(details);
   };
   if (ev.address_line_1 && ev.venue !== [ev.address_line_1, ev.address_line_2].filter(Boolean).join(', ')) detail('Full address', ev.venue, 'address');
-  if (ev.cost_display && ev.cost_display !== ev.cost) detail('Pricing details', ev.cost);
+  if (ev.cost) fitPricing(price, ev.cost, ev.cost_display && ev.cost_display !== ev.cost ? ev.cost_display : '');
   const links = document.createElement('p'); links.className = 'tile-links';
   if (ev.venue) { const m = document.createElement('a'); m.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.venue); m.target = '_blank'; m.rel = 'noopener'; m.textContent = 'Directions ↗'; m.title = 'Directions to ' + ev.venue; links.appendChild(m); }
-  const flyers = flyersFor(ev, state.logoMap).map(resolve);
-  // Every card gets a flyer panel: the real flyer when one exists, otherwise a
-  // generated placeholder (it also takes over if the real image fails to load).
+  const flyers = hasRealFlyer(ev, state.logoMap) ? flyersFor(ev, state.logoMap).map(resolve) : [];
+  // Cards with a real flyer get a flyer panel. Without one, the card is just its
+  // details (no panel, tab or corner) unless SHOW_FALLBACK_FLYER brings back the
+  // generated placeholder (which also covers a real image that fails to load).
+  if (!flyers.length && !SHOW_FALLBACK_FLYER) { body.appendChild(links); a.appendChild(body); return a; }
   a.classList.add('has-flyer');
   let preview;
   if (flyers.length) {
     preview = document.createElement('button'); preview.type = 'button'; preview.className = 'tile-flyer-preview';
     preview.setAttribute('aria-label', 'Enlarge flyer for ' + ev.name);
     const image = document.createElement('img'); image.addEventListener('load', () => trimFlyerBorder(image)); image.src = flyers[0]; image.alt = 'Flyer for ' + ev.name; image.loading = 'lazy'; image.decoding = 'async';
-    image.addEventListener('error', () => { a.dispatchEvent(new Event('flip-reset')); const fb = fallbackFlyer(ev, day); fb.inert = preview.inert; preview.replaceWith(fb); preview = fb; a.classList.remove('has-real-flyer'); a.querySelector('.tile-flip-corner')?.remove(); }, { once: true });
+    image.addEventListener('error', () => {
+      a.dispatchEvent(new Event('flip-reset'));
+      if (!SHOW_FALLBACK_FLYER) { preview.remove(); a.querySelector('.tile-flyer-tab')?.remove(); a.classList.remove('has-flyer', 'flyer-open'); }
+      else { const fb = fallbackFlyer(ev, day); fb.inert = preview.inert; preview.replaceWith(fb); preview = fb; }
+      a.classList.remove('has-real-flyer'); a.querySelector('.tile-flip-corner')?.remove();
+    }, { once: true });
     preview.appendChild(image);
     // Tapping a flipped compact card's flyer opens it full screen; focus returns to the card.
     preview.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const flipped = a.classList.contains('is-flipped'); openLightbox(flyers, ev.name, flipped ? a : preview, flipped); });

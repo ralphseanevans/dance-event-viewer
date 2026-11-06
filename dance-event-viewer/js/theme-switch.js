@@ -89,8 +89,23 @@
     function onDoc(e) {
       if (!menu.contains(e.target) && !btn.contains(e.target)) close();
     }
+    // ARIA menu keyboard pattern (2026-10-27): Up/Down move between options and wrap at the
+    // ends, Home/End jump to the first/last. From the Theme button, Down/Up enter the menu.
+    // Enter/Space select through the options' native button click; Escape closes.
+    function items() { return Array.prototype.slice.call(menu.querySelectorAll(".theme-option")); }
     function onKey(e) {
-      if (e.key === "Escape") { close(); btn.focus(); }
+      if (e.key === "Escape") { close(); btn.focus(); return; }
+      var list = items();
+      if (!list.length) return;
+      var i = list.indexOf(document.activeElement);
+      var next = -1;
+      if (e.key === "ArrowDown") next = i < 0 ? 0 : (i + 1) % list.length;
+      else if (e.key === "ArrowUp") next = i < 0 ? list.length - 1 : (i - 1 + list.length) % list.length;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = list.length - 1;
+      if (next < 0 || (i < 0 && document.activeElement !== btn)) return;
+      e.preventDefault();
+      list[next].focus();
     }
 
     btn.addEventListener("click", function (e) {
