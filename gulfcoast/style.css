@@ -227,8 +227,13 @@ html,body{overflow-x:clip}
 .hero{padding-top:64px}
 @media(max-width:650px){.hero{padding-top:28px}}
 /* Headline lives in the top bar: GULF + COAST centered together, one row at every width */
-.topbar{padding:14px var(--pad);border-bottom:1px solid var(--line);position:relative;z-index:10}
-.topbar-title{display:flex;justify-content:center;align-items:baseline;gap:.4em;margin:0;white-space:nowrap;font-family:var(--display);font-weight:700;font-size:clamp(26px,8.2vw,112px);line-height:.95;letter-spacing:-.02em;color:var(--paper)}
+.topbar{display:flex;flex-direction:column;align-items:center;padding:14px var(--pad);border-bottom:1px solid var(--line);position:relative;z-index:10}
+.topbar-title{display:flex;justify-content:center;align-items:baseline;gap:.4em;width:100%;margin:0;white-space:nowrap;font-family:var(--display);font-weight:700;font-size:clamp(26px,8.2vw,112px);line-height:.95;letter-spacing:-.02em;color:var(--paper)}
+/* South-wide return link. Filled with the South viewer's default Mint Reactor colors
+   from dance-event-viewer/css/moonlit-ember-theme.css (:root[data-theme="mintreactor"]):
+   accent #14b8a6, accent-pink #5eead4, bg #050505. */
+.south-link{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:44px;max-width:100%;margin:0 0 10px;padding:6px 14px;border:1px solid #14b8a6;border-radius:999px;background:#14b8a6;color:#050505;font-family:var(--body);font-size:.86rem;font-weight:800;line-height:1.15;letter-spacing:.01em;text-align:center;text-decoration:none}
+.south-link:hover{background:#5eead4;border-color:#5eead4;color:#050505}
 .topbar-title em{font-style:normal;color:var(--red)}
 /* Community about block: keep markup, hide for now */
 .about-section{display:none}
