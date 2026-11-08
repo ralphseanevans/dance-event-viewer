@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 const r = p => readFileSync(new URL('../../' + p, import.meta.url), 'utf8');
 
 test('gulfcoast page: name, canonical and OG tags, no visitor-facing "Experiment"', () => {
@@ -13,6 +14,22 @@ test('gulfcoast page: name, canonical and OG tags, no visitor-facing "Experiment
   assert.doesNotMatch(html, /experiment/i);
   assert.match(html, /<h1 id="hero-title" class="topbar-title"><span>GULF<\/span> <em>COAST<\/em><\/h1>/);
   assert.match(html, /src="\.\.\/dance-event-viewer\/js\/supabase-config\.js\?v=/);
+});
+
+test('gulfcoast top links to the live South-wide viewer in that site’s colors', () => {
+  const html = r('gulfcoast/index.html');
+  const css = r('gulfcoast/style.css');
+  assert.match(html, /<a class="south-link" href="\.\.\/dance-event-viewer\/">South-wide dances<\/a>/);
+  assert.doesNotMatch(html, /south\.danceeventviewer\.net/);
+  const rule = /\.south-link\{([^}]*)\}/.exec(css)[1];
+  assert.match(rule, /background:#14b8a6/);
+  assert.match(rule, /color:#050505/);
+  assert.match(rule, /border:1px solid #14b8a6/);
+  const hover = /\.south-link:hover\{([^}]*)\}/.exec(css)[1];
+  assert.match(hover, /background:#5eead4/);
+  assert.match(hover, /color:#050505/);
+  const hash = createHash('sha1').update(readFileSync(new URL('../../gulfcoast/style.css', import.meta.url))).digest('hex').slice(0, 8);
+  assert.match(html, new RegExp(`style\\.css\\?v=${hash}`));
 });
 
 test('gulfcoast module paths point at the viewer folder and the site root', () => {
