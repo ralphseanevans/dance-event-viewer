@@ -8208,8 +8208,7 @@
           "reason": "Host Seaside Swing-Outs Nov 10: Nov 13 is \"our last regular social for this month!\" Only remaining November regular SSO date after Nov 13 is Fri Nov 27 (4th Friday). First/Third Fridays already excluded.",
           "cancel_status": "owner"
         }
-      ],
-      "cancel_status": "owner"
+      ]
     },
     {
       "key": "starlite-ballroom-tuesday-ballroom-latin-class",
@@ -8913,7 +8912,7 @@
     },
     {
       "key": "the-block-latin-night-thursdays",
-      "name": "Latin Night at The Block (Salsa, Bachata, Merengue)",
+      "name": "Latin Groove Thursdays at The Block (Salsa, Bachata, Merengue)",
       "style": "Latin",
       "type": "weekly_recurring",
       "day_of_week": "Thursday",
