@@ -11,14 +11,14 @@
       "exclude_dates": null,
       "start_date": null,
       "end_date": null,
-      "start_time": "17:45",
-      "end_time": "22:30",
-      "venue": "The Chapel Collective, Historic Sacred Heart Building, Suite 211, 1010 N 12th Ave, Pensacola, FL 32501 (East Hill neighborhood)",
+      "start_time": "17:30",
+      "end_time": "23:30",
+      "venue": "The Chapel Collective, Historic Sacred Heart Building, Studio 211 (2nd floor, above The Burrow), 1010 N 12th Ave, Pensacola, FL 32501 (East Hill neighborhood)",
       "state": "FL",
-      "cost": "$10 per lesson, $10 for the dance, or $25 for the whole night",
-      "source_url": "https://facebook.com/events/s/3rd-saturday-west-coast-swing-/1532688301679125/",
+      "cost": "$10/lesson, $10 social, $25 all night",
+      "source_url": "https://www.facebook.com/events/1118533441125249/1118533447791915/",
       "unverified": false,
-      "verified_on": "2026-07-19"
+      "verified_on": "2026-10-21"
     },
     {
       "key": "al-auburn-ausda-friday-night-swing-2026-07-24",
@@ -81,6 +81,46 @@
       "verified_on": "2026-07-20"
     },
     {
+      "key": "al-huntsville-rocket-westies-free-dance-practice-2026-11-21",
+      "name": "Rocket Westies FREE Dance Practice",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-21",
+      "end_date": "2026-11-21",
+      "start_time": "10:00",
+      "end_time": "12:00",
+      "venue": "Providence Meeting House (Clubhouse), 2 Meeting Street, Village of Providence, Huntsville, AL 35806",
+      "state": "AL",
+      "cost": "Free",
+      "source_url": "https://rocketwesties.com/",
+      "unverified": false,
+      "verified_on": "2026-11-06"
+    },
+    {
+      "key": "al-huntsville-rocket-westies-west-coast-wednesdays-yellowhammer",
+      "name": "Rocket Westies West Coast Wednesdays at Yellowhammer Brewing",
+      "style": "West Coast Swing",
+      "type": "weekly_recurring",
+      "day_of_week": "Wednesday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-18",
+      "end_date": null,
+      "start_time": "18:30",
+      "end_time": "21:30",
+      "venue": "Yellowhammer Brewing Company, Lost Highway Bier Hall (The Lounge), 2600 Clinton Ave W, Huntsville, AL 35805",
+      "state": "AL",
+      "cost": "Evolution class $10; Fundamentals class free; social free",
+      "source_url": "https://rocketwesties.com/",
+      "unverified": false,
+      "verified_on": "2026-11-06"
+    },
+    {
       "key": "al-huntsville-usa-dance-national-social-celebration-2027-03-27",
       "name": "USA Dance National Social Dance Celebration (Northern Alabama)",
       "style": "Ballroom / social",
@@ -99,6 +139,26 @@
       "source_url": "https://usadance.org/members/group.aspx?id=88116",
       "unverified": false,
       "verified_on": "2026-07-20"
+    },
+    {
+      "key": "al-huntsville-wcs-weekend-bryan-janie-2026-10-17",
+      "name": "West Coast Swing Weekend with Bryan Jordan & Janie Deroche",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-17",
+      "end_date": "2026-10-18",
+      "start_time": null,
+      "end_time": null,
+      "venue": "Huntsville, AL (hall not named)",
+      "state": "AL",
+      "cost": null,
+      "source_url": "https://pci.jotform.com/form/262674813925163",
+      "unverified": true,
+      "verified_on": null
     },
     {
       "key": "al-madison-baila-wednesday-night-salsa-2026-07-22",
@@ -150,15 +210,15 @@
       "exclude_monthly_rules": null,
       "exclude_dates": null,
       "start_date": null,
-      "end_date": null,
+      "end_date": "2026-11-10",
       "start_time": "18:30",
-      "end_time": "22:00",
-      "venue": "The Beer Hog - Madison, AL",
+      "end_time": "21:30",
+      "venue": "Guajana Rum, 9582 Madison Blvd, Suite 3, Madison, AL 35758",
       "state": "AL",
-      "cost": "Free social; lesson $10 ($5 members)",
-      "source_url": "https://rocketwesties.com/socials/",
+      "cost": "Evolution class $10; Fundamentals class free; social free",
+      "source_url": "https://rocketwesties.com/",
       "unverified": false,
-      "verified_on": "2026-07-20"
+      "verified_on": "2026-11-11"
     },
     {
       "key": "al-mobile-las-floriditas-thursday-salsa-2026-07-23",
@@ -561,26 +621,6 @@
       "verified_on": "2026-07-20"
     },
     {
-      "key": "ballroom-lynn-warwick-house-2026-07-29",
-      "name": "Ballroom Dance at Lynn Warwick's House (with Bill Thrall)",
-      "style": "Ballroom",
-      "type": "one_time",
-      "day_of_week": null,
-      "monthly_rule": null,
-      "exclude_monthly_rules": null,
-      "exclude_dates": null,
-      "start_date": "2026-07-29",
-      "end_date": null,
-      "start_time": "18:00",
-      "end_time": null,
-      "venue": "Lynn Warwick's House, West Mobile, AL — Contact Lynn for directions",
-      "state": "AL",
-      "cost": null,
-      "source_url": null,
-      "unverified": false,
-      "verified_on": "2026-07-10"
-    },
-    {
       "key": "ballroom-social-dance-saturdays-2026-07-25",
       "name": "Social Dance Saturdays!! (Dance Daly Ballroom)",
       "style": "Ballroom (social)",
@@ -756,9 +796,76 @@
       "venue": "Bobe St Studio, 1018 E Bobe St, Pensacola, FL 32503",
       "state": "FL",
       "cost": null,
-      "source_url": "https://pensacolaswingdancesociety.com/2025-schedule",
+      "source_url": "https://psds.dance/",
       "unverified": false,
-      "verified_on": "2026-07-12"
+      "verified_on": "2026-11-09"
+    },
+    {
+      "key": "boot-scootin-tuesdays-seville-quarter",
+      "name": "Boots, Buckles & Boogie: Tuesday Country Nights with Dawn (Sassy Steppers)",
+      "style": "Country",
+      "type": "weekly_recurring",
+      "day_of_week": "Tuesday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-06",
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "00:00",
+      "venue": "Phineas Phogg's (Boss Phogg's Honky-Tonk), Seville Quarter, 130 East Government Street, Pensacola, FL 32502",
+      "state": "FL",
+      "cost": "$8 advance / $10 door",
+      "source_url": "https://www.facebook.com/photo/?fbid=122199530696388189&set=a.122108633828388189",
+      "unverified": true,
+      "verified_on": "2026-11-06"
+    },
+    {
+      "key": "boot-stompin-line-dance-lessons-pensacola-coastals-thursdays",
+      "name": "Boot Stompin Line Dance Lessons with Bree",
+      "style": "Line Dance",
+      "type": "weekly_recurring",
+      "day_of_week": "Thursday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": [],
+      "start_date": "2026-11-05",
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "21:00",
+      "venue": "The Pensacola Coastals Dance Studio, 433 S Hwy 29, Unit A, Cantonment, FL 32533",
+      "state": "FL",
+      "cost": "$10",
+      "source_url": "https://www.facebook.com/events/2376339113192319/",
+      "unverified": false,
+      "verified_on": "2026-11-10",
+      "canceled_dates": [
+        {
+          "date": "2026-11-26",
+          "reason": "No class Thanksgiving Day, November 26 (host Line Dancing with Bree).",
+          "cancel_status": "owner"
+        }
+      ]
+    },
+    {
+      "key": "boots-bling-line-dancing-emerald-standard-2026-11-11",
+      "name": "Boots, Bling & Line Dancing",
+      "style": "Line Dance",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-11",
+      "end_date": "2026-11-11",
+      "start_time": "19:00",
+      "end_time": "21:00",
+      "venue": "The Eatery, 1713 Woodlawn Way, Gulf Breeze, FL",
+      "state": "FL",
+      "cost": "$45",
+      "source_url": "https://www.facebook.com/events/1434541882138945/",
+      "unverified": false,
+      "verified_on": "2026-11-06"
     },
     {
       "key": "country-clarendon-country-dance-night-2026-07-23",
@@ -876,7 +983,7 @@
       "venue": "Flying With Ease Training Center, 1507 Marcus Pointe, Pensacola, FL",
       "state": "FL",
       "cost": "$12/person",
-      "source_url": null,
+      "source_url": "https://www.facebook.com/events/1438933604954469/",
       "unverified": false,
       "verified_on": "2026-08-01"
     },
@@ -1271,14 +1378,14 @@
       "exclude_dates": null,
       "start_date": null,
       "end_date": null,
-      "start_time": "18:30",
-      "end_time": null,
+      "start_time": "19:00",
+      "end_time": "24:00",
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
       "state": "FL",
-      "cost": "$10 cover, 18+, no sign-up required",
-      "source_url": null,
+      "cost": "$10 cover, 18+, no partner or experience needed",
+      "source_url": "https://www.facebook.com/events/1135016656160331/",
       "unverified": false,
-      "verified_on": "2026-07-11"
+      "verified_on": "2026-11-01"
     },
     {
       "key": "fl-clearwater-amorama-latin-night-2026-07-24",
@@ -3481,6 +3588,26 @@
       "verified_on": "2026-07-20"
     },
     {
+      "key": "give-thanks-and-dance-mobile-2026-11-13",
+      "name": "Give Thanks & Dance Night!",
+      "style": "Mixed / all styles",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-13",
+      "end_date": "2026-11-13",
+      "start_time": "19:00",
+      "end_time": "23:00",
+      "venue": "VIA (Heath Fitness and Enrichment Center), 1717 Dauphin St, Mobile, AL 36606",
+      "state": "AL",
+      "cost": "$15",
+      "source_url": "https://www.facebook.com/events/2323345625128069/",
+      "unverified": false,
+      "verified_on": "2026-11-05"
+    },
+    {
       "key": "good-ole-social-dance-2026-07-17",
       "name": "Good Ole Social Dance",
       "style": "Mixed",
@@ -3541,6 +3668,26 @@
       "verified_on": "2026-09-04"
     },
     {
+      "key": "good-ole-social-dance-2026-11-13",
+      "name": "Good Ole Social Dance",
+      "style": "Mixed",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-13",
+      "end_date": "2026-11-13",
+      "start_time": "19:00",
+      "end_time": "22:00",
+      "venue": "Sanders Beach-Corinne Jones Resource Center, 913 S I St, Pensacola, FL 32502",
+      "state": "FL",
+      "cost": "$15 cash",
+      "source_url": "https://www.facebook.com/events/2395666187873717/",
+      "unverified": false,
+      "verified_on": "2026-11-06"
+    },
+    {
       "key": "good-ole-social-dance-country-night-2026-10-02",
       "name": "Good Ole Social Dance - COUNTRY NIGHT",
       "style": "Country",
@@ -3555,10 +3702,30 @@
       "end_time": null,
       "venue": "Sanders Beach-Corinne Jones Resource Center, 913 S I St, Pensacola, FL 32502-5283",
       "state": "FL",
-      "cost": "$15 cash",
+      "cost": "$15 per person",
       "source_url": "https://www.facebook.com/events/1053325254197616/",
       "unverified": false,
-      "verified_on": "2026-09-18"
+      "verified_on": "2026-09-27"
+    },
+    {
+      "key": "high-time-band-american-legion-340-2026-10-24",
+      "name": "High Time Band Country Dance Night at American Legion Post 340",
+      "style": "Country / Two-Step / Line Dance",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-24",
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": null,
+      "venue": "American Legion Post 340, 8890 Ashland Ave, Pensacola, FL 32534",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/groups/dancinginpensacola/posts/10163132978867161/",
+      "unverified": false,
+      "verified_on": "2026-10-24"
     },
     {
       "key": "kick-it-old-school-2026-08-28",
@@ -3576,9 +3743,9 @@
       "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL",
       "state": "FL",
       "cost": "At the door: full weekend $175; day pass $70; Friday night $45; Saturday night $45; Sunday night $25",
-      "source_url": null,
+      "source_url": "https://psds.dance/",
       "unverified": false,
-      "verified_on": "2026-08-25"
+      "verified_on": "2026-09-30"
     },
     {
       "key": "la-breauxbridge-buckjohnnys-zydeco-2026-07-25",
@@ -3962,8 +4129,8 @@
     },
     {
       "key": "latin-night-social-dance-2026-11-07",
-      "name": "Latin Night Social Dance",
-      "style": "Latin",
+      "name": "KiZouk Intensive + SBKZ Social with Joshua \"Juice\" Hernandez (1st Saturday Social at The Way You Move)",
+      "style": "Zouk / Kizomba (SBKZ social)",
       "type": "one_time",
       "day_of_week": null,
       "monthly_rule": null,
@@ -3971,14 +4138,14 @@
       "exclude_dates": null,
       "start_date": "2026-11-07",
       "end_date": null,
-      "start_time": "20:00",
+      "start_time": "12:00",
       "end_time": "00:00",
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
       "state": "FL",
-      "cost": null,
-      "source_url": "https://calendar.google.com/calendar/u/0/newembed?src=v2ka0c77n2rmmcku162po0fggk@group.calendar.google.com&ctz=America/Chicago",
+      "cost": "$60 prepay through 11/6; $70 at the door; social only $10",
+      "source_url": "https://www.facebook.com/groups/dancinginpensacola/posts/2577966316042694/",
       "unverified": false,
-      "verified_on": "2026-09-04"
+      "verified_on": "2026-11-04"
     },
     {
       "key": "latin-night-social-dance-2026-12-05",
@@ -3999,6 +4166,153 @@
       "source_url": "https://calendar.google.com/calendar/u/0/newembed?src=v2ka0c77n2rmmcku162po0fggk@group.calendar.google.com&ctz=America/Chicago",
       "unverified": false,
       "verified_on": "2026-09-04"
+    },
+    {
+      "key": "line-dance-bree-mathieson-brewing-2026-10-27",
+      "name": "Line Dancing with Bree at Mathieson Brewing Company (MBC)",
+      "style": "Line Dance",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-27",
+      "end_date": null,
+      "start_time": "18:00",
+      "end_time": null,
+      "venue": "Mathieson Brewing Company, 500 East Heinberg Street, Pensacola, FL 32502",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/events/1386789893616619/",
+      "unverified": false,
+      "verified_on": "2026-10-26"
+    },
+    {
+      "key": "line-dancing-3rd-planet-niceville-2026-10-26",
+      "name": "Line Dancing at 3rd Planet Brewing",
+      "style": "Line Dance",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-26",
+      "end_date": null,
+      "start_time": "18:00",
+      "end_time": "20:00",
+      "venue": "3rd Planet Brewing, 1400 E John Sims Pkwy, Niceville, FL 32578",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.3rdplanetbrewing.com/event/line-dancing-at-3rd-planet-brewing/",
+      "unverified": false,
+      "verified_on": "2026-10-21"
+    },
+    {
+      "key": "line-dancing-65-plus-bellview-2026-10-27",
+      "name": "Line Dancing at Ochsner Novant Health 65 Plus, Bellview (Mobile Hwy)",
+      "style": "Line Dance",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-27",
+      "end_date": null,
+      "start_time": "10:00",
+      "end_time": null,
+      "venue": "Ochsner Novant Health 65 Plus - Bellview, 5998 Mobile Hwy, Pensacola, FL 32526",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/events/2299385244242089/",
+      "unverified": false,
+      "verified_on": "2026-10-25"
+    },
+    {
+      "key": "line-dancing-65-plus-nine-mile-2026-10-28",
+      "name": "Line Dancing at Ochsner Novant Health 65 Plus, Nine Mile",
+      "style": "Line Dance",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-28",
+      "end_date": null,
+      "start_time": "15:00",
+      "end_time": null,
+      "venue": "Ochsner Novant Health 65 Plus - Nine Mile, 1095 E Nine Mile Rd, Pensacola, FL 32514",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/events/1463611141877425/",
+      "unverified": false,
+      "verified_on": "2026-10-25"
+    },
+    {
+      "key": "line-dancing-lessons-bree-hangout-gulf-shores-mondays-2026-11",
+      "name": "Line Dancing with Bree at The Hangout",
+      "style": "Line Dance",
+      "type": "weekly_recurring",
+      "day_of_week": "Monday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-02",
+      "end_date": "2026-11-23",
+      "start_time": "18:00",
+      "end_time": "20:00",
+      "venue": "The Hangout, 101 E Beach Blvd, Gulf Shores, AL 36542",
+      "state": "AL",
+      "cost": "Free",
+      "source_url": "https://www.facebook.com/events/1310699954477925/",
+      "unverified": false,
+      "verified_on": "2026-11-05"
+    },
+    {
+      "key": "luna-ballroom-chronicles-kingdom-2026-10-17",
+      "name": "Chronicles of the Kingdom: Fantasy Dance Showcase at Luna Ballroom",
+      "style": "Ballroom",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-17",
+      "end_date": "2026-10-17",
+      "start_time": "18:30",
+      "end_time": null,
+      "venue": "Luna Ballroom, 4552 US Highway 98 W, Suites 7-8, Santa Rosa Beach, FL 32459",
+      "state": "FL",
+      "cost": "GA $40, VIP front row $100 (plus fees)",
+      "source_url": "https://www.facebook.com/events/4625825124362705/",
+      "unverified": false,
+      "verified_on": null
+    },
+    {
+      "key": "luna-gleb-savchenko-masterclass-2026-10-29",
+      "name": "DWTS Gleb Savchenko Masterclass at Luna Ballroom",
+      "style": "Ballroom",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-29",
+      "end_date": "2026-10-29",
+      "start_time": "18:00",
+      "end_time": null,
+      "venue": "Luna Ballroom, 4552 US Highway 98 W, Suites 7-8, Santa Rosa Beach, FL 32459",
+      "state": "FL",
+      "cost": "$95 per dancer",
+      "source_url": "https://www.facebook.com/events/1108476598200524/",
+      "unverified": false,
+      "verified_on": null,
+      "canceled_dates": [
+        {
+          "date": "2026-10-29",
+          "reason": "Canceled by host (Facebook event shows: This event was canceled)",
+          "cancel_status": "owner"
+        }
+      ]
     },
     {
       "key": "meetup-denver-sunset-salchata-2026-08-07",
@@ -4121,6 +4435,26 @@
       "verified_on": "2026-08-25"
     },
     {
+      "key": "mobtown-halloween-social-2026-10-31",
+      "name": "Mobtown Halloween Social",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-31",
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "23:00",
+      "venue": "David Miner Ballroom Dance Club, 4130-D Government Blvd, Mobile, AL",
+      "state": "AL",
+      "cost": "$20 / night, $10 social only",
+      "source_url": "https://www.facebook.com/events/3293750040809218/",
+      "unverified": false,
+      "verified_on": null
+    },
+    {
       "key": "mobtown-workshop-and-social-2026-07-11",
       "name": "Mobtown Workshop and Social",
       "style": "West Coast Swing",
@@ -4168,7 +4502,9 @@
       "day_of_week": "Monday",
       "monthly_rule": null,
       "exclude_monthly_rules": null,
-      "exclude_dates": null,
+      "exclude_dates": [
+        "2026-10-26"
+      ],
       "start_date": null,
       "end_date": null,
       "start_time": "18:00",
@@ -4176,9 +4512,16 @@
       "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL",
       "state": "FL",
       "cost": "$10 class / $10 dance / $20 whole night",
-      "source_url": null,
+      "source_url": "https://www.facebook.com/events/1639711274161985/",
       "unverified": false,
-      "verified_on": "2026-07-17"
+      "verified_on": "2026-10-29",
+      "canceled_dates": [
+        {
+          "date": "2026-10-12",
+          "reason": "Taking a short break due to the recent hurricane. Stay safe, see you next week!",
+          "cancel_status": "owner"
+        }
+      ]
     },
     {
       "key": "ms-biloxi-fuego-latin-night-2026-08-21",
@@ -4621,6 +4964,26 @@
       "verified_on": "2026-07-20"
     },
     {
+      "key": "noche-de-salsa-halloween-edition-2026-10-17",
+      "name": "Noche de Salsa - Halloween Edition",
+      "style": "Salsa / Bachata",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-17",
+      "end_date": "2026-10-17",
+      "start_time": "20:30",
+      "end_time": "02:00",
+      "venue": "The Blue Lagoon at the Palms of Destin Resort, 4201 Indian Bayou Trail, Destin, FL 32541",
+      "state": "FL",
+      "cost": "$10 cover, includes first drink",
+      "source_url": "https://www.facebook.com/photo/?fbid=10235158340647593&set=pcb.10235158342007627",
+      "unverified": false,
+      "verified_on": "2026-10-13"
+    },
+    {
       "key": "noche-de-salsa-jakes-henrys-2026-09-19",
       "name": "Noche de Salsa at Jake's & Henry's",
       "style": "Salsa",
@@ -4659,6 +5022,33 @@
       "source_url": "https://www.northalabamawcs.org",
       "unverified": false,
       "verified_on": "2026-07-12"
+    },
+    {
+      "key": "pcda-wednesday-night-round-up-ragon-hall",
+      "name": "The Wednesday Night Round-Up with PCDA at Ragon Hall",
+      "style": "Country",
+      "type": "weekly_recurring",
+      "day_of_week": "Wednesday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-07",
+      "end_date": null,
+      "start_time": "18:00",
+      "end_time": "22:30",
+      "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526",
+      "state": "FL",
+      "cost": "$10 per lesson, $10 social, $20 whole night",
+      "source_url": "https://www.facebook.com/events/1300954645457257/",
+      "unverified": false,
+      "verified_on": "2026-11-04",
+      "canceled_dates": [
+        {
+          "date": "2026-10-14",
+          "reason": "Taking a short break due to the recent hurricane. Stay safe, see you next week!",
+          "cancel_status": "owner"
+        }
+      ]
     },
     {
       "key": "pensacola-coastals-ballet-fridays",
@@ -5169,6 +5559,26 @@
       "verified_on": "2026-08-23"
     },
     {
+      "key": "pensacola-community-dance-day-fandom-gull-point-2027-05-15",
+      "name": "Pensacola Community Dance Day: Fandom Dance Party",
+      "style": "Hip Hop",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2027-05-15",
+      "end_date": null,
+      "start_time": "15:00",
+      "end_time": null,
+      "venue": "Gull Point Resource Center, 7000 Spanish Trail, Pensacola, FL 32504",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/events/1006259275612318/",
+      "unverified": false,
+      "verified_on": "2026-11-02"
+    },
+    {
       "key": "pensacola-drop-ins-ballroom-2026-09-10",
       "name": "Pensacola Drop-ins — Ballroom with Anna Marisol Aldana",
       "style": "Ballroom",
@@ -5269,6 +5679,66 @@
       "verified_on": "2026-07-12"
     },
     {
+      "key": "proam-in-paradise-2027-04-29",
+      "name": "Pro/Am in Paradise 2027",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2027-04-29",
+      "end_date": "2027-05-03",
+      "start_time": "19:00",
+      "end_time": null,
+      "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/events/2129491924561583",
+      "unverified": false,
+      "verified_on": "2026-11-03"
+    },
+    {
+      "key": "psds-10th-anniversary-robert-cordoba-workshop-weekend-2026-12-04",
+      "name": "PSDS 10th Anniversary Robert Cordoba Workshop Weekend",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-12-04",
+      "end_date": "2026-12-06",
+      "start_time": "18:00",
+      "end_time": "23:30",
+      "venue": "Bobe St Studio, 1018 E Bobe St, Pensacola, FL 32503 (Fri & Sun intensives); Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526 (Sat Dec 5)",
+      "state": "FL",
+      "cost": "$15 workshop, $15 social, $35 whole night (Sat Dec 5 anniversary dance at Ragon Hall; Fri/Sun intensive pricing TBA)",
+      "source_url": "https://psds.dance/",
+      "unverified": false,
+      "verified_on": "2026-11-09"
+    },
+    {
+      "key": "psds-monday-halloween-party-2026-10-26",
+      "name": "PSDS Monday Night Halloween Party",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-26",
+      "end_date": "2026-10-26",
+      "start_time": "18:00",
+      "end_time": "22:30",
+      "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526",
+      "state": "FL",
+      "cost": "$10 per class, $10 dance, $20 whole night; ages 18-25 free",
+      "source_url": "https://psds.dance",
+      "unverified": false,
+      "verified_on": null
+    },
+    {
       "key": "ragon-hall-first-saturday-monthly-dance",
       "name": "Pensacola Swing Dance Society Monthly Dance at Ragon Hall (First Saturday West Coast Swing Night)",
       "style": "West Coast Swing",
@@ -5281,12 +5751,12 @@
       "end_date": null,
       "start_time": "17:45",
       "end_time": "23:30",
-      "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL",
+      "venue": "Ragon Hall, 2600 Stratford Rd, Pensacola, FL 32526",
       "state": "FL",
-      "cost": "$15 per lesson / $15 for the dance / $35 for it all (pay at the door; half price for college students w/ valid ID)",
-      "source_url": null,
+      "cost": "$15 class, $15 dance, $35 whole night; college students half price with ID; pay at door",
+      "source_url": "https://www.facebook.com/events/2327311778039286/",
       "unverified": false,
-      "verified_on": "2026-09-05"
+      "verified_on": "2026-11-09"
     },
     {
       "key": "raq-room-dawn-workshop-2026-09-26",
@@ -5809,6 +6279,26 @@
       "verified_on": "2026-07-20"
     },
     {
+      "key": "salsa-night-blue-lagoon-destin-2026-11-21",
+      "name": "Salsa Night at The Blue Lagoon",
+      "style": "Salsa",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-21",
+      "end_date": "2026-11-21",
+      "start_time": "20:30",
+      "end_time": "02:00",
+      "venue": "The Blue Lagoon Beach Club at the Palms of Destin, 4201 Indian Bayou Trail, Destin, FL 32541",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/events/1105644095804784/",
+      "unverified": false,
+      "verified_on": "2026-11-08"
+    },
+    {
       "key": "salsa-nova-dance-fest-2026-09-09",
       "name": "Nova Dance Fest 2026",
       "style": "Salsa/Bachata",
@@ -6010,23 +6500,50 @@
     },
     {
       "key": "sanders-beach-ballroom-weekly-classes",
-      "name": "Group Classes at Sanders Beach Ballroom",
-      "style": "Mixed",
+      "name": "TripleTwo at Sanders Beach Ballroom",
+      "style": "TripleTwo",
       "type": "weekly_recurring",
       "day_of_week": "Wednesday",
       "monthly_rule": null,
       "exclude_monthly_rules": null,
       "exclude_dates": null,
       "start_date": null,
-      "end_date": null,
-      "start_time": "18:00",
-      "end_time": "20:30",
+      "end_date": "2026-10-28",
+      "start_time": "18:30",
+      "end_time": null,
       "venue": "Sanders Beach Community Center, 913 South \"I\" St, Pensacola, FL",
       "state": "FL",
-      "cost": "$15 per person per night, cash only",
+      "cost": "$15 per person, cash only",
       "source_url": "https://www.letsdancepensacola.com/past-cruises",
       "unverified": false,
-      "verified_on": "2026-07-11"
+      "verified_on": "2026-11-06",
+      "canceled_dates": [
+        {
+          "date": "2026-10-14",
+          "reason": "Taking a short break due to the recent hurricane. Stay safe, see you next week!",
+          "cancel_status": "owner"
+        }
+      ]
+    },
+    {
+      "key": "saturday-night-country-dance-bay-2026-11-28",
+      "name": "Saturday Night Country Dance at Ballroom By The Bay",
+      "style": "Country",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-28",
+      "end_date": "2026-11-28",
+      "start_time": "19:00",
+      "end_time": null,
+      "venue": "Ballroom By The Bay, 4061 Suzanne Drive Suite J, D'Iberville, MS",
+      "state": "MS",
+      "cost": null,
+      "source_url": "https://www.facebook.com/groups/dancinginpensacola/posts/10163222123727161",
+      "unverified": false,
+      "verified_on": "2026-11-11"
     },
     {
       "key": "se-asheville-swing-asheville-wednesday-2026-07-22",
@@ -7239,12 +7756,12 @@
       "exclude_dates": null,
       "start_date": null,
       "end_date": null,
-      "start_time": null,
-      "end_time": null,
-      "venue": "Fleur De Dance, New Orleans, LA",
+      "start_time": "19:00",
+      "end_time": "22:30",
+      "venue": "Fleur De Dance, 6610 Fleur De Lis Dr, New Orleans, LA 70124",
       "state": "LA",
-      "cost": "",
-      "source_url": "https://fleurdedance.com/westcoastswing/",
+      "cost": "$15 per 45-min class; social practice $10 (free with class)",
+      "source_url": "https://fleurdedance.com/classes-events/",
       "unverified": true,
       "verified_on": "2026-07-20"
     },
@@ -7529,6 +8046,66 @@
       "verified_on": "2026-07-20"
     },
     {
+      "key": "seaside-swing-outs-friday-2026-10-23",
+      "name": "Friday Swing Dance with Seaside Swing-Outs",
+      "style": "Lindy Hop / Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-23",
+      "end_date": null,
+      "start_time": "19:15",
+      "end_time": null,
+      "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
+      "state": "FL",
+      "cost": "$5 entry, 18+",
+      "source_url": "https://www.facebook.com/SeasideSwingOuts",
+      "unverified": false,
+      "verified_on": "2026-10-19"
+    },
+    {
+      "key": "seaside-swing-outs-halloween-2026-10-30",
+      "name": "Halloween Dance with Seaside Swing-Outs",
+      "style": "Lindy Hop / Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-30",
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "24:00",
+      "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
+      "state": "FL",
+      "cost": "$5 cover, 18+",
+      "source_url": "https://www.facebook.com/events/1593602821837486/",
+      "unverified": false,
+      "verified_on": "2026-10-20"
+    },
+    {
+      "key": "seaside-swing-outs-odd-colony-2026-11-04",
+      "name": "FREE First Wednesday Lesson and Social at Odd Colony",
+      "style": "Swing",
+      "type": "monthly_recurring",
+      "day_of_week": null,
+      "monthly_rule": "First Wednesday of the month",
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-04",
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "21:30",
+      "venue": "Odd Colony Brewing Co. (back room), 270 N Palafox St, Pensacola, FL 32502",
+      "state": "FL",
+      "cost": "Free",
+      "source_url": "https://www.facebook.com/events/1615921006141916/",
+      "unverified": false,
+      "verified_on": "2026-11-02"
+    },
+    {
       "key": "sensual-sundays-bachata-pensacola-coastals",
       "name": "Sensual Sundays -- Bachata Class & Social with Ariel Beck",
       "style": "Latin",
@@ -7541,23 +8118,23 @@
         "2026-08-23",
         "2026-08-30"
       ],
-      "canceled_dates": [
-        {
-          "date": "2026-10-11",
-          "cancel_status": "confirmed",
-          "reason": "weather"
-        }
-      ],
       "start_date": null,
       "end_date": null,
       "start_time": "17:30",
       "end_time": "21:30",
       "venue": "The Pensacola Coastals Dance Studio, 433 S Hwy 29, Cantonment, FL",
       "state": "FL",
-      "cost": "$5 for a class or social, $10 for the whole night",
-      "source_url": null,
+      "cost": "$5 for a class or social, $10 for the whole night; Nov 8 Military Appreciation $5 whole night for active duty, retired/veterans, and military spouses",
+      "source_url": "https://www.facebook.com/photo/?fbid=10237246454442220&set=gm.10163205017772161",
       "unverified": false,
-      "verified_on": "2026-08-23"
+      "verified_on": "2026-11-06",
+      "canceled_dates": [
+        {
+          "date": "2026-10-11",
+          "reason": "Taking a short break due to the recent hurricane. Stay safe, see you next week!",
+          "cancel_status": "confirmed"
+        }
+      ]
     },
     {
       "key": "southern-national-2026-10-15",
@@ -7580,6 +8157,26 @@
       "verified_on": "2026-07-11"
     },
     {
+      "key": "southern-national-2027-10-07",
+      "name": "Southern National 2027 (Save the Date)",
+      "style": "Country Western (UCWDC)",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2027-10-07",
+      "end_date": "2027-10-10",
+      "start_time": null,
+      "end_time": null,
+      "venue": "Sandestin Golf and Beach Resort, Miramar Beach, FL",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/photo/?fbid=1454950850124764&set=a.564692905817234",
+      "unverified": false,
+      "verified_on": "2026-11-06"
+    },
+    {
       "key": "sso-lindy-and-blues-fridays-the-way-you-move",
       "name": "SSO Lindy & Blues",
       "style": "Lindy Hop / Blues",
@@ -7591,7 +8188,9 @@
         "Third Friday"
       ],
       "exclude_dates": [
-        "2026-07-24"
+        "2026-07-24",
+        "2026-10-23",
+        "2026-10-30"
       ],
       "start_date": null,
       "end_date": null,
@@ -7599,10 +8198,17 @@
       "end_time": "01:00",
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
       "state": "FL",
-      "cost": null,
-      "source_url": null,
+      "cost": "$5 entry, 18+",
+      "source_url": "https://www.facebook.com/SeasideSwingOuts",
       "unverified": false,
-      "verified_on": "2026-07-17"
+      "verified_on": "2026-11-11",
+      "canceled_dates": [
+        {
+          "date": "2026-11-27",
+          "reason": "Host Seaside Swing-Outs Nov 10: Nov 13 is \"our last regular social for this month!\" Only remaining November regular SSO date after Nov 13 is Fri Nov 27 (4th Friday). First/Third Fridays already excluded.",
+          "cancel_status": "owner"
+        }
+      ]
     },
     {
       "key": "starlite-ballroom-tuesday-ballroom-latin-class",
@@ -8306,7 +8912,7 @@
     },
     {
       "key": "the-block-latin-night-thursdays",
-      "name": "Latin Night at The Block (Salsa, Bachata, Merengue)",
+      "name": "Latin Groove Thursdays at The Block (Salsa, Bachata, Merengue)",
       "style": "Latin",
       "type": "weekly_recurring",
       "day_of_week": "Thursday",
@@ -8320,9 +8926,9 @@
       "venue": "The Block, 113 Eglin Pkwy SE, Fort Walton Beach, FL 32548",
       "state": "FL",
       "cost": "Free (no cover charge)",
-      "source_url": null,
+      "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
       "unverified": false,
-      "verified_on": "2026-07-17"
+      "verified_on": "2026-08-02"
     },
     {
       "key": "tl-dance-line-dance-lessons-rodeo-wednesdays",
@@ -8625,26 +9231,6 @@
       "verified_on": "2026-07-27"
     },
     {
-      "key": "ttdgc-bill-thrall-evermans-thursday",
-      "name": "Lead/Follow Group Lesson with Bill Thrall at Ever'man's",
-      "style": "Ballroom (Lead/Follow)",
-      "type": "weekly_recurring",
-      "day_of_week": "Thursday",
-      "monthly_rule": null,
-      "exclude_monthly_rules": null,
-      "exclude_dates": null,
-      "start_date": null,
-      "end_date": null,
-      "start_time": "18:00",
-      "end_time": "20:00",
-      "venue": "Ever'man Educational Center, 327 W Garden St, Pensacola, FL",
-      "state": "FL",
-      "cost": "$5 per person",
-      "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
-      "unverified": false,
-      "verified_on": "2026-07-27"
-    },
-    {
       "key": "ttdgc-black-white-ball-2026-09-18",
       "name": "Black & White Ball",
       "style": "Ballroom",
@@ -8867,7 +9453,7 @@
     {
       "key": "ttdgc-dancing-nina-travis-andy-tuesday",
       "name": "Dancing with Nina, Travis and Andy (monthly style rotates)",
-      "style": "West Coast Swing",
+      "style": "Mixed (style rotates monthly)",
       "type": "weekly_recurring",
       "day_of_week": "Tuesday",
       "monthly_rule": null,
@@ -8876,13 +9462,13 @@
       "start_date": null,
       "end_date": null,
       "start_time": "18:30",
-      "end_time": null,
-      "venue": "American Legion Post 99, 2101 S McKenzie St, Foley, AL",
+      "end_time": "20:30",
+      "venue": "VFW Post 5658, 23240 Hwy US 98, Elberta, AL",
       "state": "AL",
-      "cost": "$10 per person",
-      "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
+      "cost": "$5 beginner class; $10 intermediate class",
+      "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com/tuesday",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-11-03"
     },
     {
       "key": "ttdgc-dancing-on-the-coast-showcase-2026-09-26",
@@ -9265,26 +9851,6 @@
       "verified_on": "2026-07-27"
     },
     {
-      "key": "ttdgc-latin-groove-thursdays-the-block",
-      "name": "Latin Groove Thursdays at The Block",
-      "style": "Latin",
-      "type": "weekly_recurring",
-      "day_of_week": "Thursday",
-      "monthly_rule": null,
-      "exclude_monthly_rules": null,
-      "exclude_dates": null,
-      "start_date": null,
-      "end_date": null,
-      "start_time": "20:30",
-      "end_time": "01:00",
-      "venue": "The Block, 113 Eglin Pkwy SE, Ft Walton Beach, FL",
-      "state": "FL",
-      "cost": "Free lessons",
-      "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
-      "unverified": false,
-      "verified_on": "2026-08-02"
-    },
-    {
       "key": "ttdgc-lets-dance-mobile-monday",
       "name": "Swing Out & Detroit Ballroom Classes (Let's Dance Mobile)",
       "style": "Swing / Detroit Ballroom",
@@ -9302,7 +9868,14 @@
       "cost": "$5 per person",
       "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-07-27",
+      "canceled_dates": [
+        {
+          "date": "2026-11-02",
+          "reason": "No class this week - on Let's Dance Mobile Cruise (per Time To Dance Gulf Coast weekly calendar 11/02-11/08)",
+          "cancel_status": "confirmed"
+        }
+      ]
     },
     {
       "key": "ttdgc-lucky-horseshoe-line",
@@ -9320,9 +9893,9 @@
       "venue": "Lucky Horseshoe Saloon, 9115 US Hwy 98, Fairhope, AL",
       "state": "AL",
       "cost": "$10 per person",
-      "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
+      "source_url": "https://www.facebook.com/events/4560736934193288/",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-11-06"
     },
     {
       "key": "ttdgc-mobile-westies-wcs-wednesday",
@@ -9342,7 +9915,7 @@
       "cost": "$15 per person",
       "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-11-11"
     },
     {
       "key": "ttdgc-moonshine-saloon-thursday",
@@ -9354,7 +9927,7 @@
       "exclude_monthly_rules": null,
       "exclude_dates": null,
       "start_date": null,
-      "end_date": null,
+      "end_date": "2026-10-29",
       "start_time": "19:00",
       "end_time": "22:00",
       "venue": "Moonshine Saloon, 9722 Highway 98, Pensacola, FL",
@@ -9362,7 +9935,7 @@
       "cost": "$5 per person",
       "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-10-28"
     },
     {
       "key": "ttdgc-north-to-south-ballroom-connection-2026-08-07",
@@ -9446,7 +10019,7 @@
     },
     {
       "key": "ttdgc-salsa-basics-hanna-wednesday",
-      "name": "Salsa Basics with Hanna + Social at Phineas Phoggs",
+      "name": "Salsa Basics with Hannah + Free Social at Phineas Phogg's",
       "style": "Salsa",
       "type": "weekly_recurring",
       "day_of_week": "Wednesday",
@@ -9457,12 +10030,12 @@
       "end_date": null,
       "start_time": "19:00",
       "end_time": "01:00",
-      "venue": "Phineas Phoggs, 130 E. Government Street, Pensacola, FL",
+      "venue": "Phineas Phogg's, Seville Quarter, 130 E Government St, Pensacola, FL 32502",
       "state": "FL",
-      "cost": "$10 class / dance free",
-      "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
+      "cost": "$10 classes; social dancing free",
+      "source_url": "https://www.facebook.com/groups/dancinginpensacola/posts/2577966316042694/",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-11-11"
     },
     {
       "key": "ttdgc-saraland-end-of-summer-luau-2026-08-01",
@@ -9766,30 +10339,30 @@
     },
     {
       "key": "ttdgc-wild-gregs-country-swing-friday",
-      "name": "Country Swing Dance Lessons with Jon & Nicole at Wild Greg's",
+      "name": "Wild Fridays Country Swing Dance Lessons with Jon & Nicole at Wild Greg's",
       "style": "Country Swing",
       "type": "weekly_recurring",
       "day_of_week": "Friday",
       "monthly_rule": null,
       "exclude_monthly_rules": null,
       "exclude_dates": null,
-      "canceled_dates": [
-        {
-          "date": "2026-10-09",
-          "cancel_status": "likely",
-          "reason": "weather"
-        }
-      ],
       "start_date": null,
       "end_date": null,
       "start_time": "19:00",
       "end_time": "21:00",
-      "venue": "Wild Greg's, 22 S. Palafox Street, Pensacola, FL",
+      "venue": "Wild Greg's Saloon, 22 S Palafox St, Pensacola, FL",
       "state": "FL",
       "cost": null,
-      "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
+      "source_url": "https://www.facebook.com/photo/?fbid=1788771866585078&set=a.645207857608157",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-11-06",
+      "canceled_dates": [
+        {
+          "date": "2026-10-09",
+          "reason": "Taking a short break due to the recent hurricane. Stay safe, see you next week!",
+          "cancel_status": "likely"
+        }
+      ]
     },
     {
       "key": "ttdgc-zuraka-belly-dance-monday",
@@ -9830,6 +10403,66 @@
       "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
       "unverified": false,
       "verified_on": "2026-08-02"
+    },
+    {
+      "key": "twym-east-coast-swing-series-2026-11-03",
+      "name": "East Coast Swing Dance Series at The Way You Move",
+      "style": "East Coast Swing",
+      "type": "weekly_recurring",
+      "day_of_week": "Tuesday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-03",
+      "end_date": "2026-12-08",
+      "start_time": "19:00",
+      "end_time": "20:00",
+      "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
+      "state": "FL",
+      "cost": "$60 for the 6-week series",
+      "source_url": "https://www.facebook.com/events/1870913544280544/",
+      "unverified": false,
+      "verified_on": "2026-11-03"
+    },
+    {
+      "key": "twym-halloween-costume-party-2026-10-31",
+      "name": "Halloween Costume Party and Social Dance at The Way You Move",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-31",
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "23:00",
+      "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
+      "state": "FL",
+      "cost": "$10",
+      "source_url": "https://www.facebook.com/events/1103786888824779/",
+      "unverified": false,
+      "verified_on": "2026-10-13"
+    },
+    {
+      "key": "twym-jingle-bell-rock-social-2026-12-12",
+      "name": "Jingle Bell Rock ECS Social Dance at The Way You Move",
+      "style": "Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-12-12",
+      "end_date": "2026-12-12",
+      "start_time": "19:00",
+      "end_time": "22:30",
+      "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
+      "state": "FL",
+      "cost": "$10 entry; free with the Tuesday ECS series or a private lesson series",
+      "source_url": "https://www.facebook.com/events/1870913544280544/",
+      "unverified": true,
+      "verified_on": "2026-11-03"
     },
     {
       "key": "tx-addison-salsa-sundays-al-amir-2026-07-26",
@@ -11012,6 +11645,26 @@
       "verified_on": "2026-07-20"
     },
     {
+      "key": "unity-in-motion-dance-for-advocacy-2026-11-07",
+      "name": "Unity in Motion: Dance for Advocacy",
+      "style": "Mixed",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-07",
+      "end_date": null,
+      "start_time": "18:00",
+      "end_time": "21:00",
+      "venue": "Soundside Waterfront Bar, 326 Brooks St SE, Fort Walton Beach, FL 32548",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/events/3798495180457876",
+      "unverified": false,
+      "verified_on": "2026-11-03"
+    },
+    {
       "key": "usa-dance-belvidere-august-4th-saturday-2026-08-22",
       "name": "Belvidere August 4th Saturday Dance",
       "style": "Ballroom",
@@ -12001,7 +12654,7 @@
       "exclude_monthly_rules": null,
       "exclude_dates": null,
       "start_date": null,
-      "end_date": null,
+      "end_date": "2026-09-24",
       "start_time": "19:00",
       "end_time": "21:00",
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
@@ -12092,6 +12745,26 @@
       "verified_on": "2026-09-04"
     },
     {
+      "key": "wcs-lynn-warwick-house-2026-11-12",
+      "name": "West Coast Swing Lessons at Lynn's Place (Mobile)",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-12",
+      "end_date": "2026-11-12",
+      "start_time": "18:00",
+      "end_time": "20:00",
+      "venue": "Lynn's Place (Lynn Warwick's House), 8470 Junior Rd, Mobile, AL 36695",
+      "state": "AL",
+      "cost": "$20 whole night",
+      "source_url": "https://psds.dance/",
+      "unverified": false,
+      "verified_on": "2026-11-09"
+    },
+    {
       "key": "wcs-social-dance-saturday-2026-07-25",
       "name": "WCS Social Dance (Saturday)",
       "style": "West Coast Swing",
@@ -12143,13 +12816,13 @@
       "start_date": "2026-09-26",
       "end_date": null,
       "start_time": "19:00",
-      "end_time": "23:30",
+      "end_time": "23:00",
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
       "state": "FL",
-      "cost": null,
+      "cost": "$10 for the entire evening",
       "source_url": null,
       "unverified": false,
-      "verified_on": "2026-07-17"
+      "verified_on": "2026-09-26"
     },
     {
       "key": "wcs-social-dance-saturday-2026-10-24",
@@ -12163,11 +12836,11 @@
       "start_date": "2026-10-24",
       "end_date": null,
       "start_time": "19:00",
-      "end_time": "23:30",
+      "end_time": "23:00",
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
       "state": "FL",
-      "cost": null,
-      "source_url": "https://calendar.google.com/calendar/u/0/newembed?src=v2ka0c77n2rmmcku162po0fggk@group.calendar.google.com&ctz=America/Chicago",
+      "cost": "$10 (7-8 PM lesson, 8-11 PM social)",
+      "source_url": "https://www.facebook.com/events/1807617910377320/",
       "unverified": false,
       "verified_on": "2026-08-23"
     },
@@ -12192,8 +12865,48 @@
       "verified_on": "2026-09-04"
     },
     {
+      "key": "west-coast-swing-dance-house-with-a-mouse-2026-10-05",
+      "name": "West Coast Swing Dance",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-05",
+      "end_date": "2026-10-05",
+      "start_time": "17:00",
+      "end_time": "19:00",
+      "venue": "In a House with a Mouse, Pensacola, FL",
+      "state": "FL",
+      "cost": null,
+      "source_url": null,
+      "unverified": false,
+      "verified_on": "2026-09-30"
+    },
+    {
+      "key": "west-coast-swing-lessons-tina-lionel-2026-09-28",
+      "name": "West Coast Swing Lessons with Tina & Lionel",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-09-28",
+      "end_date": null,
+      "start_time": "19:00",
+      "end_time": "21:00",
+      "venue": "Daiquiris and Creams of Mandeville, 1737 Florida Street, Mandeville, LA",
+      "state": "LA",
+      "cost": "$10 a person",
+      "source_url": "https://www.facebook.com/events/1349637350578517/",
+      "unverified": false,
+      "verified_on": "2026-09-28"
+    },
+    {
       "key": "west-coast-wednesdays-in-july-2026",
-      "name": "WCS Social Dance",
+      "name": "WCS Social Dance at The Way You Move",
       "style": "West Coast Swing",
       "type": "weekly_recurring",
       "day_of_week": "Wednesday",
@@ -12208,10 +12921,17 @@
       "end_time": "22:00",
       "venue": "The Way You Move, 918 Winton Ave, Pensacola, FL 32507",
       "state": "FL",
-      "cost": "$10 entry / $5 members",
-      "source_url": "https://calendar.google.com/calendar/u/0/newembed?src=v2ka0c77n2rmmcku162po0fggk@group.calendar.google.com&ctz=America/Chicago",
+      "cost": "$5 whole evening",
+      "source_url": "https://www.facebook.com/events/1478317510794997/",
       "unverified": false,
-      "verified_on": "2026-09-02"
+      "verified_on": null,
+      "canceled_dates": [
+        {
+          "date": "2026-10-14",
+          "reason": "Taking a short break due to the recent hurricane. Stay safe, see you next week!",
+          "cancel_status": "owner"
+        }
+      ]
     },
     {
       "key": "wild-gregs-honky-tonk-line-lessons-thursdays",
@@ -12228,10 +12948,10 @@
       "end_time": "21:00",
       "venue": "Wild Greg's Saloon, 22 S Palafox St, Pensacola, FL",
       "state": "FL",
-      "cost": "Free lessons; no cover for 21+",
-      "source_url": "https://www.facebook.com/photo/?fbid=1720216616773937&set=a.645207857608157",
+      "cost": "Free lessons; no cover for 21+; 18+ event",
+      "source_url": "https://www.facebook.com/WildGregsSaloonPensacola/",
       "unverified": false,
-      "verified_on": "2026-09-04"
+      "verified_on": "2026-11-10"
     },
     {
       "key": "wsdc-5280-westival-2027",
@@ -13832,6 +14552,26 @@
       "source_url": "https://dancejamproductions.com/westieweekend/",
       "unverified": false,
       "verified_on": "2026-07-12"
+    },
+    {
+      "key": "young-adults-swing-line-dance-freedom-church-2026-10-30",
+      "name": "Young Adults (18-35) Swing & Line Dance Night at Freedom Church",
+      "style": "Swing / Line Dance",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-10-30",
+      "end_date": "2026-10-30",
+      "start_time": "18:00",
+      "end_time": "21:00",
+      "venue": "Freedom Church (Revival Center), 108 Industrial Blvd, Pensacola, FL 32505",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/groups/dancinginpensacola",
+      "unverified": false,
+      "verified_on": "2026-10-30"
     },
     {
       "key": "zumba-sara-johnson-vickery-tuesdays",
