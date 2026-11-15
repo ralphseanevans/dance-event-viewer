@@ -19,7 +19,12 @@ test('gulfcoast page: name, canonical and OG tags, no visitor-facing "Experiment
 test('gulfcoast top links to the live South-wide viewer in that site’s colors', () => {
   const html = r('gulfcoast/index.html');
   const css = r('gulfcoast/style.css');
-  assert.match(html, /<a class="south-link" href="\.\.\/dance-event-viewer\/">South-wide dances<\/a>/);
+  assert.match(html, /<a class="south-link" href="\.\.\/dance-event-viewer\/">South-wide<span class="south-extra">dances<\/span><\/a>/);
+  const mobile = /@media\(max-width:480px\)\{([^]*?)\n\}/.exec(css);
+  assert.ok(mobile, 'phone layout overrides the South-wide pill');
+  assert.match(mobile[1], /\.south-extra\{display:none\}/);
+  assert.match(mobile[1], /min-height:32px/);
+  assert.match(mobile[1], /background:transparent/);
   assert.doesNotMatch(html, /south\.danceeventviewer\.net/);
   const rule = /\.south-link\{([^}]*)\}/.exec(css)[1];
   assert.match(rule, /background:#14b8a6/);
