@@ -11,14 +11,14 @@
       "exclude_dates": null,
       "start_date": null,
       "end_date": null,
-      "start_time": "17:30",
-      "end_time": "23:30",
+      "start_time": "18:00",
+      "end_time": "22:30",
       "venue": "The Chapel Collective, Historic Sacred Heart Building, Studio 211 (2nd floor, above The Burrow), 1010 N 12th Ave, Pensacola, FL 32501 (East Hill neighborhood)",
       "state": "FL",
       "cost": "$10/lesson, $10 social, $25 all night",
       "source_url": "https://www.facebook.com/events/1118533441125249/1118533447791915/",
       "unverified": false,
-      "verified_on": "2026-10-21"
+      "verified_on": "2026-11-16"
     },
     {
       "key": "al-auburn-ausda-friday-night-swing-2026-07-24",
@@ -299,6 +299,26 @@
       "source_url": "https://www.arthurmurray.com/am-events/osprey-cup-2027/",
       "unverified": false,
       "verified_on": "2026-09-11"
+    },
+    {
+      "key": "arabian-nights-and-ale-2026-11-14",
+      "name": "Arabian Nights & Ale at Gary's Biergarten",
+      "style": "Belly Dance",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-14",
+      "end_date": "2026-11-14",
+      "start_time": "18:00",
+      "end_time": "21:00",
+      "venue": "Gary's Brewery & Biergarten, 208 Newman Ave, Pensacola, FL 32507",
+      "state": "FL",
+      "cost": "Free",
+      "source_url": "https://www.facebook.com/events/878931275290635/",
+      "unverified": false,
+      "verified_on": "2026-11-14"
     },
     {
       "key": "arthur-murray-beach-o-rama-2027",
@@ -1028,6 +1048,66 @@
       "verified_on": "2026-07-20"
     },
     {
+      "key": "dance-trance-pensacola-mondays",
+      "name": "Dance Trance Pensacola (Monday)",
+      "style": "Dance Fit",
+      "type": "weekly_recurring",
+      "day_of_week": "Monday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-16",
+      "end_date": "2026-11-30",
+      "start_time": "19:30",
+      "end_time": "20:30",
+      "venue": "Studio 228, Historic Sacred Heart Hospital, 1010 N 12th Ave, Pensacola, FL 32501",
+      "state": "FL",
+      "cost": "$15 drop-in or $80 monthly all-access",
+      "source_url": "https://www.facebook.com/dancetrancepcola/posts/pfbid02fEj6hB3ZX2FxfVwwVZ4FvFs1ZLX7PWMAfAYiPvh2eRyim12CKdPdYx5WUTNcpHfGl",
+      "unverified": false,
+      "verified_on": "2026-11-15"
+    },
+    {
+      "key": "dance-trance-pensacola-saturdays",
+      "name": "Dance Trance Pensacola (Saturday)",
+      "style": "Dance Fit",
+      "type": "weekly_recurring",
+      "day_of_week": "Saturday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-21",
+      "end_date": "2026-11-28",
+      "start_time": "08:30",
+      "end_time": "09:45",
+      "venue": "Studio 228, Historic Sacred Heart Hospital, 1010 N 12th Ave, Pensacola, FL 32501",
+      "state": "FL",
+      "cost": "$15 drop-in or $80 monthly all-access",
+      "source_url": "https://www.facebook.com/dancetrancepcola/posts/pfbid02fEj6hB3ZX2FxfVwwVZ4FvFs1ZLX7PWMAfAYiPvh2eRyim12CKdPdYx5WUTNcpHfGl",
+      "unverified": false,
+      "verified_on": "2026-11-15"
+    },
+    {
+      "key": "dance-trance-pensacola-wednesdays",
+      "name": "Dance Trance Pensacola (Wednesday)",
+      "style": "Dance Fit",
+      "type": "weekly_recurring",
+      "day_of_week": "Wednesday",
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-18",
+      "end_date": "2026-11-25",
+      "start_time": "19:30",
+      "end_time": "20:30",
+      "venue": "Studio 228, Historic Sacred Heart Hospital, 1010 N 12th Ave, Pensacola, FL 32501",
+      "state": "FL",
+      "cost": "$15 drop-in or $80 monthly all-access",
+      "source_url": "https://www.facebook.com/dancetrancepcola/posts/pfbid02fEj6hB3ZX2FxfVwwVZ4FvFs1ZLX7PWMAfAYiPvh2eRyim12CKdPdYx5WUTNcpHfGl",
+      "unverified": false,
+      "verified_on": "2026-11-15"
+    },
+    {
       "key": "eventbrite-be-mine-showcase-2027-02-13",
       "name": "Be Mine Showcase",
       "style": "Ballroom",
@@ -1326,6 +1406,26 @@
       "source_url": "https://www.eventbrite.com/e/voodoo-workin-dance-workshop-tickets-2001064440609",
       "unverified": false,
       "verified_on": "2026-09-16"
+    },
+    {
+      "key": "everman-tango-lesson-2026-11-15",
+      "name": "Ever'man Tango Lesson (PensaTango)",
+      "style": "Argentine Tango",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-15",
+      "end_date": "2026-11-15",
+      "start_time": "17:30",
+      "end_time": "19:00",
+      "venue": "Ever'man Educational Center, 327 W Garden St, Pensacola, FL 32502",
+      "state": "FL",
+      "cost": "$10 per person, cash preferred",
+      "source_url": "https://www.facebook.com/events/2025481578147891/",
+      "unverified": false,
+      "verified_on": "2026-11-15"
     },
     {
       "key": "fa-northeast-dancesport-championships-2026-08-20",
@@ -3128,6 +3228,26 @@
       "verified_on": "2026-08-23"
     },
     {
+      "key": "friday-night-club-zumba-2026-11-13",
+      "name": "Friday Night Club Zumba at La Rita's Dance Studio",
+      "style": "Dance Fit",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-13",
+      "end_date": "2026-11-13",
+      "start_time": "18:30",
+      "end_time": null,
+      "venue": "La Rita's Dance Studio, 2895 W Scott St, Pensacola, FL",
+      "state": "FL",
+      "cost": "$10/person",
+      "source_url": "https://www.facebook.com/groups/dancinginpensacola/posts/10163241215147161/",
+      "unverified": false,
+      "verified_on": "2026-11-13"
+    },
+    {
       "key": "ga-alpharetta-club201-ballroom-latin-friday-2026-07-24",
       "name": "Club 201 Ballroom & Latin Mix Friday",
       "style": "Ballroom / Latin",
@@ -4268,6 +4388,26 @@
       "verified_on": "2026-11-05"
     },
     {
+      "key": "line-dancing-props-hammock-bay",
+      "name": "Line Dancing at Props Brewery Hammock Bay",
+      "style": "Line Dance",
+      "type": "monthly_recurring",
+      "day_of_week": null,
+      "monthly_rule": "First & Third Thursday of the month",
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-19",
+      "end_date": null,
+      "start_time": "18:00",
+      "end_time": null,
+      "venue": "Props Brewery Hammock Bay, 1799 Great Hammock Bend, Freeport, FL 32439",
+      "state": "FL",
+      "cost": "Free",
+      "source_url": "https://www.facebook.com/events/1542273487794181/",
+      "unverified": false,
+      "verified_on": "2026-11-13"
+    },
+    {
       "key": "luna-ballroom-chronicles-kingdom-2026-10-17",
       "name": "Chronicles of the Kingdom: Fantasy Dance Showcase at Luna Ballroom",
       "style": "Ballroom",
@@ -5024,6 +5164,26 @@
       "verified_on": "2026-07-12"
     },
     {
+      "key": "orlando-westie-prom-2026-11-20",
+      "name": "Orlando Westie Prom",
+      "style": "West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-20",
+      "end_date": "2026-11-22",
+      "start_time": "19:00",
+      "end_time": "22:00",
+      "venue": "WEPA Dance Studio, 4300 Clarcona Ocoee Rd, Suite 401, Orlando, FL 32810 (Fri social & Sun specialty workshop); Backstage Studios (formerly DGBEK), 4677 LB McLeod Rd, Suite i, Orlando, FL (Sat workshops & social); The Wedding Barn, 346 E Franklin St, Oviedo, FL (Sun Prom)",
+      "state": "FL",
+      "cost": "Full weekend $150 ($165 at the door); Sat day pass $110 ($125 door); Sun Prom $50 ($60 door, student $35); social pass $85 (Fri+Sat nights + Prom); Fri workshop+social $35 / social only $20 door-only; Sat social only $20 door-only; specialty workshop add-on $30",
+      "source_url": "https://orlandowestieprom.com/",
+      "unverified": false,
+      "verified_on": "2026-11-15"
+    },
+    {
       "key": "pcda-wednesday-night-round-up-ragon-hall",
       "name": "The Wednesday Night Round-Up with PCDA at Ragon Hall",
       "style": "Country",
@@ -5659,6 +5819,26 @@
       "verified_on": "2026-07-12"
     },
     {
+      "key": "plaza-ferdinand-tango-2026-11-22",
+      "name": "Plaza Ferdinand Dancing",
+      "style": "Argentine Tango",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-22",
+      "end_date": "2026-11-22",
+      "start_time": "14:00",
+      "end_time": "16:00",
+      "venue": "Plaza Ferdinand VII, 300 S Palafox St, Pensacola, FL 32502",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/events/1136003219178111/",
+      "unverified": false,
+      "verified_on": "2026-11-18"
+    },
+    {
       "key": "proam-in-paradise-2026-04-30",
       "name": "Pro/Am in Paradise",
       "style": "West Coast Swing",
@@ -5716,7 +5896,7 @@
       "cost": "$15 workshop, $15 social, $35 whole night (Sat Dec 5 anniversary dance at Ragon Hall; Fri/Sun intensive pricing TBA)",
       "source_url": "https://psds.dance/",
       "unverified": false,
-      "verified_on": "2026-11-09"
+      "verified_on": "2026-11-14"
     },
     {
       "key": "psds-monday-halloween-party-2026-10-26",
@@ -6280,7 +6460,7 @@
     },
     {
       "key": "salsa-night-blue-lagoon-destin-2026-11-21",
-      "name": "Salsa Night at The Blue Lagoon",
+      "name": "Noche De Salsa Black & Gold at The Blue Lagoon",
       "style": "Salsa",
       "type": "one_time",
       "day_of_week": null,
@@ -6293,10 +6473,10 @@
       "end_time": "02:00",
       "venue": "The Blue Lagoon Beach Club at the Palms of Destin, 4201 Indian Bayou Trail, Destin, FL 32541",
       "state": "FL",
-      "cost": null,
-      "source_url": "https://www.facebook.com/events/1105644095804784/",
+      "cost": "$10 cover, first drink included",
+      "source_url": "https://www.facebook.com/events/1769013741056296/",
       "unverified": false,
-      "verified_on": "2026-11-08"
+      "verified_on": "2026-11-15"
     },
     {
       "key": "salsa-nova-dance-fest-2026-09-09",
@@ -8911,6 +9091,26 @@
       "verified_on": "2026-07-20"
     },
     {
+      "key": "tbird-and-the-fat-cats-legion-340-2026-11-14",
+      "name": "TBird and the Fat Cats at American Legion Post 340",
+      "style": "Country / Blues / Rock and Roll",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-14",
+      "end_date": "2026-11-14",
+      "start_time": "19:00",
+      "end_time": null,
+      "venue": "American Legion Post 340, 8890 Ashland Ave, Pensacola, FL 32534",
+      "state": "FL",
+      "cost": null,
+      "source_url": "https://www.facebook.com/groups/dancinginpensacola/posts/10163245155597161/",
+      "unverified": false,
+      "verified_on": "2026-11-13"
+    },
+    {
       "key": "the-block-latin-night-thursdays",
       "name": "Latin Groove Thursdays at The Block (Salsa, Bachata, Merengue)",
       "style": "Latin",
@@ -9468,7 +9668,19 @@
       "cost": "$5 beginner class; $10 intermediate class",
       "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com/tuesday",
       "unverified": false,
-      "verified_on": "2026-11-03"
+      "verified_on": "2026-11-16",
+      "canceled_dates": [
+        {
+          "date": "2026-11-17",
+          "reason": "Time To Dance Gulf Coast Tuesday 11/17 page: Dancing with Nina, Travis and Andy at VFW Post 5658, Elberta — NO CLASS UNTIL DECEMBER 1st.",
+          "cancel_status": "confirmed"
+        },
+        {
+          "date": "2026-11-24",
+          "reason": "Time To Dance Gulf Coast Tuesday 11/17 page: Dancing with Nina, Travis and Andy at VFW Post 5658, Elberta — NO CLASS UNTIL DECEMBER 1st.",
+          "cancel_status": "confirmed"
+        }
+      ]
     },
     {
       "key": "ttdgc-dancing-on-the-coast-showcase-2026-09-26",
@@ -9975,7 +10187,14 @@
       "cost": "$7 members / $10 guest",
       "source_url": "https://time-to-dance-gulf-coast.mailchimpsites.com",
       "unverified": false,
-      "verified_on": "2026-07-27"
+      "verified_on": "2026-11-16",
+      "canceled_dates": [
+        {
+          "date": "2026-11-17",
+          "reason": "Time To Dance Gulf Coast Tuesday 11/17 page: Over 50 Dance Club at Sanders Beach, 6:30-9:30 PM, NO DANCE DUE TO AVAILABILITY.",
+          "cancel_status": "confirmed"
+        }
+      ]
     },
     {
       "key": "ttdgc-pensacola-smooth-dancers-thursday",
@@ -12763,6 +12982,26 @@
       "source_url": "https://psds.dance/",
       "unverified": false,
       "verified_on": "2026-11-09"
+    },
+    {
+      "key": "wcs-lynn-warwick-house-2026-11-20",
+      "name": "Gary Jobst Workshops at Lynn's Place",
+      "style": "Country/West Coast Swing",
+      "type": "one_time",
+      "day_of_week": null,
+      "monthly_rule": null,
+      "exclude_monthly_rules": null,
+      "exclude_dates": null,
+      "start_date": "2026-11-20",
+      "end_date": "2026-11-20",
+      "start_time": "18:00",
+      "end_time": null,
+      "venue": "Lynn's Place (Lynn Warwick's House), 8470 Junior Rd, Mobile, AL 36695",
+      "state": "AL",
+      "cost": "$15 per person",
+      "source_url": "https://psds.dance/",
+      "unverified": false,
+      "verified_on": "2026-11-16"
     },
     {
       "key": "wcs-social-dance-saturday-2026-07-25",

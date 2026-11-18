@@ -12,7 +12,7 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/3rd-saturday-west-coast-swing-old-sacred-heart-2026-07-18.html</loc>
-    <lastmod>2026-10-21</lastmod>
+    <lastmod>2026-11-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -179,12 +179,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://danceeventviewer.net/e/country-cowtown-western-swing-festival-2026-11-12.html</loc>
-    <lastmod>2026-07-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://danceeventviewer.net/e/country-swing-lesson-social-thursday.html</loc>
     <lastmod>2026-08-01</lastmod>
     <changefreq>weekly</changefreq>
@@ -193,6 +187,24 @@
   <url>
     <loc>https://danceeventviewer.net/e/country-thursday-night-cw-dance-2026-07-23.html</loc>
     <lastmod>2026-07-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://danceeventviewer.net/e/dance-trance-pensacola-mondays.html</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://danceeventviewer.net/e/dance-trance-pensacola-saturdays.html</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://danceeventviewer.net/e/dance-trance-pensacola-wednesdays.html</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -713,18 +725,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://danceeventviewer.net/e/give-thanks-and-dance-mobile-2026-11-13.html</loc>
-    <lastmod>2026-11-05</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/good-ole-social-dance-2026-11-13.html</loc>
-    <lastmod>2026-11-06</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://danceeventviewer.net/e/la-breauxbridge-buckjohnnys-zydeco-2026-07-25.html</loc>
     <lastmod>2026-07-20</lastmod>
     <changefreq>weekly</changefreq>
@@ -799,6 +799,12 @@
   <url>
     <loc>https://danceeventviewer.net/e/line-dancing-lessons-bree-hangout-gulf-shores-mondays-2026-11.html</loc>
     <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://danceeventviewer.net/e/line-dancing-props-hammock-bay.html</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -893,6 +899,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://danceeventviewer.net/e/orlando-westie-prom-2026-11-20.html</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://danceeventviewer.net/e/pcda-wednesday-night-round-up-ragon-hall.html</loc>
     <lastmod>2026-11-04</lastmod>
     <changefreq>weekly</changefreq>
@@ -983,6 +995,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://danceeventviewer.net/e/plaza-ferdinand-tango-2026-11-22.html</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://danceeventviewer.net/e/proam-in-paradise-2027-04-29.html</loc>
     <lastmod>2026-11-03</lastmod>
     <changefreq>weekly</changefreq>
@@ -990,7 +1008,7 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/psds-10th-anniversary-robert-cordoba-workshop-weekend-2026-12-04.html</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -1002,12 +1020,6 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/salsa-atlanta-salsa-bachata-festival-2027-03-04.html</loc>
-    <lastmod>2026-07-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/salsa-bachata-sensual-festival-socal-2026-11-13.html</loc>
     <lastmod>2026-07-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1038,7 +1050,7 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/salsa-night-blue-lagoon-destin-2026-11-21.html</loc>
-    <lastmod>2026-11-08</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -1451,12 +1463,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://danceeventviewer.net/e/swing-austin-lindy-exchange-2026-11-12.html</loc>
-    <lastmod>2026-07-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://danceeventviewer.net/e/swing-lindy-balboa-cruise-nola-2027-02-06.html</loc>
     <lastmod>2026-07-20</lastmod>
     <changefreq>weekly</changefreq>
@@ -1476,18 +1482,6 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/swing-stardust-slow-bal-2026-11-20.html</loc>
-    <lastmod>2026-07-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/tango-abrazos-festival-2026-11-13.html</loc>
-    <lastmod>2026-07-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/tango-bay-festival-marathon-btfm-2026-11-13.html</loc>
     <lastmod>2026-07-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1620,7 +1614,7 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/ttdgc-dancing-nina-travis-andy-tuesday.html</loc>
-    <lastmod>2026-11-03</lastmod>
+    <lastmod>2026-11-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -1746,7 +1740,7 @@
   </url>
   <url>
     <loc>https://danceeventviewer.net/e/ttdgc-over-50-dance-club-tuesday.html</loc>
-    <lastmod>2026-07-27</lastmod>
+    <lastmod>2026-11-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -2183,12 +2177,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://danceeventviewer.net/e/usa-dance-ccbd-casual-falmouth-2026-11-14.html</loc>
-    <lastmod>2026-07-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://danceeventviewer.net/e/usa-dance-ccbd-holiday-falmouth-2026-12-12.html</loc>
     <lastmod>2026-07-12</lastmod>
     <changefreq>weekly</changefreq>
@@ -2197,12 +2185,6 @@
   <url>
     <loc>https://danceeventviewer.net/e/usa-dance-greater-daytona-2026-11-28.html</loc>
     <lastmod>2026-07-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/usa-dance-rhapsody-in-blue-macon-2026-11-14.html</loc>
-    <lastmod>2026-09-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -2243,8 +2225,8 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://danceeventviewer.net/e/wcs-lynn-warwick-house-2026-11-12.html</loc>
-    <lastmod>2026-11-09</lastmod>
+    <loc>https://danceeventviewer.net/e/wcs-lynn-warwick-house-2026-11-20.html</loc>
+    <lastmod>2026-11-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -2416,12 +2398,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://danceeventviewer.net/e/wsdc-midnight-madness-wcs-2026.html</loc>
-    <lastmod>2026-07-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://danceeventviewer.net/e/wsdc-midwest-westie-fest-2027.html</loc>
     <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
@@ -2436,12 +2412,6 @@
   <url>
     <loc>https://danceeventviewer.net/e/wsdc-new-york-flow-festival-2027-02-26.html</loc>
     <lastmod>2026-07-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://danceeventviewer.net/e/wsdc-northeast-swing-classic-2026.html</loc>
-    <lastmod>2026-07-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
