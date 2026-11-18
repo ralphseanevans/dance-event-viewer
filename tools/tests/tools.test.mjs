@@ -151,7 +151,7 @@ test('Supabase export: refuses empty, duplicate, unexpected fields, bad cancel d
 });
 
 // ---- build_share_pages.mjs (fixture root, temp output) ----
-function withSharePages(events, check, { viewer, logos = {}, composed = [], today = '2026-10-08' } = {}) {
+function withSharePages(events, check, { viewer, logos = {}, composed = [], today = '2026-10-08', prepare } = {}) {
   const root = tmp(); const out = tmp();
   try {
     mkdirSync(join(root, 'dance-event-viewer'));
@@ -162,6 +162,7 @@ function withSharePages(events, check, { viewer, logos = {}, composed = [], toda
       mkdirSync(join(root, 'e', 'img'), { recursive: true });
       for (const key of composed) writeFileSync(join(root, 'e', 'img', `${key}.jpg`), 'fixture image');
     }
+    if (prepare) prepare(root);
     execFileSync(process.execPath, [join(TOOLS, 'build_share_pages.mjs'), '--root', root, '--out', out],
       { stdio: 'ignore', env: { ...process.env, SHARE_PAGES_TODAY: today, TZ: 'UTC' } });
     check({ root, out, page: key => readFileSync(join(out, 'e', `${key}.html`), 'utf8'),
@@ -357,7 +358,13 @@ test('share pages: writes only to --out and marks cancellations', () => {
   const root = tmp(); const out = tmp();
   try {
     mkdirSync(join(root, 'dance-event-viewer'));
-    writeFileSync(join(root, 'dance-event-viewer', 'logo-map.json'), JSON.stringify({ logos: {}, patterns: [] }));
+    writeFileSync(join(root, 'dance-event-viewer', 'logo-map.json'), JSON.stringify({ logos: {
+      'weekly-friday': '../graphics/logos/weekly.jpg',
+      'one-off': '../graphics/logos/one-off.jpg',
+    }, patterns: [] }));
+    mkdirSync(join(root, 'graphics', 'logos'), { recursive: true });
+    writeFileSync(join(root, 'graphics', 'logos', 'weekly.jpg'), 'weekly flyer');
+    writeFileSync(join(root, 'graphics', 'logos', 'one-off.jpg'), 'one-off flyer');
     const weekly = { ...publicRow('weekly-friday'), name: 'Weekly Friday', style: 'West Coast Swing', type: 'weekly_recurring', day_of_week: 'Friday', start_time: '19:00', end_time: '21:00', venue: 'Hall, Pensacola, FL', state: 'FL',
       canceled_dates: [{ date: '2026-10-09', cancel_status: 'likely', reason: 'Storm <break> & rest' }] };
     const oneOff = { ...publicRow('one-off'), name: 'One Off', style: 'Latin', type: 'one_time', start_date: '2026-11-01', venue: 'Club, Mobile, AL', state: 'AL', cancel_status: 'owner' };
@@ -386,6 +393,60 @@ test('share pages: writes only to --out and marks cancellations', () => {
       { stdio: 'ignore', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-10' } });
     assert.doesNotMatch(readFileSync(join(out, 'e', 'weekly-friday.html'), 'utf8'), /is-canceled|EventCancelled/);
   } finally { rmSync(root, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }); }
+});
+
+test('share pages: visible flyer only for a real flyer; preview may use the site card', () => {
+  const sha = text => createHash('sha1').update(text).digest('hex').slice(0, 8);
+  const body = html => html.split('</head>')[1];
+  withSharePages([
+    shareEvent('flyerless', { name: 'No Flyer Night' }),
+    shareEvent('flyerless-canceled', { name: 'Called Off', cancel_status: 'owner' }),
+    shareEvent('has-flyer', { name: 'Has Flyer' }),
+    shareEvent('has-url', { name: 'URL Night', flyer_url: '../graphics/logos/url-night.jpg' }),
+    shareEvent('composed-wins', { name: 'Composed Night', flyer_url: 'https://example.test/other.jpg' }),
+    shareEvent('url-beats-logo', { name: 'Both', flyer_url: 'https://example.test/from-url.jpg' }),
+  ], ({ page }) => {
+    const none = page('flyerless');
+    assert.doesNotMatch(none, /<img class="flyer"/);
+    assert.doesNotMatch(body(none), /og-card/);
+    assert.equal(meta(none, 'property', 'og:image'), 'https://danceeventviewer.net/dance-event-viewer/assets/og-card.png');
+    assert.deepEqual(jsonLd(none).image, ['https://danceeventviewer.net/dance-event-viewer/assets/og-card.png']);
+
+    const canceled = page('flyerless-canceled');
+    assert.doesNotMatch(body(canceled), /<img class="flyer"|flyer-frame|og-card/);
+    assert.doesNotMatch(canceled, /cancel-banner\.css/);
+    assert.match(canceled, /class="meta cancel-note"/);
+    assert.match(canceled, /Officially canceled/);
+
+    const logoSha = sha('logo bytes');
+    const has = page('has-flyer');
+    assert.match(has, new RegExp(`<img class="flyer" src="https://danceeventviewer\\.net/graphics/logos/has-flyer\\.jpg\\?v=${logoSha}" alt="Has Flyer flyer">`));
+    assert.equal(meta(has, 'property', 'og:image'), `https://danceeventviewer.net/graphics/logos/has-flyer.jpg?v=${logoSha}`);
+
+    const urlSha = sha('url flyer bytes');
+    const url = page('has-url');
+    assert.match(url, new RegExp(`<img class="flyer" src="https://danceeventviewer\\.net/graphics/logos/url-night\\.jpg\\?v=${urlSha}"`));
+
+    const composed = page('composed-wins');
+    assert.match(composed, /<img class="flyer" src="https:\/\/danceeventviewer\.net\/e\/img\/composed-wins\.jpg\?v=/);
+    assert.doesNotMatch(composed, /example\.test/);
+
+    const both = page('url-beats-logo');
+    assert.match(both, /<img class="flyer" src="https:\/\/example\.test\/from-url\.jpg" alt="Both flyer">/);
+    assert.doesNotMatch(body(both), /logo-map-only/);
+  }, {
+    logos: {
+      'has-flyer': '../graphics/logos/has-flyer.jpg',
+      'url-beats-logo': '../graphics/logos/logo-map-only.jpg',
+    },
+    composed: ['composed-wins'],
+    prepare(root) {
+      mkdirSync(join(root, 'graphics', 'logos'), { recursive: true });
+      writeFileSync(join(root, 'graphics', 'logos', 'has-flyer.jpg'), 'logo bytes');
+      writeFileSync(join(root, 'graphics', 'logos', 'url-night.jpg'), 'url flyer bytes');
+      writeFileSync(join(root, 'graphics', 'logos', 'logo-map-only.jpg'), 'logo only');
+    },
+  });
 });
 
 // ---- mapsSearchUrl (Google Maps directions links) ----

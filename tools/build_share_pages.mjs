@@ -3,10 +3,13 @@
 //
 // For each event in dance_events.json, writes e/<key>.html with event-specific
 // title/description/Open Graph tags, a self-referencing canonical, schema.org Event
-// JSON-LD (next occurrence for recurring events), the flyer, a link to the full
-// calendar, the organizer link when public, related-event links, and the public GA4 tag.
+// JSON-LD (next occurrence for recurring events), the flyer when the event has one,
+// a link to the full calendar, the organizer link when public, related-event links,
+// and the public GA4 tag. A page with no real flyer shows the details only.
+// Open Graph and JSON-LD still use the site card for that preview.
 // Canceled events and canceled occurrences get the same yellow cancel bar as the
 // viewer (docs/cancel-banners.md) and eventStatus EventCancelled in the JSON-LD.
+// The bar is drawn on a real flyer; a canceled event with no flyer keeps the note only.
 //
 // Usage (from the repo root):
 //   node tools/build_share_pages.mjs [--root .] [--out <dir>]
@@ -17,6 +20,7 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, exists
 import { join } from 'path';
 import { createHash } from 'crypto';
 import { eventWhere, eventMapsUrl } from './lib.mjs';
+import { readConfig } from './export_supabase_public.mjs';
 import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor, cancelLabelText } from './event_schedule.mjs';
 import { buildHubPages, sitemapFor } from './build_hub_pages.mjs';
 const args = process.argv.slice(2);
@@ -25,6 +29,7 @@ const root = opt('--root') || (args[0] && !args[0].startsWith('--') ? args[0] : 
 const out = opt('--out') || root;
 const SITE = 'https://danceeventviewer.net';
 const GA_ID = 'G-HC9F04RL9D';
+const FALLBACK_IMAGE = SITE + '/dance-event-viewer/assets/og-card.png';
 const data = JSON.parse(readFileSync(join(root, 'dance_events.json'), 'utf8'));
 const lm = JSON.parse(readFileSync(join(root, 'dance-event-viewer', 'logo-map.json'), 'utf8'));
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -73,6 +78,48 @@ function logoFor(key){
   if (lm.logos && lm.logos[key]) return first(lm.logos[key]);
   for (const p of lm.patterns || []) if (key.includes(p.contains)) return first(p.logo);
   return null;
+}
+// flyer_url is public but INTERNAL_FIELDS, so it stays out of dance_events.json.
+// Read it here, and only when this root has the viewer config (fixture builds do not).
+async function loadPublicFlyerUrls(rootDir) {
+  const configPath = join(rootDir, 'dance-event-viewer', 'js', 'supabase-config.js');
+  if (!existsSync(configPath)) return new Map();
+  const { url, publishableKey, table } = readConfig(readFileSync(configPath, 'utf8'), configPath);
+  const map = new Map();
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    const endpoint = `${url}/rest/v1/${encodeURIComponent(table)}?select=key,flyer_url&order=key.asc&offset=${offset}&limit=${pageSize}`;
+    const response = await fetch(endpoint, { method: 'GET', headers: { apikey: publishableKey } });
+    if (response.status === 400 && offset === 0) return new Map();
+    if (!response.ok) throw new Error(`flyer_url read failed (${response.status}): ${await response.text()}`);
+    const page = await response.json();
+    if (!Array.isArray(page)) throw new Error('flyer_url read did not return an array.');
+    for (const row of page) {
+      if (row && typeof row.key === 'string' && typeof row.flyer_url === 'string' && row.flyer_url.trim())
+        map.set(row.key, row.flyer_url.trim());
+    }
+    if (page.length < pageSize) break;
+  }
+  return map;
+}
+// Logo-map paths are relative to dance-event-viewer/index.html. Absolute URLs pass through.
+function absoluteFlyer(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const trimmed = raw.trim();
+  try {
+    const absolute = /^https?:\/\//i.test(trimmed) ? trimmed
+      : trimmed.startsWith('/') ? new URL(trimmed, SITE).href
+      : new URL(trimmed, `${SITE}/dance-event-viewer/`).href;
+    return versioned(absolute);
+  } catch { return null; }
+}
+// A same-site image is visible only when the file is in this root. External URLs are.
+function flyerFileExists(absolute) {
+  let url;
+  try { url = new URL(absolute); } catch { return false; }
+  if (url.origin !== SITE) return true;
+  const rel = decodeURIComponent(url.pathname).replace(/^\/+/, '');
+  return !!rel && existsSync(join(root, rel));
 }
 // Only parse comma-separated city/state tails and numbered street addresses.
 // Keep uncertain venues intact as the Place name rather than guessing a city.
@@ -204,14 +251,23 @@ mkdirSync(join(out, 'e'), { recursive: true });
 for (const f of readdirSync(join(out,'e'))) if (f.endsWith('.html')) unlinkSync(join(out,'e',f)); // stale pages from removed events
 let n = 0;
 const urls = [];
+const flyerUrls = await loadPublicFlyerUrls(root);
 for (const ev of data.events) {
-  // Prefer the composed date-panel image in e/img (flyer + day/date/time), else the
-  // raw flyer from logo-map.json, else the site card.
+  // Real flyer, in order: composed e/img/<key>.jpg, then flyer_url, then logo-map.
+  // The visible <img> needs a file we can serve (or an external URL). Preview tags
+  // still use the first source, and the site card when there is none.
+  const sources = [];
   const composed = join(root, 'e', 'img', ev.key + '.jpg');
-  const img = logoFor(ev.key);
-  const imgUrlRaw = existsSync(composed) ? `${SITE}/e/img/${ev.key}.jpg`
-    : img ? new URL(img, `${SITE}/dance-event-viewer/`).href : SITE + '/dance-event-viewer/assets/og-card.png';
-  const imgUrl = versioned(imgUrlRaw);
+  if (existsSync(composed)) sources.push(versioned(`${SITE}/e/img/${ev.key}.jpg`));
+  const fromTable = flyerUrls.get(ev.key);
+  const flyerRaw = (typeof fromTable === 'string' && fromTable.trim()) ? fromTable
+    : (typeof ev.flyer_url === 'string' ? ev.flyer_url : '');
+  const fromUrl = absoluteFlyer(flyerRaw);
+  if (fromUrl && !sources.includes(fromUrl)) sources.push(fromUrl);
+  const fromLogo = absoluteFlyer(logoFor(ev.key));
+  if (fromLogo && !sources.includes(fromLogo)) sources.push(fromLogo);
+  const imgUrl = sources[0] || FALLBACK_IMAGE;
+  const visibleFlyer = sources.find(flyerFileExists) || null;
   const desc = descriptionFor(ev);
   const past = isPast(ev);
   const title = esc(ev.name) + ' — Dance Event Viewer';
@@ -221,9 +277,9 @@ for (const ev of data.events) {
   if (ld && cancel) ld.eventStatus = 'https://schema.org/EventCancelled';
   const sentence = cancel ? cancelLabelText(cancel.label.charAt(0) + cancel.label.slice(1).toLowerCase()) : '';
   const cancelNote = cancel ? `<p class="meta cancel-note"><strong>${esc(cancel.whole ? sentence : `${sentence}: ${nextOccurrence(ev)}`)}</strong></p>` : '';
-  const flyer = cancel
-    ? `<div class="flyer-frame is-canceled cancel-banner--${cancel.status}"><img class="flyer" src="${esc(imgUrl)}" alt="${esc(ev.name)} flyer"><span class="cancel-banner-sr">${esc(sentence)}.</span></div>`
-    : `<img class="flyer" src="${esc(imgUrl)}" alt="${esc(ev.name)} flyer">`;
+  const flyer = !visibleFlyer ? '' : cancel
+    ? `<div class="flyer-frame is-canceled cancel-banner--${cancel.status}"><img class="flyer" src="${esc(visibleFlyer)}" alt="${esc(ev.name)} flyer"><span class="cancel-banner-sr">${esc(sentence)}.</span></div>`
+    : `<img class="flyer" src="${esc(visibleFlyer)}" alt="${esc(ev.name)} flyer">`;
   const cancelReason = cancel && cancel.reason ? `<p class="cancel-reason">${esc(cancel.reason)}</p>` : '';
   const srcLink = (typeof ev.source_url === 'string' && /^https?:\/\//i.test(ev.source_url.trim()))
     ? `<p class="src"><a href="${esc(ev.source_url.trim())}" rel="noopener nofollow" target="_blank">Event details from the organizer</a></p>` : '';
@@ -241,7 +297,7 @@ for (const ev of data.events) {
 <meta property="og:image:alt" content="${esc(ev.name)} flyer">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="${pageUrl}">
-${cancel ? '<link rel="stylesheet" href="/dance-event-viewer/css/cancel-banner.css">\n' : ''}${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n` : ''}<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
+${visibleFlyer && cancel ? '<link rel="stylesheet" href="/dance-event-viewer/css/cancel-banner.css">\n' : ''}${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>\n` : ''}<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
 <script>
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
