@@ -12,6 +12,7 @@ import { mapsSearchUrl } from '../lib.mjs';
 import { compareMasterTransition, copyAndVerifyBackup, exportPublic, load, save, validateDance, PUBLIC_FIELDS } from '../lib.mjs';
 import { exportEvents, readConfig } from '../export_supabase_public.mjs';
 import { checkSite } from '../check_site.mjs';
+import { loadRedirects } from '../e_page_redirects.mjs';
 
 const TOOLS = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REPO = resolve(TOOLS, '..');
@@ -373,7 +374,8 @@ test('share pages: writes only to --out and marks cancellations', () => {
     execFileSync(process.execPath, [join(TOOLS, 'build_share_pages.mjs'), '--root', root, '--out', out],
       { stdio: 'ignore', env: { ...process.env, SHARE_PAGES_TODAY: '2026-10-08' } });
     assert.ok(!existsSync(join(root, 'e')) && !existsSync(join(root, 'sitemap.xml')), 'root must stay untouched');
-    assert.deepEqual(readdirSync(join(out, 'e')).sort(), ['normal.html', 'one-off.html', 'weekly-friday.html']);
+    const redirectPages = loadRedirects().map(entry => `${entry.from}.html`);
+    assert.deepEqual(readdirSync(join(out, 'e')).sort(), ['normal.html', 'one-off.html', 'weekly-friday.html', ...redirectPages].sort());
     const weeklyHtml = readFileSync(join(out, 'e', 'weekly-friday.html'), 'utf8');
     assert.match(weeklyHtml, /flyer-frame is-canceled cancel-banner--likely/);
     assert.match(weeklyHtml, /EventCancelled/);

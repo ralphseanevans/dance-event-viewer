@@ -11,6 +11,10 @@
 // viewer (docs/cancel-banners.md) and eventStatus EventCancelled in the JSON-LD.
 // The bar is drawn on a real flyer; a canceled event with no flyer keeps the note only.
 //
+// tools/e-page-redirects.json lists retired /e/<key>.html URLs. The stale-page wipe
+// below deletes those stubs; they are written again afterward. They are not sitemap
+// URLs. A live event key that collides with a redirect is left as the real page.
+//
 // Usage (from the repo root):
 //   node tools/build_share_pages.mjs [--root .] [--out <dir>]
 // --root is where dance_events.json, dance-event-viewer/logo-map.json and e/img live.
@@ -23,6 +27,7 @@ import { eventWhere, eventMapsUrl } from './lib.mjs';
 import { readConfig } from './export_supabase_public.mjs';
 import { nextOccurrence as nextEventOccurrence, isPast as eventIsPast, cancellationFor, cancelLabelText } from './event_schedule.mjs';
 import { buildHubPages, sitemapFor } from './build_hub_pages.mjs';
+import { loadRedirects, emitRedirectStubs } from './e_page_redirects.mjs';
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const root = opt('--root') || (args[0] && !args[0].startsWith('--') ? args[0] : '.');
@@ -247,8 +252,9 @@ function relatedLinks(ev, all, past){
   return `\n  <section class="related"><h2>${past ? 'Upcoming dances nearby' : 'More dances nearby'}</h2>\n    <ul>\n      ${items}\n    </ul>\n  </section>`;
 }
 
+const redirects = loadRedirects();
 mkdirSync(join(out, 'e'), { recursive: true });
-for (const f of readdirSync(join(out,'e'))) if (f.endsWith('.html')) unlinkSync(join(out,'e',f)); // stale pages from removed events
+for (const f of readdirSync(join(out,'e'))) if (f.endsWith('.html')) unlinkSync(join(out,'e',f)); // stale pages; redirect stubs are rewritten below
 let n = 0;
 const urls = [];
 const flyerUrls = await loadPublicFlyerUrls(root);
@@ -342,8 +348,10 @@ gtag('event', 'share_page_landing', { event_key: '${esc(ev.key)}' });
 `); n++;
   if (!past) urls.push({ pageUrl, verified: /^\d{4}-\d{2}-\d{2}$/.test(ev.verified_on || '') ? ev.verified_on : null });
 }
+const redirectStubs = emitRedirectStubs(out, redirects, data.events.map(ev => ev.key));
 
 // Build supported hubs and include them alongside upcoming event pages.
+// Redirect stubs stay out of this sitemap; sitemapFor only lists live pages.
 const hubs = buildHubPages(data.events, today, out);
 writeFileSync(join(out, 'sitemap.xml'), sitemapFor(data.events, today));
 
@@ -362,4 +370,4 @@ if (existsSync(viewerPath)) {
       () => `<!-- upcoming-events:start -->\n${upcomingSection(upcoming)}\n  <!-- upcoming-events:end -->`));
   }
 }
-console.log(`built ${n} event pages in ${join(out, 'e')}/ and sitemap.xml with ${urls.length + hubs.length + 1} URLs`);
+console.log(`built ${n} event pages and ${redirectStubs} redirect stubs in ${join(out, 'e')}/ and sitemap.xml with ${urls.length + hubs.length + 1} URLs`);
