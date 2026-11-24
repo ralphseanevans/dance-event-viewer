@@ -671,6 +671,17 @@ function cancelReasonNote(cancel) {
   p.textContent = text;
   return p;
 }
+/* Thanksgiving heads-up (js/thanksgiving-note.js). Skipped when this occurrence
+   already has a cancellation banner. `day` is a local Date or YYYY-MM-DD. */
+function thanksgivingNoteEl(day, cancel) {
+  const text = DEVThanksgiving.noteFor(day, cancel);
+  if (!text) return null;
+  const p = document.createElement("p");
+  p.className = "thanksgiving-note";
+  p.setAttribute("role", "note");
+  p.textContent = text;
+  return p;
+}
 
 /* Flyer URL hygiene at render time (2026-09-27, Sean-approved). Stored data is never edited.
    - Percent-encode ONLY characters that are not legal in a URL, leaving existing %XX escapes
@@ -2281,6 +2292,8 @@ function card(d, { showWhen, isPast, date, lead } = {}) {
     }
     el.appendChild(when);
   }
+  const thanks = thanksgivingNoteEl(date instanceof Date ? date : d.next, cancel);
+  if (thanks) el.appendChild(thanks);
   const sched = scheduleText(ev);
   if (sched) {
     const p = document.createElement("p");
